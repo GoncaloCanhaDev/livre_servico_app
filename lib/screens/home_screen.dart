@@ -8,6 +8,7 @@ import '../services/shift_service.dart';
 import '../theme.dart';
 import 'history_screen.dart';
 import 'products_list_screen.dart';
+import 'replenishment_lists_screen.dart';
 import 'truck_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -116,6 +117,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.checklist),
+                label: const Text('Listas de Reposição'),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const ReplenishmentListsScreen(),
+                  ));
+                },
               ),
               const SizedBox(height: 16),
               Expanded(child: _buildEventsList()),

@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../models/auto_list.dart';
+import '../models/opening_list.dart';
+import '../models/report_list.dart';
+import '../models/visual_list.dart';
 import '../models/product.dart';
 import '../models/shift_event.dart';
 import '../models/truck_reception.dart';
@@ -19,7 +23,15 @@ class ShiftService extends ChangeNotifier {
   static Future<void> init() async {
     final dir = await getApplicationDocumentsDirectory();
     final isar = await Isar.open(
-      [ShiftEventSchema, TruckReceptionSchema, ProductSchema],
+      [
+        ShiftEventSchema,
+        TruckReceptionSchema,
+        ProductSchema,
+        OpeningListSchema,
+        AutoListSchema,
+        ReportListSchema,
+        VisualListSchema,
+      ],
       directory: dir.path,
       name: 'livre_servico',
     );
