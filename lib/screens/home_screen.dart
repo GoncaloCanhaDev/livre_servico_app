@@ -7,6 +7,7 @@ import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
 import 'history_screen.dart';
+import 'products_list_screen.dart';
 import 'truck_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -89,14 +90,32 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               ..._buildActions(status),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.local_shipping),
-                label: const Text('Camiões Recebidos'),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const TruckHistoryScreen(),
-                  ));
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.local_shipping),
+                      label: const Text('Camiões'),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const TruckHistoryScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.inventory_2),
+                      label: const Text('Produtos'),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const ProductsListScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(child: _buildEventsList()),
