@@ -160,6 +160,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 _saveTasks();
               },
             ),
+            _ManualTask(
+              label: 'Verificação de Temperaturas',
+              checked: tasks.verificacaoTemperaturas,
+              onChanged: (v) {
+                setState(() => tasks.verificacaoTemperaturas = v);
+                _saveTasks();
+              },
+            ),
             _AutoTask(
               label: 'Lista de Abertura',
               checked: _aberturaDone,
@@ -405,6 +413,7 @@ class _HistorySheet extends StatelessWidget {
               if (t.kiwiAbertura) 'Kiwi Abertura',
               if (t.alteracoesPreco)
                 'Alterações de Preço (${t.alteracoesPrecoCount})',
+              if (t.verificacaoTemperaturas) 'Temperaturas',
               if (t.preenchimentoQuadro) 'Preench. Quadro',
               if (t.verificacaoValidades)
                 'Validades (${t.verificacaoValidadesCount})',
