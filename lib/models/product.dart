@@ -8,7 +8,7 @@ part 'product.g.dart';
 class Product {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: false)
+  @Index(unique: true, replace: true)
   late String ean;
 
   @Index()

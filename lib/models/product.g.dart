@@ -49,7 +49,7 @@ const ProductSchema = CollectionSchema(
       id: 470098543478402927,
       name: r'ean',
       unique: true,
-      replace: false,
+      replace: true,
       properties: [
         IndexPropertySchema(
           name: r'ean',

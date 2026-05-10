@@ -134,16 +134,16 @@ class HistoricoScreen extends StatelessWidget {
 Future<bool> _confirmHardDelete(BuildContext context, String title) async {
   final ok = await showDialog<bool>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dialogCtx) => AlertDialog(
       title: Text(title),
       content: const Text(
           'Vai apagar permanentemente todos os registos. Esta ação não pode ser desfeita.'),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogCtx, false),
             child: const Text('Cancelar')),
         TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogCtx, true),
             child: const Text('Apagar tudo',
                 style: TextStyle(color: Colors.red))),
       ],
@@ -157,15 +157,15 @@ String _fmtH(Duration d) => '${d.inHours}h ${d.inMinutes % 60}m';
 Future<bool> _confirmDelete(BuildContext context, String what) async {
   final ok = await showDialog<bool>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dialogCtx) => AlertDialog(
       title: Text('Apagar $what?'),
       content: const Text('Esta ação não pode ser desfeita.'),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogCtx, false),
             child: const Text('Cancelar')),
         TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogCtx, true),
             child: const Text('Apagar', style: TextStyle(color: Colors.red))),
       ],
     ),
@@ -197,6 +197,17 @@ class _ShiftsTabState extends State<_ShiftsTab> {
   void initState() {
     super.initState();
     _future = _load();
+    ShiftService.instance.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    ShiftService.instance.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() => _future = _load());
   }
 
   Future<List<_ShiftRow>> _load() async {

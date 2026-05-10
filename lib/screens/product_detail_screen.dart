@@ -42,15 +42,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('Apagar produto?'),
         content: const Text('Esta ação não pode ser desfeita.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: const Text('Cancelar')),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogCtx, true),
               child: const Text('Apagar')),
         ],
       ),
@@ -102,19 +102,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       style: const TextStyle(
                           fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.green,
-                      borderRadius: BorderRadius.circular(12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(p.department.label,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12)),
                     ),
-                    child: Text(p.department.label,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12)),
                   ),
                   const SizedBox(height: 20),
                   _Field(label: 'EAN-13', value: p.ean),

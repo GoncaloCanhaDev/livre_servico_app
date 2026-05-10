@@ -195,8 +195,13 @@ Duration computePaused(List<ShiftEvent> events, {DateTime? now}) {
         }
         break;
       case ShiftEventType.clockIn:
-      case ShiftEventType.clockOut:
         pausedSince = null;
+        break;
+      case ShiftEventType.clockOut:
+        if (pausedSince != null) {
+          total += e.timestamp.difference(pausedSince);
+          pausedSince = null;
+        }
         break;
     }
   }

@@ -6,7 +6,7 @@ part 'report_list.g.dart';
 class ReportList {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: false)
+  @Index(unique: true, replace: true)
   late DateTime serviceDay;
 
   int diasSemVendas = 0;

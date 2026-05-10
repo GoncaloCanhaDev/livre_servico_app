@@ -6,7 +6,7 @@ part 'opening_list.g.dart';
 class OpeningList {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: false)
+  @Index(unique: true, replace: true)
   late DateTime serviceDay;
 
   int congelados = 0;

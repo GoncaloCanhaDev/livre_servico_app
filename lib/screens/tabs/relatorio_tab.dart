@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/report_list.dart';
 import '../../services/report_list_service.dart';
 import '../../theme.dart';
+import '../widgets/number_row.dart';
 
 class RelatorioTab extends StatefulWidget {
   const RelatorioTab({super.key});
@@ -52,12 +52,17 @@ class _RelatorioTabState extends State<RelatorioTab> {
   Future<void> _persistField() async {
     final list = _list;
     if (list == null || list.isFinalized) return;
+    list.diasSemVendas = int.tryParse(_diasSemVendas.text) ?? 0;
+    list.regularizacoes = int.tryParse(_regularizacoes.text) ?? 0;
+    list.massiva = int.tryParse(_massiva.text) ?? 0;
+    list.repetidos = int.tryParse(_repetidos.text) ?? 0;
+    setState(() {});
     await ReportListService.instance.updateValues(
       list,
-      diasSemVendas: int.tryParse(_diasSemVendas.text) ?? 0,
-      regularizacoes: int.tryParse(_regularizacoes.text) ?? 0,
-      massiva: int.tryParse(_massiva.text) ?? 0,
-      repetidos: int.tryParse(_repetidos.text) ?? 0,
+      diasSemVendas: list.diasSemVendas,
+      regularizacoes: list.regularizacoes,
+      massiva: list.massiva,
+      repetidos: list.repetidos,
     );
   }
 
@@ -123,25 +128,25 @@ class _RelatorioTabState extends State<RelatorioTab> {
               ),
             ),
           const SizedBox(height: 8),
-          _NumberRow(
+          NumberRow(
             label: 'Dias s/ vendas',
             controller: _diasSemVendas,
             enabled: !locked,
             onChanged: _persistField,
           ),
-          _NumberRow(
+          NumberRow(
             label: 'Regularizações',
             controller: _regularizacoes,
             enabled: !locked,
             onChanged: _persistField,
           ),
-          _NumberRow(
+          NumberRow(
             label: 'Massiva',
             controller: _massiva,
             enabled: !locked,
             onChanged: _persistField,
           ),
-          _NumberRow(
+          NumberRow(
             label: 'Repetidos',
             controller: _repetidos,
             enabled: !locked,
@@ -178,57 +183,6 @@ class _RelatorioTabState extends State<RelatorioTab> {
             onPressed: locked ? null : _finalize,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NumberRow extends StatelessWidget {
-  const _NumberRow({
-    required this.label,
-    required this.controller,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final bool enabled;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
-            SizedBox(
-              width: 110,
-              child: TextField(
-                controller: controller,
-                enabled: enabled,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
