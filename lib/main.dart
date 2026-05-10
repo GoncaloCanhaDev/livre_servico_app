@@ -9,7 +9,19 @@ import 'theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_PT');
-  await ShiftService.init();
+  try {
+    await ShiftService.init();
+  } catch (e) {
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('Erro ao iniciar a base de dados:\n$e',
+              textAlign: TextAlign.center),
+        ),
+      ),
+    ));
+    return;
+  }
   runApp(const LivreServicoApp());
 }
 
@@ -29,10 +41,7 @@ class LivreServicoApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: AnimatedBuilder(
-        animation: ShiftService.instance,
-        builder: (_, _) => const HomeScreen(),
-      ),
+      home: const HomeScreen(),
     );
   }
 }

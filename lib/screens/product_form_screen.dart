@@ -57,7 +57,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       return;
     }
 
-    final p = widget.existing ?? (Product()..createdAt = DateTime.now());
+    final now = DateTime.now();
+    final p = widget.existing ?? (Product()..createdAt = now..updatedAt = now);
     p
       ..ean = ean
       ..sapCode = _sap.text.trim()

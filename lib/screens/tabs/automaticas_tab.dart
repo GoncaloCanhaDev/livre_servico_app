@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../services/auto_list_service.dart';
 import '../../theme.dart';
+import '../widgets/number_row.dart';
 
 class AutomaticasTab extends StatefulWidget {
   const AutomaticasTab({super.key});
@@ -63,17 +63,17 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _NumberRow(
+          NumberRow(
             label: 'Congelados',
             controller: _congelados,
             onChanged: () => setState(() {}),
           ),
-          _NumberRow(
+          NumberRow(
             label: 'OPLS',
             controller: _opls,
             onChanged: () => setState(() {}),
           ),
-          _NumberRow(
+          NumberRow(
             label: 'Não Perecíveis',
             controller: _naoPereciveis,
             onChanged: () => setState(() {}),
@@ -109,54 +109,6 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
             onPressed: _finalize,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NumberRow extends StatelessWidget {
-  const _NumberRow({
-    required this.label,
-    required this.controller,
-    required this.onChanged,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
-            SizedBox(
-              width: 110,
-              child: TextField(
-                controller: controller,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

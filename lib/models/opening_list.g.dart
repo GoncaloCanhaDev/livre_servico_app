@@ -56,7 +56,7 @@ const OpeningListSchema = CollectionSchema(
       id: -114834928129556000,
       name: r'serviceDay',
       unique: true,
-      replace: false,
+      replace: true,
       properties: [
         IndexPropertySchema(
           name: r'serviceDay',

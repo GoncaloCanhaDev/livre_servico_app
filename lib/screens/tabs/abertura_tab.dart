@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/opening_list.dart';
 import '../../services/opening_list_service.dart';
 import '../../theme.dart';
+import '../widgets/number_row.dart';
 
 class AberturaTab extends StatefulWidget {
   const AberturaTab({super.key});
@@ -51,11 +51,15 @@ class _AberturaTabState extends State<AberturaTab> {
   Future<void> _persistField() async {
     final list = _list;
     if (list == null || list.isFinalized) return;
+    list.congelados = int.tryParse(_congelados.text) ?? 0;
+    list.opls = int.tryParse(_opls.text) ?? 0;
+    list.naoPereciveis = int.tryParse(_naoPereciveis.text) ?? 0;
+    setState(() {});
     await OpeningListService.instance.updateValues(
       list,
-      congelados: int.tryParse(_congelados.text) ?? 0,
-      opls: int.tryParse(_opls.text) ?? 0,
-      naoPereciveis: int.tryParse(_naoPereciveis.text) ?? 0,
+      congelados: list.congelados,
+      opls: list.opls,
+      naoPereciveis: list.naoPereciveis,
     );
   }
 
@@ -121,19 +125,19 @@ class _AberturaTabState extends State<AberturaTab> {
               ),
             ),
           const SizedBox(height: 8),
-          _NumberRow(
+          NumberRow(
             label: 'Congelados',
             controller: _congelados,
             enabled: !locked,
             onChanged: _persistField,
           ),
-          _NumberRow(
+          NumberRow(
             label: 'OPLS',
             controller: _opls,
             enabled: !locked,
             onChanged: _persistField,
           ),
-          _NumberRow(
+          NumberRow(
             label: 'Não Perecíveis',
             controller: _naoPereciveis,
             enabled: !locked,
@@ -170,57 +174,6 @@ class _AberturaTabState extends State<AberturaTab> {
             onPressed: locked ? null : _finalize,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NumberRow extends StatelessWidget {
-  const _NumberRow({
-    required this.label,
-    required this.controller,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final bool enabled;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
-            SizedBox(
-              width: 110,
-              child: TextField(
-                controller: controller,
-                enabled: enabled,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
