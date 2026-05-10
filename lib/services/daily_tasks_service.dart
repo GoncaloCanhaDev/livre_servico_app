@@ -17,12 +17,32 @@ class DailyTasksService extends ChangeNotifier {
         .filter()
         .serviceDayEqualTo(day)
         .findFirst();
-    if (existing != null) return existing;
+    if (existing != null) {
+      if (_sanitize(existing)) {
+        await _isar.writeTxn(() async {
+          await _isar.dailyTasks.put(existing);
+        });
+      }
+      return existing;
+    }
     final created = DailyTasks()..serviceDay = day;
     await _isar.writeTxn(() async {
       created.id = await _isar.dailyTasks.put(created);
     });
     return created;
+  }
+
+  bool _sanitize(DailyTasks t) {
+    var changed = false;
+    if (t.alteracoesPrecoCount < 0) {
+      t.alteracoesPrecoCount = 0;
+      changed = true;
+    }
+    if (t.verificacaoValidadesCount < 0) {
+      t.verificacaoValidadesCount = 0;
+      changed = true;
+    }
+    return changed;
   }
 
   Future<void> save(DailyTasks t) async {

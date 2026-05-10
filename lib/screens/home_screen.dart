@@ -66,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final svc = ShiftService.instance;
     final status = svc.status;
     final worked = computeWorked(_todayEvents);
+    final paused = computePaused(_todayEvents);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,7 +89,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _StatusCard(status: status, worked: _fmtDuration(worked)),
+              _StatusCard(
+                status: status,
+                worked: _fmtDuration(worked),
+                paused: _fmtDuration(paused),
+              ),
               const SizedBox(height: 24),
               ..._buildActions(status),
               const SizedBox(height: 16),
@@ -246,10 +251,15 @@ String _labelFor(ShiftEventType t) {
 }
 
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.status, required this.worked});
+  const _StatusCard({
+    required this.status,
+    required this.worked,
+    required this.paused,
+  });
 
   final WorkStatus status;
   final String worked;
+  final String paused;
 
   @override
   Widget build(BuildContext context) {
@@ -285,6 +295,20 @@ class _StatusCard extends StatelessWidget {
             const SizedBox(height: 4),
             const Text('Tempo trabalhado',
                 style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 12),
+            Container(height: 1, color: AppColors.grey),
+            const SizedBox(height: 12),
+            Text(
+              paused,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: AppColors.greenDark,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+            const Text('Tempo em pausa',
+                style: TextStyle(color: Colors.black54, fontSize: 12)),
           ],
         ),
       ),
