@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/auto_list.dart';
+import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import '../models/report_list.dart';
 import '../models/visual_list.dart';
@@ -31,6 +32,7 @@ class ShiftService extends ChangeNotifier {
         AutoListSchema,
         ReportListSchema,
         VisualListSchema,
+        DailyTasksSchema,
       ],
       directory: dir.path,
       name: 'livre_servico',

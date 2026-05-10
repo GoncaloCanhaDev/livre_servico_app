@@ -7,6 +7,7 @@ import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
 import 'history_screen.dart';
+import 'daily_tasks_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'truck_history_screen.dart';
@@ -125,6 +126,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const ReplenishmentListsScreen(),
+                  ));
+                },
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.task_alt),
+                label: const Text('Tarefas Diárias'),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const DailyTasksScreen(),
                   ));
                 },
               ),
