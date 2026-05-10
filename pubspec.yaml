@@ -1,0 +1,25 @@
+name: livre_servico_app
+description: "Livre Serviço Companion - work tracking app."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  isar_community: ^3.3.2
+  isar_community_flutter_libs: ^3.3.2
+  path_provider: ^2.1.4
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  isar_community_generator: ^3.3.2
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
