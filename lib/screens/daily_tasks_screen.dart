@@ -95,16 +95,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
     await DailyTasksService.instance.save(t);
   }
 
-  Future<void> _openHistory() async {
-    final items = await DailyTasksService.instance.history();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _HistorySheet(items: items),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tasks = _tasks;
@@ -121,13 +111,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tarefas Diárias'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Histórico',
-            onPressed: _openHistory,
-          ),
-        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -378,58 +361,6 @@ class _CountTask extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HistorySheet extends StatelessWidget {
-  const _HistorySheet({required this.items});
-  final List<DailyTasks> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final dayFmt = DateFormat("EEEE, d 'de' MMM y", 'pt_PT');
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      maxChildSize: 0.95,
-      builder: (_, scrollCtrl) {
-        if (items.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('Sem histórico.'),
-            ),
-          );
-        }
-        return ListView.separated(
-          controller: scrollCtrl,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final t = items[i];
-            final manual = [
-              if (t.kiwiAbertura) 'Kiwi Abertura',
-              if (t.alteracoesPreco)
-                'Alterações de Preço (${t.alteracoesPrecoCount})',
-              if (t.verificacaoTemperaturas) 'Temperaturas',
-              if (t.preenchimentoQuadro) 'Preench. Quadro',
-              if (t.verificacaoValidades)
-                'Validades (${t.verificacaoValidadesCount})',
-              if (t.kiwiFecho) 'Kiwi Fecho',
-              if (t.limpezaMaquinaVoltas) 'Limpeza Máquina',
-            ];
-            return ListTile(
-              title: Text(dayFmt.format(t.serviceDay),
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                manual.isEmpty ? 'Sem tarefas manuais marcadas' : manual.join(' · '),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

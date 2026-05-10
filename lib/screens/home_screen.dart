@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
 import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
-import 'history_screen.dart';
 import 'daily_tasks_screen.dart';
+import 'historico_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'truck_history_screen.dart';
@@ -71,22 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Livre Serviço Companion'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Histórico',
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const HistoryScreen(),
-              ));
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
+          child: SingleChildScrollView(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _StatusCard(
@@ -144,9 +132,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ));
                 },
               ),
-              const SizedBox(height: 16),
-              Expanded(child: _buildEventsList()),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.history),
+                label: const Text('Histórico'),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const HistoricoScreen(),
+                  ));
+                },
+              ),
             ],
+          ),
           ),
         ),
       ),
@@ -195,59 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildEventsList() {
-    if (_todayEvents.isEmpty) {
-      return const Center(
-        child: Text(
-          'Ainda sem registos.\nInicie o turno para começar.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black54),
-        ),
-      );
-    }
-    final fmt = DateFormat('HH:mm:ss');
-    return Card(
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _todayEvents.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (_, i) {
-          final e = _todayEvents[i];
-          return ListTile(
-            leading: Icon(_iconFor(e.type), color: AppColors.green),
-            title: Text(_labelFor(e.type)),
-            trailing: Text(fmt.format(e.timestamp)),
-          );
-        },
-      ),
-    );
-  }
-}
-
-IconData _iconFor(ShiftEventType t) {
-  switch (t) {
-    case ShiftEventType.clockIn:
-      return Icons.login;
-    case ShiftEventType.pause:
-      return Icons.pause_circle;
-    case ShiftEventType.resume:
-      return Icons.play_circle;
-    case ShiftEventType.clockOut:
-      return Icons.logout;
-  }
-}
-
-String _labelFor(ShiftEventType t) {
-  switch (t) {
-    case ShiftEventType.clockIn:
-      return 'Início de turno';
-    case ShiftEventType.pause:
-      return 'Pausa';
-    case ShiftEventType.resume:
-      return 'Retoma';
-    case ShiftEventType.clockOut:
-      return 'Fim de turno';
-  }
 }
 
 class _StatusCard extends StatelessWidget {

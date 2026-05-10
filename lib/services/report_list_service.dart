@@ -52,6 +52,20 @@ class ReportListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAll() async {
+    await _isar.writeTxn(() async {
+      await _isar.reportLists.clear();
+    });
+    notifyListeners();
+  }
+
+  Future<void> delete(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.reportLists.delete(id);
+    });
+    notifyListeners();
+  }
+
   Future<List<ReportList>> history() {
     return _isar.reportLists.where().sortByServiceDayDesc().findAll();
   }

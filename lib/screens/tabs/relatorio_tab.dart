@@ -86,15 +86,6 @@ class _RelatorioTabState extends State<RelatorioTab> {
     if (mounted) _load();
   }
 
-  Future<void> _openHistory() async {
-    final items = await ReportListService.instance.history();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => _HistorySheet(items: items),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final list = _list;
@@ -108,21 +99,10 @@ class _RelatorioTabState extends State<RelatorioTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  dayFmt.format(list.serviceDay),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.history),
-                tooltip: 'Histórico',
-                onPressed: _openHistory,
-              ),
-            ],
+          Text(
+            dayFmt.format(list.serviceDay),
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600),
           ),
           if (locked)
             Card(
@@ -250,44 +230,6 @@ class _NumberRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HistorySheet extends StatelessWidget {
-  const _HistorySheet({required this.items});
-  final List<ReportList> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final dayFmt = DateFormat("d 'de' MMM y", 'pt_PT');
-    return SafeArea(
-      child: items.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('Sem histórico.', textAlign: TextAlign.center),
-            )
-          : ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (_, i) {
-                final l = items[i];
-                return ListTile(
-                  leading: Icon(
-                    l.isFinalized ? Icons.check_circle : Icons.edit,
-                    color: l.isFinalized ? AppColors.green : Colors.black45,
-                  ),
-                  title: Text(dayFmt.format(l.serviceDay)),
-                  subtitle: Text(
-                      'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}'),
-                  trailing: Text('${l.total}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                );
-              },
-            ),
     );
   }
 }
