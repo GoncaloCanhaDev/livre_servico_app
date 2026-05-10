@@ -45,11 +45,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFmt = DateFormat('EEE, MMM d');
+    final dateFmt = DateFormat("EEE, d 'de' MMMM", 'pt_PT');
     final timeFmt = DateFormat('HH:mm');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
+      appBar: AppBar(title: const Text('Histórico')),
       body: FutureBuilder<List<_ShiftSummary>>(
         future: _future,
         builder: (context, snap) {
@@ -58,7 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           }
           final shifts = snap.data!;
           if (shifts.isEmpty) {
-            return const Center(child: Text('No shifts recorded yet.'));
+            return const Center(child: Text('Ainda não há turnos registados.'));
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -78,7 +78,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   subtitle: Text(
                     end == null
-                        ? 'In progress · ${_fmtDuration(s.worked)}'
+                        ? 'Em curso · ${_fmtDuration(s.worked)}'
                         : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtDuration(s.worked)}',
                   ),
                   trailing: Icon(
@@ -131,12 +131,12 @@ IconData _icon(ShiftEventType t) {
 String _label(ShiftEventType t) {
   switch (t) {
     case ShiftEventType.clockIn:
-      return 'Clock In';
+      return 'Início de turno';
     case ShiftEventType.pause:
-      return 'Pause';
+      return 'Pausa';
     case ShiftEventType.resume:
-      return 'Resume';
+      return 'Retoma';
     case ShiftEventType.clockOut:
-      return 'Clock Out';
+      return 'Fim de turno';
   }
 }

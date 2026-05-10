@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'History',
+            tooltip: 'Histórico',
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const HistoryScreen(),
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return [
           ElevatedButton.icon(
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Clock In'),
+            label: const Text('Iniciar Turno'),
             onPressed: svc.clockIn,
           ),
         ];
@@ -111,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
         return [
           ElevatedButton.icon(
             icon: const Icon(Icons.pause),
-            label: const Text('Pause'),
+            label: const Text('Pausar'),
             onPressed: svc.pause,
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             icon: const Icon(Icons.stop),
-            label: const Text('Clock Out'),
+            label: const Text('Terminar Turno'),
             onPressed: svc.clockOut,
           ),
         ];
@@ -125,13 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
         return [
           ElevatedButton.icon(
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Resume'),
+            label: const Text('Retomar'),
             onPressed: svc.resume,
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             icon: const Icon(Icons.stop),
-            label: const Text('Clock Out'),
+            label: const Text('Terminar Turno'),
             onPressed: svc.clockOut,
           ),
         ];
@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_todayEvents.isEmpty) {
       return const Center(
         child: Text(
-          'No events yet.\nClock in to start your shift.',
+          'Ainda sem registos.\nInicie o turno para começar.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.black54),
         ),
@@ -183,13 +183,13 @@ IconData _iconFor(ShiftEventType t) {
 String _labelFor(ShiftEventType t) {
   switch (t) {
     case ShiftEventType.clockIn:
-      return 'Clock In';
+      return 'Início de turno';
     case ShiftEventType.pause:
-      return 'Pause';
+      return 'Pausa';
     case ShiftEventType.resume:
-      return 'Resume';
+      return 'Retoma';
     case ShiftEventType.clockOut:
-      return 'Clock Out';
+      return 'Fim de turno';
   }
 }
 
@@ -202,9 +202,9 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      WorkStatus.idle => ('Off the clock', AppColors.black),
-      WorkStatus.working => ('Working', AppColors.green),
-      WorkStatus.paused => ('Paused', AppColors.greenDark),
+      WorkStatus.idle => ('Fora de serviço', AppColors.black),
+      WorkStatus.working => ('Em serviço', AppColors.green),
+      WorkStatus.paused => ('Em pausa', AppColors.greenDark),
     };
     return Card(
       child: Padding(
@@ -231,7 +231,7 @@ class _StatusCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            const Text('Worked time',
+            const Text('Tempo trabalhado',
                 style: TextStyle(color: Colors.black54)),
           ],
         ),
