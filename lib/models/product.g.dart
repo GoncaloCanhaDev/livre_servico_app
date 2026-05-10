@@ -171,6 +171,7 @@ const _ProductdepartmentEnumValueMap = {
   'bazar': 5,
   'leite': 6,
   'animal': 7,
+  'vasilhame': 8,
 };
 const _ProductdepartmentValueEnumMap = {
   0: PalletCategory.frescosCharcutaria,
@@ -181,6 +182,7 @@ const _ProductdepartmentValueEnumMap = {
   5: PalletCategory.bazar,
   6: PalletCategory.leite,
   7: PalletCategory.animal,
+  8: PalletCategory.vasilhame,
 };
 
 Id _productGetId(Product object) {
