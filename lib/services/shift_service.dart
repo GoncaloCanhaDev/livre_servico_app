@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/shift_event.dart';
+import '../models/truck_reception.dart';
 
 enum WorkStatus { idle, working, paused }
 
@@ -17,7 +18,7 @@ class ShiftService extends ChangeNotifier {
   static Future<void> init() async {
     final dir = await getApplicationDocumentsDirectory();
     final isar = await Isar.open(
-      [ShiftEventSchema],
+      [ShiftEventSchema, TruckReceptionSchema],
       directory: dir.path,
       name: 'livre_servico',
     );
