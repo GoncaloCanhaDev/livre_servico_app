@@ -52,6 +52,16 @@ const DailyTasksSchema = CollectionSchema(
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
+    r'verificacaoValidades': PropertySchema(
+      id: 7,
+      name: r'verificacaoValidades',
+      type: IsarType.bool,
+    ),
+    r'verificacaoValidadesCount': PropertySchema(
+      id: 8,
+      name: r'verificacaoValidadesCount',
+      type: IsarType.long,
+    ),
   },
 
   estimateSize: _dailyTasksEstimateSize,
@@ -105,6 +115,8 @@ void _dailyTasksSerialize(
   writer.writeBool(offsets[4], object.limpezaMaquinaVoltas);
   writer.writeBool(offsets[5], object.preenchimentoQuadro);
   writer.writeDateTime(offsets[6], object.serviceDay);
+  writer.writeBool(offsets[7], object.verificacaoValidades);
+  writer.writeLong(offsets[8], object.verificacaoValidadesCount);
 }
 
 DailyTasks _dailyTasksDeserialize(
@@ -122,6 +134,8 @@ DailyTasks _dailyTasksDeserialize(
   object.limpezaMaquinaVoltas = reader.readBool(offsets[4]);
   object.preenchimentoQuadro = reader.readBool(offsets[5]);
   object.serviceDay = reader.readDateTime(offsets[6]);
+  object.verificacaoValidades = reader.readBool(offsets[7]);
+  object.verificacaoValidadesCount = reader.readLong(offsets[8]);
   return object;
 }
 
@@ -146,6 +160,10 @@ P _dailyTasksDeserializeProp<P>(
       return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readDateTime(offset)) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -637,6 +655,76 @@ extension DailyTasksQueryFilter
       );
     });
   }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoValidades',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoValidadesCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesCountGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'verificacaoValidadesCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesCountLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'verificacaoValidadesCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'verificacaoValidadesCount',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
 }
 
 extension DailyTasksQueryObject
@@ -735,6 +823,34 @@ extension DailyTasksQuerySortBy
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> sortByServiceDayDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serviceDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoValidades() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidades', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoValidadesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidades', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoValidadesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidadesCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoValidadesCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidadesCount', Sort.desc);
     });
   }
 }
@@ -843,6 +959,34 @@ extension DailyTasksQuerySortThenBy
       return query.addSortBy(r'serviceDay', Sort.desc);
     });
   }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoValidades() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidades', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoValidadesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidades', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoValidadesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidadesCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoValidadesCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoValidadesCount', Sort.desc);
+    });
+  }
 }
 
 extension DailyTasksQueryWhereDistinct
@@ -889,6 +1033,20 @@ extension DailyTasksQueryWhereDistinct
   QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByServiceDay() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'serviceDay');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByVerificacaoValidades() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'verificacaoValidades');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByVerificacaoValidadesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'verificacaoValidadesCount');
     });
   }
 }
@@ -943,6 +1101,20 @@ extension DailyTasksQueryProperty
   QueryBuilder<DailyTasks, DateTime, QQueryOperations> serviceDayProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'serviceDay');
+    });
+  }
+
+  QueryBuilder<DailyTasks, bool, QQueryOperations>
+  verificacaoValidadesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'verificacaoValidades');
+    });
+  }
+
+  QueryBuilder<DailyTasks, int, QQueryOperations>
+  verificacaoValidadesCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'verificacaoValidadesCount');
     });
   }
 }

@@ -32,6 +32,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         shiftId: id,
         events: events,
         worked: computeWorked(events),
+        paused: computePaused(events),
       ));
     }
     return out;
@@ -77,9 +78,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    end == null
-                        ? 'Em curso · ${_fmtDuration(s.worked)}'
-                        : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtDuration(s.worked)}',
+                    [
+                      end == null
+                          ? 'Em curso · ${_fmtDuration(s.worked)}'
+                          : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtDuration(s.worked)}',
+                      if (s.paused.inSeconds > 0)
+                        'Pausa: ${_fmtDuration(s.paused)}',
+                    ].join('\n'),
                   ),
                   trailing: Icon(
                     end == null ? Icons.timer : Icons.check_circle,
@@ -109,10 +114,12 @@ class _ShiftSummary {
     required this.shiftId,
     required this.events,
     required this.worked,
+    required this.paused,
   });
   final int shiftId;
   final List<ShiftEvent> events;
   final Duration worked;
+  final Duration paused;
 }
 
 IconData _icon(ShiftEventType t) {

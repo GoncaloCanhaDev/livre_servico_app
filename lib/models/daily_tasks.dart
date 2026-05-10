@@ -13,6 +13,8 @@ class DailyTasks {
   bool alteracoesPreco = false;
   int alteracoesPrecoCount = 0;
   bool preenchimentoQuadro = false;
+  bool verificacaoValidades = false;
+  int verificacaoValidadesCount = 0;
   bool kiwiFecho = false;
   bool limpezaMaquinaVoltas = false;
 }

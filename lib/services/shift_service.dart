@@ -164,3 +164,30 @@ Duration computeWorked(List<ShiftEvent> events, {DateTime? now}) {
   }
   return total;
 }
+
+Duration computePaused(List<ShiftEvent> events, {DateTime? now}) {
+  final reference = now ?? DateTime.now();
+  Duration total = Duration.zero;
+  DateTime? pausedSince;
+  for (final e in events) {
+    switch (e.type) {
+      case ShiftEventType.pause:
+        pausedSince = e.timestamp;
+        break;
+      case ShiftEventType.resume:
+        if (pausedSince != null) {
+          total += e.timestamp.difference(pausedSince);
+          pausedSince = null;
+        }
+        break;
+      case ShiftEventType.clockIn:
+      case ShiftEventType.clockOut:
+        pausedSince = null;
+        break;
+    }
+  }
+  if (pausedSince != null) {
+    total += reference.difference(pausedSince);
+  }
+  return total;
+}

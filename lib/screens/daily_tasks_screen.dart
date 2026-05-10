@@ -26,11 +26,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
   int _autoCount = 0;
 
   late final TextEditingController _alteracoesCtrl;
+  late final TextEditingController _validadesCtrl;
 
   @override
   void initState() {
     super.initState();
     _alteracoesCtrl = TextEditingController();
+    _validadesCtrl = TextEditingController();
     OpeningListService.instance.addListener(_reload);
     ReportListService.instance.addListener(_reload);
     VisualListService.instance.addListener(_reload);
@@ -47,6 +49,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
     AutoListService.instance.removeListener(_reload);
     DailyTasksService.instance.removeListener(_reload);
     _alteracoesCtrl.dispose();
+    _validadesCtrl.dispose();
     super.dispose();
   }
 
@@ -77,6 +80,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
       if (_alteracoesCtrl.text != '${tasks.alteracoesPrecoCount}') {
         _alteracoesCtrl.text =
             tasks.alteracoesPrecoCount == 0 ? '' : '${tasks.alteracoesPrecoCount}';
+      }
+      if (_validadesCtrl.text != '${tasks.verificacaoValidadesCount}') {
+        _validadesCtrl.text = tasks.verificacaoValidadesCount == 0
+            ? ''
+            : '${tasks.verificacaoValidadesCount}';
       }
     });
   }
@@ -139,7 +147,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 _saveTasks();
               },
             ),
-            _AlteracoesPrecoTask(
+            _CountTask(
+              label: 'Alterações de Preço',
               checked: tasks.alteracoesPreco,
               countController: _alteracoesCtrl,
               onCheckedChanged: (v) {
@@ -182,6 +191,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               note: _autoCount == 0
                   ? 'Sem listas automáticas hoje'
                   : '$_autoCount lista${_autoCount == 1 ? '' : 's'} hoje',
+            ),
+            _CountTask(
+              label: 'Verificação de Validades',
+              checked: tasks.verificacaoValidades,
+              countController: _validadesCtrl,
+              onCheckedChanged: (v) {
+                setState(() => tasks.verificacaoValidades = v);
+                _saveTasks();
+              },
+              onCountChanged: (n) {
+                tasks.verificacaoValidadesCount = n;
+                _saveTasks();
+              },
             ),
             _ManualTask(
               label: 'Kiwi Fecho',
@@ -290,14 +312,16 @@ class _AutoTask extends StatelessWidget {
   }
 }
 
-class _AlteracoesPrecoTask extends StatelessWidget {
-  const _AlteracoesPrecoTask({
+class _CountTask extends StatelessWidget {
+  const _CountTask({
+    required this.label,
     required this.checked,
     required this.countController,
     required this.onCheckedChanged,
     required this.onCountChanged,
   });
 
+  final String label;
   final bool checked;
   final TextEditingController countController;
   final ValueChanged<bool> onCheckedChanged;
@@ -318,7 +342,7 @@ class _AlteracoesPrecoTask extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                'Alterações de Preço',
+                label,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   decoration: checked ? TextDecoration.lineThrough : null,
@@ -382,6 +406,8 @@ class _HistorySheet extends StatelessWidget {
               if (t.alteracoesPreco)
                 'Alterações de Preço (${t.alteracoesPrecoCount})',
               if (t.preenchimentoQuadro) 'Preench. Quadro',
+              if (t.verificacaoValidades)
+                'Validades (${t.verificacaoValidadesCount})',
               if (t.kiwiFecho) 'Kiwi Fecho',
               if (t.limpezaMaquinaVoltas) 'Limpeza Máquina',
             ];
