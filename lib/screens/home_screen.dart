@@ -8,7 +8,7 @@ import 'daily_tasks_screen.dart';
 import 'historico_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
-import 'truck_history_screen.dart';
+import 'truck_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       label: const Text('Camiões'),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const TruckHistoryScreen(),
+                          builder: (_) => const TruckFormScreen(),
                         ));
                       },
                     ),
