@@ -12,6 +12,7 @@ class DailyTasks {
   bool kiwiAbertura = false;
   bool alteracoesPreco = false;
   int alteracoesPrecoCount = 0;
+  bool verificacaoTemperaturas = false;
   bool preenchimentoQuadro = false;
   bool verificacaoValidades = false;
   int verificacaoValidadesCount = 0;

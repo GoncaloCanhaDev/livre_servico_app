@@ -52,13 +52,18 @@ const DailyTasksSchema = CollectionSchema(
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
-    r'verificacaoValidades': PropertySchema(
+    r'verificacaoTemperaturas': PropertySchema(
       id: 7,
+      name: r'verificacaoTemperaturas',
+      type: IsarType.bool,
+    ),
+    r'verificacaoValidades': PropertySchema(
+      id: 8,
       name: r'verificacaoValidades',
       type: IsarType.bool,
     ),
     r'verificacaoValidadesCount': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'verificacaoValidadesCount',
       type: IsarType.long,
     ),
@@ -115,8 +120,9 @@ void _dailyTasksSerialize(
   writer.writeBool(offsets[4], object.limpezaMaquinaVoltas);
   writer.writeBool(offsets[5], object.preenchimentoQuadro);
   writer.writeDateTime(offsets[6], object.serviceDay);
-  writer.writeBool(offsets[7], object.verificacaoValidades);
-  writer.writeLong(offsets[8], object.verificacaoValidadesCount);
+  writer.writeBool(offsets[7], object.verificacaoTemperaturas);
+  writer.writeBool(offsets[8], object.verificacaoValidades);
+  writer.writeLong(offsets[9], object.verificacaoValidadesCount);
 }
 
 DailyTasks _dailyTasksDeserialize(
@@ -134,8 +140,9 @@ DailyTasks _dailyTasksDeserialize(
   object.limpezaMaquinaVoltas = reader.readBool(offsets[4]);
   object.preenchimentoQuadro = reader.readBool(offsets[5]);
   object.serviceDay = reader.readDateTime(offsets[6]);
-  object.verificacaoValidades = reader.readBool(offsets[7]);
-  object.verificacaoValidadesCount = reader.readLong(offsets[8]);
+  object.verificacaoTemperaturas = reader.readBool(offsets[7]);
+  object.verificacaoValidades = reader.readBool(offsets[8]);
+  object.verificacaoValidadesCount = reader.readLong(offsets[9]);
   return object;
 }
 
@@ -163,6 +170,8 @@ P _dailyTasksDeserializeProp<P>(
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -657,6 +666,18 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoTemperaturas',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   verificacaoValidadesEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -827,6 +848,20 @@ extension DailyTasksQuerySortBy
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoTemperaturas() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoTemperaturas', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByVerificacaoTemperaturasDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoTemperaturas', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   sortByVerificacaoValidades() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'verificacaoValidades', Sort.asc);
@@ -961,6 +996,20 @@ extension DailyTasksQuerySortThenBy
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoTemperaturas() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoTemperaturas', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByVerificacaoTemperaturasDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'verificacaoTemperaturas', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   thenByVerificacaoValidades() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'verificacaoValidades', Sort.asc);
@@ -1037,6 +1086,13 @@ extension DailyTasksQueryWhereDistinct
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByVerificacaoTemperaturas() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'verificacaoTemperaturas');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
   distinctByVerificacaoValidades() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'verificacaoValidades');
@@ -1101,6 +1157,13 @@ extension DailyTasksQueryProperty
   QueryBuilder<DailyTasks, DateTime, QQueryOperations> serviceDayProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'serviceDay');
+    });
+  }
+
+  QueryBuilder<DailyTasks, bool, QQueryOperations>
+  verificacaoTemperaturasProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'verificacaoTemperaturas');
     });
   }
 
