@@ -11,6 +11,7 @@ enum PalletCategory {
   bazar,
   leite,
   animal,
+  vasilhame,
 }
 
 extension PalletCategoryLabel on PalletCategory {
@@ -32,6 +33,8 @@ extension PalletCategoryLabel on PalletCategory {
         return 'Leite';
       case PalletCategory.animal:
         return 'Animal';
+      case PalletCategory.vasilhame:
+        return 'Vasilhame';
     }
   }
 }
