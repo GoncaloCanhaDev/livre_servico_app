@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
-import '../../models/auto_list.dart';
 import '../../services/auto_list_service.dart';
 import '../../theme.dart';
 
@@ -54,36 +52,15 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
     );
   }
 
-  Future<void> _openHistory() async {
-    final items = await AutoListService.instance.history();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => _HistorySheet(items: items),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Nova lista automática',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.history),
-                tooltip: 'Histórico',
-                onPressed: _openHistory,
-              ),
-            ],
+          const Text(
+            'Nova lista automática',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _NumberRow(
@@ -181,41 +158,6 @@ class _NumberRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HistorySheet extends StatelessWidget {
-  const _HistorySheet({required this.items});
-  final List<AutoList> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = DateFormat("d 'de' MMM, HH:mm", 'pt_PT');
-    return SafeArea(
-      child: items.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('Sem histórico.', textAlign: TextAlign.center),
-            )
-          : ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (_, i) {
-                final l = items[i];
-                return ListTile(
-                  leading: const Icon(Icons.bolt, color: AppColors.green),
-                  title: Text(fmt.format(l.createdAt)),
-                  subtitle: Text(
-                      'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-                  trailing: Text('${l.total}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                );
-              },
-            ),
     );
   }
 }

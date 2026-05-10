@@ -26,6 +26,13 @@ class TruckService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAll() async {
+    await _isar.writeTxn(() async {
+      await _isar.truckReceptions.clear();
+    });
+    notifyListeners();
+  }
+
   Future<List<TruckReception>> all() {
     return _isar.truckReceptions
         .where()

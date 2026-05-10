@@ -49,6 +49,20 @@ class OpeningListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAll() async {
+    await _isar.writeTxn(() async {
+      await _isar.openingLists.clear();
+    });
+    notifyListeners();
+  }
+
+  Future<void> delete(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.openingLists.delete(id);
+    });
+    notifyListeners();
+  }
+
   Future<List<OpeningList>> history() {
     return _isar.openingLists.where().sortByServiceDayDesc().findAll();
   }

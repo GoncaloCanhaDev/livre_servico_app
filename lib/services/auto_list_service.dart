@@ -26,6 +26,20 @@ class AutoListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAll() async {
+    await _isar.writeTxn(() async {
+      await _isar.autoLists.clear();
+    });
+    notifyListeners();
+  }
+
+  Future<void> delete(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.autoLists.delete(id);
+    });
+    notifyListeners();
+  }
+
   Future<List<AutoList>> history() {
     return _isar.autoLists.where().sortByCreatedAtDesc().findAll();
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/opening_list.dart';
 import '../../models/visual_list.dart';
@@ -77,37 +76,15 @@ class _VisualTabState extends State<VisualTab> {
     );
   }
 
-  Future<void> _openHistory() async {
-    final all = await VisualListService.instance.all();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _HistorySheet(all: all),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Nova lista visual',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.history),
-                tooltip: 'Histórico',
-                onPressed: _openHistory,
-              ),
-            ],
+          const Text(
+            'Nova lista visual',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _IntRow(
@@ -295,78 +272,6 @@ class _MoneyRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HistorySheet extends StatelessWidget {
-  const _HistorySheet({required this.all});
-  final List<VisualList> all;
-
-  @override
-  Widget build(BuildContext context) {
-    final dayFmt = DateFormat("EEEE, d 'de' MMM y", 'pt_PT');
-    final timeFmt = DateFormat('HH:mm');
-
-    final byDay = <DateTime, List<VisualList>>{};
-    for (final e in all) {
-      byDay.putIfAbsent(e.serviceDay, () => []).add(e);
-    }
-    final days = byDay.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      maxChildSize: 0.95,
-      builder: (_, scrollCtrl) {
-        if (days.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('Sem histórico.'),
-            ),
-          );
-        }
-        return ListView.builder(
-          controller: scrollCtrl,
-          padding: const EdgeInsets.all(12),
-          itemCount: days.length,
-          itemBuilder: (_, i) {
-            final day = days[i];
-            final entries = byDay[day]!;
-            final totalItens =
-                entries.fold(0, (s, e) => s + e.itensPicados);
-            final totalQ =
-                entries.fold(0, (s, e) => s + e.quebraCents);
-            final totalB =
-                entries.fold(0, (s, e) => s + e.beneficioCents);
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ExpansionTile(
-                initiallyExpanded: i == 0,
-                title: Text(dayFmt.format(day),
-                    style:
-                        const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(
-                  'Itens: $totalItens · Quebra: ${formatCents(totalQ)} € · Benefício: ${formatCents(totalB)} €',
-                ),
-                children: entries.map((e) {
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.visibility,
-                        color: AppColors.green),
-                    title: Text(timeFmt.format(e.createdAt)),
-                    subtitle: Text(
-                      'Itens: ${e.itensPicados} · Quebra: ${formatCents(e.quebraCents)} € · Benefício: ${formatCents(e.beneficioCents)} €',
-                    ),
-                  );
-                }).toList(),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

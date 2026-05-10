@@ -126,6 +126,20 @@ class ShiftService extends ChangeNotifier {
         .findAll();
   }
 
+  Future<void> deleteAllShifts() async {
+    await _isar.writeTxn(() async {
+      await _isar.shiftEvents.clear();
+    });
+    await _refresh();
+  }
+
+  Future<void> deleteShift(int shiftId) async {
+    await _isar.writeTxn(() async {
+      await _isar.shiftEvents.filter().shiftIdEqualTo(shiftId).deleteAll();
+    });
+    await _refresh();
+  }
+
   Future<List<int>> allShiftIdsDesc() async {
     final all = await _isar.shiftEvents
         .where()

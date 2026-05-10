@@ -52,6 +52,20 @@ class DailyTasksService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAll() async {
+    await _isar.writeTxn(() async {
+      await _isar.dailyTasks.clear();
+    });
+    notifyListeners();
+  }
+
+  Future<void> delete(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.dailyTasks.delete(id);
+    });
+    notifyListeners();
+  }
+
   Future<List<DailyTasks>> history() {
     return _isar.dailyTasks.where().sortByServiceDayDesc().findAll();
   }
