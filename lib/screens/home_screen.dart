@@ -68,6 +68,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final worked = computeWorked(_todayEvents);
     final paused = computePaused(_todayEvents);
 
+    bool isPauseOverLimit = false;
+    if (status == WorkStatus.paused && svc.lastEvent != null) {
+      final pauseDuration = DateTime.now().difference(svc.lastEvent!.timestamp);
+      if (svc.lastEvent!.type == ShiftEventType.lunch && pauseDuration.inMinutes >= 60) {
+        isPauseOverLimit = true;
+      } else if (svc.lastEvent!.type == ShiftEventType.pause && pauseDuration.inMinutes >= 15) {
+        isPauseOverLimit = true;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Livre Serviço Companion'),
@@ -93,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 status: status,
                 worked: _fmtDuration(worked),
                 paused: _fmtDuration(paused),
+                isPauseOverLimit: isPauseOverLimit,
+                isLunch: svc.lastEvent?.type == ShiftEventType.lunch,
               ),
               const SizedBox(height: 24),
               ..._buildActions(status),
@@ -196,7 +208,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton.icon(
             icon: const Icon(Icons.pause),
             label: const Text('Pausar'),
-            onPressed: svc.pause,
+            onPressed: () async {
+              final isLunch = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Tipo de Pausa'),
+                  content: const Text('Vais fazer uma pausa normal (15m) ou de almoço (60m)?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Pausa'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Almoço'),
+                    ),
+                  ],
+                ),
+              );
+              if (isLunch != null) {
+                svc.pause(isLunch: isLunch);
+              }
+            },
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -229,19 +262,26 @@ class _StatusCard extends StatelessWidget {
     required this.status,
     required this.worked,
     required this.paused,
+    this.isPauseOverLimit = false,
+    this.isLunch = false,
   });
 
   final WorkStatus status;
   final String worked;
   final String paused;
+  final bool isPauseOverLimit;
+  final bool isLunch;
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       WorkStatus.idle => ('Fora de serviço', AppColors.black),
       WorkStatus.working => ('Em serviço', AppColors.green),
-      WorkStatus.paused => ('Em pausa', AppColors.greenDark),
+      WorkStatus.paused => (isLunch ? 'Em almoço' : 'Em pausa', AppColors.greenDark),
     };
+
+    final pulse = isPauseOverLimit && DateTime.now().second % 2 == 0;
+    final pauseColor = pulse ? Colors.redAccent : AppColors.greenDark;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -274,11 +314,11 @@ class _StatusCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               paused,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
-                color: AppColors.greenDark,
-                fontFeatures: [FontFeature.tabularFigures()],
+                color: pauseColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
             const Text('Tempo em pausa',

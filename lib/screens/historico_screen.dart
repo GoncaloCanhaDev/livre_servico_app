@@ -311,7 +311,9 @@ class _ShiftsTabState extends State<_ShiftsTab> {
               deletePromptName: 'turno',
               onDelete: () async {
                 await ShiftService.instance.deleteShift(r.events.first.shiftId);
-                setState(() => _future = _load());
+                setState(() {
+                  _future = _load();
+                });
               },
               onSendWhatsApp: (ctx) async {
                 final startStr = timeFmt.format(start);
@@ -370,6 +372,8 @@ IconData _shiftIcon(ShiftEventType t) {
       return Icons.login;
     case ShiftEventType.pause:
       return Icons.pause_circle;
+    case ShiftEventType.lunch:
+      return Icons.restaurant;
     case ShiftEventType.resume:
       return Icons.play_circle;
     case ShiftEventType.clockOut:
@@ -383,6 +387,8 @@ String _shiftLabel(ShiftEventType t) {
       return 'Início de turno';
     case ShiftEventType.pause:
       return 'Pausa';
+    case ShiftEventType.lunch:
+      return 'Almoço';
     case ShiftEventType.resume:
       return 'Retoma';
     case ShiftEventType.clockOut:
