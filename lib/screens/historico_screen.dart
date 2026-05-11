@@ -207,7 +207,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
   }
 
   void _reload() {
-    setState(() => _future = _load());
+    setState(() { _future = _load(); });
   }
 
   Future<List<_ShiftRow>> _load() async {
@@ -695,22 +695,56 @@ class _VisualTabState extends State<_VisualTab> {
             final tI = entries.fold(0, (s, e) => s + e.itensPicados);
             final tQ = entries.fold(0, (s, e) => s + e.quebraCents);
             final tB = entries.fold(0, (s, e) => s + e.beneficioCents);
+            final tTotal = tB - tQ;
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
                 initiallyExpanded: i == 0,
                 title: Text(dayFmt.format(day),
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(
-                    'Itens: $tI · Quebra: ${formatCents(tQ)} € · Benefício: ${formatCents(tB)} €'),
+                subtitle: Text.rich(TextSpan(
+                  style: const TextStyle(fontSize: 12),
+                  children: [
+                    TextSpan(text: 'Itens: $tI · Total: '),
+                    TextSpan(
+                      text: '${formatCents(tTotal)} €',
+                      style: TextStyle(
+                        color: tTotal >= 0 ? AppColors.green : Colors.redAccent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                )),
                 children: entries.map((e) {
+                  final eTotal = e.beneficioCents - e.quebraCents;
                   return ListTile(
                     dense: true,
                     leading:
                         const Icon(Icons.visibility, color: AppColors.green),
                     title: Text(timeFmt.format(e.createdAt)),
-                    subtitle: Text(
-                        'Itens: ${e.itensPicados} · Quebra: ${formatCents(e.quebraCents)} € · Benefício: ${formatCents(e.beneficioCents)} €'),
+                    subtitle: Text.rich(TextSpan(
+                      style: const TextStyle(fontSize: 12),
+                      children: [
+                        TextSpan(text: 'Itens: ${e.itensPicados} · Quebra: '),
+                        TextSpan(
+                          text: '-${formatCents(e.quebraCents)} €',
+                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                        ),
+                        const TextSpan(text: ' · Benefício: '),
+                        TextSpan(
+                          text: '${formatCents(e.beneficioCents)} €',
+                          style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w600),
+                        ),
+                        const TextSpan(text: ' · Total: '),
+                        TextSpan(
+                          text: '${formatCents(eTotal)} €',
+                          style: TextStyle(
+                            color: eTotal >= 0 ? AppColors.green : Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )),
                     onLongPress: () async {
                       if (await _confirmDelete(context, 'entrada visual')) {
                         await VisualListService.instance.delete(e.id);

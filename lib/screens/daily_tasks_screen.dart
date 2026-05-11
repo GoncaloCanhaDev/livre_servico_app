@@ -274,11 +274,11 @@ class _AutoTask extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Icon(
-          checked ? Icons.check_box : Icons.check_box_outline_blank,
-          color: checked ? AppColors.green : Colors.black38,
-        ),
+      child: CheckboxListTile(
+        value: checked,
+        onChanged: null,
+        controlAffinity: ListTileControlAffinity.leading,
+        activeColor: AppColors.green,
         title: Text(
           label,
           style: TextStyle(
@@ -322,43 +322,35 @@ class _CountTask extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            Checkbox(
-              value: checked,
-              onChanged: (v) => onCheckedChanged(v ?? false),
-              activeColor: AppColors.green,
+      child: CheckboxListTile(
+        value: checked,
+        onChanged: (v) => onCheckedChanged(v ?? false),
+        controlAffinity: ListTileControlAffinity.leading,
+        activeColor: AppColors.green,
+        title: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            decoration: checked ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        secondary: SizedBox(
+          width: 90,
+          child: TextField(
+            controller: countController,
+            enabled: !checked,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold),
+            decoration: const InputDecoration(
+              hintText: '0',
+              border: OutlineInputBorder(),
+              isDense: true,
             ),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  decoration: checked ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 90,
-              child: TextField(
-                controller: countController,
-                enabled: !checked,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
-              ),
-            ),
-          ],
+            onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
+          ),
         ),
       ),
     );
