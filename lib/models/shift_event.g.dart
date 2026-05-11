@@ -130,14 +130,16 @@ P _shiftEventDeserializeProp<P>(
 const _ShiftEventtypeEnumValueMap = {
   'clockIn': 0,
   'pause': 1,
-  'resume': 2,
-  'clockOut': 3,
+  'lunch': 2,
+  'resume': 3,
+  'clockOut': 4,
 };
 const _ShiftEventtypeValueEnumMap = {
   0: ShiftEventType.clockIn,
   1: ShiftEventType.pause,
-  2: ShiftEventType.resume,
-  3: ShiftEventType.clockOut,
+  2: ShiftEventType.lunch,
+  3: ShiftEventType.resume,
+  4: ShiftEventType.clockOut,
 };
 
 Id _shiftEventGetId(ShiftEvent object) {

@@ -5,6 +5,7 @@ part 'shift_event.g.dart';
 enum ShiftEventType {
   clockIn,
   pause,
+  lunch,
   resume,
   clockOut,
 }

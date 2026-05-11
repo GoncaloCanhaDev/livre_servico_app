@@ -63,7 +63,7 @@ class ShiftService extends ChangeNotifier {
       _currentShiftId = null;
     } else {
       _currentShiftId = last.shiftId;
-      _status = last.type == ShiftEventType.pause
+      _status = (last.type == ShiftEventType.pause || last.type == ShiftEventType.lunch)
           ? WorkStatus.paused
           : WorkStatus.working;
     }
@@ -84,12 +84,12 @@ class ShiftService extends ChangeNotifier {
     await _refresh();
   }
 
-  Future<void> pause() async {
+  Future<void> pause({bool isLunch = false}) async {
     if (_status != WorkStatus.working || _currentShiftId == null) return;
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(ShiftEvent.create(
         timestamp: DateTime.now(),
-        type: ShiftEventType.pause,
+        type: isLunch ? ShiftEventType.lunch : ShiftEventType.pause,
         shiftId: _currentShiftId!,
       ));
     });
@@ -167,6 +167,7 @@ Duration computeWorked(List<ShiftEvent> events, {DateTime? now}) {
         activeSince = e.timestamp;
         break;
       case ShiftEventType.pause:
+      case ShiftEventType.lunch:
       case ShiftEventType.clockOut:
         if (activeSince != null) {
           total += e.timestamp.difference(activeSince);
@@ -188,6 +189,7 @@ Duration computePaused(List<ShiftEvent> events, {DateTime? now}) {
   for (final e in events) {
     switch (e.type) {
       case ShiftEventType.pause:
+      case ShiftEventType.lunch:
         pausedSince = e.timestamp;
         break;
       case ShiftEventType.resume:
