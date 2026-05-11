@@ -68,6 +68,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
           ),
+          const Divider(),
+          ListTile(
+            title: const Text('Objetivo Lista Visual',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Itens picados necessários por dia.'),
+            trailing: Text(SettingsService.instance.visualGoal.toString(),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            onTap: () async {
+              final ctrl = TextEditingController(
+                  text: SettingsService.instance.visualGoal.toString());
+              final val = await showDialog<int>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Objetivo Diário'),
+                  content: TextField(
+                    controller: ctrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Itens picados',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)),
+                      child: const Text('Guardar'),
+                    ),
+                  ],
+                ),
+              );
+              if (val != null && val > 0) {
+                SettingsService.instance.setVisualGoal(val);
+              }
+            },
+          ),
         ],
       ),
     );

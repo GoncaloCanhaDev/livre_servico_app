@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 
 import '../models/auto_list.dart';
 import 'shift_service.dart';
+import 'task_notification_service.dart';
 
 class AutoListService extends ChangeNotifier {
   AutoListService._();
@@ -23,13 +24,26 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(entry);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
+  }
+
+  Future<List<AutoList>> entriesForServiceDay(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day, 5);
+    final end = start.add(const Duration(days: 1));
+    return _isar.autoLists
+        .filter()
+        .createdAtGreaterThan(start)
+        .and()
+        .createdAtLessThan(end)
+        .findAll();
   }
 
   Future<void> deleteAll() async {
     await _isar.writeTxn(() async {
       await _isar.autoLists.clear();
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -37,6 +51,7 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.delete(id);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

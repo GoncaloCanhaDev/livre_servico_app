@@ -6,11 +6,13 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
-import '../models/report_list.dart';
-import '../models/visual_list.dart';
 import '../models/product.dart';
+import '../models/report_list.dart';
 import '../models/shift_event.dart';
 import '../models/truck_reception.dart';
+import '../models/visual_list.dart';
+import 'notification_service.dart';
+import 'task_notification_service.dart';
 
 enum WorkStatus { idle, working, paused }
 
@@ -81,18 +83,31 @@ class ShiftService extends ChangeNotifier {
         shiftId: shiftId,
       ));
     });
+    await NotificationService.instance.scheduleStraightWorkReminders(Duration.zero);
+    await NotificationService.instance.scheduleTotalWorkReminders(now);
+    await TaskNotificationService.instance.rescheduleAll();
+    
     await _refresh();
   }
 
   Future<void> pause({bool isLunch = false}) async {
     if (_status != WorkStatus.working || _currentShiftId == null) return;
+    
+    final pauseTime = DateTime.now();
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(ShiftEvent.create(
-        timestamp: DateTime.now(),
+        timestamp: pauseTime,
         type: isLunch ? ShiftEventType.lunch : ShiftEventType.pause,
         shiftId: _currentShiftId!,
       ));
     });
+    
+    await NotificationService.instance.schedulePauseReminders(
+      isLunch: isLunch,
+      pauseTime: pauseTime,
+    );
+    await NotificationService.instance.cancelStraightWorkReminders();
+    
     await _refresh();
   }
 
@@ -105,6 +120,12 @@ class ShiftService extends ChangeNotifier {
         shiftId: _currentShiftId!,
       ));
     });
+    
+    await NotificationService.instance.cancelPauseReminders();
+    final events = await eventsForShift(_currentShiftId!);
+    final worked = computeWorked(events);
+    await NotificationService.instance.scheduleStraightWorkReminders(worked);
+    
     await _refresh();
   }
 
@@ -117,6 +138,11 @@ class ShiftService extends ChangeNotifier {
         shiftId: _currentShiftId!,
       ));
     });
+    await NotificationService.instance.cancelPauseReminders();
+    await NotificationService.instance.cancelStraightWorkReminders();
+    await NotificationService.instance.cancelTotalWorkReminders();
+    await TaskNotificationService.instance.cancelAll();
+    
     await _refresh();
   }
 
