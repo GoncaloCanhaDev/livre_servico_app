@@ -12,6 +12,21 @@ enum PalletCategory {
   leite,
   animal,
   vasilhame,
+  congelados,
+
+  /// Categories available for truck reception (excludes vasilhame).
+  ;
+  static const truckCategories = [
+    congelados,
+    frescosCharcutaria,
+    frescosIogurtes,
+    dph,
+    bebidas,
+    mercearia,
+    bazar,
+    leite,
+    animal,
+  ];
 }
 
 extension PalletCategoryLabel on PalletCategory {
@@ -35,6 +50,8 @@ extension PalletCategoryLabel on PalletCategory {
         return 'Animal';
       case PalletCategory.vasilhame:
         return 'Vasilhame';
+      case PalletCategory.congelados:
+        return 'Congelados';
     }
   }
 }

@@ -1542,6 +1542,7 @@ const _PalletCountcategoryEnumValueMap = {
   'leite': 6,
   'animal': 7,
   'vasilhame': 8,
+  'congelados': 9,
 };
 const _PalletCountcategoryValueEnumMap = {
   0: PalletCategory.frescosCharcutaria,
@@ -1553,6 +1554,7 @@ const _PalletCountcategoryValueEnumMap = {
   6: PalletCategory.leite,
   7: PalletCategory.animal,
   8: PalletCategory.vasilhame,
+  9: PalletCategory.congelados,
 };
 
 extension PalletCountQueryFilter
