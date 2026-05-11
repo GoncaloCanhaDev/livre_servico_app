@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auto_list_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -42,6 +43,16 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
     await AutoListService.instance
         .add(congelados: c, opls: o, naoPereciveis: n);
     if (!mounted) return;
+
+    final total = c + o + n;
+    final msg = '📦 Lista Automática\n'
+        'Congelados: $c\n'
+        'OPLS: $o\n'
+        'Não Perecíveis: $n\n'
+        'Total: $total';
+    await WhatsAppService.sendWithConfirm(context, msg);
+    if (!mounted) return;
+
     setState(() {
       _congelados.clear();
       _opls.clear();

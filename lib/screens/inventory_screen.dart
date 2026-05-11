@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/inventory.dart';
 import '../models/visual_list.dart';
 import '../services/inventory_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -46,6 +47,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ..createdAt = DateTime.now();
 
     await InventoryService.instance.save(inv);
+    if (!mounted) return;
+
+    final msg = '📦 Inventário: $name\n'
+        'Valor: ${formatCents(cents)} €';
+    await WhatsAppService.sendWithConfirm(context, msg);
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(

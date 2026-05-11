@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/opening_list.dart';
 import '../../services/opening_list_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -85,6 +86,15 @@ class _AberturaTabState extends State<AberturaTab> {
     if (ok != true) return;
     await _persistField();
     await OpeningListService.instance.finalize(list);
+
+    if (mounted) {
+      final msg = '📋 Lista de Abertura\n'
+          'Congelados: ${list.congelados}\n'
+          'OPLS: ${list.opls}\n'
+          'Não Perecíveis: ${list.naoPereciveis}\n'
+          'Total: ${list.total}';
+      await WhatsAppService.sendWithConfirm(context, msg);
+    }
     if (mounted) _load();
   }
 

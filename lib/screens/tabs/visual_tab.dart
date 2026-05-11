@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/opening_list.dart';
 import '../../models/visual_list.dart';
 import '../../services/visual_list_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 
 class VisualTab extends StatefulWidget {
@@ -66,6 +67,16 @@ class _VisualTabState extends State<VisualTab> {
       beneficioCents: b,
     );
     if (!mounted) return;
+
+    final total = b - q;
+    final msg = '👁 Lista Visual\n'
+        'Itens Picados: $i\n'
+        'Quebra: -${formatCents(q)} €\n'
+        'Benefício: ${formatCents(b)} €\n'
+        'Total: ${formatCents(total)} €';
+    await WhatsAppService.sendWithConfirm(context, msg);
+    if (!mounted) return;
+
     setState(() {
       _itens.clear();
       _quebra.clear();
