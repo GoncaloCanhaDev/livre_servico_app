@@ -9,6 +9,7 @@ import '../services/daily_tasks_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/report_list_service.dart';
 import '../services/visual_list_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
 
 class DailyTasksScreen extends StatefulWidget {
@@ -125,18 +126,26 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Abertura',
               checked: tasks.kiwiAbertura,
-              onChanged: (v) {
+              onChanged: (v) async {
                 setState(() => tasks.kiwiAbertura = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(
+                      context, '✅ Tarefa concluída: Kiwi Abertura');
+                }
               },
             ),
             _CountTask(
               label: 'Alterações de Preço',
               checked: tasks.alteracoesPreco,
               countController: _alteracoesCtrl,
-              onCheckedChanged: (v) {
+              onCheckedChanged: (v) async {
                 setState(() => tasks.alteracoesPreco = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(context,
+                      '✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})');
+                }
               },
               onCountChanged: (n) {
                 tasks.alteracoesPrecoCount = n;
@@ -146,9 +155,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Verificação de Temperaturas',
               checked: tasks.verificacaoTemperaturas,
-              onChanged: (v) {
+              onChanged: (v) async {
                 setState(() => tasks.verificacaoTemperaturas = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(
+                      context, '✅ Tarefa concluída: Verificação de Temperaturas');
+                }
               },
             ),
             _AutoTask(
@@ -166,9 +179,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Preenchimento do Quadro',
               checked: tasks.preenchimentoQuadro,
-              onChanged: (v) {
+              onChanged: (v) async {
                 setState(() => tasks.preenchimentoQuadro = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(
+                      context, '✅ Tarefa concluída: Preenchimento do Quadro');
+                }
               },
             ),
             _AutoTask(
@@ -187,9 +204,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               label: 'Verificação de Validades',
               checked: tasks.verificacaoValidades,
               countController: _validadesCtrl,
-              onCheckedChanged: (v) {
+              onCheckedChanged: (v) async {
                 setState(() => tasks.verificacaoValidades = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(context,
+                      '✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})');
+                }
               },
               onCountChanged: (n) {
                 tasks.verificacaoValidadesCount = n;
@@ -199,9 +220,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Fecho',
               checked: tasks.kiwiFecho,
-              onChanged: (v) {
+              onChanged: (v) async {
                 setState(() => tasks.kiwiFecho = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(
+                      context, '✅ Tarefa concluída: Kiwi Fecho');
+                }
               },
             ),
             _ManualTask(
@@ -209,9 +234,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               checked: tasks.limpezaMaquinaVoltas,
               enabled: isSaturday,
               note: isSaturday ? null : 'Apenas ao sábado',
-              onChanged: (v) {
+              onChanged: (v) async {
                 setState(() => tasks.limpezaMaquinaVoltas = v);
-                _saveTasks();
+                await _saveTasks();
+                if (v && context.mounted) {
+                  await WhatsAppService.sendWithConfirm(
+                      context, '✅ Tarefa concluída: Limpeza da Máquina Voltas');
+                }
               },
             ),
           ],

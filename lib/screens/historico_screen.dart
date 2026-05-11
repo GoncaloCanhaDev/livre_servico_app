@@ -17,6 +17,7 @@ import '../services/report_list_service.dart';
 import '../services/shift_service.dart';
 import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
 
 class HistoricoScreen extends StatelessWidget {
@@ -190,6 +191,56 @@ Widget _emptyMsg(String msg) => Center(
       ),
     );
 
+class _HistoryDismissible extends StatelessWidget {
+  const _HistoryDismissible({
+    required this.itemKey,
+    required this.child,
+    required this.onDelete,
+    required this.onSendWhatsApp,
+    required this.deletePromptName,
+  });
+
+  final Key itemKey;
+  final Widget child;
+  final Future<void> Function() onDelete;
+  final Future<void> Function(BuildContext) onSendWhatsApp;
+  final String deletePromptName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: itemKey,
+      background: Container(
+        color: AppColors.green,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        child: const Icon(Icons.send, color: Colors.white),
+      ),
+      secondaryBackground: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          // Swipe right -> Send WhatsApp
+          await onSendWhatsApp(context);
+          return false;
+        } else if (dir == DismissDirection.endToStart) {
+          // Swipe left -> Delete
+          if (await _confirmDelete(context, deletePromptName)) {
+            await onDelete();
+            return true;
+          }
+        }
+        return false;
+      },
+      child: child,
+    );
+  }
+}
+
 // --- Turnos ---
 
 class _ShiftsTab extends StatefulWidget {
@@ -255,46 +306,48 @@ class _ShiftsTabState extends State<_ShiftsTab> {
             final end = r.events.last.type == ShiftEventType.clockOut
                 ? r.events.last.timestamp
                 : null;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ExpansionTile(
-                title: Text(dateFmt.format(start),
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text([
-                  end == null
-                      ? 'Em curso · ${_fmtH(r.worked)}'
-                      : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(r.worked)}',
-                  if (r.paused.inSeconds > 0) 'Pausa: ${_fmtH(r.paused)}',
-                ].join('\n')),
-                trailing: Icon(
-                  end == null ? Icons.timer : Icons.check_circle,
-                  color: AppColors.green,
-                ),
-                children: [
-                  ...r.events.map((e) => ListTile(
-                        dense: true,
-                        leading: Icon(_shiftIcon(e.type),
-                            size: 20, color: AppColors.green),
-                        title: Text(_shiftLabel(e.type)),
-                        trailing: Text(timeFmt.format(e.timestamp)),
-                      )),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        if (await _confirmDelete(context, 'turno')) {
-                          await ShiftService.instance
-                              .deleteShift(r.events.first.shiftId);
-                          setState(() => _future = _load());
-                        }
-                      },
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.red),
-                      label: const Text('Apagar',
-                          style: TextStyle(color: Colors.red)),
-                    ),
+            return _HistoryDismissible(
+              itemKey: ValueKey(r.events.first.id), // Using first event ID as shift key
+              deletePromptName: 'turno',
+              onDelete: () async {
+                await ShiftService.instance.deleteShift(r.events.first.shiftId);
+                setState(() => _future = _load());
+              },
+              onSendWhatsApp: (ctx) async {
+                final startStr = timeFmt.format(start);
+                final endStr = end == null ? 'Em curso' : timeFmt.format(end);
+                final msg = '🕒 Turno: ${dateFmt.format(start)}\n'
+                    'Início: $startStr\n'
+                    'Fim: $endStr\n'
+                    'Trabalhado: ${_fmtH(r.worked)}\n'
+                    'Pausa: ${_fmtH(r.paused)}';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ExpansionTile(
+                  title: Text(dateFmt.format(start),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text([
+                    end == null
+                        ? 'Em curso · ${_fmtH(r.worked)}'
+                        : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(r.worked)}',
+                    if (r.paused.inSeconds > 0) 'Pausa: ${_fmtH(r.paused)}',
+                  ].join('\n')),
+                  trailing: Icon(
+                    end == null ? Icons.timer : Icons.check_circle,
+                    color: AppColors.green,
                   ),
-                ],
+                  children: [
+                    ...r.events.map((e) => ListTile(
+                          dense: true,
+                          leading: Icon(_shiftIcon(e.type),
+                              size: 20, color: AppColors.green),
+                          title: Text(_shiftLabel(e.type)),
+                          trailing: Text(timeFmt.format(e.timestamp)),
+                        )),
+                  ],
+                ),
               ),
             );
           },
@@ -387,50 +440,58 @@ class _TrucksTabState extends State<_TrucksTab> {
               if (t.licensePlate != null) t.licensePlate!,
               if (t.supplier != null) t.supplier!,
             ];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ExpansionTile(
-                title: Text(dateFmt.format(t.arrivalTime),
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text([
-                  if (parts.isNotEmpty) parts.join(' · '),
-                  '${t.totalPallets} paletes · ${t.totalMistas} mistas',
-                ].join('\n')),
-                trailing:
-                    const Icon(Icons.local_shipping, color: AppColors.green),
-                children: [
-                  ...t.pallets.map((p) => ListTile(
-                        dense: true,
-                        title: Text(p.category.label),
-                        trailing: Text('${p.total} (${p.mistas} mistas)',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600)),
-                      )),
-                  if (t.notes != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('Notas: ${t.notes}',
-                            style: const TextStyle(
-                                fontStyle: FontStyle.italic)),
+            return _HistoryDismissible(
+              itemKey: ValueKey(t.id),
+              deletePromptName: 'camião',
+              onDelete: () async {
+                await TruckService.instance.delete(t.id);
+              },
+              onSendWhatsApp: (ctx) async {
+                final dateFmtWa = DateFormat("d/MM/y, HH:mm", 'pt_PT');
+                final lines = StringBuffer();
+                lines.writeln('🚛 Receção de Camião');
+                lines.writeln('Hora: ${dateFmtWa.format(t.arrivalTime)}');
+                if (t.licensePlate != null) lines.writeln('Matrícula: ${t.licensePlate}');
+                if (t.supplier != null) lines.writeln('Fornecedor: ${t.supplier}');
+                for (final p in t.pallets) {
+                  final mista = p.mistas > 0 ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})' : '';
+                  lines.writeln('${p.category.label}: ${p.total}$mista');
+                }
+                lines.writeln('Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas');
+                if (t.notes != null) lines.writeln('Notas: ${t.notes}');
+                await WhatsAppService.sendWithConfirm(ctx, lines.toString().trim());
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ExpansionTile(
+                  title: Text(dateFmt.format(t.arrivalTime),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text([
+                    if (parts.isNotEmpty) parts.join(' · '),
+                    '${t.totalPallets} paletes · ${t.totalMistas} mistas',
+                  ].join('\n')),
+                  trailing:
+                      const Icon(Icons.local_shipping, color: AppColors.green),
+                  children: [
+                    ...t.pallets.map((p) => ListTile(
+                          dense: true,
+                          title: Text(p.category.label),
+                          trailing: Text('${p.total} (${p.mistas} mistas)',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600)),
+                        )),
+                    if (t.notes != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Notas: ${t.notes}',
+                              style: const TextStyle(
+                                  fontStyle: FontStyle.italic)),
+                        ),
                       ),
-                    ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        if (await _confirmDelete(context, 'camião')) {
-                          await TruckService.instance.delete(t.id);
-                        }
-                      },
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.red),
-                      label: const Text('Apagar',
-                          style: TextStyle(color: Colors.red)),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -486,22 +547,32 @@ class _OpeningTabState extends State<_OpeningTab> {
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return ListTile(
-              leading: Icon(
-                l.isFinalized ? Icons.check_circle : Icons.edit,
-                color: l.isFinalized ? AppColors.green : Colors.black45,
-              ),
-              title: Text(dayFmt.format(l.serviceDay)),
-              subtitle: Text(
-                  'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-              trailing: Text('${l.total}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              onLongPress: () async {
-                if (await _confirmDelete(context, 'lista de abertura')) {
-                  await OpeningListService.instance.delete(l.id);
-                }
+            return _HistoryDismissible(
+              itemKey: ValueKey(l.id),
+              deletePromptName: 'lista de abertura',
+              onDelete: () async {
+                await OpeningListService.instance.delete(l.id);
               },
+              onSendWhatsApp: (ctx) async {
+                final msg = '📋 Lista de Abertura (${dayFmt.format(l.serviceDay)})\n'
+                    'Congelados: ${l.congelados}\n'
+                    'OPLS: ${l.opls}\n'
+                    'Não Perecíveis: ${l.naoPereciveis}\n'
+                    'Total: ${l.total}';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: ListTile(
+                leading: Icon(
+                  l.isFinalized ? Icons.check_circle : Icons.edit,
+                  color: l.isFinalized ? AppColors.green : Colors.black45,
+                ),
+                title: Text(dayFmt.format(l.serviceDay)),
+                subtitle: Text(
+                    'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
+                trailing: Text('${l.total}',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
             );
           },
         );
@@ -556,19 +627,29 @@ class _AutoTabState extends State<_AutoTab> {
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return ListTile(
-              leading: const Icon(Icons.bolt, color: AppColors.green),
-              title: Text(fmt.format(l.createdAt)),
-              subtitle: Text(
-                  'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-              trailing: Text('${l.total}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              onLongPress: () async {
-                if (await _confirmDelete(context, 'lista automática')) {
-                  await AutoListService.instance.delete(l.id);
-                }
+            return _HistoryDismissible(
+              itemKey: ValueKey(l.id),
+              deletePromptName: 'lista automática',
+              onDelete: () async {
+                await AutoListService.instance.delete(l.id);
               },
+              onSendWhatsApp: (ctx) async {
+                final msg = '📦 Lista Automática (${fmt.format(l.createdAt)})\n'
+                    'Congelados: ${l.congelados}\n'
+                    'OPLS: ${l.opls}\n'
+                    'Não Perecíveis: ${l.naoPereciveis}\n'
+                    'Total: ${l.total}';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: ListTile(
+                leading: const Icon(Icons.bolt, color: AppColors.green),
+                title: Text(fmt.format(l.createdAt)),
+                subtitle: Text(
+                    'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
+                trailing: Text('${l.total}',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
             );
           },
         );
@@ -623,22 +704,33 @@ class _ReportTabState extends State<_ReportTab> {
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return ListTile(
-              leading: Icon(
-                l.isFinalized ? Icons.check_circle : Icons.edit,
-                color: l.isFinalized ? AppColors.green : Colors.black45,
-              ),
-              title: Text(dayFmt.format(l.serviceDay)),
-              subtitle: Text(
-                  'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}'),
-              trailing: Text('${l.total}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              onLongPress: () async {
-                if (await _confirmDelete(context, 'relatório')) {
-                  await ReportListService.instance.delete(l.id);
-                }
+            return _HistoryDismissible(
+              itemKey: ValueKey(l.id),
+              deletePromptName: 'relatório',
+              onDelete: () async {
+                await ReportListService.instance.delete(l.id);
               },
+              onSendWhatsApp: (ctx) async {
+                final msg = '📊 Relatório (${dayFmt.format(l.serviceDay)})\n'
+                    'Dias s/ vendas: ${l.diasSemVendas}\n'
+                    'Regularizações: ${l.regularizacoes}\n'
+                    'Massiva: ${l.massiva}\n'
+                    'Repetidos: ${l.repetidos}\n'
+                    'Total: ${l.total}';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: ListTile(
+                leading: Icon(
+                  l.isFinalized ? Icons.check_circle : Icons.edit,
+                  color: l.isFinalized ? AppColors.green : Colors.black45,
+                ),
+                title: Text(dayFmt.format(l.serviceDay)),
+                subtitle: Text(
+                    'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}'),
+                trailing: Text('${l.total}',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
             );
           },
         );
@@ -725,39 +817,49 @@ class _VisualTabState extends State<_VisualTab> {
                 )),
                 children: entries.map((e) {
                   final eTotal = e.beneficioCents - e.quebraCents;
-                  return ListTile(
-                    dense: true,
-                    leading:
-                        const Icon(Icons.visibility, color: AppColors.green),
-                    title: Text(timeFmt.format(e.createdAt)),
-                    subtitle: Text.rich(TextSpan(
-                      style: const TextStyle(fontSize: 12),
-                      children: [
-                        TextSpan(text: 'Itens: ${e.itensPicados} · Quebra: '),
-                        TextSpan(
-                          text: '-${formatCents(e.quebraCents)} €',
-                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
-                        ),
-                        const TextSpan(text: ' · Benefício: '),
-                        TextSpan(
-                          text: '${formatCents(e.beneficioCents)} €',
-                          style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w600),
-                        ),
-                        const TextSpan(text: ' · Total: '),
-                        TextSpan(
-                          text: '${formatCents(eTotal)} €',
-                          style: TextStyle(
-                            color: eTotal >= 0 ? AppColors.green : Colors.redAccent,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    )),
-                    onLongPress: () async {
-                      if (await _confirmDelete(context, 'entrada visual')) {
-                        await VisualListService.instance.delete(e.id);
-                      }
+                  return _HistoryDismissible(
+                    itemKey: ValueKey(e.id),
+                    deletePromptName: 'entrada visual',
+                    onDelete: () async {
+                      await VisualListService.instance.delete(e.id);
                     },
+                    onSendWhatsApp: (ctx) async {
+                      final msg = '👁 Lista Visual (${timeFmt.format(e.createdAt)})\n'
+                          'Itens Picados: ${e.itensPicados}\n'
+                          'Quebra: -${formatCents(e.quebraCents)} €\n'
+                          'Benefício: ${formatCents(e.beneficioCents)} €\n'
+                          'Total: ${formatCents(eTotal)} €';
+                      await WhatsAppService.sendWithConfirm(ctx, msg);
+                    },
+                    child: ListTile(
+                      dense: true,
+                      leading:
+                          const Icon(Icons.visibility, color: AppColors.green),
+                      title: Text(timeFmt.format(e.createdAt)),
+                      subtitle: Text.rich(TextSpan(
+                        style: const TextStyle(fontSize: 12),
+                        children: [
+                          TextSpan(text: 'Itens: ${e.itensPicados} · Quebra: '),
+                          TextSpan(
+                            text: '-${formatCents(e.quebraCents)} €',
+                            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                          ),
+                          const TextSpan(text: ' · Benefício: '),
+                          TextSpan(
+                            text: '${formatCents(e.beneficioCents)} €',
+                            style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w600),
+                          ),
+                          const TextSpan(text: ' · Total: '),
+                          TextSpan(
+                            text: '${formatCents(eTotal)} €',
+                            style: TextStyle(
+                              color: eTotal >= 0 ? AppColors.green : Colors.redAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      )),
+                    ),
                   );
                 }).toList(),
               ),
@@ -826,19 +928,26 @@ class _TasksTabState extends State<_TasksTab> {
               if (t.kiwiFecho) 'Kiwi Fecho',
               if (t.limpezaMaquinaVoltas) 'Limpeza Máquina',
             ];
-            return ListTile(
-              title: Text(dayFmt.format(t.serviceDay),
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                manual.isEmpty
-                    ? 'Sem tarefas manuais marcadas'
-                    : manual.join(' · '),
-              ),
-              onLongPress: () async {
-                if (await _confirmDelete(context, 'registo de tarefas')) {
-                  await DailyTasksService.instance.delete(t.id);
-                }
+            return _HistoryDismissible(
+              itemKey: ValueKey(t.id),
+              deletePromptName: 'registo de tarefas',
+              onDelete: () async {
+                await DailyTasksService.instance.delete(t.id);
               },
+              onSendWhatsApp: (ctx) async {
+                final msg = '✅ Tarefas (${dayFmt.format(t.serviceDay)})\n'
+                    '${manual.isEmpty ? 'Nenhuma tarefa marcada' : manual.join('\n')}';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: ListTile(
+                title: Text(dayFmt.format(t.serviceDay),
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  manual.isEmpty
+                      ? 'Sem tarefas manuais marcadas'
+                      : manual.join(' · '),
+                ),
+              ),
             );
           },
         );
@@ -899,26 +1008,34 @@ class _InventoryTabState extends State<_InventoryTab>
             final color = inv.valueCents >= 0
                 ? AppColors.green
                 : Colors.redAccent;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: Icon(Icons.assignment, color: color),
-                title: Text(inv.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(dateFmt.format(inv.createdAt)),
-                trailing: Text(
-                  '${formatCents(inv.valueCents)} €',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+            return _HistoryDismissible(
+              itemKey: ValueKey(inv.id),
+              deletePromptName: 'inventário',
+              onDelete: () async {
+                await InventoryService.instance.delete(inv.id);
+              },
+              onSendWhatsApp: (ctx) async {
+                final msg = '📦 Inventário: ${inv.name}\n'
+                    'Data: ${dateFmt.format(inv.createdAt)}\n'
+                    'Valor: ${formatCents(inv.valueCents)} €';
+                await WhatsAppService.sendWithConfirm(ctx, msg);
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  leading: Icon(Icons.assignment, color: color),
+                  title: Text(inv.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(dateFmt.format(inv.createdAt)),
+                  trailing: Text(
+                    '${formatCents(inv.valueCents)} €',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                onLongPress: () async {
-                  if (await _confirmDelete(context, 'inventário')) {
-                    await InventoryService.instance.delete(inv.id);
-                  }
-                },
               ),
             );
           },
