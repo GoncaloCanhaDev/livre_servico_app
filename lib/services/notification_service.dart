@@ -80,8 +80,8 @@ class NotificationService {
     required bool isLunch,
     required DateTime pauseTime,
   }) async {
-    // Only schedule if notifications are enabled
-    if (!SettingsService.instance.notificationsEnabled) return;
+    if (!SettingsService.instance.notificationsEnabled ||
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
     
     await cancelPauseReminders(); // Clear any existing
 
@@ -133,7 +133,8 @@ class NotificationService {
   }
 
   Future<void> scheduleStraightWorkReminders(Duration alreadyWorked) async {
-    if (!SettingsService.instance.notificationsEnabled) return;
+    if (!SettingsService.instance.notificationsEnabled ||
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
 
     await cancelStraightWorkReminders();
 
@@ -183,7 +184,8 @@ class NotificationService {
   }
 
   Future<void> scheduleTotalWorkReminders(DateTime clockInTime) async {
-    if (!SettingsService.instance.notificationsEnabled) return;
+    if (!SettingsService.instance.notificationsEnabled ||
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
 
     await cancelTotalWorkReminders();
 
