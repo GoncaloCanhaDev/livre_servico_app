@@ -41,7 +41,24 @@ class LivreServicoApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      navigatorObservers: [_KeyboardDismissObserver()],
       home: const HomeScreen(),
     );
   }
+}
+
+class _KeyboardDismissObserver extends NavigatorObserver {
+  void _unfocus() {
+    final focus = FocusManager.instance.primaryFocus;
+    focus?.unfocus();
+  }
+
+  @override
+  void didPush(Route route, Route? previousRoute) => _unfocus();
+
+  @override
+  void didPop(Route route, Route? previousRoute) => _unfocus();
+
+  @override
+  void didReplace({Route? newRoute, Route? oldRoute}) => _unfocus();
 }

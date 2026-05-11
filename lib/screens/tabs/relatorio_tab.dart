@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/report_list.dart';
 import '../../services/report_list_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -88,6 +89,16 @@ class _RelatorioTabState extends State<RelatorioTab> {
     if (ok != true) return;
     await _persistField();
     await ReportListService.instance.finalize(list);
+
+    if (mounted) {
+      final msg = '📊 Relatório\n'
+          'Dias s/ vendas: ${list.diasSemVendas}\n'
+          'Regularizações: ${list.regularizacoes}\n'
+          'Massiva: ${list.massiva}\n'
+          'Repetidos: ${list.repetidos}\n'
+          'Total: ${list.total}';
+      await WhatsAppService.sendWithConfirm(context, msg);
+    }
     if (mounted) _load();
   }
 

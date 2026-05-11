@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/truck_reception.dart';
 import '../services/truck_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
 
 class TruckFormScreen extends StatefulWidget {
@@ -157,6 +158,23 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
           .toList();
 
     await TruckService.instance.save(truck);
+    if (!mounted) return;
+
+    // Format WhatsApp message
+    final dateFmt = DateFormat("d/MM/y, HH:mm", 'pt_PT');
+    final lines = StringBuffer();
+    lines.writeln('🚛 Receção de Camião');
+    lines.writeln('Hora: ${dateFmt.format(_arrival)}');
+    if (truck.licensePlate != null) lines.writeln('Matrícula: ${truck.licensePlate}');
+    if (truck.supplier != null) lines.writeln('Fornecedor: ${truck.supplier}');
+    for (final p in truck.pallets) {
+      final mista = p.mistas > 0 ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})' : '';
+      lines.writeln('${p.category.label}: ${p.total}$mista');
+    }
+    lines.writeln('Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas');
+    if (truck.notes != null) lines.writeln('Notas: ${truck.notes}');
+
+    await WhatsAppService.sendWithConfirm(context, lines.toString().trim());
     if (!mounted) return;
     Navigator.of(context).pop(true);
   }
