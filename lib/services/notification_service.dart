@@ -81,7 +81,9 @@ class NotificationService {
     required DateTime pauseTime,
   }) async {
     if (!SettingsService.instance.notificationsEnabled ||
-        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) {
+      return;
+    }
     
     await cancelPauseReminders(); // Clear any existing
 
@@ -134,7 +136,9 @@ class NotificationService {
 
   Future<void> scheduleStraightWorkReminders(Duration alreadyWorked) async {
     if (!SettingsService.instance.notificationsEnabled ||
-        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) {
+      return;
+    }
 
     await cancelStraightWorkReminders();
 
@@ -185,7 +189,9 @@ class NotificationService {
 
   Future<void> scheduleTotalWorkReminders(DateTime clockInTime) async {
     if (!SettingsService.instance.notificationsEnabled ||
-        !SettingsService.instance.isNotificationEnabled('page_turnos')) return;
+        !SettingsService.instance.isNotificationEnabled('page_turnos')) {
+      return;
+    }
 
     await cancelTotalWorkReminders();
 
