@@ -153,23 +153,33 @@ class _DayTotalsCard extends StatelessWidget {
             const SizedBox(height: 12),
             _totalLine('Itens Picados', '$itens'),
             const SizedBox(height: 6),
-            _totalLine('Quebra', '${formatCents(quebraCents)} €'),
+            _totalLine('Quebra', '-${formatCents(quebraCents)} €',
+                valueColor: Colors.redAccent),
             const SizedBox(height: 6),
-            _totalLine('Benefício', '${formatCents(beneficioCents)} €'),
+            _totalLine('Benefício', '${formatCents(beneficioCents)} €',
+                valueColor: AppColors.green),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(color: Colors.white24, height: 1),
+            ),
+            _totalLine('Total', '${formatCents(beneficioCents - quebraCents)} €',
+                valueColor: (beneficioCents - quebraCents) >= 0
+                    ? AppColors.green
+                    : Colors.redAccent),
           ],
         ),
       ),
     );
   }
 
-  Widget _totalLine(String label, String value) {
+  Widget _totalLine(String label, String value, {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(color: Colors.white)),
         Text(value,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: valueColor ?? Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold)),
       ],
