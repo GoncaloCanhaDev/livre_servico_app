@@ -172,6 +172,7 @@ const _ProductdepartmentEnumValueMap = {
   'leite': 6,
   'animal': 7,
   'vasilhame': 8,
+  'congelados': 9,
 };
 const _ProductdepartmentValueEnumMap = {
   0: PalletCategory.frescosCharcutaria,
@@ -183,6 +184,7 @@ const _ProductdepartmentValueEnumMap = {
   6: PalletCategory.leite,
   7: PalletCategory.animal,
   8: PalletCategory.vasilhame,
+  9: PalletCategory.congelados,
 };
 
 Id _productGetId(Product object) {
