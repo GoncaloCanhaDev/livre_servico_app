@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
+import 'services/settings_service.dart';
 import 'services/shift_service.dart';
 import 'theme.dart';
 
@@ -10,6 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_PT');
   try {
+    await SettingsService.instance.init();
     await ShiftService.init();
   } catch (e) {
     runApp(MaterialApp(

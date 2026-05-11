@@ -9,6 +9,7 @@ import 'historico_screen.dart';
 import 'inventory_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
+import 'settings_screen.dart';
 import 'truck_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -70,6 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Livre Serviço Companion'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
