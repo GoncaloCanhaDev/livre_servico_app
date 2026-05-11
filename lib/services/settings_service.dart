@@ -25,6 +25,15 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isNotificationEnabled(String key) {
+    return _prefs.getBool('notify_$key') ?? true;
+  }
+
+  Future<void> setNotificationEnabled(String key, bool enabled) async {
+    await _prefs.setBool('notify_$key', enabled);
+    notifyListeners();
+  }
+
   Future<void> setVisualGoal(int goal) async {
     _visualGoal = goal;
     await _prefs.setInt('visualGoal', goal);

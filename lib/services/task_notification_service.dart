@@ -54,6 +54,7 @@ class TaskNotificationService {
 
     // Schedule each task if not done and time hasn't passed
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4001,
       hour: 7,
       minute: 0,
@@ -62,6 +63,7 @@ class TaskNotificationService {
       isDone: todayTasks?.kiwiAbertura ?? false,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4002,
       hour: 7,
       minute: 30,
@@ -70,6 +72,7 @@ class TaskNotificationService {
       isDone: todayTasks?.alteracoesPreco ?? false,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4003,
       hour: 9,
       minute: 0,
@@ -78,6 +81,7 @@ class TaskNotificationService {
       isDone: todayTasks?.verificacaoTemperaturas ?? false,
     );
     await _scheduleIf(
+      key: 'page_listas',
       id: 4004,
       hour: 11,
       minute: 0,
@@ -86,6 +90,7 @@ class TaskNotificationService {
       isDone: openingLists.isNotEmpty && openingLists.first.isFinalized,
     );
     await _scheduleIf(
+      key: 'page_listas',
       id: 4005,
       hour: 12,
       minute: 0,
@@ -94,6 +99,7 @@ class TaskNotificationService {
       isDone: reportLists.isNotEmpty && reportLists.first.isFinalized,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4006,
       hour: 14,
       minute: 0,
@@ -102,6 +108,7 @@ class TaskNotificationService {
       isDone: todayTasks?.preenchimentoQuadro ?? false,
     );
     await _scheduleIf(
+      key: 'page_listas',
       id: 4007,
       hour: 14,
       minute: 0,
@@ -112,6 +119,7 @@ class TaskNotificationService {
 
     // Auto lists (14h, 17h, 20h)
     await _scheduleIf(
+      key: 'page_listas',
       id: 4008,
       hour: 14,
       minute: 0,
@@ -120,6 +128,7 @@ class TaskNotificationService {
       isDone: autoLists.isNotEmpty,
     );
     await _scheduleIf(
+      key: 'page_listas',
       id: 4009,
       hour: 17,
       minute: 0,
@@ -128,6 +137,7 @@ class TaskNotificationService {
       isDone: autoLists.length >= 2,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4010,
       hour: 19,
       minute: 0,
@@ -136,6 +146,7 @@ class TaskNotificationService {
       isDone: todayTasks?.verificacaoValidades ?? false,
     );
     await _scheduleIf(
+      key: 'page_listas',
       id: 4011,
       hour: 20,
       minute: 0,
@@ -144,6 +155,7 @@ class TaskNotificationService {
       isDone: autoLists.length >= 3,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4012,
       hour: 22,
       minute: 0,
@@ -152,6 +164,7 @@ class TaskNotificationService {
       isDone: todayTasks?.kiwiFecho ?? false,
     );
     await _scheduleIf(
+      key: 'page_tarefas',
       id: 4013,
       hour: 22,
       minute: 0,
@@ -162,6 +175,7 @@ class TaskNotificationService {
   }
 
   Future<void> _scheduleIf({
+    required String key,
     required int id,
     required int hour,
     required int minute,
@@ -170,7 +184,7 @@ class TaskNotificationService {
     required bool isDone,
   }) async {
     await _plugin.cancel(id: id);
-    if (isDone) return;
+    if (isDone || !SettingsService.instance.isNotificationEnabled(key)) return;
 
     final now = DateTime.now();
     var scheduled = DateTime(now.year, now.month, now.day, hour, minute);
@@ -189,6 +203,7 @@ class TaskNotificationService {
 
   Future<void> checkVisualGoal() async {
     if (!SettingsService.instance.notificationsEnabled ||
+        !SettingsService.instance.isNotificationEnabled('page_listas') ||
         ShiftService.instance.status == WorkStatus.idle) {
       return;
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
+import '../services/task_notification_service.dart';
 import '../theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -28,6 +29,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
+  Widget _buildToggle(String title, String key) {
+    return SwitchListTile(
+      dense: true,
+      title: Text(title),
+      activeTrackColor: AppColors.green.withValues(alpha: 0.5),
+      activeThumbColor: AppColors.green,
+      value: SettingsService.instance.isNotificationEnabled(key),
+      onChanged: (val) async {
+        await SettingsService.instance.setNotificationEnabled(key, val);
+        await TaskNotificationService.instance.rescheduleAll();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final enabled = SettingsService.instance.notificationsEnabled;
@@ -52,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await NotificationService.instance.requestPermission();
                 if (granted) {
                   await SettingsService.instance.setNotificationsEnabled(true);
+                  await TaskNotificationService.instance.rescheduleAll();
                   // Quick test notification to confirm it works
                   await NotificationService.instance.testNotification();
                 } else {
@@ -65,9 +81,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               } else {
                 await SettingsService.instance.setNotificationsEnabled(false);
+                await TaskNotificationService.instance.rescheduleAll();
+                await NotificationService.instance.cancelPauseReminders();
+                await NotificationService.instance.cancelStraightWorkReminders();
+                await NotificationService.instance.cancelTotalWorkReminders();
               }
             },
           ),
+          if (enabled) ...[
+            const Divider(),
+            ExpansionTile(
+              title: const Text('Notificações Individuais',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Escolhe os alertas que queres receber.'),
+              children: [
+                _buildToggle('Notificações de Turnos e Pausas', 'page_turnos'),
+                _buildToggle('Notificações de Listas de Reposição', 'page_listas'),
+                _buildToggle('Notificações de Tarefas Diárias', 'page_tarefas'),
+              ],
+            ),
+          ],
           const Divider(),
           ListTile(
             title: const Text('Objetivo Lista Visual',
