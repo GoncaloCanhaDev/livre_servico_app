@@ -1,8 +1,11 @@
+import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../models/product.dart';
 import '../models/truck_reception.dart';
+import '../services/product_service.dart';
 import '../services/truck_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -28,6 +31,9 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
 
   /// Inputs for each selected category, created on demand.
   final Map<PalletCategory, _Inputs> _inputs = {};
+
+  final Map<int, Product> _vasilhameProductsMap = {};
+  final Map<int, int> _vasilhameQuantities = {};
 
   @override
   void dispose() {
@@ -127,11 +133,121 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     });
   }
 
+  Future<void> _showVasilhameModal() async {
+    final allProducts = await ProductService.instance.all();
+    final products = allProducts.where((p) => p.department == PalletCategory.vasilhame).toList();
+
+    for (final p in products) {
+      _vasilhameProductsMap[p.id] = p;
+    }
+
+    if (products.isEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nenhum artigo de vasilhame encontrado.')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              maxChildSize: 0.9,
+              minChildSize: 0.4,
+              expand: false,
+              builder: (ctx, scrollController) => Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Enviar Vasilhame',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: products.length,
+                      itemBuilder: (ctx, i) {
+                        final p = products[i];
+                        final qty = _vasilhameQuantities[p.id] ?? 0;
+                        return ListTile(
+                          title: Text(p.name),
+                          subtitle: Text(p.sapCode),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                onPressed: qty > 0
+                                    ? () {
+                                        setModalState(() {
+                                          _vasilhameQuantities[p.id] = qty - 1;
+                                          if (_vasilhameQuantities[p.id] == 0) {
+                                            _vasilhameQuantities.remove(p.id);
+                                          }
+                                        });
+                                        setState(() {});
+                                      }
+                                    : null,
+                              ),
+                              SizedBox(
+                                width: 40,
+                                child: Text(
+                                  qty.toString(),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                onPressed: () {
+                                  setModalState(() {
+                                    _vasilhameQuantities[p.id] = qty + 1;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Concluído'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_totalPallets == 0) {
+    final hasPallets = _totalPallets > 0;
+    final hasVasilhame = _vasilhameQuantities.values.any((qty) => qty > 0);
+    if (!hasPallets && !hasVasilhame) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indique pelo menos uma palete.')),
+        const SnackBar(content: Text('Indique pelo menos uma palete ou vasilhame.')),
       );
       return;
     }
@@ -155,6 +271,12 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
             ..category = c
             ..total = _inputs[c]!.totalValue
             ..mistas = _inputs[c]!.mistasValue)
+          .toList()
+      ..sentVasilhame = _vasilhameQuantities.entries
+          .where((e) => e.value > 0)
+          .map((e) => SentVasilhameItem()
+            ..productName = _vasilhameProductsMap[e.key]!.name
+            ..amount = e.value)
           .toList();
 
     await TruckService.instance.save(truck);
@@ -172,7 +294,15 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
       lines.writeln('${p.category.label}: ${p.total}$mista');
     }
     lines.writeln('Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas');
-    if (truck.notes != null) lines.writeln('Notas: ${truck.notes}');
+    
+    if (truck.sentVasilhame.isNotEmpty) {
+      lines.writeln('\n📦 Vasilhame Enviado:');
+      for (final v in truck.sentVasilhame) {
+        lines.writeln('- ${v.productName}: ${v.amount}');
+      }
+    }
+    
+    if (truck.notes != null) lines.writeln('\nNotas: ${truck.notes}');
 
     await WhatsAppService.sendWithConfirm(context, lines.toString().trim());
     if (!mounted) return;
@@ -241,6 +371,75 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
               const SizedBox(height: 16),
               _TotalsCard(
                   totalPallets: _totalPallets, totalMistas: _totalMistas),
+              const SizedBox(height: 16),
+
+              // --- Vasilhame (new section) ---
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Vasilhame a Enviar',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                    TextButton.icon(
+                      onPressed: _showVasilhameModal,
+                      icon: const Icon(Icons.local_shipping),
+                      label: const Text('Selecionar'),
+                    ),
+                  ],
+                ),
+              ),
+              if (_vasilhameQuantities.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Nenhum vasilhame selecionado para envio.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black45, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ),
+              ..._vasilhameQuantities.entries.where((e) => e.value > 0).map((e) {
+                final p = _vasilhameProductsMap[e.key]!;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    trailing: Text('${e.value} un', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              BarcodeWidget(
+                                barcode: Barcode.ean13(),
+                                data: p.ean,
+                                width: double.infinity,
+                                height: 120,
+                                drawText: true,
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Fechar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }),
               const SizedBox(height: 16),
 
               // --- Detalhes adicionais (collapsible) ---

@@ -64,6 +64,12 @@ class PalletCount {
   int mistas = 0;
 }
 
+@embedded
+class SentVasilhameItem {
+  String productName = '';
+  int amount = 0;
+}
+
 @collection
 class TruckReception {
   Id id = Isar.autoIncrement;
@@ -76,6 +82,7 @@ class TruckReception {
   String? notes;
 
   List<PalletCount> pallets = [];
+  List<SentVasilhameItem> sentVasilhame = [];
 
   int get totalPallets =>
       pallets.fold(0, (sum, p) => sum + p.total);

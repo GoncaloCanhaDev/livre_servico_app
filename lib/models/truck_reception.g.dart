@@ -35,18 +35,25 @@ const TruckReceptionSchema = CollectionSchema(
 
       target: r'PalletCount',
     ),
-    r'supplier': PropertySchema(
+    r'sentVasilhame': PropertySchema(
       id: 4,
+      name: r'sentVasilhame',
+      type: IsarType.objectList,
+
+      target: r'SentVasilhameItem',
+    ),
+    r'supplier': PropertySchema(
+      id: 5,
       name: r'supplier',
       type: IsarType.string,
     ),
     r'totalMistas': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'totalMistas',
       type: IsarType.long,
     ),
     r'totalPallets': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'totalPallets',
       type: IsarType.long,
     ),
@@ -73,7 +80,10 @@ const TruckReceptionSchema = CollectionSchema(
     ),
   },
   links: {},
-  embeddedSchemas: {r'PalletCount': PalletCountSchema},
+  embeddedSchemas: {
+    r'PalletCount': PalletCountSchema,
+    r'SentVasilhameItem': SentVasilhameItemSchema,
+  },
 
   getId: _truckReceptionGetId,
   getLinks: _truckReceptionGetLinks,
@@ -107,6 +117,18 @@ int _truckReceptionEstimateSize(
       bytesCount += PalletCountSchema.estimateSize(value, offsets, allOffsets);
     }
   }
+  bytesCount += 3 + object.sentVasilhame.length * 3;
+  {
+    final offsets = allOffsets[SentVasilhameItem]!;
+    for (var i = 0; i < object.sentVasilhame.length; i++) {
+      final value = object.sentVasilhame[i];
+      bytesCount += SentVasilhameItemSchema.estimateSize(
+        value,
+        offsets,
+        allOffsets,
+      );
+    }
+  }
   {
     final value = object.supplier;
     if (value != null) {
@@ -131,9 +153,15 @@ void _truckReceptionSerialize(
     PalletCountSchema.serialize,
     object.pallets,
   );
-  writer.writeString(offsets[4], object.supplier);
-  writer.writeLong(offsets[5], object.totalMistas);
-  writer.writeLong(offsets[6], object.totalPallets);
+  writer.writeObjectList<SentVasilhameItem>(
+    offsets[4],
+    allOffsets,
+    SentVasilhameItemSchema.serialize,
+    object.sentVasilhame,
+  );
+  writer.writeString(offsets[5], object.supplier);
+  writer.writeLong(offsets[6], object.totalMistas);
+  writer.writeLong(offsets[7], object.totalPallets);
 }
 
 TruckReception _truckReceptionDeserialize(
@@ -155,7 +183,15 @@ TruckReception _truckReceptionDeserialize(
         PalletCount(),
       ) ??
       [];
-  object.supplier = reader.readStringOrNull(offsets[4]);
+  object.sentVasilhame =
+      reader.readObjectList<SentVasilhameItem>(
+        offsets[4],
+        SentVasilhameItemSchema.deserialize,
+        allOffsets,
+        SentVasilhameItem(),
+      ) ??
+      [];
+  object.supplier = reader.readStringOrNull(offsets[5]);
   return object;
 }
 
@@ -182,10 +218,19 @@ P _truckReceptionDeserializeProp<P>(
               [])
           as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readObjectList<SentVasilhameItem>(
+                offset,
+                SentVasilhameItemSchema.deserialize,
+                allOffsets,
+                SentVasilhameItem(),
+              ) ??
+              [])
+          as P;
     case 5:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -887,6 +932,59 @@ extension TruckReceptionQueryFilter
   }
 
   QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'sentVasilhame', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'sentVasilhame', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'sentVasilhame', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'sentVasilhame', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'sentVasilhame', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'sentVasilhame',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
   supplierIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1164,6 +1262,13 @@ extension TruckReceptionQueryObject
       return query.object(q, r'pallets');
     });
   }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  sentVasilhameElement(FilterQuery<SentVasilhameItem> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'sentVasilhame');
+    });
+  }
 }
 
 extension TruckReceptionQueryLinks
@@ -1428,6 +1533,13 @@ extension TruckReceptionQueryProperty
   palletsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'pallets');
+    });
+  }
+
+  QueryBuilder<TruckReception, List<SentVasilhameItem>, QQueryOperations>
+  sentVasilhameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sentVasilhame');
     });
   }
 
@@ -1731,3 +1843,274 @@ extension PalletCountQueryFilter
 
 extension PalletCountQueryObject
     on QueryBuilder<PalletCount, PalletCount, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const SentVasilhameItemSchema = Schema(
+  name: r'SentVasilhameItem',
+  id: -8432056822164070440,
+  properties: {
+    r'amount': PropertySchema(id: 0, name: r'amount', type: IsarType.long),
+    r'productName': PropertySchema(
+      id: 1,
+      name: r'productName',
+      type: IsarType.string,
+    ),
+  },
+
+  estimateSize: _sentVasilhameItemEstimateSize,
+  serialize: _sentVasilhameItemSerialize,
+  deserialize: _sentVasilhameItemDeserialize,
+  deserializeProp: _sentVasilhameItemDeserializeProp,
+);
+
+int _sentVasilhameItemEstimateSize(
+  SentVasilhameItem object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.productName.length * 3;
+  return bytesCount;
+}
+
+void _sentVasilhameItemSerialize(
+  SentVasilhameItem object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeLong(offsets[0], object.amount);
+  writer.writeString(offsets[1], object.productName);
+}
+
+SentVasilhameItem _sentVasilhameItemDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = SentVasilhameItem();
+  object.amount = reader.readLong(offsets[0]);
+  object.productName = reader.readString(offsets[1]);
+  return object;
+}
+
+P _sentVasilhameItemDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readLong(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension SentVasilhameItemQueryFilter
+    on QueryBuilder<SentVasilhameItem, SentVasilhameItem, QFilterCondition> {
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  amountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'amount', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  amountGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'amount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  amountLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'amount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  amountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'amount',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'productName',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'productName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'productName',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'productName', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<SentVasilhameItem, SentVasilhameItem, QAfterFilterCondition>
+  productNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'productName', value: ''),
+      );
+    });
+  }
+}
+
+extension SentVasilhameItemQueryObject
+    on QueryBuilder<SentVasilhameItem, SentVasilhameItem, QFilterCondition> {}
