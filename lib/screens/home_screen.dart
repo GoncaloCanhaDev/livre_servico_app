@@ -6,6 +6,7 @@ import '../services/shift_service.dart';
 import '../theme.dart';
 import 'daily_tasks_screen.dart';
 import 'historico_screen.dart';
+import 'inventory_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'truck_form_screen.dart';
@@ -133,14 +134,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.history),
-                label: const Text('Histórico'),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const HistoricoScreen(),
-                  ));
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.assignment),
+                      label: const Text('Inventários'),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const InventoryScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.history),
+                      label: const Text('Histórico'),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const HistoricoScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
+import '../models/inventory.dart';
 import '../models/opening_list.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
@@ -10,6 +11,7 @@ import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
+import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/report_list_service.dart';
 import '../services/shift_service.dart';
@@ -28,6 +30,7 @@ class HistoricoScreen extends StatelessWidget {
     'Relatório',
     'Visual',
     'Tarefas',
+    'Inventários',
   ];
 
   Future<void> _clearTab(int index) async {
@@ -53,6 +56,9 @@ class HistoricoScreen extends StatelessWidget {
       case 6:
         await DailyTasksService.instance.deleteAll();
         break;
+      case 7:
+        await InventoryService.instance.deleteAll();
+        break;
     }
   }
 
@@ -64,6 +70,7 @@ class HistoricoScreen extends StatelessWidget {
     await ReportListService.instance.deleteAll();
     await VisualListService.instance.deleteAll();
     await DailyTasksService.instance.deleteAll();
+    await InventoryService.instance.deleteAll();
   }
 
   @override
@@ -123,6 +130,7 @@ class HistoricoScreen extends StatelessWidget {
               _ReportTab(),
               _VisualTab(),
               _TasksTab(),
+              _InventoryTab(),
             ],
           ),
         ),
@@ -831,6 +839,87 @@ class _TasksTabState extends State<_TasksTab> {
                   await DailyTasksService.instance.delete(t.id);
                 }
               },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _InventoryTab extends StatefulWidget {
+  const _InventoryTab();
+  @override
+  State<_InventoryTab> createState() => _InventoryTabState();
+}
+
+class _InventoryTabState extends State<_InventoryTab>
+    with AutomaticKeepAliveClientMixin {
+  late Future<List<Inventory>> _future;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+    InventoryService.instance.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    InventoryService.instance.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() { _future = InventoryService.instance.history(); });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final dateFmt = DateFormat("d 'de' MMMM, HH:mm", 'pt_PT');
+    return FutureBuilder<List<Inventory>>(
+      future: _future,
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final items = snap.data!;
+        if (items.isEmpty) {
+          return const Center(child: Text('Sem inventários registados.'));
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: items.length,
+          itemBuilder: (context, i) {
+            final inv = items[i];
+            final color = inv.valueCents >= 0
+                ? AppColors.green
+                : Colors.redAccent;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: Icon(Icons.assignment, color: color),
+                title: Text(inv.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(dateFmt.format(inv.createdAt)),
+                trailing: Text(
+                  '${formatCents(inv.valueCents)} €',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onLongPress: () async {
+                  if (await _confirmDelete(context, 'inventário')) {
+                    await InventoryService.instance.delete(inv.id);
+                  }
+                },
+              ),
             );
           },
         );
