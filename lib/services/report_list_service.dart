@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models/opening_list.dart';
 import '../models/report_list.dart';
 import 'shift_service.dart';
+import 'task_notification_service.dart';
 
 class ReportListService extends ChangeNotifier {
   ReportListService._();
@@ -49,13 +50,22 @@ class ReportListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.reportLists.put(list);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
+  }
+
+  Future<List<ReportList>> entriesForServiceDay(DateTime day) {
+    return _isar.reportLists
+        .filter()
+        .serviceDayEqualTo(day)
+        .findAll();
   }
 
   Future<void> deleteAll() async {
     await _isar.writeTxn(() async {
       await _isar.reportLists.clear();
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -63,6 +73,7 @@ class ReportListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.reportLists.delete(id);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

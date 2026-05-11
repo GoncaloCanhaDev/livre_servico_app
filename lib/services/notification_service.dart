@@ -1,6 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import 'settings_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -12,6 +16,9 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Europe/Lisbon'));
 
     const androidSetup = AndroidInitializationSettings('@mipmap/ic_launcher');
     // Using default Darwin initialization settings
@@ -67,5 +74,158 @@ class NotificationService {
       body: 'Irás agora receber lembretes.',
       notificationDetails: details,
     );
+  }
+
+  Future<void> schedulePauseReminders({
+    required bool isLunch,
+    required DateTime pauseTime,
+  }) async {
+    // Only schedule if notifications are enabled
+    if (!SettingsService.instance.notificationsEnabled) return;
+    
+    await cancelPauseReminders(); // Clear any existing
+
+    final limitMinutes = isLunch ? 60 : 15;
+    final warningTime = pauseTime.add(Duration(minutes: limitMinutes - 1));
+    final limitTime = pauseTime.add(Duration(minutes: limitMinutes));
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'pausa_channel_id',
+        'Lembretes de Pausa',
+        channelDescription: 'Avisos sobre o tempo de pausa.',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    final pauseType = isLunch ? 'almoço' : 'pausa';
+
+    // 1 Minute Warning
+    if (warningTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 1001, // Warning ID
+        title: 'O teu $pauseType está a terminar!',
+        body: 'Falta 1 minuto para atingires o limite.',
+        scheduledDate: tz.TZDateTime.from(warningTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+
+    // Limit Reached
+    if (limitTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 1002, // Limit ID
+        title: 'Atenção!',
+        body: 'O limite do teu $pauseType ($limitMinutes minutos) foi atingido.',
+        scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+  }
+
+  Future<void> cancelPauseReminders() async {
+    await _plugin.cancel(id: 1001);
+    await _plugin.cancel(id: 1002);
+  }
+
+  Future<void> scheduleStraightWorkReminders(Duration alreadyWorked) async {
+    if (!SettingsService.instance.notificationsEnabled) return;
+
+    await cancelStraightWorkReminders();
+
+    final remainingBefore5h = const Duration(hours: 5) - alreadyWorked;
+    if (remainingBefore5h.isNegative) return;
+
+    final limitTime = DateTime.now().add(remainingBefore5h);
+    final warningTime = limitTime.subtract(const Duration(minutes: 5));
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'trabalho_channel_id',
+        'Lembretes de Trabalho',
+        channelDescription: 'Avisos sobre limites de horas de trabalho.',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    if (warningTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 2001,
+        title: 'Pausa para Almoço',
+        body: 'Faltam 5 minutos para atingires 5h de trabalho contínuo.',
+        scheduledDate: tz.TZDateTime.from(warningTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+
+    if (limitTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 2002,
+        title: 'Atenção!',
+        body: 'Atingiste o limite de 5h de trabalho contínuo sem almoço.',
+        scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+  }
+
+  Future<void> cancelStraightWorkReminders() async {
+    await _plugin.cancel(id: 2001);
+    await _plugin.cancel(id: 2002);
+  }
+
+  Future<void> scheduleTotalWorkReminders(DateTime clockInTime) async {
+    if (!SettingsService.instance.notificationsEnabled) return;
+
+    await cancelTotalWorkReminders();
+
+    final limitTime = clockInTime.add(const Duration(hours: 9));
+    final warningTime = limitTime.subtract(const Duration(minutes: 5));
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'trabalho_total_channel_id',
+        'Lembretes de Fim de Turno',
+        channelDescription: 'Avisos sobre o limite de 8 horas de trabalho diário.',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    if (warningTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 3001,
+        title: 'Fim de Turno Próximo',
+        body: 'Faltam 5 minutos para completares as tuas 9 horas de turno.',
+        scheduledDate: tz.TZDateTime.from(warningTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+
+    if (limitTime.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: 3002,
+        title: 'Fim de Turno!',
+        body: 'O teu turno de 9 horas chegou ao fim.',
+        scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+  }
+
+  Future<void> cancelTotalWorkReminders() async {
+    await _plugin.cancel(id: 3001);
+    await _plugin.cancel(id: 3002);
   }
 }

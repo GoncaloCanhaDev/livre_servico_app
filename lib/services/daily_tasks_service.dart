@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import 'shift_service.dart';
+import 'task_notification_service.dart';
 
 class DailyTasksService extends ChangeNotifier {
   DailyTasksService._();
@@ -49,6 +50,7 @@ class DailyTasksService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.dailyTasks.put(t);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

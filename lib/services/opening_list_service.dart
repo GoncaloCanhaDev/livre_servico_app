@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 
 import '../models/opening_list.dart';
 import 'shift_service.dart';
+import 'task_notification_service.dart';
 
 class OpeningListService extends ChangeNotifier {
   OpeningListService._();
@@ -46,13 +47,22 @@ class OpeningListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.openingLists.put(list);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
+  }
+
+  Future<List<OpeningList>> entriesForServiceDay(DateTime day) {
+    return _isar.openingLists
+        .filter()
+        .serviceDayEqualTo(day)
+        .findAll();
   }
 
   Future<void> deleteAll() async {
     await _isar.writeTxn(() async {
       await _isar.openingLists.clear();
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -60,6 +70,7 @@ class OpeningListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.openingLists.delete(id);
     });
+    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
