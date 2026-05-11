@@ -249,7 +249,9 @@ class _ShiftsTab extends StatefulWidget {
   State<_ShiftsTab> createState() => _ShiftsTabState();
 }
 
-class _ShiftsTabState extends State<_ShiftsTab> {
+class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<_ShiftRow>> _future;
 
   @override
@@ -287,6 +289,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dateFmt = DateFormat("EEE, d 'de' MMMM", 'pt_PT');
     final timeFmt = DateFormat('HH:mm');
     return FutureBuilder<List<_ShiftRow>>(
@@ -404,7 +407,9 @@ class _TrucksTab extends StatefulWidget {
   State<_TrucksTab> createState() => _TrucksTabState();
 }
 
-class _TrucksTabState extends State<_TrucksTab> {
+class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<TruckReception>> _future;
 
   @override
@@ -428,6 +433,7 @@ class _TrucksTabState extends State<_TrucksTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dateFmt = DateFormat("d 'de' MMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<TruckReception>>(
       future: _future,
@@ -515,7 +521,9 @@ class _OpeningTab extends StatefulWidget {
   State<_OpeningTab> createState() => _OpeningTabState();
 }
 
-class _OpeningTabState extends State<_OpeningTab> {
+class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<OpeningList>> _future;
 
   @override
@@ -539,6 +547,7 @@ class _OpeningTabState extends State<_OpeningTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dayFmt = DateFormat("d 'de' MMM y", 'pt_PT');
     return FutureBuilder<List<OpeningList>>(
       future: _future,
@@ -595,7 +604,9 @@ class _AutoTab extends StatefulWidget {
   State<_AutoTab> createState() => _AutoTabState();
 }
 
-class _AutoTabState extends State<_AutoTab> {
+class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<AutoList>> _future;
 
   @override
@@ -619,6 +630,7 @@ class _AutoTabState extends State<_AutoTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final fmt = DateFormat("d 'de' MMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<AutoList>>(
       future: _future,
@@ -672,7 +684,9 @@ class _ReportTab extends StatefulWidget {
   State<_ReportTab> createState() => _ReportTabState();
 }
 
-class _ReportTabState extends State<_ReportTab> {
+class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<ReportList>> _future;
 
   @override
@@ -696,6 +710,7 @@ class _ReportTabState extends State<_ReportTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dayFmt = DateFormat("d 'de' MMM y", 'pt_PT');
     return FutureBuilder<List<ReportList>>(
       future: _future,
@@ -753,7 +768,9 @@ class _VisualTab extends StatefulWidget {
   State<_VisualTab> createState() => _VisualTabState();
 }
 
-class _VisualTabState extends State<_VisualTab> {
+class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<VisualList>> _future;
 
   @override
@@ -777,6 +794,7 @@ class _VisualTabState extends State<_VisualTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dayFmt = DateFormat("EEE, d 'de' MMM y", 'pt_PT');
     final timeFmt = DateFormat('HH:mm');
     return FutureBuilder<List<VisualList>>(
@@ -885,7 +903,9 @@ class _TasksTab extends StatefulWidget {
   State<_TasksTab> createState() => _TasksTabState();
 }
 
-class _TasksTabState extends State<_TasksTab> {
+class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late Future<List<DailyTasks>> _future;
 
   @override
@@ -909,6 +929,7 @@ class _TasksTabState extends State<_TasksTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final dayFmt = DateFormat("EEEE, d 'de' MMM y", 'pt_PT');
     return FutureBuilder<List<DailyTasks>>(
       future: _future,
