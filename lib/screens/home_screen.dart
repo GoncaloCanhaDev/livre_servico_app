@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
@@ -90,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = svc.status;
     final worked = computeWorked(_todayEvents);
     final paused = computePaused(_todayEvents);
+    final startTime = _todayEvents.isNotEmpty ? _todayEvents.first.timestamp : null;
 
     bool isPauseOverLimit = false;
     if (status == WorkStatus.paused && svc.lastEvent != null) {
@@ -126,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 status: status,
                 worked: _fmtDuration(worked),
                 paused: _fmtDuration(paused),
+                startTime: startTime,
                 isPauseOverLimit: isPauseOverLimit,
                 isLunch: svc.lastEvent?.type == ShiftEventType.lunch,
                 onPausePressed: _handlePause,
@@ -249,6 +252,7 @@ class _StatusCard extends StatelessWidget {
     required this.paused,
     required this.onPausePressed,
     required this.onResumePressed,
+    this.startTime,
     this.isPauseOverLimit = false,
     this.isLunch = false,
   });
@@ -258,6 +262,7 @@ class _StatusCard extends StatelessWidget {
   final String paused;
   final VoidCallback onPausePressed;
   final VoidCallback onResumePressed;
+  final DateTime? startTime;
   final bool isPauseOverLimit;
   final bool isLunch;
 
@@ -285,7 +290,13 @@ class _StatusCard extends StatelessWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            if (startTime != null)
+              Text(
+                'Início: ${DateFormat('HH:mm').format(startTime!)}',
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            const SizedBox(height: 4),
             Text(
               worked,
               style: const TextStyle(
