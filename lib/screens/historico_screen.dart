@@ -24,6 +24,7 @@ class HistoricoScreen extends StatelessWidget {
   const HistoricoScreen({super.key});
 
   static const _tabNames = [
+    'Tudo',
     'Turnos',
     'Camiões',
     'Abertura',
@@ -37,27 +38,30 @@ class HistoricoScreen extends StatelessWidget {
   Future<void> _clearTab(int index) async {
     switch (index) {
       case 0:
-        await ShiftService.instance.deleteAllShifts();
+        await _clearEverything();
         break;
       case 1:
-        await TruckService.instance.deleteAll();
+        await ShiftService.instance.deleteAllShifts();
         break;
       case 2:
-        await OpeningListService.instance.deleteAll();
+        await TruckService.instance.deleteAll();
         break;
       case 3:
-        await AutoListService.instance.deleteAll();
+        await OpeningListService.instance.deleteAll();
         break;
       case 4:
-        await ReportListService.instance.deleteAll();
+        await AutoListService.instance.deleteAll();
         break;
       case 5:
-        await VisualListService.instance.deleteAll();
+        await ReportListService.instance.deleteAll();
         break;
       case 6:
-        await DailyTasksService.instance.deleteAll();
+        await VisualListService.instance.deleteAll();
         break;
       case 7:
+        await DailyTasksService.instance.deleteAll();
+        break;
+      case 8:
         await InventoryService.instance.deleteAll();
         break;
     }
@@ -124,6 +128,7 @@ class HistoricoScreen extends StatelessWidget {
           ),
           body: const TabBarView(
             children: [
+              _AllTab(),
               _ShiftsTab(),
               _TrucksTab(),
               _OpeningTab(),
@@ -191,6 +196,274 @@ Widget _emptyMsg(String msg) => Center(
       ),
     );
 
+// --- Tudo (All) ---
+
+enum _ItemType { shift, truck, opening, auto, report, visual, tasks, inventory }
+
+class _DayItem {
+  _DayItem({
+    required this.type,
+    required this.time,
+    required this.title,
+    required this.subtitle,
+    this.icon = Icons.circle,
+    this.iconColor = AppColors.green,
+  });
+  final _ItemType type;
+  final DateTime time;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+}
+
+class _AllTab extends StatefulWidget {
+  const _AllTab();
+  @override
+  State<_AllTab> createState() => _AllTabState();
+}
+
+class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  late Future<Map<DateTime, List<_DayItem>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+    ShiftService.instance.addListener(_reload);
+    TruckService.instance.addListener(_reload);
+    OpeningListService.instance.addListener(_reload);
+    AutoListService.instance.addListener(_reload);
+    ReportListService.instance.addListener(_reload);
+    VisualListService.instance.addListener(_reload);
+    DailyTasksService.instance.addListener(_reload);
+    InventoryService.instance.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    ShiftService.instance.removeListener(_reload);
+    TruckService.instance.removeListener(_reload);
+    OpeningListService.instance.removeListener(_reload);
+    AutoListService.instance.removeListener(_reload);
+    ReportListService.instance.removeListener(_reload);
+    VisualListService.instance.removeListener(_reload);
+    DailyTasksService.instance.removeListener(_reload);
+    InventoryService.instance.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() { _future = _load(); });
+  }
+
+  DateTime _toServiceDay(DateTime dt) {
+    if (dt.hour < 5) {
+      final y = dt.subtract(const Duration(days: 1));
+      return DateTime(y.year, y.month, y.day, 5);
+    }
+    return DateTime(dt.year, dt.month, dt.day, 5);
+  }
+
+  Future<Map<DateTime, List<_DayItem>>> _load() async {
+    final items = <_DayItem>[];
+    final timeFmt = DateFormat('HH:mm');
+
+    // Shifts
+    final shiftIds = await ShiftService.instance.allShiftIdsDesc();
+    for (final id in shiftIds) {
+      final events = await ShiftService.instance.eventsForShift(id);
+      if (events.isEmpty) continue;
+      final start = events.first.timestamp;
+      final end = events.last.type == ShiftEventType.clockOut
+          ? events.last.timestamp
+          : null;
+      if (end == null) continue; // Only show finished shifts
+      final worked = computeWorked(events);
+      items.add(_DayItem(
+        type: _ItemType.shift,
+        time: start,
+        title: '🕒 Turno',
+        subtitle: '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
+        icon: Icons.schedule,
+      ));
+    }
+
+    // Trucks
+    final trucks = await TruckService.instance.all();
+    for (final t in trucks) {
+      final parts = <String>[
+        if (t.licensePlate != null) t.licensePlate!,
+        if (t.supplier != null) t.supplier!,
+      ];
+      items.add(_DayItem(
+        type: _ItemType.truck,
+        time: t.arrivalTime,
+        title: '🚛 Camião',
+        subtitle: '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
+        icon: Icons.local_shipping,
+      ));
+    }
+
+    // Opening lists (only finalized)
+    final openings = await OpeningListService.instance.history();
+    for (final o in openings) {
+      if (!o.isFinalized) continue;
+      items.add(_DayItem(
+        type: _ItemType.opening,
+        time: o.serviceDay,
+        title: '📋 Lista de Abertura',
+        subtitle: 'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
+        icon: Icons.check_circle,
+        iconColor: AppColors.green,
+      ));
+    }
+
+    // Auto lists
+    final autos = await AutoListService.instance.history();
+    for (final a in autos) {
+      items.add(_DayItem(
+        type: _ItemType.auto,
+        time: a.createdAt,
+        title: '⚡ Lista Automática',
+        subtitle: 'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
+        icon: Icons.bolt,
+      ));
+    }
+
+    // Reports (only finalized)
+    final reports = await ReportListService.instance.history();
+    for (final r in reports) {
+      if (!r.isFinalized) continue;
+      items.add(_DayItem(
+        type: _ItemType.report,
+        time: r.serviceDay,
+        title: '📊 Relatório',
+        subtitle: 'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
+        icon: Icons.check_circle,
+        iconColor: AppColors.green,
+      ));
+    }
+
+    // Visual lists
+    final visuals = await VisualListService.instance.all();
+    for (final v in visuals) {
+      items.add(_DayItem(
+        type: _ItemType.visual,
+        time: v.createdAt,
+        title: '👁 Lista Visual',
+        subtitle: '${v.itensPicados} itens picados',
+        icon: Icons.visibility,
+      ));
+    }
+
+    // Tasks
+    final tasks = await DailyTasksService.instance.history();
+    for (final t in tasks) {
+      final doneCount = [
+        t.kiwiAbertura, t.alteracoesPreco, t.verificacaoTemperaturas,
+        t.preenchimentoQuadro, t.verificacaoValidades, t.kiwiFecho,
+        t.limpezaMaquinaVoltas,
+      ].where((v) => v).length;
+      items.add(_DayItem(
+        type: _ItemType.tasks,
+        time: t.serviceDay,
+        title: '✅ Tarefas Diárias',
+        subtitle: '$doneCount/7 concluídas',
+        icon: Icons.task_alt,
+      ));
+    }
+
+    // Inventories
+    final invs = await InventoryService.instance.history();
+    for (final inv in invs) {
+      items.add(_DayItem(
+        type: _ItemType.inventory,
+        time: inv.createdAt,
+        title: '📦 Inventário: ${inv.name}',
+        subtitle: '${formatCents(inv.valueCents)} €',
+        icon: Icons.assignment,
+        iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
+      ));
+    }
+
+    // Group by service day
+    final grouped = <DateTime, List<_DayItem>>{};
+    for (final item in items) {
+      final day = _toServiceDay(item.time);
+      (grouped[day] ??= []).add(item);
+    }
+    // Sort days descending
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    // Sort items within each day by time descending
+    final result = <DateTime, List<_DayItem>>{};
+    for (final key in sortedKeys) {
+      grouped[key]!.sort((a, b) => b.time.compareTo(a.time));
+      result[key] = grouped[key]!;
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final dayFmt = DateFormat("EEEE, d 'de' MMMM y", 'pt_PT');
+    return FutureBuilder<Map<DateTime, List<_DayItem>>>(
+      future: _future,
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final grouped = snap.data!;
+        if (grouped.isEmpty) return _emptyMsg('Sem histórico.');
+        final days = grouped.keys.toList();
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: days.length,
+          itemBuilder: (_, i) {
+            final day = days[i];
+            final items = grouped[day]!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (i > 0) const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    dayFmt.format(day),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
+                ),
+                ...items.map((item) {
+                  final timeFmt = DateFormat('HH:mm');
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(item.icon, color: item.iconColor, size: 24),
+                      title: Text(item.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: Text(item.subtitle, style: const TextStyle(fontSize: 12)),
+                      trailing: Text(timeFmt.format(item.time),
+                          style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                    ),
+                  );
+                }),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+
 class _HistoryDismissible extends StatelessWidget {
   const _HistoryDismissible({
     required this.itemKey,
@@ -208,33 +481,36 @@ class _HistoryDismissible extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: itemKey,
-      background: Container(
-        color: AppColors.green,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.send, color: Colors.white),
-      ),
-      secondaryBackground: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      confirmDismiss: (dir) async {
-        if (dir == DismissDirection.startToEnd) {
-          // Swipe right -> Send WhatsApp
-          await onSendWhatsApp(context);
-          return false;
-        } else if (dir == DismissDirection.endToStart) {
-          // Swipe left -> Delete
-          if (await _confirmDelete(context, deletePromptName)) {
-            await onDelete();
-            return true;
-          }
-        }
-        return false;
+    return GestureDetector(
+      onLongPress: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.send, color: AppColors.green),
+                  title: const Text('Enviar por WhatsApp'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await onSendWhatsApp(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text('Apagar $deletePromptName'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    if (await _confirmDelete(context, deletePromptName)) {
+                      await onDelete();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
       },
       child: child,
     );
@@ -906,12 +1182,12 @@ class _TasksTab extends StatefulWidget {
 class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-  late Future<List<DailyTasks>> _future;
+  late Future<List<_TasksRow>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = DailyTasksService.instance.history();
+    _future = _load();
     DailyTasksService.instance.addListener(_reload);
   }
 
@@ -923,15 +1199,42 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
 
   void _reload() {
     setState(() {
-      _future = DailyTasksService.instance.history();
+      _future = _load();
     });
+  }
+
+  Future<List<_TasksRow>> _load() async {
+    final all = await DailyTasksService.instance.history();
+    final rows = <_TasksRow>[];
+    for (final t in all) {
+      final day = t.serviceDay;
+      final openingEntries = await OpeningListService.instance.entriesForServiceDay(day);
+      final aberturaDone = openingEntries.any((o) => o.isFinalized);
+      final reportEntries = await ReportListService.instance.entriesForServiceDay(day);
+      final relatorioDone = reportEntries.any((r) => r.isFinalized);
+      final visualEntries = await VisualListService.instance.entriesForServiceDay(day);
+      final visualItens = visualEntries.fold<int>(0, (s, e) => s + e.itensPicados);
+      final visualDone = visualItens >= 200;
+      final autoEntries = await AutoListService.instance.entriesForServiceDay(day);
+      final autoDone = autoEntries.isNotEmpty;
+      rows.add(_TasksRow(
+        tasks: t,
+        aberturaDone: aberturaDone,
+        relatorioDone: relatorioDone,
+        visualDone: visualDone,
+        visualItens: visualItens,
+        autoDone: autoDone,
+        autoCount: autoEntries.length,
+      ));
+    }
+    return rows;
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final dayFmt = DateFormat("EEEE, d 'de' MMM y", 'pt_PT');
-    return FutureBuilder<List<DailyTasks>>(
+    return FutureBuilder<List<_TasksRow>>(
       future: _future,
       builder: (_, snap) {
         if (!snap.hasData) {
@@ -940,21 +1243,30 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
         final items = snap.data!;
         if (items.isEmpty) return _emptyMsg('Sem registos de tarefas.');
         return ListView.separated(
+          padding: const EdgeInsets.all(16),
           itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (_, _) => const SizedBox(height: 4),
           itemBuilder: (_, i) {
-            final t = items[i];
-            final manual = [
-              if (t.kiwiAbertura) 'Kiwi Abertura',
-              if (t.alteracoesPreco)
-                'Alterações de Preço (${t.alteracoesPrecoCount})',
-              if (t.verificacaoTemperaturas) 'Temperaturas',
-              if (t.preenchimentoQuadro) 'Preench. Quadro',
-              if (t.verificacaoValidades)
-                'Validades (${t.verificacaoValidadesCount})',
-              if (t.kiwiFecho) 'Kiwi Fecho',
-              if (t.limpezaMaquinaVoltas) 'Limpeza Máquina',
+            final r = items[i];
+            final t = r.tasks;
+            final isSaturday = t.serviceDay.weekday == DateTime.saturday;
+
+            final allTasks = <_TaskEntry>[
+              _TaskEntry('Kiwi Abertura', t.kiwiAbertura),
+              _TaskEntry('Alterações de Preço (${t.alteracoesPrecoCount})', t.alteracoesPreco),
+              _TaskEntry('Verificação de Temperaturas', t.verificacaoTemperaturas),
+              _TaskEntry('Lista de Abertura', r.aberturaDone),
+              _TaskEntry('Relatório das Listas', r.relatorioDone),
+              _TaskEntry('Preenchimento do Quadro', t.preenchimentoQuadro),
+              _TaskEntry('Lista Visual (${r.visualItens}/200)', r.visualDone),
+              _TaskEntry('Lista Automática (${r.autoCount})', r.autoDone),
+              _TaskEntry('Verificação de Validades (${t.verificacaoValidadesCount})', t.verificacaoValidades),
+              _TaskEntry('Kiwi Fecho', t.kiwiFecho),
+              if (isSaturday) _TaskEntry('Limpeza da Máquina Voltas', t.limpezaMaquinaVoltas),
             ];
+            final totalTasks = allTasks.length;
+            final doneCount = allTasks.where((e) => e.done).length;
+
             return _HistoryDismissible(
               itemKey: ValueKey(t.id),
               deletePromptName: 'registo de tarefas',
@@ -962,17 +1274,26 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
                 await DailyTasksService.instance.delete(t.id);
               },
               onSendWhatsApp: (ctx) async {
-                final msg = '✅ Tarefas (${dayFmt.format(t.serviceDay)})\n'
-                    '${manual.isEmpty ? 'Nenhuma tarefa marcada' : manual.join('\n')}';
+                String s(bool done, String label) => '${done ? '✅' : '❌'} $label';
+                final lines = allTasks.map((e) => s(e.done, e.label)).join('\n');
+                final msg = '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
+                    '$lines\n'
+                    'Total: $doneCount/$totalTasks';
                 await WhatsAppService.sendWithConfirm(ctx, msg);
               },
-              child: ListTile(
-                title: Text(dayFmt.format(t.serviceDay),
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(
-                  manual.isEmpty
-                      ? 'Sem tarefas manuais marcadas'
-                      : manual.join(' · '),
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ExpansionTile(
+                  title: Text(dayFmt.format(t.serviceDay),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                    '$doneCount/$totalTasks tarefas concluídas',
+                  ),
+                  trailing: Icon(
+                    doneCount == totalTasks ? Icons.check_circle : Icons.pending,
+                    color: doneCount == totalTasks ? AppColors.green : Colors.black45,
+                  ),
+                  children: allTasks.map((e) => _taskTile(e.label, e.done)).toList(),
                 ),
               ),
             );
@@ -981,6 +1302,49 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
       },
     );
   }
+}
+
+class _TaskEntry {
+  const _TaskEntry(this.label, this.done);
+  final String label;
+  final bool done;
+}
+
+class _TasksRow {
+  _TasksRow({
+    required this.tasks,
+    required this.aberturaDone,
+    required this.relatorioDone,
+    required this.visualDone,
+    required this.visualItens,
+    required this.autoDone,
+    required this.autoCount,
+  });
+  final DailyTasks tasks;
+  final bool aberturaDone;
+  final bool relatorioDone;
+  final bool visualDone;
+  final int visualItens;
+  final bool autoDone;
+  final int autoCount;
+}
+
+Widget _taskTile(String label, bool done) {
+  return ListTile(
+    dense: true,
+    leading: Icon(
+      done ? Icons.check_circle : Icons.cancel,
+      size: 20,
+      color: done ? AppColors.green : Colors.black26,
+    ),
+    title: Text(
+      label,
+      style: TextStyle(
+        decoration: done ? TextDecoration.lineThrough : null,
+        color: done ? null : Colors.black45,
+      ),
+    ),
+  );
 }
 
 class _InventoryTab extends StatefulWidget {

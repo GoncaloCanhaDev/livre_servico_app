@@ -96,6 +96,32 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
     await DailyTasksService.instance.save(t);
   }
 
+  Future<void> _sendMsg(String msg) async {
+    if (!mounted) return;
+    await WhatsAppService.sendWithConfirm(context, msg);
+  }
+
+  Future<bool> _confirmTask(String taskName) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmar Tarefa'),
+        content: Text('Tem a certeza que quer concluir a tarefa:\n"$taskName"?\n\nDepois de concluída, não poderá ser desmarcada hoje.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Concluir', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasks = _tasks;
@@ -126,26 +152,24 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Abertura',
               checked: tasks.kiwiAbertura,
+              onLongPress: tasks.kiwiAbertura ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura') : null,
               onChanged: (v) async {
+                if (v && !await _confirmTask('Kiwi Abertura')) return;
                 setState(() => tasks.kiwiAbertura = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(
-                      context, '✅ Tarefa concluída: Kiwi Abertura');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Kiwi Abertura');
               },
             ),
             _CountTask(
               label: 'Alterações de Preço',
               checked: tasks.alteracoesPreco,
               countController: _alteracoesCtrl,
+              onLongPress: tasks.alteracoesPreco ? () => _sendMsg('✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})') : null,
               onCheckedChanged: (v) async {
+                if (v && !await _confirmTask('Alterações de Preço')) return;
                 setState(() => tasks.alteracoesPreco = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(context,
-                      '✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})');
               },
               onCountChanged: (n) {
                 tasks.alteracoesPrecoCount = n;
@@ -155,19 +179,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Verificação de Temperaturas',
               checked: tasks.verificacaoTemperaturas,
+              onLongPress: tasks.verificacaoTemperaturas ? () => _sendMsg('✅ Tarefa concluída: Verificação de Temperaturas') : null,
               onChanged: (v) async {
+                if (v && !await _confirmTask('Verificação de Temperaturas')) return;
                 setState(() => tasks.verificacaoTemperaturas = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(
-                      context, '✅ Tarefa concluída: Verificação de Temperaturas');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Verificação de Temperaturas');
               },
             ),
             _AutoTask(
               label: 'Lista de Abertura',
               checked: _aberturaDone,
               note: _aberturaDone ? null : 'Finaliza no separador Abertura',
+              onLongPress: _aberturaDone ? () => _sendMsg('✅ Tarefa concluída: Lista de Abertura') : null,
             ),
             _AutoTask(
               label: 'Relatório das Listas',
@@ -175,23 +199,24 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               note: _relatorioDone
                   ? null
                   : 'Finaliza no separador Relatório',
+              onLongPress: _relatorioDone ? () => _sendMsg('✅ Tarefa concluída: Relatório das Listas') : null,
             ),
             _ManualTask(
               label: 'Preenchimento do Quadro',
               checked: tasks.preenchimentoQuadro,
+              onLongPress: tasks.preenchimentoQuadro ? () => _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro') : null,
               onChanged: (v) async {
+                if (v && !await _confirmTask('Preenchimento do Quadro')) return;
                 setState(() => tasks.preenchimentoQuadro = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(
-                      context, '✅ Tarefa concluída: Preenchimento do Quadro');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro');
               },
             ),
             _AutoTask(
               label: 'Lista Visual',
               checked: visualDone,
               note: '$_visualItens / 200 itens picados hoje',
+              onLongPress: visualDone ? () => _sendMsg('✅ Tarefa concluída: Lista Visual') : null,
             ),
             _AutoTask(
               label: 'Lista Automática',
@@ -199,18 +224,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               note: _autoCount == 0
                   ? 'Sem listas automáticas hoje'
                   : '$_autoCount lista${_autoCount == 1 ? '' : 's'} hoje',
+              onLongPress: _autoCount > 0 ? () => _sendMsg('✅ Tarefa concluída: Lista Automática') : null,
             ),
             _CountTask(
               label: 'Verificação de Validades',
               checked: tasks.verificacaoValidades,
               countController: _validadesCtrl,
+              onLongPress: tasks.verificacaoValidades ? () => _sendMsg('✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})') : null,
               onCheckedChanged: (v) async {
+                if (v && !await _confirmTask('Verificação de Validades')) return;
                 setState(() => tasks.verificacaoValidades = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(context,
-                      '✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})');
               },
               onCountChanged: (n) {
                 tasks.verificacaoValidadesCount = n;
@@ -220,13 +245,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Fecho',
               checked: tasks.kiwiFecho,
+              onLongPress: tasks.kiwiFecho ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho') : null,
               onChanged: (v) async {
+                if (v && !await _confirmTask('Kiwi Fecho')) return;
                 setState(() => tasks.kiwiFecho = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(
-                      context, '✅ Tarefa concluída: Kiwi Fecho');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Kiwi Fecho');
               },
             ),
             _ManualTask(
@@ -234,13 +258,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               checked: tasks.limpezaMaquinaVoltas,
               enabled: isSaturday,
               note: isSaturday ? null : 'Apenas ao sábado',
+              onLongPress: tasks.limpezaMaquinaVoltas ? () => _sendMsg('✅ Tarefa concluída: Limpeza da Máquina Voltas') : null,
               onChanged: (v) async {
+                if (v && !await _confirmTask('Limpeza da Máquina Voltas')) return;
                 setState(() => tasks.limpezaMaquinaVoltas = v);
                 await _saveTasks();
-                if (v && context.mounted) {
-                  await WhatsAppService.sendWithConfirm(
-                      context, '✅ Tarefa concluída: Limpeza da Máquina Voltas');
-                }
+                if (v) _sendMsg('✅ Tarefa concluída: Limpeza da Máquina Voltas');
               },
             ),
           ],
@@ -257,6 +280,7 @@ class _ManualTask extends StatelessWidget {
     required this.onChanged,
     this.enabled = true,
     this.note,
+    this.onLongPress,
   });
 
   final String label;
@@ -264,25 +288,32 @@ class _ManualTask extends StatelessWidget {
   final bool enabled;
   final String? note;
   final ValueChanged<bool> onChanged;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: CheckboxListTile(
-        value: checked,
-        onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-        controlAffinity: ListTileControlAffinity.leading,
-        activeColor: AppColors.green,
-        title: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: enabled ? null : Colors.black38,
-            decoration: checked ? TextDecoration.lineThrough : null,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: enabled ? (v) {
+            if (checked) return;
+            onChanged(v ?? false);
+          } : null,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: enabled ? null : Colors.black38,
+              decoration: checked ? TextDecoration.lineThrough : null,
+            ),
           ),
+          subtitle: note == null ? null : Text(note!),
         ),
-        subtitle: note == null ? null : Text(note!),
       ),
     );
   }
@@ -293,39 +324,44 @@ class _AutoTask extends StatelessWidget {
     required this.label,
     required this.checked,
     this.note,
+    this.onLongPress,
   });
 
   final String label;
   final bool checked;
   final String? note;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: CheckboxListTile(
-        value: checked,
-        onChanged: null,
-        controlAffinity: ListTileControlAffinity.leading,
-        activeColor: AppColors.green,
-        title: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            decoration: checked ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: Row(
-          children: [
-            const Icon(Icons.lock_outline, size: 12, color: Colors.black38),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                note ?? 'Automática',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
-              ),
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: null,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              decoration: checked ? TextDecoration.lineThrough : null,
             ),
-          ],
+          ),
+          subtitle: Row(
+            children: [
+              const Icon(Icons.lock_outline, size: 12, color: Colors.black38),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  note ?? 'Automática',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -339,6 +375,7 @@ class _CountTask extends StatelessWidget {
     required this.countController,
     required this.onCheckedChanged,
     required this.onCountChanged,
+    this.onLongPress,
   });
 
   final String label;
@@ -346,39 +383,46 @@ class _CountTask extends StatelessWidget {
   final TextEditingController countController;
   final ValueChanged<bool> onCheckedChanged;
   final ValueChanged<int> onCountChanged;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: CheckboxListTile(
-        value: checked,
-        onChanged: (v) => onCheckedChanged(v ?? false),
-        controlAffinity: ListTileControlAffinity.leading,
-        activeColor: AppColors.green,
-        title: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            decoration: checked ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        secondary: SizedBox(
-          width: 90,
-          child: TextField(
-            controller: countController,
-            enabled: !checked,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold),
-            decoration: const InputDecoration(
-              hintText: '0',
-              border: OutlineInputBorder(),
-              isDense: true,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: (v) {
+            if (checked) return;
+            onCheckedChanged(v ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              decoration: checked ? TextDecoration.lineThrough : null,
             ),
-            onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
+          ),
+          secondary: SizedBox(
+            width: 90,
+            child: TextField(
+              controller: countController,
+              enabled: !checked,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(
+                hintText: '0',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
+            ),
           ),
         ),
       ),

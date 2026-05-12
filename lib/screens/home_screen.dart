@@ -61,6 +61,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$h:$m:$s';
   }
 
+  void _handlePause() async {
+    final isLunch = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tipo de Pausa'),
+        content: const Text('Vais fazer uma pausa normal (15m) ou de almoço (60m)?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Pausa'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Almoço'),
+          ),
+        ],
+      ),
+    );
+    if (isLunch != null) {
+      ShiftService.instance.pause(isLunch: isLunch);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final svc = ShiftService.instance;
@@ -105,6 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 paused: _fmtDuration(paused),
                 isPauseOverLimit: isPauseOverLimit,
                 isLunch: svc.lastEvent?.type == ShiftEventType.lunch,
+                onPausePressed: _handlePause,
+                onResumePressed: svc.resume,
               ),
               const SizedBox(height: 24),
               ..._buildActions(status),
@@ -204,48 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ];
       case WorkStatus.working:
-        return [
-          ElevatedButton.icon(
-            icon: const Icon(Icons.pause),
-            label: const Text('Pausar'),
-            onPressed: () async {
-              final isLunch = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Tipo de Pausa'),
-                  content: const Text('Vais fazer uma pausa normal (15m) ou de almoço (60m)?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Pausa'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Almoço'),
-                    ),
-                  ],
-                ),
-              );
-              if (isLunch != null) {
-                svc.pause(isLunch: isLunch);
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.stop),
-            label: const Text('Terminar Turno'),
-            onPressed: svc.clockOut,
-          ),
-        ];
       case WorkStatus.paused:
         return [
-          ElevatedButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Retomar'),
-            onPressed: svc.resume,
-          ),
-          const SizedBox(height: 12),
           OutlinedButton.icon(
             icon: const Icon(Icons.stop),
             label: const Text('Terminar Turno'),
@@ -262,6 +247,8 @@ class _StatusCard extends StatelessWidget {
     required this.status,
     required this.worked,
     required this.paused,
+    required this.onPausePressed,
+    required this.onResumePressed,
     this.isPauseOverLimit = false,
     this.isLunch = false,
   });
@@ -269,6 +256,8 @@ class _StatusCard extends StatelessWidget {
   final WorkStatus status;
   final String worked;
   final String paused;
+  final VoidCallback onPausePressed;
+  final VoidCallback onResumePressed;
   final bool isPauseOverLimit;
   final bool isLunch;
 
@@ -312,17 +301,42 @@ class _StatusCard extends StatelessWidget {
             const SizedBox(height: 12),
             Container(height: 1, color: AppColors.grey),
             const SizedBox(height: 12),
-            Text(
-              paused,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: pauseColor,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (status != WorkStatus.idle)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12.0),
+                    child: IconButton(
+                      onPressed: status == WorkStatus.working
+                          ? onPausePressed
+                          : onResumePressed,
+                      icon: Icon(
+                        status == WorkStatus.working ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        size: 32,
+                        color: pauseColor,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                Column(
+                  children: [
+                    Text(
+                      paused,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: pauseColor,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const Text('Tempo em pausa',
+                        style: TextStyle(color: Colors.black54, fontSize: 12)),
+                  ],
+                ),
+              ],
             ),
-            const Text('Tempo em pausa',
-                style: TextStyle(color: Colors.black54, fontSize: 12)),
           ],
         ),
       ),
