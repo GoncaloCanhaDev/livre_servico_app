@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
+import '../services/shift_service.dart';
 import '../services/task_notification_service.dart';
 import '../theme.dart';
 
@@ -29,6 +31,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
+  Widget _sectionHeader(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
   Widget _buildToggle(String title, String key) {
     return SwitchListTile(
       dense: true,
@@ -53,8 +69,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _sectionHeader('Notificações'),
           SwitchListTile(
-            title: const Text('Notificações',
+            title: const Text('Ativar Notificações',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             subtitle: const Text('Ativar lembretes de turnos e tarefas.'),
             activeTrackColor: AppColors.green.withValues(alpha: 0.5),
@@ -102,6 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
           const Divider(),
+          _sectionHeader('Geral'),
           ListTile(
             title: const Text('Objetivo Lista Visual',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -140,8 +158,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
           ),
+          const Divider(),
+          _sectionHeader('Dados'),
+          ListTile(
+            title: const Text('Exportar Dados',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text(
+                'Guarda uma cópia de segurança da base de dados.'),
+            trailing: const Icon(Icons.upload_file),
+            onTap: _onExport,
+          ),
+          ListTile(
+            title: const Text('Importar Dados',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text(
+                'Substitui todos os dados atuais por uma cópia de segurança.'),
+            trailing: const Icon(Icons.download),
+            onTap: _onImport,
+          ),
+          ListTile(
+            title: const Text('Apagar Todos os Dados',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: Colors.red)),
+            subtitle: const Text(
+                'Remove permanentemente todos os dados da aplicação.'),
+            trailing: const Icon(Icons.delete_forever, color: Colors.red),
+            onTap: _onDeleteAll,
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _onExport() async {
+    try {
+      await BackupService.instance.exportToFile();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao exportar: $e')),
+      );
+    }
+  }
+
+  Future<void> _onDeleteAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apagar Todos os Dados'),
+        content: const Text(
+            'Esta ação irá apagar permanentemente todos os dados da aplicação (turnos, listas, produtos, inventário, tarefas, receções).\n\nEsta ação não pode ser revertida. Desejas continuar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Apagar Tudo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await BackupService.instance.clearAll();
+      await ShiftService.instance.refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Todos os dados foram apagados.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao apagar: $e')),
+      );
+    }
+  }
+
+  Future<void> _onImport() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Importar Dados'),
+        content: const Text(
+            'Esta ação irá apagar todos os dados atuais e substituí-los pelos dados do ficheiro selecionado.\n\nDesejas continuar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Apagar e Importar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final imported = await BackupService.instance.pickAndImport();
+      if (!mounted) return;
+      if (imported) {
+        await ShiftService.instance.refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dados importados com sucesso.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao importar: $e')),
+      );
+    }
   }
 }
