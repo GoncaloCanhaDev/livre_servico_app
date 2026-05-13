@@ -66,7 +66,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Definições'),
       ),
-      body: ListView(
+      body: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _sectionHeader('Notificações'),
@@ -186,6 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: _onDeleteAll,
           ),
         ],
+        ),
       ),
     );
   }

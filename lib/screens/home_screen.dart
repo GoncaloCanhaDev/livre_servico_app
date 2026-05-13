@@ -7,6 +7,7 @@ import '../services/shift_service.dart';
 import '../theme.dart';
 import 'daily_tasks_screen.dart';
 import 'historico_screen.dart';
+import 'info_screen.dart';
 import 'inventory_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
@@ -142,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.local_shipping),
-                      label: const Text('Camiões'),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Camiões')),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const TruckFormScreen(),
@@ -154,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.inventory_2),
-                      label: const Text('Produtos'),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Produtos')),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const ProductsListScreen(),
@@ -165,14 +166,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.checklist),
-                label: const Text('Listas de Reposição'),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const ReplenishmentListsScreen(),
-                  ));
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.checklist),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Listas')),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const ReplenishmentListsScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.assignment),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Inventários')),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const InventoryScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -189,11 +208,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      icon: const Icon(Icons.assignment),
-                      label: const Text('Inventários'),
+                      icon: const Icon(Icons.info_outline),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Informações')),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const InventoryScreen(),
+                          builder: (_) => const InfoScreen(),
                         ));
                       },
                     ),
@@ -202,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.history),
-                      label: const Text('Histórico'),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Histórico')),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const HistoricoScreen(),
