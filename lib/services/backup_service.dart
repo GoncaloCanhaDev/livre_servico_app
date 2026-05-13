@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
+import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
 import '../models/product.dart';
@@ -74,6 +75,7 @@ class BackupService {
       await _isar.visualLists.clear();
       await _isar.dailyTasks.clear();
       await _isar.inventorys.clear();
+      await _isar.infoEntrys.clear();
     });
   }
 
@@ -91,6 +93,7 @@ class BackupService {
         'VisualList': await _isar.visualLists.where().exportJson(),
         'DailyTasks': await _isar.dailyTasks.where().exportJson(),
         'Inventory': await _isar.inventorys.where().exportJson(),
+        'InfoEntry': await _isar.infoEntrys.where().exportJson(),
       },
     };
   }
@@ -122,6 +125,7 @@ class BackupService {
       await _isar.visualLists.clear();
       await _isar.dailyTasks.clear();
       await _isar.inventorys.clear();
+      await _isar.infoEntrys.clear();
 
       await _isar.shiftEvents.importJson(items('ShiftEvent'));
       await _isar.truckReceptions.importJson(items('TruckReception'));
@@ -132,6 +136,7 @@ class BackupService {
       await _isar.visualLists.importJson(items('VisualList'));
       await _isar.dailyTasks.importJson(items('DailyTasks'));
       await _isar.inventorys.importJson(items('Inventory'));
+      await _isar.infoEntrys.importJson(items('InfoEntry'));
     });
   }
 }

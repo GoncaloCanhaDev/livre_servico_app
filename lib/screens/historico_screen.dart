@@ -126,18 +126,20 @@ class HistoricoScreen extends StatelessWidget {
               tabs: tabs,
             ),
           ),
-          body: const TabBarView(
-            children: [
-              _AllTab(),
-              _ShiftsTab(),
-              _TrucksTab(),
-              _OpeningTab(),
-              _AutoTab(),
-              _ReportTab(),
-              _VisualTab(),
-              _TasksTab(),
-              _InventoryTab(),
-            ],
+          body: const SafeArea(
+            child: TabBarView(
+              children: [
+                _AllTab(),
+                _ShiftsTab(),
+                _TrucksTab(),
+                _OpeningTab(),
+                _AutoTab(),
+                _ReportTab(),
+                _VisualTab(),
+                _TasksTab(),
+                _InventoryTab(),
+              ],
+            ),
           ),
         ),
       ),
