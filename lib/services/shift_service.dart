@@ -54,6 +54,8 @@ class ShiftService extends ChangeNotifier {
   ShiftEvent? _lastEvent;
   ShiftEvent? get lastEvent => _lastEvent;
 
+  Future<void> refresh() => _refresh();
+
   Future<void> _refresh() async {
     final last = await _isar.shiftEvents
         .where()
