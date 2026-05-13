@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/daily_tasks.dart';
+import '../models/notification_log.dart';
 import 'auto_list_service.dart';
 import 'daily_tasks_service.dart';
 import 'opening_list_service.dart';
@@ -198,7 +199,27 @@ class TaskNotificationService {
         notificationDetails: _details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+      await _logNotification(
+          title: title, body: body, channel: key, scheduledFor: scheduled);
     }
+  }
+
+  Future<void> _logNotification({
+    required String title,
+    required String body,
+    required String channel,
+    required DateTime scheduledFor,
+  }) async {
+    try {
+      final isar = ShiftService.instance.isar;
+      final entry = NotificationLog()
+        ..title = title
+        ..body = body
+        ..channel = channel
+        ..scheduledFor = scheduledFor
+        ..createdAt = DateTime.now();
+      await isar.writeTxn(() => isar.notificationLogs.put(entry));
+    } catch (_) {}
   }
 
   Future<void> checkVisualGoal() async {
@@ -222,19 +243,33 @@ class TaskNotificationService {
     final goal = SettingsService.instance.visualGoal;
     if (totalPicados < goal) {
       final missing = goal - totalPicados;
+      final body =
+          'Ainda faltam $missing itens para atingires o teu objetivo diário ($goal).';
       await _plugin.show(
         id: 4099,
         title: 'Lista Visual Guardada',
-        body: 'Ainda faltam $missing itens para atingires o teu objetivo diário ($goal).',
+        body: body,
         notificationDetails: _details,
       );
+      await _logNotification(
+          title: 'Lista Visual Guardada',
+          body: body,
+          channel: 'page_listas',
+          scheduledFor: DateTime.now());
     } else {
+      final body =
+          'Parabéns! Já atingiste o teu objetivo diário de itens picados ($goal).';
       await _plugin.show(
         id: 4099,
         title: 'Objetivo Atingido! 🎉',
-        body: 'Parabéns! Já atingiste o teu objetivo diário de itens picados ($goal).',
+        body: body,
         notificationDetails: _details,
       );
+      await _logNotification(
+          title: 'Objetivo Atingido! 🎉',
+          body: body,
+          channel: 'page_listas',
+          scheduledFor: DateTime.now());
     }
   }
 

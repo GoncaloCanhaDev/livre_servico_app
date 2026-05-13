@@ -6,6 +6,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
+import '../models/notification_log.dart';
 import '../models/opening_list.dart';
 import '../models/product.dart';
 import '../models/report_list.dart';
@@ -39,6 +40,7 @@ class ShiftService extends ChangeNotifier {
         DailyTasksSchema,
         InventorySchema,
         InfoEntrySchema,
+        NotificationLogSchema,
       ],
       directory: dir.path,
       name: 'livre_servico',

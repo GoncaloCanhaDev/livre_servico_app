@@ -37,33 +37,38 @@ const DailyTasksSchema = CollectionSchema(
       name: r'kiwiFecho',
       type: IsarType.bool,
     ),
-    r'limpezaMaquinaVoltas': PropertySchema(
+    r'lastUpdatedAt': PropertySchema(
       id: 4,
+      name: r'lastUpdatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'limpezaMaquinaVoltas': PropertySchema(
+      id: 5,
       name: r'limpezaMaquinaVoltas',
       type: IsarType.bool,
     ),
     r'preenchimentoQuadro': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'preenchimentoQuadro',
       type: IsarType.bool,
     ),
     r'serviceDay': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'verificacaoTemperaturas': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'verificacaoTemperaturas',
       type: IsarType.bool,
     ),
     r'verificacaoValidades': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'verificacaoValidades',
       type: IsarType.bool,
     ),
     r'verificacaoValidadesCount': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'verificacaoValidadesCount',
       type: IsarType.long,
     ),
@@ -117,12 +122,13 @@ void _dailyTasksSerialize(
   writer.writeLong(offsets[1], object.alteracoesPrecoCount);
   writer.writeBool(offsets[2], object.kiwiAbertura);
   writer.writeBool(offsets[3], object.kiwiFecho);
-  writer.writeBool(offsets[4], object.limpezaMaquinaVoltas);
-  writer.writeBool(offsets[5], object.preenchimentoQuadro);
-  writer.writeDateTime(offsets[6], object.serviceDay);
-  writer.writeBool(offsets[7], object.verificacaoTemperaturas);
-  writer.writeBool(offsets[8], object.verificacaoValidades);
-  writer.writeLong(offsets[9], object.verificacaoValidadesCount);
+  writer.writeDateTime(offsets[4], object.lastUpdatedAt);
+  writer.writeBool(offsets[5], object.limpezaMaquinaVoltas);
+  writer.writeBool(offsets[6], object.preenchimentoQuadro);
+  writer.writeDateTime(offsets[7], object.serviceDay);
+  writer.writeBool(offsets[8], object.verificacaoTemperaturas);
+  writer.writeBool(offsets[9], object.verificacaoValidades);
+  writer.writeLong(offsets[10], object.verificacaoValidadesCount);
 }
 
 DailyTasks _dailyTasksDeserialize(
@@ -137,12 +143,13 @@ DailyTasks _dailyTasksDeserialize(
   object.id = id;
   object.kiwiAbertura = reader.readBool(offsets[2]);
   object.kiwiFecho = reader.readBool(offsets[3]);
-  object.limpezaMaquinaVoltas = reader.readBool(offsets[4]);
-  object.preenchimentoQuadro = reader.readBool(offsets[5]);
-  object.serviceDay = reader.readDateTime(offsets[6]);
-  object.verificacaoTemperaturas = reader.readBool(offsets[7]);
-  object.verificacaoValidades = reader.readBool(offsets[8]);
-  object.verificacaoValidadesCount = reader.readLong(offsets[9]);
+  object.lastUpdatedAt = reader.readDateTimeOrNull(offsets[4]);
+  object.limpezaMaquinaVoltas = reader.readBool(offsets[5]);
+  object.preenchimentoQuadro = reader.readBool(offsets[6]);
+  object.serviceDay = reader.readDateTime(offsets[7]);
+  object.verificacaoTemperaturas = reader.readBool(offsets[8]);
+  object.verificacaoValidades = reader.readBool(offsets[9]);
+  object.verificacaoValidadesCount = reader.readLong(offsets[10]);
   return object;
 }
 
@@ -162,16 +169,18 @@ P _dailyTasksDeserializeProp<P>(
     case 3:
       return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDateTime(offset)) as P;
-    case 7:
       return (reader.readBool(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -590,6 +599,79 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'lastUpdatedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'lastUpdatedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastUpdatedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  lastUpdatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastUpdatedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   limpezaMaquinaVoltasEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -807,6 +889,18 @@ extension DailyTasksQuerySortBy
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> sortByLastUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> sortByLastUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdatedAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   sortByLimpezaMaquinaVoltas() {
     return QueryBuilder.apply(this, (query) {
@@ -955,6 +1049,18 @@ extension DailyTasksQuerySortThenBy
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> thenByLastUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> thenByLastUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdatedAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   thenByLimpezaMaquinaVoltas() {
     return QueryBuilder.apply(this, (query) {
@@ -1065,6 +1171,12 @@ extension DailyTasksQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByLastUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdatedAt');
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QDistinct>
   distinctByLimpezaMaquinaVoltas() {
     return QueryBuilder.apply(this, (query) {
@@ -1137,6 +1249,13 @@ extension DailyTasksQueryProperty
   QueryBuilder<DailyTasks, bool, QQueryOperations> kiwiFechoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'kiwiFecho');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DateTime?, QQueryOperations>
+  lastUpdatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdatedAt');
     });
   }
 

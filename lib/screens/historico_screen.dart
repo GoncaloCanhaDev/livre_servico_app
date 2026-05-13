@@ -21,7 +21,9 @@ import '../services/whatsapp_service.dart';
 import '../theme.dart';
 
 class HistoricoScreen extends StatelessWidget {
-  const HistoricoScreen({super.key});
+  const HistoricoScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   static const _tabNames = [
     'Tudo',
@@ -83,6 +85,7 @@ class HistoricoScreen extends StatelessWidget {
     final tabs = _tabNames.map((n) => Tab(text: n)).toList();
     return DefaultTabController(
       length: tabs.length,
+      initialIndex: initialTab.clamp(0, tabs.length - 1),
       child: Builder(
         builder: (ctx) => Scaffold(
           appBar: AppBar(
@@ -398,7 +401,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       final doneCount = flags.where((v) => v).length;
       items.add(_DayItem(
         type: _ItemType.tasks,
-        time: t.serviceDay,
+        time: t.lastUpdatedAt ?? t.serviceDay,
         title: '✅ Tarefas Diárias',
         subtitle: '$doneCount/$total concluídas',
         icon: Icons.task_alt,
