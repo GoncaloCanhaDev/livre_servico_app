@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
+import 'notification_history_screen.dart';
 import '../services/settings_service.dart';
 import '../services/shift_service.dart';
 import '../services/task_notification_service.dart';
@@ -119,6 +120,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ],
+          ListTile(
+            title: const Text('Histórico de Notificações',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle:
+                const Text('Vê todas as notificações agendadas e enviadas.'),
+            trailing: const Icon(Icons.history),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const NotificationHistoryScreen(),
+              ));
+            },
+          ),
           const Divider(),
           _sectionHeader('Geral'),
           ListTile(

@@ -6,6 +6,7 @@ import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
 import 'daily_tasks_screen.dart';
+import 'dashboard_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -194,14 +195,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.task_alt),
-                label: const Text('Tarefas Diárias'),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const DailyTasksScreen(),
-                  ));
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.task_alt),
+                      label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Tarefas Diárias')),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const DailyTasksScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.insights),
+                      label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Estatísticas')),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const DashboardScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Row(

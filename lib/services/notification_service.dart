@@ -1,18 +1,42 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../models/notification_log.dart';
 import 'settings_service.dart';
+import 'shift_service.dart';
 
-class NotificationService {
+class NotificationService extends ChangeNotifier {
   NotificationService._();
   static final instance = NotificationService._();
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+
+  Future<void> _log({
+    required String title,
+    required String body,
+    required String channel,
+    required DateTime scheduledFor,
+  }) async {
+    try {
+      final isar = ShiftService.instance.isar;
+      final entry = NotificationLog()
+        ..title = title
+        ..body = body
+        ..channel = channel
+        ..scheduledFor = scheduledFor
+        ..createdAt = DateTime.now();
+      await isar.writeTxn(() => isar.notificationLogs.put(entry));
+      notifyListeners();
+    } catch (_) {
+      // Logging must never break notification scheduling.
+    }
+  }
 
   Future<void> init() async {
     if (_initialized) return;
@@ -74,6 +98,12 @@ class NotificationService {
       body: 'Irás agora receber lembretes.',
       notificationDetails: details,
     );
+    await _log(
+      title: 'Notificações ativadas!',
+      body: 'Irás agora receber lembretes.',
+      channel: 'teste',
+      scheduledFor: DateTime.now(),
+    );
   }
 
   Future<void> schedulePauseReminders({
@@ -114,6 +144,12 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+      await _log(
+        title: 'O teu $pauseType está a terminar!',
+        body: 'Falta 1 minuto para atingires o limite.',
+        channel: 'pausa',
+        scheduledFor: warningTime,
+      );
     }
 
     // Limit Reached
@@ -125,6 +161,12 @@ class NotificationService {
         scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      await _log(
+        title: 'Atenção!',
+        body: 'O limite do teu $pauseType ($limitMinutes minutos) foi atingido.',
+        channel: 'pausa',
+        scheduledFor: limitTime,
       );
     }
   }
@@ -168,6 +210,12 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+      await _log(
+        title: 'Pausa para Almoço',
+        body: 'Faltam 5 minutos para atingires 5h de trabalho contínuo.',
+        channel: 'trabalho',
+        scheduledFor: warningTime,
+      );
     }
 
     if (limitTime.isAfter(DateTime.now())) {
@@ -178,6 +226,12 @@ class NotificationService {
         scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      await _log(
+        title: 'Atenção!',
+        body: 'Atingiste o limite de 5h de trabalho contínuo sem almoço.',
+        channel: 'trabalho',
+        scheduledFor: limitTime,
       );
     }
   }
@@ -218,6 +272,12 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+      await _log(
+        title: 'Fim de Turno Próximo',
+        body: 'Faltam 5 minutos para completares as tuas 9 horas de turno.',
+        channel: 'turno',
+        scheduledFor: warningTime,
+      );
     }
 
     if (limitTime.isAfter(DateTime.now())) {
@@ -228,6 +288,12 @@ class NotificationService {
         scheduledDate: tz.TZDateTime.from(limitTime, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      await _log(
+        title: 'Fim de Turno!',
+        body: 'O teu turno de 9 horas chegou ao fim.',
+        channel: 'turno',
+        scheduledFor: limitTime,
       );
     }
   }

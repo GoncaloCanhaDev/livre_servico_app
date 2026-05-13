@@ -47,6 +47,7 @@ class DailyTasksService extends ChangeNotifier {
   }
 
   Future<void> save(DailyTasks t) async {
+    t.lastUpdatedAt = DateTime.now();
     await _isar.writeTxn(() async {
       await _isar.dailyTasks.put(t);
     });

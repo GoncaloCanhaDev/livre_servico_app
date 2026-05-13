@@ -18,4 +18,6 @@ class DailyTasks {
   int verificacaoValidadesCount = 0;
   bool kiwiFecho = false;
   bool limpezaMaquinaVoltas = false;
+
+  DateTime? lastUpdatedAt;
 }
