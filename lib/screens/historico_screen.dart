@@ -286,7 +286,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       final worked = computeWorked(events);
       items.add(_DayItem(
         type: _ItemType.shift,
-        time: start,
+        time: end,
         title: '🕒 Turno',
         subtitle: '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
         icon: Icons.schedule,
@@ -315,7 +315,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       if (!o.isFinalized) continue;
       items.add(_DayItem(
         type: _ItemType.opening,
-        time: o.serviceDay,
+        time: o.finalizedAt ?? o.serviceDay,
         title: '📋 Lista de Abertura',
         subtitle: 'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
         icon: Icons.check_circle,
@@ -341,7 +341,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       if (!r.isFinalized) continue;
       items.add(_DayItem(
         type: _ItemType.report,
-        time: r.serviceDay,
+        time: r.finalizedAt ?? r.serviceDay,
         title: '📊 Relatório',
         subtitle: 'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
         icon: Icons.check_circle,
@@ -361,20 +361,48 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       ));
     }
 
-    // Tasks
+    // Tasks (same counting logic as the Tasks tab — includes derived tasks)
     final tasks = await DailyTasksService.instance.history();
     for (final t in tasks) {
-      final doneCount = [
-        t.kiwiAbertura, t.alteracoesPreco, t.verificacaoTemperaturas,
-        t.preenchimentoQuadro, t.verificacaoValidades, t.kiwiFecho,
-        t.limpezaMaquinaVoltas,
-      ].where((v) => v).length;
+      final day = t.serviceDay;
+      final openingEntries =
+          await OpeningListService.instance.entriesForServiceDay(day);
+      final aberturaDone = openingEntries.any((o) => o.isFinalized);
+      final reportEntries =
+          await ReportListService.instance.entriesForServiceDay(day);
+      final relatorioDone = reportEntries.any((r) => r.isFinalized);
+      final visualEntries =
+          await VisualListService.instance.entriesForServiceDay(day);
+      final visualItens =
+          visualEntries.fold<int>(0, (s, e) => s + e.itensPicados);
+      final visualDone = visualItens >= 200;
+      final autoEntries =
+          await AutoListService.instance.entriesForServiceDay(day);
+      final autoDone = autoEntries.isNotEmpty;
+      final isSaturday = day.weekday == DateTime.saturday;
+
+      final flags = <bool>[
+        t.kiwiAbertura,
+        t.alteracoesPreco,
+        t.verificacaoTemperaturas,
+        aberturaDone,
+        relatorioDone,
+        t.preenchimentoQuadro,
+        visualDone,
+        autoDone,
+        t.verificacaoValidades,
+        t.kiwiFecho,
+        if (isSaturday) t.limpezaMaquinaVoltas,
+      ];
+      final total = flags.length;
+      final doneCount = flags.where((v) => v).length;
       items.add(_DayItem(
         type: _ItemType.tasks,
         time: t.serviceDay,
         title: '✅ Tarefas Diárias',
-        subtitle: '$doneCount/7 concluídas',
+        subtitle: '$doneCount/$total concluídas',
         icon: Icons.task_alt,
+        iconColor: doneCount == total ? AppColors.green : Colors.black54,
       ));
     }
 
