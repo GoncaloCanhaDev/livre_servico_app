@@ -9,6 +9,7 @@ import 'opening_list_service.dart';
 import 'report_list_service.dart';
 import 'settings_service.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 import 'visual_list_service.dart';
 
 class TaskNotificationService {
@@ -218,6 +219,7 @@ class TaskNotificationService {
         ..channel = channel
         ..scheduledFor = scheduledFor
         ..createdAt = DateTime.now();
+      SyncMeta.stamp(entry);
       await isar.writeTxn(() => isar.notificationLogs.put(entry));
     } catch (_) {}
   }

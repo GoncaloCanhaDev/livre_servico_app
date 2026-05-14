@@ -18,6 +18,7 @@ import '../models/shift_event.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 
 class BackupService {
   BackupService._();
@@ -66,19 +67,26 @@ class BackupService {
   }
 
   Future<void> clearAll() async {
-    await _isar.writeTxn(() async {
-      await _isar.shiftEvents.clear();
-      await _isar.truckReceptions.clear();
-      await _isar.products.clear();
-      await _isar.openingLists.clear();
-      await _isar.autoLists.clear();
-      await _isar.reportLists.clear();
-      await _isar.visualLists.clear();
-      await _isar.dailyTasks.clear();
-      await _isar.inventorys.clear();
-      await _isar.infoEntrys.clear();
-      await _isar.notificationLogs.clear();
-    });
+    Future<void> wipe<T>(IsarCollection<T> col) async {
+      final rows = await col.where().findAll();
+      if (rows.isEmpty) return;
+      for (final r in rows) {
+        SyncMeta.softDelete(r);
+      }
+      await _isar.writeTxn(() => col.putAll(rows));
+    }
+
+    await wipe(_isar.shiftEvents);
+    await wipe(_isar.truckReceptions);
+    await wipe(_isar.products);
+    await wipe(_isar.openingLists);
+    await wipe(_isar.autoLists);
+    await wipe(_isar.reportLists);
+    await wipe(_isar.visualLists);
+    await wipe(_isar.dailyTasks);
+    await wipe(_isar.inventorys);
+    await wipe(_isar.infoEntrys);
+    await wipe(_isar.notificationLogs);
   }
 
   Future<Map<String, dynamic>> _buildPayload() async {

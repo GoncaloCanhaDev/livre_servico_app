@@ -14,6 +14,7 @@ import '../models/shift_event.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import 'notification_service.dart';
+import 'sync_meta.dart';
 import 'task_notification_service.dart';
 
 enum WorkStatus { idle, working, paused }
@@ -46,7 +47,30 @@ class ShiftService extends ChangeNotifier {
       name: 'livre_servico',
     );
     instance = ShiftService._(isar);
+    await instance._backfillSync();
     await instance._refresh();
+  }
+
+  Future<void> _backfillSync() async {
+    Future<void> backfill<T>(IsarCollection<T> col) async {
+      final rows = await col.where().findAll();
+      final needsFix =
+          rows.where((r) => SyncMeta.backfillIfNeeded(r)).toList();
+      if (needsFix.isEmpty) return;
+      await _isar.writeTxn(() => col.putAll(needsFix));
+    }
+
+    await backfill(_isar.shiftEvents);
+    await backfill(_isar.truckReceptions);
+    await backfill(_isar.products);
+    await backfill(_isar.openingLists);
+    await backfill(_isar.autoLists);
+    await backfill(_isar.reportLists);
+    await backfill(_isar.visualLists);
+    await backfill(_isar.dailyTasks);
+    await backfill(_isar.inventorys);
+    await backfill(_isar.infoEntrys);
+    await backfill(_isar.notificationLogs);
   }
 
   WorkStatus _status = WorkStatus.idle;
@@ -62,7 +86,8 @@ class ShiftService extends ChangeNotifier {
 
   Future<void> _refresh() async {
     final last = await _isar.shiftEvents
-        .where()
+        .filter()
+        .syncDeletedAtIsNull()
         .sortByTimestampDesc()
         .findFirst();
     _lastEvent = last;
@@ -82,12 +107,14 @@ class ShiftService extends ChangeNotifier {
     if (_status != WorkStatus.idle) return;
     final now = DateTime.now();
     final shiftId = now.millisecondsSinceEpoch;
+    final event = ShiftEvent.create(
+      timestamp: now,
+      type: ShiftEventType.clockIn,
+      shiftId: shiftId,
+    );
+    SyncMeta.stamp(event);
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.put(ShiftEvent.create(
-        timestamp: now,
-        type: ShiftEventType.clockIn,
-        shiftId: shiftId,
-      ));
+      await _isar.shiftEvents.put(event);
     });
     await NotificationService.instance.scheduleStraightWorkReminders(Duration.zero);
     await NotificationService.instance.scheduleTotalWorkReminders(now);
@@ -100,12 +127,14 @@ class ShiftService extends ChangeNotifier {
     if (_status != WorkStatus.working || _currentShiftId == null) return;
     
     final pauseTime = DateTime.now();
+    final event = ShiftEvent.create(
+      timestamp: pauseTime,
+      type: isLunch ? ShiftEventType.lunch : ShiftEventType.pause,
+      shiftId: _currentShiftId!,
+    );
+    SyncMeta.stamp(event);
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.put(ShiftEvent.create(
-        timestamp: pauseTime,
-        type: isLunch ? ShiftEventType.lunch : ShiftEventType.pause,
-        shiftId: _currentShiftId!,
-      ));
+      await _isar.shiftEvents.put(event);
     });
     
     await NotificationService.instance.schedulePauseReminders(
@@ -119,12 +148,14 @@ class ShiftService extends ChangeNotifier {
 
   Future<void> resume() async {
     if (_status != WorkStatus.paused || _currentShiftId == null) return;
+    final event = ShiftEvent.create(
+      timestamp: DateTime.now(),
+      type: ShiftEventType.resume,
+      shiftId: _currentShiftId!,
+    );
+    SyncMeta.stamp(event);
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.put(ShiftEvent.create(
-        timestamp: DateTime.now(),
-        type: ShiftEventType.resume,
-        shiftId: _currentShiftId!,
-      ));
+      await _isar.shiftEvents.put(event);
     });
     
     await NotificationService.instance.cancelPauseReminders();
@@ -137,12 +168,14 @@ class ShiftService extends ChangeNotifier {
 
   Future<void> clockOut() async {
     if (_status == WorkStatus.idle || _currentShiftId == null) return;
+    final event = ShiftEvent.create(
+      timestamp: DateTime.now(),
+      type: ShiftEventType.clockOut,
+      shiftId: _currentShiftId!,
+    );
+    SyncMeta.stamp(event);
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.put(ShiftEvent.create(
-        timestamp: DateTime.now(),
-        type: ShiftEventType.clockOut,
-        shiftId: _currentShiftId!,
-      ));
+      await _isar.shiftEvents.put(event);
     });
     await NotificationService.instance.cancelPauseReminders();
     await NotificationService.instance.cancelStraightWorkReminders();
@@ -155,28 +188,47 @@ class ShiftService extends ChangeNotifier {
   Future<List<ShiftEvent>> eventsForShift(int shiftId) {
     return _isar.shiftEvents
         .filter()
+        .syncDeletedAtIsNull()
         .shiftIdEqualTo(shiftId)
         .sortByTimestamp()
         .findAll();
   }
 
   Future<void> deleteAllShifts() async {
+    final rows = await _isar.shiftEvents
+        .filter()
+        .syncDeletedAtIsNull()
+        .findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.clear();
+      await _isar.shiftEvents.putAll(rows);
     });
     await _refresh();
   }
 
   Future<void> deleteShift(int shiftId) async {
+    final rows = await _isar.shiftEvents
+        .filter()
+        .syncDeletedAtIsNull()
+        .shiftIdEqualTo(shiftId)
+        .findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.shiftEvents.filter().shiftIdEqualTo(shiftId).deleteAll();
+      await _isar.shiftEvents.putAll(rows);
     });
     await _refresh();
   }
 
   Future<List<int>> allShiftIdsDesc() async {
     final all = await _isar.shiftEvents
-        .where()
+        .filter()
+        .syncDeletedAtIsNull()
         .sortByTimestampDesc()
         .findAll();
     final seen = <int>{};

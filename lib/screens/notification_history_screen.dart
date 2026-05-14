@@ -4,6 +4,8 @@ import 'package:isar_community/isar.dart';
 
 import '../models/notification_log.dart';
 import '../services/shift_service.dart';
+import '../services/sync_meta.dart';
+import '../services/sync_service.dart';
 import '../theme.dart';
 
 class NotificationHistoryScreen extends StatefulWidget {
@@ -26,7 +28,8 @@ class _NotificationHistoryScreenState
 
   Future<List<NotificationLog>> _load() async {
     final list = await ShiftService.instance.isar.notificationLogs
-        .where()
+        .filter()
+        .syncDeletedAtIsNull()
         .findAll();
     list.sort((a, b) => b.scheduledFor.compareTo(a.scheduledFor));
     return list;
@@ -53,7 +56,15 @@ class _NotificationHistoryScreenState
     );
     if (ok != true) return;
     final isar = ShiftService.instance.isar;
-    await isar.writeTxn(() => isar.notificationLogs.clear());
+    final rows =
+        await isar.notificationLogs.filter().syncDeletedAtIsNull().findAll();
+    if (rows.isNotEmpty) {
+      for (final r in rows) {
+        SyncMeta.softDelete(r);
+      }
+      await isar.writeTxn(() => isar.notificationLogs.putAll(rows));
+      SyncService.instance.requestSync();
+    }
     if (mounted) setState(() => _future = _load());
   }
 

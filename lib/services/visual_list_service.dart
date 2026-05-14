@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models/opening_list.dart';
 import '../models/visual_list.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 import 'task_notification_service.dart';
 
 class VisualListService extends ChangeNotifier {
@@ -24,6 +25,7 @@ class VisualListService extends ChangeNotifier {
       ..itensPicados = itensPicados
       ..quebraCents = quebraCents
       ..beneficioCents = beneficioCents;
+    SyncMeta.stamp(entry);
     await _isar.writeTxn(() async {
       await _isar.visualLists.put(entry);
     });
@@ -35,28 +37,42 @@ class VisualListService extends ChangeNotifier {
   Future<List<VisualList>> entriesForServiceDay(DateTime day) {
     return _isar.visualLists
         .filter()
+        .syncDeletedAtIsNull()
         .serviceDayEqualTo(day)
         .sortByCreatedAtDesc()
         .findAll();
   }
 
   Future<void> deleteAll() async {
+    final rows =
+        await _isar.visualLists.filter().syncDeletedAtIsNull().findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.visualLists.clear();
+      await _isar.visualLists.putAll(rows);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<void> delete(int id) async {
+    final row = await _isar.visualLists.get(id);
+    if (row == null || row.syncDeletedAt != null) return;
+    SyncMeta.softDelete(row);
     await _isar.writeTxn(() async {
-      await _isar.visualLists.delete(id);
+      await _isar.visualLists.put(row);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<List<VisualList>> all() {
-    return _isar.visualLists.where().sortByCreatedAtDesc().findAll();
+    return _isar.visualLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .sortByCreatedAtDesc()
+        .findAll();
   }
 }

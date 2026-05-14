@@ -75,6 +75,12 @@ class TruckReception {
   Id id = Isar.autoIncrement;
 
   @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
+  @Index()
   late DateTime arrivalTime;
 
   String? licensePlate;

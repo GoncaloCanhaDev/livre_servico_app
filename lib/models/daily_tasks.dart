@@ -6,6 +6,12 @@ part 'daily_tasks.g.dart';
 class DailyTasks {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
   @Index(unique: true, replace: true)
   late DateTime serviceDay;
 

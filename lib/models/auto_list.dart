@@ -7,6 +7,12 @@ class AutoList {
   Id id = Isar.autoIncrement;
 
   @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
+  @Index()
   late DateTime createdAt;
 
   int congelados = 0;

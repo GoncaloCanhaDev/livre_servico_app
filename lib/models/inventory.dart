@@ -6,6 +6,12 @@ part 'inventory.g.dart';
 class Inventory {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
   late String name;
 
   /// Value in cents (positive or negative).
