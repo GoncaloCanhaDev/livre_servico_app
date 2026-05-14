@@ -113,17 +113,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Livre Serviço Companion'),
-            if (_appVersion != null)
+            if (_appVersion != null) ...[
               Text(
                 'v$_appVersion',
                 style: const TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w400),
               ),
+              const SizedBox(width: 8),
+            ],
+            const Flexible(child: Text('Livre Serviço Companion')),
           ],
         ),
         actions: [

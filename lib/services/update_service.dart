@@ -28,6 +28,28 @@ class UpdateService {
   static const _repo = 'livre_servico_app';
   static final Uri _releaseUri =
       Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases/latest');
+  static final Uri _releasesListUri =
+      Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases?per_page=10');
+
+  /// Returns the most recent release tags (newest first), e.g.
+  /// `['v0.2.2', 'v0.2.1', 'v0.2.0']`. Empty on any failure.
+  Future<List<String>> fetchReleaseTags() async {
+    try {
+      final resp = await http
+          .get(_releasesListUri,
+              headers: {'Accept': 'application/vnd.github+json'})
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return const [];
+      final list = jsonDecode(resp.body) as List;
+      return list
+          .map((r) => (r as Map<String, dynamic>)['tag_name'] as String? ?? '')
+          .where((t) => t.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('UpdateService.fetchReleaseTags failed: $e');
+      return const [];
+    }
+  }
 
   /// Returns an [UpdateInfo] if a newer release than the running app is
   /// available on GitHub. Returns null otherwise. Network/parsing errors
