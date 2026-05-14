@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../models/shift_event.dart';
 import '../services/shift_service.dart';
 import '../theme.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Timer? _ticker;
   List<ShiftEvent> _todayEvents = [];
+  String? _appVersion;
 
   @override
   void initState() {
@@ -34,6 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() {});
     });
     _loadCurrent();
+    PackageInfo.fromPlatform().then((p) {
+      if (!mounted) return;
+      setState(() => _appVersion = p.version);
+    });
   }
 
   @override
@@ -107,7 +113,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Livre Serviço Companion'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Livre Serviço Companion'),
+            if (_appVersion != null)
+              Text(
+                'v$_appVersion',
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w400),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
