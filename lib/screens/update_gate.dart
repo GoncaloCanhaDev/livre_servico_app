@@ -31,8 +31,12 @@ class _UpdateGateState extends State<UpdateGate> {
   }
 
   Future<void> _check() async {
-    final info = await UpdateService.instance.checkForUpdate();
+    final results = await Future.wait([
+      UpdateService.instance.checkForUpdate(),
+      Future<void>.delayed(const Duration(seconds: 1)),
+    ]);
     if (!mounted) return;
+    final info = results[0] as UpdateInfo?;
     setState(() {
       _info = info;
       _stage = info == null ? _Stage.upToDate : _Stage.available;
@@ -71,11 +75,7 @@ class _UpdateGateState extends State<UpdateGate> {
   @override
   Widget build(BuildContext context) {
     if (_stage == _Stage.upToDate) return widget.child;
-    if (_stage == _Stage.checking) {
-      // Don't block the UI while we're still checking — show the app.
-      // The gate only takes over once we've confirmed an update exists.
-      return widget.child;
-    }
+    if (_stage == _Stage.checking) return const _LoadingSplash();
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -221,5 +221,50 @@ class _UpdateGateState extends State<UpdateGate> {
       case _Stage.upToDate:
         return const [SizedBox.shrink()];
     }
+  }
+}
+
+class _LoadingSplash extends StatelessWidget {
+  const _LoadingSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.storefront,
+                  size: 72, color: AppColors.green),
+              const SizedBox(height: 16),
+              const Text(
+                'Livre Serviço',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.green,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'A inicializar e a procurar atualizações…',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
