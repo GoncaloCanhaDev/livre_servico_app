@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/update_gate.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/settings_service.dart';
@@ -68,7 +69,7 @@ class LivreServicoApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       navigatorObservers: [_KeyboardDismissObserver()],
-      home: const _AuthGate(),
+      home: const UpdateGate(child: _AuthGate()),
     );
   }
 }
