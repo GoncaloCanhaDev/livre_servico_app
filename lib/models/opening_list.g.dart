@@ -43,7 +43,23 @@ const OpeningListSchema = CollectionSchema(
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
-    r'total': PropertySchema(id: 6, name: r'total', type: IsarType.long),
+    r'syncDeletedAt': PropertySchema(
+      id: 6,
+      name: r'syncDeletedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUpdatedAt': PropertySchema(
+      id: 7,
+      name: r'syncUpdatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUuid': PropertySchema(
+      id: 8,
+      name: r'syncUuid',
+      type: IsarType.string,
+    ),
+    r'synced': PropertySchema(id: 9, name: r'synced', type: IsarType.bool),
+    r'total': PropertySchema(id: 10, name: r'total', type: IsarType.long),
   },
 
   estimateSize: _openingListEstimateSize,
@@ -52,6 +68,19 @@ const OpeningListSchema = CollectionSchema(
   deserializeProp: _openingListDeserializeProp,
   idName: r'id',
   indexes: {
+    r'syncUuid': IndexSchema(
+      id: -4185038440025156770,
+      name: r'syncUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'syncUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+      ],
+    ),
     r'serviceDay': IndexSchema(
       id: -114834928129556000,
       name: r'serviceDay',
@@ -81,6 +110,7 @@ int _openingListEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
 
@@ -96,7 +126,11 @@ void _openingListSerialize(
   writer.writeLong(offsets[3], object.naoPereciveis);
   writer.writeLong(offsets[4], object.opls);
   writer.writeDateTime(offsets[5], object.serviceDay);
-  writer.writeLong(offsets[6], object.total);
+  writer.writeDateTime(offsets[6], object.syncDeletedAt);
+  writer.writeDateTime(offsets[7], object.syncUpdatedAt);
+  writer.writeString(offsets[8], object.syncUuid);
+  writer.writeBool(offsets[9], object.synced);
+  writer.writeLong(offsets[10], object.total);
 }
 
 OpeningList _openingListDeserialize(
@@ -112,6 +146,10 @@ OpeningList _openingListDeserialize(
   object.naoPereciveis = reader.readLong(offsets[3]);
   object.opls = reader.readLong(offsets[4]);
   object.serviceDay = reader.readDateTime(offsets[5]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[7]);
+  object.syncUuid = reader.readString(offsets[8]);
+  object.synced = reader.readBool(offsets[9]);
   return object;
 }
 
@@ -135,6 +173,14 @@ P _openingListDeserializeProp<P>(
     case 5:
       return (reader.readDateTime(offset)) as P;
     case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -302,6 +348,60 @@ extension OpeningListQueryWhere
           includeUpper: includeUpper,
         ),
       );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterWhereClause> syncUuidEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'syncUuid', value: [syncUuid]),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterWhereClause> syncUuidNotEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            );
+      }
     });
   }
 
@@ -775,6 +875,288 @@ extension OpeningListQueryFilter
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncDeletedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncDeletedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncDeletedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUpdatedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUpdatedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUpdatedAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUpdatedAtLessThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUpdatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUpdatedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> syncUuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> syncUuidBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUuid',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> syncUuidMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'syncUuid',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  syncUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> syncedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'synced', value: value),
+      );
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> totalEqualTo(
     int value,
   ) {
@@ -914,6 +1296,56 @@ extension OpeningListQuerySortBy
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'total', Sort.asc);
@@ -1014,6 +1446,56 @@ extension OpeningListQuerySortThenBy
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'total', Sort.asc);
@@ -1065,6 +1547,32 @@ extension OpeningListQueryWhereDistinct
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctBySyncUuid({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUuid', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'synced');
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'total');
@@ -1113,6 +1621,32 @@ extension OpeningListQueryProperty
   QueryBuilder<OpeningList, DateTime, QQueryOperations> serviceDayProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'serviceDay');
+    });
+  }
+
+  QueryBuilder<OpeningList, DateTime?, QQueryOperations>
+  syncDeletedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<OpeningList, DateTime, QQueryOperations>
+  syncUpdatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<OpeningList, String, QQueryOperations> syncUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUuid');
+    });
+  }
+
+  QueryBuilder<OpeningList, bool, QQueryOperations> syncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'synced');
     });
   }
 

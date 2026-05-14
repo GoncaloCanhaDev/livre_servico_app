@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/notification_log.dart';
 import 'settings_service.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 
 class NotificationService extends ChangeNotifier {
   NotificationService._();
@@ -31,6 +32,7 @@ class NotificationService extends ChangeNotifier {
         ..channel = channel
         ..scheduledFor = scheduledFor
         ..createdAt = DateTime.now();
+      SyncMeta.stamp(entry);
       await isar.writeTxn(() => isar.notificationLogs.put(entry));
       notifyListeners();
     } catch (_) {

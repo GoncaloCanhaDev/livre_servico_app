@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 
 import '../models/auto_list.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 import 'task_notification_service.dart';
 
 class AutoListService extends ChangeNotifier {
@@ -21,6 +22,7 @@ class AutoListService extends ChangeNotifier {
       ..congelados = congelados
       ..opls = opls
       ..naoPereciveis = naoPereciveis;
+    SyncMeta.stamp(entry);
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(entry);
     });
@@ -33,6 +35,7 @@ class AutoListService extends ChangeNotifier {
     final end = start.add(const Duration(days: 1));
     return _isar.autoLists
         .filter()
+        .syncDeletedAtIsNull()
         .createdAtGreaterThan(start)
         .and()
         .createdAtLessThan(end)
@@ -40,22 +43,35 @@ class AutoListService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
+    final rows =
+        await _isar.autoLists.filter().syncDeletedAtIsNull().findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.autoLists.clear();
+      await _isar.autoLists.putAll(rows);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<void> delete(int id) async {
+    final row = await _isar.autoLists.get(id);
+    if (row == null || row.syncDeletedAt != null) return;
+    SyncMeta.softDelete(row);
     await _isar.writeTxn(() async {
-      await _isar.autoLists.delete(id);
+      await _isar.autoLists.put(row);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<List<AutoList>> history() {
-    return _isar.autoLists.where().sortByCreatedAtDesc().findAll();
+    return _isar.autoLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .sortByCreatedAtDesc()
+        .findAll();
   }
 }

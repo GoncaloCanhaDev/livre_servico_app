@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 import 'task_notification_service.dart';
 
 class DailyTasksService extends ChangeNotifier {
@@ -16,10 +17,12 @@ class DailyTasksService extends ChangeNotifier {
     final day = currentServiceDay();
     final existing = await _isar.dailyTasks
         .filter()
+        .syncDeletedAtIsNull()
         .serviceDayEqualTo(day)
         .findFirst();
     if (existing != null) {
       if (_sanitize(existing)) {
+        SyncMeta.stamp(existing);
         await _isar.writeTxn(() async {
           await _isar.dailyTasks.put(existing);
         });
@@ -27,6 +30,7 @@ class DailyTasksService extends ChangeNotifier {
       return existing;
     }
     final created = DailyTasks()..serviceDay = day;
+    SyncMeta.stamp(created);
     await _isar.writeTxn(() async {
       created.id = await _isar.dailyTasks.put(created);
     });
@@ -48,6 +52,7 @@ class DailyTasksService extends ChangeNotifier {
 
   Future<void> save(DailyTasks t) async {
     t.lastUpdatedAt = DateTime.now();
+    SyncMeta.stamp(t);
     await _isar.writeTxn(() async {
       await _isar.dailyTasks.put(t);
     });
@@ -56,20 +61,33 @@ class DailyTasksService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
+    final rows =
+        await _isar.dailyTasks.filter().syncDeletedAtIsNull().findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.dailyTasks.clear();
+      await _isar.dailyTasks.putAll(rows);
     });
     notifyListeners();
   }
 
   Future<void> delete(int id) async {
+    final row = await _isar.dailyTasks.get(id);
+    if (row == null || row.syncDeletedAt != null) return;
+    SyncMeta.softDelete(row);
     await _isar.writeTxn(() async {
-      await _isar.dailyTasks.delete(id);
+      await _isar.dailyTasks.put(row);
     });
     notifyListeners();
   }
 
   Future<List<DailyTasks>> history() {
-    return _isar.dailyTasks.where().sortByServiceDayDesc().findAll();
+    return _isar.dailyTasks
+        .filter()
+        .syncDeletedAtIsNull()
+        .sortByServiceDayDesc()
+        .findAll();
   }
 }

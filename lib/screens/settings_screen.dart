@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
+import '../services/sync_service.dart';
 import 'notification_history_screen.dart';
 import '../services/settings_service.dart';
 import '../services/shift_service.dart';
@@ -20,16 +22,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     SettingsService.instance.addListener(_onSettingsChanged);
+    SyncService.instance.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    SyncService.instance.removeListener(_onSettingsChanged);
     super.dispose();
   }
 
   void _onSettingsChanged() {
     setState(() {});
+  }
+
+  String _syncSubtitle() {
+    final s = SyncService.instance;
+    if (s.syncing) return 'A sincronizar…';
+    if (s.lastError != null) return 'Erro: ${s.lastError}';
+    final last = s.lastSyncAt;
+    if (last == null) return 'Ainda não sincronizado.';
+    final h = last.hour.toString().padLeft(2, '0');
+    final m = last.minute.toString().padLeft(2, '0');
+    return 'Última sincronização às $h:$m.';
   }
 
   Widget _sectionHeader(String label) {
@@ -175,6 +190,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(),
           _sectionHeader('Dados'),
           ListTile(
+            title: const Text('Sincronizar agora',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(_syncSubtitle()),
+            trailing: SyncService.instance.syncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            onTap: SyncService.instance.syncing
+                ? null
+                : () => SyncService.instance.syncNow(),
+          ),
+          ListTile(
             title: const Text('Exportar Dados',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             subtitle: const Text(
@@ -198,6 +228,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Remove permanentemente todos os dados da aplicação.'),
             trailing: const Icon(Icons.delete_forever, color: Colors.red),
             onTap: _onDeleteAll,
+          ),
+          const Divider(),
+          _sectionHeader('Conta'),
+          ListTile(
+            title: Text(
+              AuthService.instance.user?.email ?? 'Sessão iniciada',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text('Terminar sessão nesta aplicação.'),
+            trailing: const Icon(Icons.logout),
+            onTap: () async {
+              await AuthService.instance.signOut();
+            },
           ),
         ],
         ),

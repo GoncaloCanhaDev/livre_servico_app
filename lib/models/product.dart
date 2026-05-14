@@ -8,6 +8,12 @@ part 'product.g.dart';
 class Product {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
   @Index(unique: true, replace: true)
   late String ean;
 

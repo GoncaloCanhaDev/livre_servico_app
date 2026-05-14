@@ -32,8 +32,24 @@ const ProductSchema = CollectionSchema(
     r'name': PropertySchema(id: 3, name: r'name', type: IsarType.string),
     r'notes': PropertySchema(id: 4, name: r'notes', type: IsarType.string),
     r'sapCode': PropertySchema(id: 5, name: r'sapCode', type: IsarType.string),
-    r'updatedAt': PropertySchema(
+    r'syncDeletedAt': PropertySchema(
       id: 6,
+      name: r'syncDeletedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUpdatedAt': PropertySchema(
+      id: 7,
+      name: r'syncUpdatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUuid': PropertySchema(
+      id: 8,
+      name: r'syncUuid',
+      type: IsarType.string,
+    ),
+    r'synced': PropertySchema(id: 9, name: r'synced', type: IsarType.bool),
+    r'updatedAt': PropertySchema(
+      id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
@@ -45,6 +61,19 @@ const ProductSchema = CollectionSchema(
   deserializeProp: _productDeserializeProp,
   idName: r'id',
   indexes: {
+    r'syncUuid': IndexSchema(
+      id: -4185038440025156770,
+      name: r'syncUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'syncUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+      ],
+    ),
     r'ean': IndexSchema(
       id: 470098543478402927,
       name: r'ean',
@@ -96,6 +125,7 @@ int _productEstimateSize(
     }
   }
   bytesCount += 3 + object.sapCode.length * 3;
+  bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
 
@@ -111,7 +141,11 @@ void _productSerialize(
   writer.writeString(offsets[3], object.name);
   writer.writeString(offsets[4], object.notes);
   writer.writeString(offsets[5], object.sapCode);
-  writer.writeDateTime(offsets[6], object.updatedAt);
+  writer.writeDateTime(offsets[6], object.syncDeletedAt);
+  writer.writeDateTime(offsets[7], object.syncUpdatedAt);
+  writer.writeString(offsets[8], object.syncUuid);
+  writer.writeBool(offsets[9], object.synced);
+  writer.writeDateTime(offsets[10], object.updatedAt);
 }
 
 Product _productDeserialize(
@@ -130,7 +164,11 @@ Product _productDeserialize(
   object.name = reader.readString(offsets[3]);
   object.notes = reader.readStringOrNull(offsets[4]);
   object.sapCode = reader.readString(offsets[5]);
-  object.updatedAt = reader.readDateTime(offsets[6]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[7]);
+  object.syncUuid = reader.readString(offsets[8]);
+  object.synced = reader.readBool(offsets[9]);
+  object.updatedAt = reader.readDateTime(offsets[10]);
   return object;
 }
 
@@ -156,6 +194,14 @@ P _productDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -327,6 +373,60 @@ extension ProductQueryWhere on QueryBuilder<Product, Product, QWhereClause> {
           includeUpper: includeUpper,
         ),
       );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> syncUuidEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'syncUuid', value: [syncUuid]),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> syncUuidNotEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            );
+      }
     });
   }
 
@@ -1212,6 +1312,293 @@ extension ProductQueryFilter
     });
   }
 
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncDeletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+  syncDeletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncDeletedAtEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncDeletedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+  syncDeletedAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncDeletedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncDeletedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncDeletedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUpdatedAtEqualTo(
+    DateTime value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUpdatedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+  syncUpdatedAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUpdatedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUpdatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUpdatedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUuid',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'syncUuid',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition> syncedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'synced', value: value),
+      );
+    });
+  }
+
   QueryBuilder<Product, Product, QAfterFilterCondition> updatedAtEqualTo(
     DateTime value,
   ) {
@@ -1351,6 +1738,54 @@ extension ProductQuerySortBy on QueryBuilder<Product, Product, QSortBy> {
     });
   }
 
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<Product, Product, QAfterSortBy> sortByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -1450,6 +1885,54 @@ extension ProductQuerySortThenBy
     });
   }
 
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<Product, Product, QAfterSortBy> thenByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -1509,6 +1992,32 @@ extension ProductQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Product, Product, QDistinct> distinctBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<Product, Product, QDistinct> distinctBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<Product, Product, QDistinct> distinctBySyncUuid({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUuid', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Product, Product, QDistinct> distinctBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'synced');
+    });
+  }
+
   QueryBuilder<Product, Product, QDistinct> distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
@@ -1557,6 +2066,30 @@ extension ProductQueryProperty
   QueryBuilder<Product, String, QQueryOperations> sapCodeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sapCode');
+    });
+  }
+
+  QueryBuilder<Product, DateTime?, QQueryOperations> syncDeletedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<Product, DateTime, QQueryOperations> syncUpdatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<Product, String, QQueryOperations> syncUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUuid');
+    });
+  }
+
+  QueryBuilder<Product, bool, QQueryOperations> syncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'synced');
     });
   }
 

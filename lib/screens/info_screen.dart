@@ -3,6 +3,8 @@ import 'package:isar_community/isar.dart';
 
 import '../models/info_entry.dart';
 import '../services/shift_service.dart';
+import '../services/sync_meta.dart';
+import '../services/sync_service.dart';
 import '../theme.dart';
 
 class InfoScreen extends StatefulWidget {
@@ -143,6 +145,7 @@ class _BucketBodyState extends State<_BucketBody> {
   Future<List<InfoEntry>> _load() async {
     final list = await ShiftService.instance.isar.infoEntrys
         .filter()
+        .syncDeletedAtIsNull()
         .bucketEqualTo(widget.bucket.key)
         .findAll();
     list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -168,7 +171,9 @@ class _BucketBodyState extends State<_BucketBody> {
       ..description = result.description
       ..contact = result.contact
       ..createdAt = DateTime.now();
+    SyncMeta.stamp(entry);
     await isar.writeTxn(() => isar.infoEntrys.put(entry));
+    SyncService.instance.requestSync();
     if (mounted) _refresh();
   }
 
@@ -192,7 +197,9 @@ class _BucketBodyState extends State<_BucketBody> {
     );
     if (confirmed != true) return;
     final isar = ShiftService.instance.isar;
-    await isar.writeTxn(() => isar.infoEntrys.delete(entry.id));
+    SyncMeta.softDelete(entry);
+    await isar.writeTxn(() => isar.infoEntrys.put(entry));
+    SyncService.instance.requestSync();
     if (mounted) _refresh();
   }
 
@@ -456,6 +463,7 @@ class _SingleFieldRowState extends State<_SingleFieldRow> {
   Future<InfoEntry?> _load() {
     return ShiftService.instance.isar.infoEntrys
         .filter()
+        .syncDeletedAtIsNull()
         .bucketEqualTo(widget.field.bucket)
         .findFirst();
   }
@@ -495,7 +503,9 @@ class _SingleFieldRowState extends State<_SingleFieldRow> {
       ..title = widget.field.label
       ..createdAt = existing?.createdAt ?? DateTime.now();
     entry.description = saved;
+    SyncMeta.stamp(entry);
     await isar.writeTxn(() => isar.infoEntrys.put(entry));
+    SyncService.instance.requestSync();
     if (!mounted) return;
     setState(() => _future = _load());
     widget.onChanged();

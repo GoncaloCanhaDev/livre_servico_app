@@ -14,6 +14,12 @@ enum ShiftEventType {
 class ShiftEvent {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  String syncUuid = '';
+  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? syncDeletedAt;
+  bool synced = true;
+
   late DateTime timestamp;
 
   @enumerated

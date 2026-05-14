@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models/opening_list.dart';
 import '../models/report_list.dart';
 import 'shift_service.dart';
+import 'sync_meta.dart';
 import 'task_notification_service.dart';
 
 class ReportListService extends ChangeNotifier {
@@ -16,10 +17,12 @@ class ReportListService extends ChangeNotifier {
     final day = currentServiceDay();
     final existing = await _isar.reportLists
         .filter()
+        .syncDeletedAtIsNull()
         .serviceDayEqualTo(day)
         .findFirst();
     if (existing != null) return existing;
     final created = ReportList()..serviceDay = day;
+    SyncMeta.stamp(created);
     await _isar.writeTxn(() async {
       created.id = await _isar.reportLists.put(created);
     });
@@ -38,6 +41,7 @@ class ReportListService extends ChangeNotifier {
     if (regularizacoes != null) list.regularizacoes = regularizacoes;
     if (massiva != null) list.massiva = massiva;
     if (repetidos != null) list.repetidos = repetidos;
+    SyncMeta.stamp(list);
     await _isar.writeTxn(() async {
       await _isar.reportLists.put(list);
     });
@@ -47,6 +51,7 @@ class ReportListService extends ChangeNotifier {
   Future<void> finalize(ReportList list) async {
     if (list.isFinalized) return;
     list.finalizedAt = DateTime.now();
+    SyncMeta.stamp(list);
     await _isar.writeTxn(() async {
       await _isar.reportLists.put(list);
     });
@@ -57,27 +62,41 @@ class ReportListService extends ChangeNotifier {
   Future<List<ReportList>> entriesForServiceDay(DateTime day) {
     return _isar.reportLists
         .filter()
+        .syncDeletedAtIsNull()
         .serviceDayEqualTo(day)
         .findAll();
   }
 
   Future<void> deleteAll() async {
+    final rows =
+        await _isar.reportLists.filter().syncDeletedAtIsNull().findAll();
+    if (rows.isEmpty) return;
+    for (final r in rows) {
+      SyncMeta.softDelete(r);
+    }
     await _isar.writeTxn(() async {
-      await _isar.reportLists.clear();
+      await _isar.reportLists.putAll(rows);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<void> delete(int id) async {
+    final row = await _isar.reportLists.get(id);
+    if (row == null || row.syncDeletedAt != null) return;
+    SyncMeta.softDelete(row);
     await _isar.writeTxn(() async {
-      await _isar.reportLists.delete(id);
+      await _isar.reportLists.put(row);
     });
     await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<List<ReportList>> history() {
-    return _isar.reportLists.where().sortByServiceDayDesc().findAll();
+    return _isar.reportLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .sortByServiceDayDesc()
+        .findAll();
   }
 }

@@ -29,7 +29,23 @@ const InfoEntrySchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'title': PropertySchema(id: 4, name: r'title', type: IsarType.string),
+    r'syncDeletedAt': PropertySchema(
+      id: 4,
+      name: r'syncDeletedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUpdatedAt': PropertySchema(
+      id: 5,
+      name: r'syncUpdatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'syncUuid': PropertySchema(
+      id: 6,
+      name: r'syncUuid',
+      type: IsarType.string,
+    ),
+    r'synced': PropertySchema(id: 7, name: r'synced', type: IsarType.bool),
+    r'title': PropertySchema(id: 8, name: r'title', type: IsarType.string),
   },
 
   estimateSize: _infoEntryEstimateSize,
@@ -38,6 +54,19 @@ const InfoEntrySchema = CollectionSchema(
   deserializeProp: _infoEntryDeserializeProp,
   idName: r'id',
   indexes: {
+    r'syncUuid': IndexSchema(
+      id: -4185038440025156770,
+      name: r'syncUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'syncUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+      ],
+    ),
     r'bucket': IndexSchema(
       id: 171316046875558403,
       name: r'bucket',
@@ -75,6 +104,7 @@ int _infoEntryEstimateSize(
     }
   }
   bytesCount += 3 + object.description.length * 3;
+  bytesCount += 3 + object.syncUuid.length * 3;
   bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
@@ -89,7 +119,11 @@ void _infoEntrySerialize(
   writer.writeString(offsets[1], object.contact);
   writer.writeDateTime(offsets[2], object.createdAt);
   writer.writeString(offsets[3], object.description);
-  writer.writeString(offsets[4], object.title);
+  writer.writeDateTime(offsets[4], object.syncDeletedAt);
+  writer.writeDateTime(offsets[5], object.syncUpdatedAt);
+  writer.writeString(offsets[6], object.syncUuid);
+  writer.writeBool(offsets[7], object.synced);
+  writer.writeString(offsets[8], object.title);
 }
 
 InfoEntry _infoEntryDeserialize(
@@ -104,7 +138,11 @@ InfoEntry _infoEntryDeserialize(
   object.createdAt = reader.readDateTime(offsets[2]);
   object.description = reader.readString(offsets[3]);
   object.id = id;
-  object.title = reader.readString(offsets[4]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[4]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[5]);
+  object.syncUuid = reader.readString(offsets[6]);
+  object.synced = reader.readBool(offsets[7]);
+  object.title = reader.readString(offsets[8]);
   return object;
 }
 
@@ -124,6 +162,14 @@ P _infoEntryDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 5:
+      return (reader.readDateTime(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -218,6 +264,60 @@ extension InfoEntryQueryWhere
           includeUpper: includeUpper,
         ),
       );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterWhereClause> syncUuidEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'syncUuid', value: [syncUuid]),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterWhereClause> syncUuidNotEqualTo(
+    String syncUuid,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [syncUuid],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncUuid',
+                lower: [],
+                upper: [syncUuid],
+                includeUpper: false,
+              ),
+            );
+      }
     });
   }
 
@@ -850,6 +950,291 @@ extension InfoEntryQueryFilter
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'syncDeletedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncDeletedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncDeletedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncDeletedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncDeletedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncUpdatedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUpdatedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncUpdatedAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncUpdatedAtLessThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncUpdatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUpdatedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncUuid',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'syncUuid',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'syncUuid',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  syncUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'syncUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> syncedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'synced', value: value),
+      );
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition> titleEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1052,6 +1437,54 @@ extension InfoEntryQuerySortBy on QueryBuilder<InfoEntry, InfoEntry, QSortBy> {
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1127,6 +1560,54 @@ extension InfoEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDeletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUpdatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1172,6 +1653,32 @@ extension InfoEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctBySyncDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctBySyncUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctBySyncUuid({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncUuid', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'synced');
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctByTitle({
     bool caseSensitive = true,
   }) {
@@ -1210,6 +1717,30 @@ extension InfoEntryQueryProperty
   QueryBuilder<InfoEntry, String, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
+    });
+  }
+
+  QueryBuilder<InfoEntry, DateTime?, QQueryOperations> syncDeletedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncDeletedAt');
+    });
+  }
+
+  QueryBuilder<InfoEntry, DateTime, QQueryOperations> syncUpdatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUpdatedAt');
+    });
+  }
+
+  QueryBuilder<InfoEntry, String, QQueryOperations> syncUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncUuid');
+    });
+  }
+
+  QueryBuilder<InfoEntry, bool, QQueryOperations> syncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'synced');
     });
   }
 
