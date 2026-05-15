@@ -34,7 +34,15 @@ class VisualListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<VisualList>> entriesForServiceDay(DateTime day) {
+  Future<List<VisualList>> entriesForServiceDay(DateTime day,
+      {bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.visualLists
+          .filter()
+          .serviceDayEqualTo(day)
+          .sortByCreatedAtDesc()
+          .findAll();
+    }
     return _isar.visualLists
         .filter()
         .syncDeletedAtIsNull()
@@ -68,7 +76,10 @@ class VisualListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<VisualList>> all() {
+  Future<List<VisualList>> all({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.visualLists.where().sortByCreatedAtDesc().findAll();
+    }
     return _isar.visualLists
         .filter()
         .syncDeletedAtIsNull()

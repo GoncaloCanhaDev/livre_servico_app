@@ -11,6 +11,7 @@ class ReportList {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  String? createdByInitials;
 
   @Index(unique: true, replace: true)
   late DateTime serviceDay;

@@ -83,7 +83,10 @@ class DailyTasksService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<DailyTasks>> history() {
+  Future<List<DailyTasks>> history({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.dailyTasks.where().sortByServiceDayDesc().findAll();
+    }
     return _isar.dailyTasks
         .filter()
         .syncDeletedAtIsNull()

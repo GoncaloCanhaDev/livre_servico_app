@@ -145,7 +145,6 @@ class _BucketBodyState extends State<_BucketBody> {
   Future<List<InfoEntry>> _load() async {
     final list = await ShiftService.instance.isar.infoEntrys
         .filter()
-        .syncDeletedAtIsNull()
         .bucketEqualTo(widget.bucket.key)
         .findAll();
     list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -252,7 +251,11 @@ class _BucketBodyState extends State<_BucketBody> {
               return Column(
                 children: [
                   for (final e in items)
-                    Padding(
+                    Opacity(
+                      opacity: e.syncDeletedAt != null ? 0.4 : 1.0,
+                      child: IgnorePointer(
+                        ignoring: e.syncDeletedAt != null,
+                        child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: InkWell(
                         onLongPress: () => _delete(e),
@@ -292,6 +295,8 @@ class _BucketBodyState extends State<_BucketBody> {
                             ],
                           ],
                         ),
+                      ),
+                    ),
                       ),
                     ),
                 ],

@@ -27,37 +27,42 @@ const VisualListSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'itensPicados': PropertySchema(
+    r'createdByInitials': PropertySchema(
       id: 2,
+      name: r'createdByInitials',
+      type: IsarType.string,
+    ),
+    r'itensPicados': PropertySchema(
+      id: 3,
       name: r'itensPicados',
       type: IsarType.long,
     ),
     r'quebraCents': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'quebraCents',
       type: IsarType.long,
     ),
     r'serviceDay': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 8, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 9, name: r'synced', type: IsarType.bool),
   },
 
   estimateSize: _visualListEstimateSize,
@@ -121,6 +126,12 @@ int _visualListEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.createdByInitials;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
@@ -133,13 +144,14 @@ void _visualListSerialize(
 ) {
   writer.writeLong(offsets[0], object.beneficioCents);
   writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeLong(offsets[2], object.itensPicados);
-  writer.writeLong(offsets[3], object.quebraCents);
-  writer.writeDateTime(offsets[4], object.serviceDay);
-  writer.writeDateTime(offsets[5], object.syncDeletedAt);
-  writer.writeDateTime(offsets[6], object.syncUpdatedAt);
-  writer.writeString(offsets[7], object.syncUuid);
-  writer.writeBool(offsets[8], object.synced);
+  writer.writeString(offsets[2], object.createdByInitials);
+  writer.writeLong(offsets[3], object.itensPicados);
+  writer.writeLong(offsets[4], object.quebraCents);
+  writer.writeDateTime(offsets[5], object.serviceDay);
+  writer.writeDateTime(offsets[6], object.syncDeletedAt);
+  writer.writeDateTime(offsets[7], object.syncUpdatedAt);
+  writer.writeString(offsets[8], object.syncUuid);
+  writer.writeBool(offsets[9], object.synced);
 }
 
 VisualList _visualListDeserialize(
@@ -151,14 +163,15 @@ VisualList _visualListDeserialize(
   final object = VisualList();
   object.beneficioCents = reader.readLong(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
+  object.createdByInitials = reader.readStringOrNull(offsets[2]);
   object.id = id;
-  object.itensPicados = reader.readLong(offsets[2]);
-  object.quebraCents = reader.readLong(offsets[3]);
-  object.serviceDay = reader.readDateTime(offsets[4]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[6]);
-  object.syncUuid = reader.readString(offsets[7]);
-  object.synced = reader.readBool(offsets[8]);
+  object.itensPicados = reader.readLong(offsets[3]);
+  object.quebraCents = reader.readLong(offsets[4]);
+  object.serviceDay = reader.readDateTime(offsets[5]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[7]);
+  object.syncUuid = reader.readString(offsets[8]);
+  object.synced = reader.readBool(offsets[9]);
   return object;
 }
 
@@ -174,18 +187,20 @@ P _visualListDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readLong(offset)) as P;
     case 4:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 6:
       return (reader.readDateTime(offset)) as P;
+    case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -674,6 +689,165 @@ extension VisualListQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByInitials',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByInitials',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByInitialsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
       );
     });
   }
@@ -1221,6 +1395,19 @@ extension VisualListQuerySortBy
     });
   }
 
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> sortByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterSortBy>
+  sortByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QAfterSortBy> sortByItensPicados() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itensPicados', Sort.asc);
@@ -1330,6 +1517,19 @@ extension VisualListQuerySortThenBy
   QueryBuilder<VisualList, VisualList, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> thenByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterSortBy>
+  thenByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
     });
   }
 
@@ -1444,6 +1644,17 @@ extension VisualListQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VisualList, VisualList, QDistinct> distinctByCreatedByInitials({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'createdByInitials',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QDistinct> distinctByItensPicados() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'itensPicados');
@@ -1506,6 +1717,13 @@ extension VisualListQueryProperty
   QueryBuilder<VisualList, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<VisualList, String?, QQueryOperations>
+  createdByInitialsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByInitials');
     });
   }
 

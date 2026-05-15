@@ -19,6 +19,7 @@ class ShiftEvent {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  String? createdByInitials;
 
   late DateTime timestamp;
 

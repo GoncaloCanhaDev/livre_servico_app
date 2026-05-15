@@ -22,25 +22,30 @@ const InventorySchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'name': PropertySchema(id: 1, name: r'name', type: IsarType.string),
+    r'createdByInitials': PropertySchema(
+      id: 1,
+      name: r'createdByInitials',
+      type: IsarType.string,
+    ),
+    r'name': PropertySchema(id: 2, name: r'name', type: IsarType.string),
     r'syncDeletedAt': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 5, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 6, name: r'synced', type: IsarType.bool),
     r'valueCents': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'valueCents',
       type: IsarType.long,
     ),
@@ -81,6 +86,12 @@ int _inventoryEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.createdByInitials;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
@@ -93,12 +104,13 @@ void _inventorySerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeString(offsets[1], object.name);
-  writer.writeDateTime(offsets[2], object.syncDeletedAt);
-  writer.writeDateTime(offsets[3], object.syncUpdatedAt);
-  writer.writeString(offsets[4], object.syncUuid);
-  writer.writeBool(offsets[5], object.synced);
-  writer.writeLong(offsets[6], object.valueCents);
+  writer.writeString(offsets[1], object.createdByInitials);
+  writer.writeString(offsets[2], object.name);
+  writer.writeDateTime(offsets[3], object.syncDeletedAt);
+  writer.writeDateTime(offsets[4], object.syncUpdatedAt);
+  writer.writeString(offsets[5], object.syncUuid);
+  writer.writeBool(offsets[6], object.synced);
+  writer.writeLong(offsets[7], object.valueCents);
 }
 
 Inventory _inventoryDeserialize(
@@ -109,13 +121,14 @@ Inventory _inventoryDeserialize(
 ) {
   final object = Inventory();
   object.createdAt = reader.readDateTime(offsets[0]);
+  object.createdByInitials = reader.readStringOrNull(offsets[1]);
   object.id = id;
-  object.name = reader.readString(offsets[1]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[2]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[3]);
-  object.syncUuid = reader.readString(offsets[4]);
-  object.synced = reader.readBool(offsets[5]);
-  object.valueCents = reader.readLong(offsets[6]);
+  object.name = reader.readString(offsets[2]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[3]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[4]);
+  object.syncUuid = reader.readString(offsets[5]);
+  object.synced = reader.readBool(offsets[6]);
+  object.valueCents = reader.readLong(offsets[7]);
   return object;
 }
 
@@ -129,16 +142,18 @@ P _inventoryDeserializeProp<P>(
     case 0:
       return (reader.readDateTime(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 3:
-      return (reader.readDateTime(offset)) as P;
-    case 4:
       return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 4:
+      return (reader.readDateTime(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readBool(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -346,6 +361,165 @@ extension InventoryQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByInitials',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByInitials',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByInitialsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
       );
     });
   }
@@ -917,6 +1091,19 @@ extension InventoryQuerySortBy on QueryBuilder<Inventory, Inventory, QSortBy> {
     });
   }
 
+  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterSortBy>
+  sortByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
+    });
+  }
+
   QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1001,6 +1188,19 @@ extension InventoryQuerySortThenBy
   QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterSortBy>
+  thenByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
     });
   }
 
@@ -1097,6 +1297,17 @@ extension InventoryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Inventory, Inventory, QDistinct> distinctByCreatedByInitials({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'createdByInitials',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
   QueryBuilder<Inventory, Inventory, QDistinct> distinctByName({
     bool caseSensitive = true,
   }) {
@@ -1149,6 +1360,13 @@ extension InventoryQueryProperty
   QueryBuilder<Inventory, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<Inventory, String?, QQueryOperations>
+  createdByInitialsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByInitials');
     });
   }
 

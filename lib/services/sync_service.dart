@@ -54,6 +54,7 @@ class SyncService extends ChangeNotifier {
   Timer? _debounce;
   StreamSubscription<AuthState>? _authSub;
   final List<ChangeNotifier> _writeNotifiers = [];
+  final List<RealtimeChannel> _realtimeChannels = [];
 
   bool get syncing => _syncing;
   String? get lastError => _lastError;
@@ -70,8 +71,9 @@ class SyncService extends ChangeNotifier {
         unawaited(syncNow());
       }
     });
-    _timer = Timer.periodic(const Duration(minutes: 2), (_) => syncNow());
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => syncNow());
     _attachWriteListeners();
+    _subscribeRealtime();
     unawaited(syncNow());
   }
 
@@ -81,18 +83,43 @@ class SyncService extends ChangeNotifier {
     _debounce?.cancel();
     _debounce = null;
     _detachWriteListeners();
+    _unsubscribeRealtime();
     _authSub?.cancel();
     _authSub = null;
   }
 
-  /// Schedules a sync ~1.5s in the future. Successive calls within that
+  /// Schedules a sync ~500ms in the future. Successive calls within that
   /// window reset the timer so a burst of writes coalesces into one run.
   void requestSync() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 1500), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       _debounce = null;
       unawaited(syncNow());
     });
+  }
+
+  void _subscribeRealtime() {
+    if (_realtimeChannels.isNotEmpty) return;
+    final tables = _mappers.map((m) => m.table).toList();
+    for (final t in tables) {
+      final channel = _client
+          .channel('public:$t')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: t,
+            callback: (_) => requestSync(),
+          )
+          .subscribe();
+      _realtimeChannels.add(channel);
+    }
+  }
+
+  void _unsubscribeRealtime() {
+    for (final ch in _realtimeChannels) {
+      _client.removeChannel(ch);
+    }
+    _realtimeChannels.clear();
   }
 
   void _attachWriteListeners() {
@@ -235,14 +262,28 @@ void _writeSyncMeta(dynamic row, Map<String, dynamic> j) {
   row.syncUuid = j['uuid'] as String;
   row.syncUpdatedAt = DateTime.parse(j['updated_at'] as String);
   row.syncDeletedAt = _dt(j['deleted_at']);
+  if (j.containsKey('created_by_initials')) {
+    try {
+      row.createdByInitials = j['created_by_initials'] as String?;
+    } catch (_) {}
+  }
 }
 
-Map<String, dynamic> _syncMetaToMap(dynamic row, String userId) => {
-      'uuid': row.syncUuid,
-      'user_id': userId,
-      'updated_at': _iso(row.syncUpdatedAt as DateTime),
-      'deleted_at': _iso(row.syncDeletedAt as DateTime?),
-    };
+Map<String, dynamic> _syncMetaToMap(dynamic row, String userId) {
+  final map = <String, dynamic>{
+    'uuid': row.syncUuid,
+    'user_id': userId,
+    'updated_at': _iso(row.syncUpdatedAt as DateTime),
+    'deleted_at': _iso(row.syncDeletedAt as DateTime?),
+  };
+  try {
+    final initials = row.createdByInitials as String?;
+    map['created_by_initials'] = initials;
+  } catch (_) {
+    // Model doesn't have the field (e.g. NotificationLog).
+  }
+  return map;
+}
 
 // ---------------------------------------------------------------------------
 // Mapper definitions
@@ -639,14 +680,21 @@ class _DailyTasksMapper extends _Mapper {
       ..._syncMetaToMap(r, userId),
       'service_day': _iso(r.serviceDay),
       'kiwi_abertura': r.kiwiAbertura,
+      'kiwi_abertura_by': r.kiwiAberturaBy,
       'alteracoes_preco': r.alteracoesPreco,
+      'alteracoes_preco_by': r.alteracoesPrecoBy,
       'alteracoes_preco_count': r.alteracoesPrecoCount,
       'verificacao_temperaturas': r.verificacaoTemperaturas,
+      'verificacao_temperaturas_by': r.verificacaoTemperaturasBy,
       'preenchimento_quadro': r.preenchimentoQuadro,
+      'preenchimento_quadro_by': r.preenchimentoQuadroBy,
       'verificacao_validades': r.verificacaoValidades,
+      'verificacao_validades_by': r.verificacaoValidadesBy,
       'verificacao_validades_count': r.verificacaoValidadesCount,
       'kiwi_fecho': r.kiwiFecho,
+      'kiwi_fecho_by': r.kiwiFechoBy,
       'limpeza_maquina_voltas': r.limpezaMaquinaVoltas,
+      'limpeza_maquina_voltas_by': r.limpezaMaquinaVoltasBy,
       'last_updated_at': _iso(r.lastUpdatedAt),
     };
   }
@@ -657,17 +705,25 @@ class _DailyTasksMapper extends _Mapper {
     _writeSyncMeta(r, json);
     r.serviceDay = DateTime.parse(json['service_day'] as String);
     r.kiwiAbertura = json['kiwi_abertura'] as bool? ?? false;
+    r.kiwiAberturaBy = json['kiwi_abertura_by'] as String?;
     r.alteracoesPreco = json['alteracoes_preco'] as bool? ?? false;
+    r.alteracoesPrecoBy = json['alteracoes_preco_by'] as String?;
     r.alteracoesPrecoCount =
         (json['alteracoes_preco_count'] as num?)?.toInt() ?? 0;
     r.verificacaoTemperaturas =
         json['verificacao_temperaturas'] as bool? ?? false;
+    r.verificacaoTemperaturasBy =
+        json['verificacao_temperaturas_by'] as String?;
     r.preenchimentoQuadro = json['preenchimento_quadro'] as bool? ?? false;
+    r.preenchimentoQuadroBy = json['preenchimento_quadro_by'] as String?;
     r.verificacaoValidades = json['verificacao_validades'] as bool? ?? false;
+    r.verificacaoValidadesBy = json['verificacao_validades_by'] as String?;
     r.verificacaoValidadesCount =
         (json['verificacao_validades_count'] as num?)?.toInt() ?? 0;
     r.kiwiFecho = json['kiwi_fecho'] as bool? ?? false;
+    r.kiwiFechoBy = json['kiwi_fecho_by'] as String?;
     r.limpezaMaquinaVoltas = json['limpeza_maquina_voltas'] as bool? ?? false;
+    r.limpezaMaquinaVoltasBy = json['limpeza_maquina_voltas_by'] as String?;
     r.lastUpdatedAt = _dt(json['last_updated_at']);
     return r;
   }

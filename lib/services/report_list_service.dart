@@ -59,7 +59,14 @@ class ReportListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ReportList>> entriesForServiceDay(DateTime day) {
+  Future<List<ReportList>> entriesForServiceDay(DateTime day,
+      {bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.reportLists
+          .filter()
+          .serviceDayEqualTo(day)
+          .findAll();
+    }
     return _isar.reportLists
         .filter()
         .syncDeletedAtIsNull()
@@ -92,7 +99,10 @@ class ReportListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ReportList>> history() {
+  Future<List<ReportList>> history({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.reportLists.where().sortByServiceDayDesc().findAll();
+    }
     return _isar.reportLists
         .filter()
         .syncDeletedAtIsNull()

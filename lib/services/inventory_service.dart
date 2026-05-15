@@ -44,7 +44,10 @@ class InventoryService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Inventory>> history() {
+  Future<List<Inventory>> history({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.inventorys.where().sortByCreatedAtDesc().findAll();
+    }
     return _isar.inventorys
         .filter()
         .syncDeletedAtIsNull()

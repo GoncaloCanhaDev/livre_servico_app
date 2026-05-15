@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
+import '../services/auth_service.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/opening_list_service.dart';
@@ -152,10 +153,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Abertura',
               checked: tasks.kiwiAbertura,
+              by: tasks.kiwiAberturaBy,
               onLongPress: tasks.kiwiAbertura ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura') : null,
               onChanged: (v) async {
                 if (v && !await _confirmTask('Kiwi Abertura')) return;
-                setState(() => tasks.kiwiAbertura = v);
+                setState(() {
+                  tasks.kiwiAbertura = v;
+                  tasks.kiwiAberturaBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Kiwi Abertura');
               },
@@ -163,11 +168,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _CountTask(
               label: 'Alterações de Preço',
               checked: tasks.alteracoesPreco,
+              by: tasks.alteracoesPrecoBy,
               countController: _alteracoesCtrl,
               onLongPress: tasks.alteracoesPreco ? () => _sendMsg('✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})') : null,
               onCheckedChanged: (v) async {
                 if (v && !await _confirmTask('Alterações de Preço')) return;
-                setState(() => tasks.alteracoesPreco = v);
+                setState(() {
+                  tasks.alteracoesPreco = v;
+                  tasks.alteracoesPrecoBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})');
               },
@@ -179,10 +188,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Verificação de Temperaturas',
               checked: tasks.verificacaoTemperaturas,
+              by: tasks.verificacaoTemperaturasBy,
               onLongPress: tasks.verificacaoTemperaturas ? () => _sendMsg('✅ Tarefa concluída: Verificação de Temperaturas') : null,
               onChanged: (v) async {
                 if (v && !await _confirmTask('Verificação de Temperaturas')) return;
-                setState(() => tasks.verificacaoTemperaturas = v);
+                setState(() {
+                  tasks.verificacaoTemperaturas = v;
+                  tasks.verificacaoTemperaturasBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Verificação de Temperaturas');
               },
@@ -204,10 +217,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Preenchimento do Quadro',
               checked: tasks.preenchimentoQuadro,
+              by: tasks.preenchimentoQuadroBy,
               onLongPress: tasks.preenchimentoQuadro ? () => _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro') : null,
               onChanged: (v) async {
                 if (v && !await _confirmTask('Preenchimento do Quadro')) return;
-                setState(() => tasks.preenchimentoQuadro = v);
+                setState(() {
+                  tasks.preenchimentoQuadro = v;
+                  tasks.preenchimentoQuadroBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro');
               },
@@ -229,11 +246,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _CountTask(
               label: 'Verificação de Validades',
               checked: tasks.verificacaoValidades,
+              by: tasks.verificacaoValidadesBy,
               countController: _validadesCtrl,
               onLongPress: tasks.verificacaoValidades ? () => _sendMsg('✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})') : null,
               onCheckedChanged: (v) async {
                 if (v && !await _confirmTask('Verificação de Validades')) return;
-                setState(() => tasks.verificacaoValidades = v);
+                setState(() {
+                  tasks.verificacaoValidades = v;
+                  tasks.verificacaoValidadesBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})');
               },
@@ -245,10 +266,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Kiwi Fecho',
               checked: tasks.kiwiFecho,
+              by: tasks.kiwiFechoBy,
               onLongPress: tasks.kiwiFecho ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho') : null,
               onChanged: (v) async {
                 if (v && !await _confirmTask('Kiwi Fecho')) return;
-                setState(() => tasks.kiwiFecho = v);
+                setState(() {
+                  tasks.kiwiFecho = v;
+                  tasks.kiwiFechoBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Kiwi Fecho');
               },
@@ -256,17 +281,47 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
             _ManualTask(
               label: 'Limpeza da Máquina Voltas',
               checked: tasks.limpezaMaquinaVoltas,
+              by: tasks.limpezaMaquinaVoltasBy,
               enabled: isSaturday,
               note: isSaturday ? null : 'Apenas ao sábado',
               onLongPress: tasks.limpezaMaquinaVoltas ? () => _sendMsg('✅ Tarefa concluída: Limpeza da Máquina Voltas') : null,
               onChanged: (v) async {
                 if (v && !await _confirmTask('Limpeza da Máquina Voltas')) return;
-                setState(() => tasks.limpezaMaquinaVoltas = v);
+                setState(() {
+                  tasks.limpezaMaquinaVoltas = v;
+                  tasks.limpezaMaquinaVoltasBy = v ? AuthService.instance.initials : null;
+                });
                 await _saveTasks();
                 if (v) _sendMsg('✅ Tarefa concluída: Limpeza da Máquina Voltas');
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InitialsBadge extends StatelessWidget {
+  const _InitialsBadge({required this.initials});
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.green,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -281,6 +336,7 @@ class _ManualTask extends StatelessWidget {
     this.enabled = true,
     this.note,
     this.onLongPress,
+    this.by,
   });
 
   final String label;
@@ -289,6 +345,7 @@ class _ManualTask extends StatelessWidget {
   final String? note;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onLongPress;
+  final String? by;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +370,9 @@ class _ManualTask extends StatelessWidget {
             ),
           ),
           subtitle: note == null ? null : Text(note!),
+          secondary: (checked && (by ?? '').isNotEmpty)
+              ? _InitialsBadge(initials: by!)
+              : null,
         ),
       ),
     );
@@ -376,6 +436,7 @@ class _CountTask extends StatelessWidget {
     required this.onCheckedChanged,
     required this.onCountChanged,
     this.onLongPress,
+    this.by,
   });
 
   final String label;
@@ -384,6 +445,7 @@ class _CountTask extends StatelessWidget {
   final ValueChanged<bool> onCheckedChanged;
   final ValueChanged<int> onCountChanged;
   final VoidCallback? onLongPress;
+  final String? by;
 
   @override
   Widget build(BuildContext context) {
@@ -399,12 +461,22 @@ class _CountTask extends StatelessWidget {
           },
           controlAffinity: ListTileControlAffinity.leading,
           activeColor: AppColors.green,
-          title: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              decoration: checked ? TextDecoration.lineThrough : null,
-            ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    decoration: checked ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              if (checked && (by ?? '').isNotEmpty) ...[
+                const SizedBox(width: 8),
+                _InitialsBadge(initials: by!),
+              ],
+            ],
           ),
           secondary: SizedBox(
             width: 90,

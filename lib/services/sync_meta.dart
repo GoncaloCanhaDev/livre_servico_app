@@ -1,5 +1,7 @@
 import 'package:uuid/uuid.dart';
 
+import 'auth_service.dart';
+
 /// Mutates Isar-collection rows to keep the sync metadata up to date.
 ///
 /// Every collection has the same four sync fields ([syncUuid],
@@ -9,8 +11,12 @@ class SyncMeta {
   SyncMeta._();
   static const _uuid = Uuid();
 
-  /// Marks [row] as locally dirty. Assigns a new uuid if missing and
-  /// bumps the LWW timestamp to now.
+  /// Marks [row] as locally dirty. Assigns a new uuid if missing, bumps
+  /// the LWW timestamp to now, and — if the model has a
+  /// `createdByInitials` field that is still empty — fills it with the
+  /// signed-in user's initials. Subsequent writes don't overwrite it:
+  /// `createdByInitials` is "who created this row," not "who last
+  /// touched it."
   static void stamp(dynamic row) {
     final cur = row.syncUuid as String?;
     if (cur == null || cur.isEmpty) {
@@ -18,6 +24,17 @@ class SyncMeta {
     }
     row.syncUpdatedAt = DateTime.now();
     row.synced = false;
+    final initials = AuthService.instance.initials;
+    if (initials != null && initials.isNotEmpty) {
+      try {
+        final existing = row.createdByInitials as String?;
+        if (existing == null || existing.isEmpty) {
+          row.createdByInitials = initials;
+        }
+      } catch (_) {
+        // Model doesn't have createdByInitials (e.g. NotificationLog).
+      }
+    }
   }
 
   /// Marks [row] as a tombstone (soft delete). The row stays in Isar and

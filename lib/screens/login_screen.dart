@@ -12,8 +12,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _identifier = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
+  final _empNum = TextEditingController();
   bool _isSignUp = false;
   bool _busy = false;
   String? _error;
@@ -21,17 +25,44 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _identifier.dispose();
     _email.dispose();
     _password.dispose();
+    _firstName.dispose();
+    _lastName.dispose();
+    _empNum.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    final identifier = _identifier.text.trim();
     final email = _email.text.trim();
     final password = _password.text;
-    if (email.isEmpty || password.length < 6) {
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
+    final empNum = _empNum.text.trim();
+    if (password.length < 6) {
       setState(() {
-        _error = 'Email e palavra-passe (mín. 6 caracteres) obrigatórios.';
+        _error = 'Palavra-passe deve ter pelo menos 6 caracteres.';
+        _info = null;
+      });
+      return;
+    }
+    if (_isSignUp) {
+      if (email.isEmpty ||
+          firstName.isEmpty ||
+          lastName.isEmpty ||
+          empNum.isEmpty) {
+        setState(() {
+          _error =
+              'Email, nome e número de empregado obrigatórios para registar.';
+          _info = null;
+        });
+        return;
+      }
+    } else if (identifier.isEmpty) {
+      setState(() {
+        _error = 'Indica o email ou número de empregado.';
         _info = null;
       });
       return;
@@ -43,14 +74,20 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       if (_isSignUp) {
-        await AuthService.instance.signUp(email, password);
+        await AuthService.instance.signUp(
+          email,
+          password,
+          firstName: firstName,
+          lastName: lastName,
+          employeeNumber: empNum,
+        );
         if (!mounted) return;
         setState(() {
           _info =
               'Conta criada. Verifica o teu email para confirmar a conta (se necessário) antes de entrar.';
         });
       } else {
-        await AuthService.instance.signIn(email, password);
+        await AuthService.instance.signIn(identifier, password);
       }
     } on AuthException catch (e) {
       if (!mounted) return;
@@ -84,15 +121,62 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                if (_isSignUp) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _firstName,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Primeiro nome',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _lastName,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Último nome',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _empNum,
+                    keyboardType: TextInputType.text,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Nº empregado',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ] else
+                  TextField(
+                    controller: _identifier,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Email ou nº empregado',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _password,
