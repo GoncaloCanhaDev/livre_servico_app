@@ -205,6 +205,49 @@ Widget _emptyMsg(String msg) => Center(
 
 enum _ItemType { shift, truck, opening, auto, report, visual, tasks, inventory }
 
+class _HistoryInitials extends StatelessWidget {
+  const _HistoryInitials({required this.initials});
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.green,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+Widget _dimmedIfDeleted({required bool deleted, required Widget child}) {
+  if (!deleted) return child;
+  return IgnorePointer(child: Opacity(opacity: 0.4, child: child));
+}
+
+Widget _trailingWithInitials(String? initials, Widget child) {
+  if ((initials ?? '').isEmpty) return child;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _HistoryInitials(initials: initials!),
+      const SizedBox(width: 8),
+      child,
+    ],
+  );
+}
+
 class _DayItem {
   _DayItem({
     required this.type,
@@ -213,6 +256,8 @@ class _DayItem {
     required this.subtitle,
     this.icon = Icons.circle,
     this.iconColor = AppColors.green,
+    this.initials,
+    this.deleted = false,
   });
   final _ItemType type;
   final DateTime time;
@@ -220,6 +265,8 @@ class _DayItem {
   final String subtitle;
   final IconData icon;
   final Color iconColor;
+  final String? initials;
+  final bool deleted;
 }
 
 class _AllTab extends StatefulWidget {
@@ -277,9 +324,11 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
     final timeFmt = DateFormat('HH:mm');
 
     // Shifts
-    final shiftIds = await ShiftService.instance.allShiftIdsDesc();
+    final shiftIds =
+        await ShiftService.instance.allShiftIdsDesc(includeDeleted: true);
     for (final id in shiftIds) {
-      final events = await ShiftService.instance.eventsForShift(id);
+      final events = await ShiftService.instance
+          .eventsForShift(id, includeDeleted: true);
       if (events.isEmpty) continue;
       final start = events.first.timestamp;
       final end = events.last.type == ShiftEventType.clockOut
@@ -287,17 +336,20 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
           : null;
       if (end == null) continue; // Only show finished shifts
       final worked = computeWorked(events);
+      final deleted = events.every((e) => e.syncDeletedAt != null);
       items.add(_DayItem(
         type: _ItemType.shift,
         time: end,
         title: '🕒 Turno',
         subtitle: '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
         icon: Icons.schedule,
+        initials: events.first.createdByInitials,
+        deleted: deleted,
       ));
     }
 
     // Trucks
-    final trucks = await TruckService.instance.all();
+    final trucks = await TruckService.instance.all(includeDeleted: true);
     for (final t in trucks) {
       final parts = <String>[
         if (t.licensePlate != null) t.licensePlate!,
@@ -309,11 +361,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         title: '🚛 Camião',
         subtitle: '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
         icon: Icons.local_shipping,
+        initials: t.createdByInitials,
+        deleted: t.syncDeletedAt != null,
       ));
     }
 
     // Opening lists (only finalized)
-    final openings = await OpeningListService.instance.history();
+    final openings =
+        await OpeningListService.instance.history(includeDeleted: true);
     for (final o in openings) {
       if (!o.isFinalized) continue;
       items.add(_DayItem(
@@ -323,11 +378,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         subtitle: 'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
         icon: Icons.check_circle,
         iconColor: AppColors.green,
+        initials: o.createdByInitials,
+        deleted: o.syncDeletedAt != null,
       ));
     }
 
     // Auto lists
-    final autos = await AutoListService.instance.history();
+    final autos =
+        await AutoListService.instance.history(includeDeleted: true);
     for (final a in autos) {
       items.add(_DayItem(
         type: _ItemType.auto,
@@ -335,11 +393,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         title: '⚡ Lista Automática',
         subtitle: 'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
         icon: Icons.bolt,
+        initials: a.createdByInitials,
+        deleted: a.syncDeletedAt != null,
       ));
     }
 
     // Reports (only finalized)
-    final reports = await ReportListService.instance.history();
+    final reports =
+        await ReportListService.instance.history(includeDeleted: true);
     for (final r in reports) {
       if (!r.isFinalized) continue;
       items.add(_DayItem(
@@ -349,11 +410,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         subtitle: 'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
         icon: Icons.check_circle,
         iconColor: AppColors.green,
+        initials: r.createdByInitials,
+        deleted: r.syncDeletedAt != null,
       ));
     }
 
     // Visual lists
-    final visuals = await VisualListService.instance.all();
+    final visuals =
+        await VisualListService.instance.all(includeDeleted: true);
     for (final v in visuals) {
       items.add(_DayItem(
         type: _ItemType.visual,
@@ -361,11 +425,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         title: '👁 Lista Visual',
         subtitle: '${v.itensPicados} itens picados',
         icon: Icons.visibility,
+        initials: v.createdByInitials,
+        deleted: v.syncDeletedAt != null,
       ));
     }
 
     // Tasks (same counting logic as the Tasks tab — includes derived tasks)
-    final tasks = await DailyTasksService.instance.history();
+    final tasks =
+        await DailyTasksService.instance.history(includeDeleted: true);
     for (final t in tasks) {
       final day = t.serviceDay;
       final openingEntries =
@@ -406,11 +473,13 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         subtitle: '$doneCount/$total concluídas',
         icon: Icons.task_alt,
         iconColor: doneCount == total ? AppColors.green : Colors.black54,
+        deleted: t.syncDeletedAt != null,
       ));
     }
 
     // Inventories
-    final invs = await InventoryService.instance.history();
+    final invs =
+        await InventoryService.instance.history(includeDeleted: true);
     for (final inv in invs) {
       items.add(_DayItem(
         type: _ItemType.inventory,
@@ -419,6 +488,8 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         subtitle: '${formatCents(inv.valueCents)} €',
         icon: Icons.assignment,
         iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
+        initials: inv.createdByInitials,
+        deleted: inv.syncDeletedAt != null,
       ));
     }
 
@@ -475,17 +546,36 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                 ),
                 ...items.map((item) {
                   final timeFmt = DateFormat('HH:mm');
-                  return Card(
+                  final card = Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: Icon(item.icon, color: item.iconColor, size: 24),
                       title: Text(item.title,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              decoration: item.deleted
+                                  ? TextDecoration.lineThrough
+                                  : null)),
                       subtitle: Text(item.subtitle, style: const TextStyle(fontSize: 12)),
-                      trailing: Text(timeFmt.format(item.time),
-                          style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if ((item.initials ?? '').isNotEmpty) ...[
+                            _HistoryInitials(initials: item.initials!),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(timeFmt.format(item.time),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black45)),
+                        ],
+                      ),
                     ),
                   );
+                  return item.deleted
+                      ? IgnorePointer(
+                          child: Opacity(opacity: 0.4, child: card))
+                      : card;
                 }),
               ],
             );
@@ -582,10 +672,10 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
 
   Future<List<_ShiftRow>> _load() async {
     final svc = ShiftService.instance;
-    final ids = await svc.allShiftIdsDesc();
+    final ids = await svc.allShiftIdsDesc(includeDeleted: true);
     final out = <_ShiftRow>[];
     for (final id in ids) {
-      final events = await svc.eventsForShift(id);
+      final events = await svc.eventsForShift(id, includeDeleted: true);
       if (events.isEmpty) continue;
       out.add(_ShiftRow(
         events: events,
@@ -618,7 +708,10 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
             final end = r.events.last.type == ShiftEventType.clockOut
                 ? r.events.last.timestamp
                 : null;
-            return _HistoryDismissible(
+            final deleted = r.events.every((e) => e.syncDeletedAt != null);
+            return _dimmedIfDeleted(
+              deleted: deleted,
+              child: _HistoryDismissible(
               itemKey: ValueKey(r.events.first.id), // Using first event ID as shift key
               deletePromptName: 'turno',
               onDelete: () async {
@@ -662,6 +755,7 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
                         )),
                   ],
                 ),
+              ),
               ),
             );
           },
@@ -724,7 +818,7 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
   @override
   void initState() {
     super.initState();
-    _future = TruckService.instance.all();
+    _future = TruckService.instance.all(includeDeleted: true);
     TruckService.instance.addListener(_reload);
   }
 
@@ -736,7 +830,7 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
 
   void _reload() {
     setState(() {
-      _future = TruckService.instance.all();
+      _future = TruckService.instance.all(includeDeleted: true);
     });
   }
 
@@ -761,7 +855,9 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
               if (t.licensePlate != null) t.licensePlate!,
               if (t.supplier != null) t.supplier!,
             ];
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: t.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(t.id),
               deletePromptName: 'camião',
               onDelete: () async {
@@ -791,8 +887,10 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
                     if (parts.isNotEmpty) parts.join(' · '),
                     '${t.totalPallets} paletes · ${t.totalMistas} mistas',
                   ].join('\n')),
-                  trailing:
-                      const Icon(Icons.local_shipping, color: AppColors.green),
+                  trailing: _trailingWithInitials(
+                    t.createdByInitials,
+                    const Icon(Icons.local_shipping, color: AppColors.green),
+                  ),
                   children: [
                     ...t.pallets.map((p) => ListTile(
                           dense: true,
@@ -813,6 +911,7 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
                       ),
                   ],
                 ),
+              ),
               ),
             );
           },
@@ -838,7 +937,7 @@ class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientM
   @override
   void initState() {
     super.initState();
-    _future = OpeningListService.instance.history();
+    _future = OpeningListService.instance.history(includeDeleted: true);
     OpeningListService.instance.addListener(_reload);
   }
 
@@ -850,7 +949,7 @@ class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientM
 
   void _reload() {
     setState(() {
-      _future = OpeningListService.instance.history();
+      _future = OpeningListService.instance.history(includeDeleted: true);
     });
   }
 
@@ -871,7 +970,9 @@ class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientM
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: l.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(l.id),
               deletePromptName: 'lista de abertura',
               onDelete: () async {
@@ -893,9 +994,13 @@ class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientM
                 title: Text(dayFmt.format(l.serviceDay)),
                 subtitle: Text(
                     'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-                trailing: Text('${l.total}',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                trailing: _trailingWithInitials(
+                  l.createdByInitials,
+                  Text('${l.total}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
               ),
             );
           },
@@ -921,7 +1026,7 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
-    _future = AutoListService.instance.history();
+    _future = AutoListService.instance.history(includeDeleted: true);
     AutoListService.instance.addListener(_reload);
   }
 
@@ -933,7 +1038,7 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
 
   void _reload() {
     setState(() {
-      _future = AutoListService.instance.history();
+      _future = AutoListService.instance.history(includeDeleted: true);
     });
   }
 
@@ -954,7 +1059,9 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: l.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(l.id),
               deletePromptName: 'lista automática',
               onDelete: () async {
@@ -973,9 +1080,13 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
                 title: Text(fmt.format(l.createdAt)),
                 subtitle: Text(
                     'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-                trailing: Text('${l.total}',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                trailing: _trailingWithInitials(
+                  l.createdByInitials,
+                  Text('${l.total}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
               ),
             );
           },
@@ -1001,7 +1112,7 @@ class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMix
   @override
   void initState() {
     super.initState();
-    _future = ReportListService.instance.history();
+    _future = ReportListService.instance.history(includeDeleted: true);
     ReportListService.instance.addListener(_reload);
   }
 
@@ -1013,7 +1124,7 @@ class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMix
 
   void _reload() {
     setState(() {
-      _future = ReportListService.instance.history();
+      _future = ReportListService.instance.history(includeDeleted: true);
     });
   }
 
@@ -1034,7 +1145,9 @@ class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMix
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final l = items[i];
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: l.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(l.id),
               deletePromptName: 'relatório',
               onDelete: () async {
@@ -1057,9 +1170,13 @@ class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMix
                 title: Text(dayFmt.format(l.serviceDay)),
                 subtitle: Text(
                     'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}'),
-                trailing: Text('${l.total}',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                trailing: _trailingWithInitials(
+                  l.createdByInitials,
+                  Text('${l.total}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
               ),
             );
           },
@@ -1085,7 +1202,7 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
   @override
   void initState() {
     super.initState();
-    _future = VisualListService.instance.all();
+    _future = VisualListService.instance.all(includeDeleted: true);
     VisualListService.instance.addListener(_reload);
   }
 
@@ -1097,7 +1214,7 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
 
   void _reload() {
     setState(() {
-      _future = VisualListService.instance.all();
+      _future = VisualListService.instance.all(includeDeleted: true);
     });
   }
 
@@ -1150,7 +1267,9 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
                 )),
                 children: entries.map((e) {
                   final eTotal = e.beneficioCents - e.quebraCents;
-                  return _HistoryDismissible(
+                  return _dimmedIfDeleted(
+                    deleted: e.syncDeletedAt != null,
+                    child: _HistoryDismissible(
                     itemKey: ValueKey(e.id),
                     deletePromptName: 'entrada visual',
                     onDelete: () async {
@@ -1169,6 +1288,9 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
                       leading:
                           const Icon(Icons.visibility, color: AppColors.green),
                       title: Text(timeFmt.format(e.createdAt)),
+                      trailing: (e.createdByInitials ?? '').isEmpty
+                          ? null
+                          : _HistoryInitials(initials: e.createdByInitials!),
                       subtitle: Text.rich(TextSpan(
                         style: const TextStyle(fontSize: 12),
                         children: [
@@ -1193,6 +1315,7 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
                         ],
                       )),
                     ),
+                  ),
                   );
                 }).toList(),
               ),
@@ -1237,7 +1360,8 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
   }
 
   Future<List<_TasksRow>> _load() async {
-    final all = await DailyTasksService.instance.history();
+    final all =
+        await DailyTasksService.instance.history(includeDeleted: true);
     final rows = <_TasksRow>[];
     for (final t in all) {
       final day = t.serviceDay;
@@ -1285,22 +1409,24 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
             final isSaturday = t.serviceDay.weekday == DateTime.saturday;
 
             final allTasks = <_TaskEntry>[
-              _TaskEntry('Kiwi Abertura', t.kiwiAbertura),
-              _TaskEntry('Alterações de Preço (${t.alteracoesPrecoCount})', t.alteracoesPreco),
-              _TaskEntry('Verificação de Temperaturas', t.verificacaoTemperaturas),
+              _TaskEntry('Kiwi Abertura', t.kiwiAbertura, by: t.kiwiAberturaBy),
+              _TaskEntry('Alterações de Preço (${t.alteracoesPrecoCount})', t.alteracoesPreco, by: t.alteracoesPrecoBy),
+              _TaskEntry('Verificação de Temperaturas', t.verificacaoTemperaturas, by: t.verificacaoTemperaturasBy),
               _TaskEntry('Lista de Abertura', r.aberturaDone),
               _TaskEntry('Relatório das Listas', r.relatorioDone),
-              _TaskEntry('Preenchimento do Quadro', t.preenchimentoQuadro),
+              _TaskEntry('Preenchimento do Quadro', t.preenchimentoQuadro, by: t.preenchimentoQuadroBy),
               _TaskEntry('Lista Visual (${r.visualItens}/200)', r.visualDone),
               _TaskEntry('Lista Automática (${r.autoCount})', r.autoDone),
-              _TaskEntry('Verificação de Validades (${t.verificacaoValidadesCount})', t.verificacaoValidades),
-              _TaskEntry('Kiwi Fecho', t.kiwiFecho),
-              if (isSaturday) _TaskEntry('Limpeza da Máquina Voltas', t.limpezaMaquinaVoltas),
+              _TaskEntry('Verificação de Validades (${t.verificacaoValidadesCount})', t.verificacaoValidades, by: t.verificacaoValidadesBy),
+              _TaskEntry('Kiwi Fecho', t.kiwiFecho, by: t.kiwiFechoBy),
+              if (isSaturday) _TaskEntry('Limpeza da Máquina Voltas', t.limpezaMaquinaVoltas, by: t.limpezaMaquinaVoltasBy),
             ];
             final totalTasks = allTasks.length;
             final doneCount = allTasks.where((e) => e.done).length;
 
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: t.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(t.id),
               deletePromptName: 'registo de tarefas',
               onDelete: () async {
@@ -1326,8 +1452,9 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
                     doneCount == totalTasks ? Icons.check_circle : Icons.pending,
                     color: doneCount == totalTasks ? AppColors.green : Colors.black45,
                   ),
-                  children: allTasks.map((e) => _taskTile(e.label, e.done)).toList(),
+                  children: allTasks.map((e) => _taskTile(e.label, e.done, by: e.by)).toList(),
                 ),
+              ),
               ),
             );
           },
@@ -1338,9 +1465,10 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
 }
 
 class _TaskEntry {
-  const _TaskEntry(this.label, this.done);
+  const _TaskEntry(this.label, this.done, {this.by});
   final String label;
   final bool done;
+  final String? by;
 }
 
 class _TasksRow {
@@ -1362,7 +1490,7 @@ class _TasksRow {
   final int autoCount;
 }
 
-Widget _taskTile(String label, bool done) {
+Widget _taskTile(String label, bool done, {String? by}) {
   return ListTile(
     dense: true,
     leading: Icon(
@@ -1377,6 +1505,9 @@ Widget _taskTile(String label, bool done) {
         color: done ? null : Colors.black45,
       ),
     ),
+    trailing: (done && (by ?? '').isNotEmpty)
+        ? _HistoryInitials(initials: by!)
+        : null,
   );
 }
 
@@ -1407,7 +1538,7 @@ class _InventoryTabState extends State<_InventoryTab>
   }
 
   void _reload() {
-    setState(() { _future = InventoryService.instance.history(); });
+    setState(() { _future = InventoryService.instance.history(includeDeleted: true); });
   }
 
   @override
@@ -1432,7 +1563,9 @@ class _InventoryTabState extends State<_InventoryTab>
             final color = inv.valueCents >= 0
                 ? AppColors.green
                 : Colors.redAccent;
-            return _HistoryDismissible(
+            return _dimmedIfDeleted(
+              deleted: inv.syncDeletedAt != null,
+              child: _HistoryDismissible(
               itemKey: ValueKey(inv.id),
               deletePromptName: 'inventário',
               onDelete: () async {
@@ -1451,15 +1584,19 @@ class _InventoryTabState extends State<_InventoryTab>
                   title: Text(inv.name,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(dateFmt.format(inv.createdAt)),
-                  trailing: Text(
-                    '${formatCents(inv.valueCents)} €',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  trailing: _trailingWithInitials(
+                    inv.createdByInitials,
+                    Text(
+                      '${formatCents(inv.valueCents)} €',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
+              ),
               ),
             );
           },

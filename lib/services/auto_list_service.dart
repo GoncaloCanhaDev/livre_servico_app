@@ -30,9 +30,18 @@ class AutoListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<AutoList>> entriesForServiceDay(DateTime day) async {
+  Future<List<AutoList>> entriesForServiceDay(DateTime day,
+      {bool includeDeleted = false}) async {
     final start = DateTime(day.year, day.month, day.day, 5);
     final end = start.add(const Duration(days: 1));
+    if (includeDeleted) {
+      return _isar.autoLists
+          .filter()
+          .createdAtGreaterThan(start)
+          .and()
+          .createdAtLessThan(end)
+          .findAll();
+    }
     return _isar.autoLists
         .filter()
         .syncDeletedAtIsNull()
@@ -67,7 +76,10 @@ class AutoListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<AutoList>> history() {
+  Future<List<AutoList>> history({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.autoLists.where().sortByCreatedAtDesc().findAll();
+    }
     return _isar.autoLists
         .filter()
         .syncDeletedAtIsNull()

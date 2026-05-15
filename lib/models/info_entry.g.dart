@@ -24,28 +24,33 @@ const InfoEntrySchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'description': PropertySchema(
+    r'createdByInitials': PropertySchema(
       id: 3,
+      name: r'createdByInitials',
+      type: IsarType.string,
+    ),
+    r'description': PropertySchema(
+      id: 4,
       name: r'description',
       type: IsarType.string,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 7, name: r'synced', type: IsarType.bool),
-    r'title': PropertySchema(id: 8, name: r'title', type: IsarType.string),
+    r'synced': PropertySchema(id: 8, name: r'synced', type: IsarType.bool),
+    r'title': PropertySchema(id: 9, name: r'title', type: IsarType.string),
   },
 
   estimateSize: _infoEntryEstimateSize,
@@ -103,6 +108,12 @@ int _infoEntryEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.createdByInitials;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.description.length * 3;
   bytesCount += 3 + object.syncUuid.length * 3;
   bytesCount += 3 + object.title.length * 3;
@@ -118,12 +129,13 @@ void _infoEntrySerialize(
   writer.writeString(offsets[0], object.bucket);
   writer.writeString(offsets[1], object.contact);
   writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.description);
-  writer.writeDateTime(offsets[4], object.syncDeletedAt);
-  writer.writeDateTime(offsets[5], object.syncUpdatedAt);
-  writer.writeString(offsets[6], object.syncUuid);
-  writer.writeBool(offsets[7], object.synced);
-  writer.writeString(offsets[8], object.title);
+  writer.writeString(offsets[3], object.createdByInitials);
+  writer.writeString(offsets[4], object.description);
+  writer.writeDateTime(offsets[5], object.syncDeletedAt);
+  writer.writeDateTime(offsets[6], object.syncUpdatedAt);
+  writer.writeString(offsets[7], object.syncUuid);
+  writer.writeBool(offsets[8], object.synced);
+  writer.writeString(offsets[9], object.title);
 }
 
 InfoEntry _infoEntryDeserialize(
@@ -136,13 +148,14 @@ InfoEntry _infoEntryDeserialize(
   object.bucket = reader.readString(offsets[0]);
   object.contact = reader.readStringOrNull(offsets[1]);
   object.createdAt = reader.readDateTime(offsets[2]);
-  object.description = reader.readString(offsets[3]);
+  object.createdByInitials = reader.readStringOrNull(offsets[3]);
+  object.description = reader.readString(offsets[4]);
   object.id = id;
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[4]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[5]);
-  object.syncUuid = reader.readString(offsets[6]);
-  object.synced = reader.readBool(offsets[7]);
-  object.title = reader.readString(offsets[8]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[5]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[6]);
+  object.syncUuid = reader.readString(offsets[7]);
+  object.synced = reader.readBool(offsets[8]);
+  object.title = reader.readString(offsets[9]);
   return object;
 }
 
@@ -160,16 +173,18 @@ P _infoEntryDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 5:
-      return (reader.readDateTime(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 6:
+      return (reader.readDateTime(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -740,6 +755,165 @@ extension InfoEntryQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByInitials',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByInitials',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterFilterCondition>
+  createdByInitialsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
       );
     });
   }
@@ -1425,6 +1599,19 @@ extension InfoEntryQuerySortBy on QueryBuilder<InfoEntry, InfoEntry, QSortBy> {
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy>
+  sortByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> sortByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.asc);
@@ -1533,6 +1720,19 @@ extension InfoEntryQuerySortThenBy
   QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy> thenByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InfoEntry, InfoEntry, QAfterSortBy>
+  thenByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
     });
   }
 
@@ -1645,6 +1845,17 @@ extension InfoEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctByCreatedByInitials({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'createdByInitials',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
   QueryBuilder<InfoEntry, InfoEntry, QDistinct> distinctByDescription({
     bool caseSensitive = true,
   }) {
@@ -1711,6 +1922,13 @@ extension InfoEntryQueryProperty
   QueryBuilder<InfoEntry, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<InfoEntry, String?, QQueryOperations>
+  createdByInitialsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByInitials');
     });
   }
 

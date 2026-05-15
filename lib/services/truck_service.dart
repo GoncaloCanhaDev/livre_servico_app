@@ -46,7 +46,13 @@ class TruckService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<TruckReception>> all() {
+  Future<List<TruckReception>> all({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.truckReceptions
+          .where()
+          .sortByArrivalTimeDesc()
+          .findAll();
+    }
     return _isar.truckReceptions
         .filter()
         .syncDeletedAtIsNull()

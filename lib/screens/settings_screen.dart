@@ -23,12 +23,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     SettingsService.instance.addListener(_onSettingsChanged);
     SyncService.instance.addListener(_onSettingsChanged);
+    AuthService.instance.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
     SyncService.instance.removeListener(_onSettingsChanged);
+    AuthService.instance.removeListener(_onSettingsChanged);
     super.dispose();
   }
 
@@ -233,19 +235,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _sectionHeader('Conta'),
           ListTile(
             title: Text(
-              AuthService.instance.user?.email ?? 'Sessão iniciada',
+              AuthService.instance.fullName ?? 'Sem nome',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text('Terminar sessão nesta aplicação.'),
+            subtitle: Text(
+              [
+                if ((AuthService.instance.employeeNumber ?? '').isNotEmpty)
+                  'Nº ${AuthService.instance.employeeNumber}',
+                AuthService.instance.user?.email ?? '',
+              ].where((s) => s.isNotEmpty).join(' · '),
+            ),
+            trailing: const Icon(Icons.edit, size: 18),
+            onTap: _onEditName,
+          ),
+          ListTile(
+            title: const Text('Terminar sessão',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Sair desta conta nesta aplicação.'),
             trailing: const Icon(Icons.logout),
             onTap: () async {
+              final navigator = Navigator.of(context);
               await AuthService.instance.signOut();
+              navigator.popUntil((r) => r.isFirst);
             },
           ),
         ],
         ),
       ),
     );
+  }
+
+  Future<void> _onEditName() async {
+    final auth = AuthService.instance;
+    final firstCtrl = TextEditingController(text: auth.firstName ?? '');
+    final lastCtrl = TextEditingController(text: auth.lastName ?? '');
+    final empCtrl = TextEditingController(text: auth.employeeNumber ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Perfil'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: firstCtrl,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Primeiro nome',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: lastCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Último nome',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: empCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nº empregado',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (saved != true) return;
+    final first = firstCtrl.text.trim();
+    final last = lastCtrl.text.trim();
+    final emp = empCtrl.text.trim();
+    if (first.isEmpty || last.isEmpty || emp.isEmpty) return;
+    try {
+      await AuthService.instance.updateProfile(
+        firstName: first,
+        lastName: last,
+        employeeNumber: emp,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao guardar: $e')),
+      );
+    }
   }
 
   Future<void> _onExport() async {

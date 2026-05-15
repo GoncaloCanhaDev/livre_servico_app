@@ -16,14 +16,21 @@ class DailyTasks {
   late DateTime serviceDay;
 
   bool kiwiAbertura = false;
+  String? kiwiAberturaBy;
   bool alteracoesPreco = false;
+  String? alteracoesPrecoBy;
   int alteracoesPrecoCount = 0;
   bool verificacaoTemperaturas = false;
+  String? verificacaoTemperaturasBy;
   bool preenchimentoQuadro = false;
+  String? preenchimentoQuadroBy;
   bool verificacaoValidades = false;
+  String? verificacaoValidadesBy;
   int verificacaoValidadesCount = 0;
   bool kiwiFecho = false;
+  String? kiwiFechoBy;
   bool limpezaMaquinaVoltas = false;
+  String? limpezaMaquinaVoltasBy;
 
   DateTime? lastUpdatedAt;
 }

@@ -17,31 +17,36 @@ const ShiftEventSchema = CollectionSchema(
   name: r'ShiftEvent',
   id: 8729232921027405560,
   properties: {
-    r'note': PropertySchema(id: 0, name: r'note', type: IsarType.string),
-    r'shiftId': PropertySchema(id: 1, name: r'shiftId', type: IsarType.long),
+    r'createdByInitials': PropertySchema(
+      id: 0,
+      name: r'createdByInitials',
+      type: IsarType.string,
+    ),
+    r'note': PropertySchema(id: 1, name: r'note', type: IsarType.string),
+    r'shiftId': PropertySchema(id: 2, name: r'shiftId', type: IsarType.long),
     r'syncDeletedAt': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 5, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 6, name: r'synced', type: IsarType.bool),
     r'timestamp': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'type': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'type',
       type: IsarType.byte,
       enumMap: _ShiftEventtypeEnumValueMap,
@@ -97,6 +102,12 @@ int _shiftEventEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.createdByInitials;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.note;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -112,14 +123,15 @@ void _shiftEventSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.note);
-  writer.writeLong(offsets[1], object.shiftId);
-  writer.writeDateTime(offsets[2], object.syncDeletedAt);
-  writer.writeDateTime(offsets[3], object.syncUpdatedAt);
-  writer.writeString(offsets[4], object.syncUuid);
-  writer.writeBool(offsets[5], object.synced);
-  writer.writeDateTime(offsets[6], object.timestamp);
-  writer.writeByte(offsets[7], object.type.index);
+  writer.writeString(offsets[0], object.createdByInitials);
+  writer.writeString(offsets[1], object.note);
+  writer.writeLong(offsets[2], object.shiftId);
+  writer.writeDateTime(offsets[3], object.syncDeletedAt);
+  writer.writeDateTime(offsets[4], object.syncUpdatedAt);
+  writer.writeString(offsets[5], object.syncUuid);
+  writer.writeBool(offsets[6], object.synced);
+  writer.writeDateTime(offsets[7], object.timestamp);
+  writer.writeByte(offsets[8], object.type.index);
 }
 
 ShiftEvent _shiftEventDeserialize(
@@ -129,16 +141,17 @@ ShiftEvent _shiftEventDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ShiftEvent();
+  object.createdByInitials = reader.readStringOrNull(offsets[0]);
   object.id = id;
-  object.note = reader.readStringOrNull(offsets[0]);
-  object.shiftId = reader.readLong(offsets[1]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[2]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[3]);
-  object.syncUuid = reader.readString(offsets[4]);
-  object.synced = reader.readBool(offsets[5]);
-  object.timestamp = reader.readDateTime(offsets[6]);
+  object.note = reader.readStringOrNull(offsets[1]);
+  object.shiftId = reader.readLong(offsets[2]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[3]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[4]);
+  object.syncUuid = reader.readString(offsets[5]);
+  object.synced = reader.readBool(offsets[6]);
+  object.timestamp = reader.readDateTime(offsets[7]);
   object.type =
-      _ShiftEventtypeValueEnumMap[reader.readByteOrNull(offsets[7])] ??
+      _ShiftEventtypeValueEnumMap[reader.readByteOrNull(offsets[8])] ??
       ShiftEventType.clockIn;
   return object;
 }
@@ -153,18 +166,20 @@ P _shiftEventDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
-    case 5:
-      return (reader.readBool(offset)) as P;
-    case 6:
       return (reader.readDateTime(offset)) as P;
+    case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
     case 7:
+      return (reader.readDateTime(offset)) as P;
+    case 8:
       return (_ShiftEventtypeValueEnumMap[reader.readByteOrNull(offset)] ??
               ShiftEventType.clockIn)
           as P;
@@ -449,6 +464,165 @@ extension ShiftEventQueryWhere
 
 extension ShiftEventQueryFilter
     on QueryBuilder<ShiftEvent, ShiftEvent, QFilterCondition> {
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'createdByInitials'),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByInitials',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByInitials',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByInitials',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition>
+  createdByInitialsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<ShiftEvent, ShiftEvent, QAfterFilterCondition> idEqualTo(
     Id value,
   ) {
@@ -1137,6 +1311,19 @@ extension ShiftEventQueryLinks
 
 extension ShiftEventQuerySortBy
     on QueryBuilder<ShiftEvent, ShiftEvent, QSortBy> {
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy> sortByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy>
+  sortByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy> sortByNote() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'note', Sort.asc);
@@ -1236,6 +1423,19 @@ extension ShiftEventQuerySortBy
 
 extension ShiftEventQuerySortThenBy
     on QueryBuilder<ShiftEvent, ShiftEvent, QSortThenBy> {
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy> thenByCreatedByInitials() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy>
+  thenByCreatedByInitialsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByInitials', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShiftEvent, ShiftEvent, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1347,6 +1547,17 @@ extension ShiftEventQuerySortThenBy
 
 extension ShiftEventQueryWhereDistinct
     on QueryBuilder<ShiftEvent, ShiftEvent, QDistinct> {
+  QueryBuilder<ShiftEvent, ShiftEvent, QDistinct> distinctByCreatedByInitials({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'createdByInitials',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
   QueryBuilder<ShiftEvent, ShiftEvent, QDistinct> distinctByNote({
     bool caseSensitive = true,
   }) {
@@ -1405,6 +1616,13 @@ extension ShiftEventQueryProperty
   QueryBuilder<ShiftEvent, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ShiftEvent, String?, QQueryOperations>
+  createdByInitialsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByInitials');
     });
   }
 

@@ -185,7 +185,15 @@ class ShiftService extends ChangeNotifier {
     await _refresh();
   }
 
-  Future<List<ShiftEvent>> eventsForShift(int shiftId) {
+  Future<List<ShiftEvent>> eventsForShift(int shiftId,
+      {bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.shiftEvents
+          .filter()
+          .shiftIdEqualTo(shiftId)
+          .sortByTimestamp()
+          .findAll();
+    }
     return _isar.shiftEvents
         .filter()
         .syncDeletedAtIsNull()
@@ -225,12 +233,14 @@ class ShiftService extends ChangeNotifier {
     await _refresh();
   }
 
-  Future<List<int>> allShiftIdsDesc() async {
-    final all = await _isar.shiftEvents
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByTimestampDesc()
-        .findAll();
+  Future<List<int>> allShiftIdsDesc({bool includeDeleted = false}) async {
+    final all = includeDeleted
+        ? await _isar.shiftEvents.where().sortByTimestampDesc().findAll()
+        : await _isar.shiftEvents
+            .filter()
+            .syncDeletedAtIsNull()
+            .sortByTimestampDesc()
+            .findAll();
     final seen = <int>{};
     final result = <int>[];
     for (final e in all) {

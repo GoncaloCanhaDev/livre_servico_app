@@ -28,8 +28,7 @@ class _NotificationHistoryScreenState
 
   Future<List<NotificationLog>> _load() async {
     final list = await ShiftService.instance.isar.notificationLogs
-        .filter()
-        .syncDeletedAtIsNull()
+        .where()
         .findAll();
     list.sort((a, b) => b.scheduledFor.compareTo(a.scheduledFor));
     return list;
@@ -136,7 +135,7 @@ class _NotificationHistoryScreenState
                     ),
                     ...items.map((e) {
                       final fired = !e.scheduledFor.isAfter(now);
-                      return Card(
+                      final card = Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: Icon(
@@ -172,6 +171,10 @@ class _NotificationHistoryScreenState
                           ),
                         ),
                       );
+                      return e.syncDeletedAt != null
+                          ? IgnorePointer(
+                              child: Opacity(opacity: 0.4, child: card))
+                          : card;
                     }),
                   ],
                 );

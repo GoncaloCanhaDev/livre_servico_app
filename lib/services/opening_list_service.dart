@@ -56,7 +56,14 @@ class OpeningListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<OpeningList>> entriesForServiceDay(DateTime day) {
+  Future<List<OpeningList>> entriesForServiceDay(DateTime day,
+      {bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.openingLists
+          .filter()
+          .serviceDayEqualTo(day)
+          .findAll();
+    }
     return _isar.openingLists
         .filter()
         .syncDeletedAtIsNull()
@@ -91,7 +98,10 @@ class OpeningListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<OpeningList>> history() {
+  Future<List<OpeningList>> history({bool includeDeleted = false}) {
+    if (includeDeleted) {
+      return _isar.openingLists.where().sortByServiceDayDesc().findAll();
+    }
     return _isar.openingLists
         .filter()
         .syncDeletedAtIsNull()
