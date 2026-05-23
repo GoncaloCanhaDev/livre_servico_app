@@ -34,6 +34,23 @@ class VisualListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addForDay({
+    required DateTime serviceDay,
+    required int itensPicados,
+    required int quebraCents,
+    required int beneficioCents,
+  }) async {
+    final entry = VisualList()
+      ..createdAt = DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
+      ..serviceDay = serviceDay
+      ..itensPicados = itensPicados
+      ..quebraCents = quebraCents
+      ..beneficioCents = beneficioCents;
+    SyncMeta.stamp(entry);
+    await _isar.writeTxn(() => _isar.visualLists.put(entry));
+    notifyListeners();
+  }
+
   Future<List<VisualList>> entriesForServiceDay(DateTime day,
       {bool includeDeleted = false}) {
     if (includeDeleted) {

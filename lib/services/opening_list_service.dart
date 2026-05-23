@@ -45,6 +45,27 @@ class OpeningListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> backfillFinalized({
+    required DateTime serviceDay,
+    required int congelados,
+    required int opls,
+    required int naoPereciveis,
+  }) async {
+    final existing = await _isar.openingLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .serviceDayEqualTo(serviceDay)
+        .findFirst();
+    final row = existing ?? (OpeningList()..serviceDay = serviceDay);
+    row.congelados = congelados;
+    row.opls = opls;
+    row.naoPereciveis = naoPereciveis;
+    row.finalizedAt = DateTime.now();
+    SyncMeta.stamp(row);
+    await _isar.writeTxn(() => _isar.openingLists.put(row));
+    notifyListeners();
+  }
+
   Future<void> finalize(OpeningList list) async {
     if (list.isFinalized) return;
     list.finalizedAt = DateTime.now();

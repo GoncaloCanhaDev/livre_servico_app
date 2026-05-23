@@ -307,25 +307,7 @@ class _InitialsBadge extends StatelessWidget {
   final String initials;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.green,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 class _ManualTask extends StatelessWidget {

@@ -9,6 +9,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
+import '../models/justification.dart';
 import '../models/notification_log.dart';
 import '../models/opening_list.dart';
 import '../models/product.dart';
@@ -19,6 +20,7 @@ import '../models/visual_list.dart';
 import 'auto_list_service.dart';
 import 'daily_tasks_service.dart';
 import 'inventory_service.dart';
+import 'justification_service.dart';
 import 'notification_service.dart';
 import 'opening_list_service.dart';
 import 'product_service.dart';
@@ -135,6 +137,7 @@ class SyncService extends ChangeNotifier {
       DailyTasksService.instance,
       InventoryService.instance,
       NotificationService.instance,
+      JustificationService.instance,
     ];
     for (final n in notifiers) {
       n.addListener(requestSync);
@@ -250,6 +253,7 @@ class SyncService extends ChangeNotifier {
     _inventoryMapper,
     _infoEntryMapper,
     _notificationLogMapper,
+    _justificationMapper,
   ];
 }
 
@@ -859,6 +863,49 @@ class _NotificationLogMapper extends _Mapper {
     r.channel = json['channel'] as String?;
     r.scheduledFor = DateTime.parse(json['scheduled_for'] as String);
     r.createdAt = DateTime.parse(json['created_at'] as String);
+    return r;
+  }
+}
+
+
+// Justification --------------------------------------------------------------
+
+final _justificationMapper = _JustificationMapper();
+
+class _JustificationMapper extends _Mapper {
+  @override
+  String get table => 'justifications';
+
+  @override
+  Future<List<Justification>> findDirty(Isar isar) =>
+      isar.justifications.filter().syncedEqualTo(false).findAll();
+
+  @override
+  Future<Justification?> findByUuid(Isar isar, String uuid) =>
+      isar.justifications.filter().syncUuidEqualTo(uuid).findFirst();
+
+  @override
+  Future<void> putAllLocal(Isar isar, List<dynamic> rows) =>
+      isar.justifications.putAll(rows.cast<Justification>());
+
+  @override
+  Map<String, dynamic> toMap(dynamic row, {required String userId}) {
+    final r = row as Justification;
+    return {
+      ..._syncMetaToMap(r, userId),
+      'service_day': _iso(r.serviceDay),
+      'kind': r.kind,
+      'reason': r.reason,
+    };
+  }
+
+  @override
+  Justification fromMap(Map<String, dynamic> json, {dynamic existing}) {
+    final r = (existing as Justification?) ?? Justification();
+    _writeSyncMeta(r, json);
+    r.serviceDay = DateTime.parse(json['service_day'] as String);
+    r.kind = json['kind'] as String;
+    r.reason = json['reason'] as String;
     return r;
   }
 }

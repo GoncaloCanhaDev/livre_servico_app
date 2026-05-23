@@ -48,6 +48,29 @@ class ReportListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> backfillFinalized({
+    required DateTime serviceDay,
+    required int diasSemVendas,
+    required int regularizacoes,
+    required int massiva,
+    required int repetidos,
+  }) async {
+    final existing = await _isar.reportLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .serviceDayEqualTo(serviceDay)
+        .findFirst();
+    final row = existing ?? (ReportList()..serviceDay = serviceDay);
+    row.diasSemVendas = diasSemVendas;
+    row.regularizacoes = regularizacoes;
+    row.massiva = massiva;
+    row.repetidos = repetidos;
+    row.finalizedAt = DateTime.now();
+    SyncMeta.stamp(row);
+    await _isar.writeTxn(() => _isar.reportLists.put(row));
+    notifyListeners();
+  }
+
   Future<void> finalize(ReportList list) async {
     if (list.isFinalized) return;
     list.finalizedAt = DateTime.now();
