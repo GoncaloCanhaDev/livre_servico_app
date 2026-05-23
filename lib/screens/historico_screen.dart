@@ -210,25 +210,7 @@ class _HistoryInitials extends StatelessWidget {
   final String initials;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 24,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.green,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 Widget _dimmedIfDeleted({required bool deleted, required Widget child}) {
@@ -236,17 +218,7 @@ Widget _dimmedIfDeleted({required bool deleted, required Widget child}) {
   return IgnorePointer(child: Opacity(opacity: 0.4, child: child));
 }
 
-Widget _trailingWithInitials(String? initials, Widget child) {
-  if ((initials ?? '').isEmpty) return child;
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _HistoryInitials(initials: initials!),
-      const SizedBox(width: 8),
-      child,
-    ],
-  );
-}
+Widget _trailingWithInitials(String? initials, Widget child) => child;
 
 class _DayItem {
   _DayItem({

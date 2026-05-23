@@ -50,6 +50,21 @@ class DailyTasksService extends ChangeNotifier {
     return changed;
   }
 
+  Future<DailyTasks> forDay(DateTime serviceDay) async {
+    final existing = await _isar.dailyTasks
+        .filter()
+        .syncDeletedAtIsNull()
+        .serviceDayEqualTo(serviceDay)
+        .findFirst();
+    if (existing != null) return existing;
+    final created = DailyTasks()..serviceDay = serviceDay;
+    SyncMeta.stamp(created);
+    await _isar.writeTxn(() async {
+      created.id = await _isar.dailyTasks.put(created);
+    });
+    return created;
+  }
+
   Future<void> save(DailyTasks t) async {
     t.lastUpdatedAt = DateTime.now();
     SyncMeta.stamp(t);

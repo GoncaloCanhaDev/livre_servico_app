@@ -30,6 +30,22 @@ class AutoListService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addForDay({
+    required DateTime serviceDay,
+    required int congelados,
+    required int opls,
+    required int naoPereciveis,
+  }) async {
+    final entry = AutoList()
+      ..createdAt = DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
+      ..congelados = congelados
+      ..opls = opls
+      ..naoPereciveis = naoPereciveis;
+    SyncMeta.stamp(entry);
+    await _isar.writeTxn(() => _isar.autoLists.put(entry));
+    notifyListeners();
+  }
+
   Future<List<AutoList>> entriesForServiceDay(DateTime day,
       {bool includeDeleted = false}) async {
     final start = DateTime(day.year, day.month, day.day, 5);
