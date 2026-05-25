@@ -111,8 +111,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   labelText: 'Código SAP',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(

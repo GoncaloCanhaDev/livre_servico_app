@@ -11,6 +11,7 @@ class InventoryService extends ChangeNotifier {
 
   Isar get _isar => ShiftService.instance.isar;
 
+  /// Legacy save (used by the old name+value flow + sync engine).
   Future<int> save(Inventory inv) async {
     SyncMeta.stamp(inv);
     late int id;
@@ -20,6 +21,67 @@ class InventoryService extends ChangeNotifier {
     notifyListeners();
     return id;
   }
+
+  Future<Inventory> startSession({
+    required String name,
+    required String code,
+  }) async {
+    final now = DateTime.now();
+    final inv = Inventory()
+      ..name = name
+      ..code = code
+      ..createdAt = now
+      ..startedAt = now
+      ..runningSince = now
+      ..accumulatedSeconds = 0
+      ..valueCents = 0;
+    SyncMeta.stamp(inv);
+    await _isar.writeTxn(() async {
+      inv.id = await _isar.inventorys.put(inv);
+    });
+    notifyListeners();
+    return inv;
+  }
+
+  Future<void> pause(Inventory inv) async {
+    if (!inv.isRunning) return;
+    final now = DateTime.now();
+    inv.accumulatedSeconds +=
+        now.difference(inv.runningSince!).inSeconds.clamp(0, 1 << 31);
+    inv.runningSince = null;
+    SyncMeta.stamp(inv);
+    await _isar.writeTxn(() => _isar.inventorys.put(inv));
+    notifyListeners();
+  }
+
+  Future<void> resume(Inventory inv) async {
+    if (inv.isFinalized || inv.isRunning) return;
+    inv.runningSince = DateTime.now();
+    SyncMeta.stamp(inv);
+    await _isar.writeTxn(() => _isar.inventorys.put(inv));
+    notifyListeners();
+  }
+
+  Future<void> finalize(Inventory inv, {required int finalValueCents}) async {
+    if (inv.isFinalized) return;
+    final now = DateTime.now();
+    if (inv.runningSince != null) {
+      inv.accumulatedSeconds +=
+          now.difference(inv.runningSince!).inSeconds.clamp(0, 1 << 31);
+    }
+    inv.runningSince = null;
+    inv.finishedAt = now;
+    inv.finalValueCents = finalValueCents;
+    inv.valueCents = finalValueCents;
+    SyncMeta.stamp(inv);
+    await _isar.writeTxn(() => _isar.inventorys.put(inv));
+    notifyListeners();
+  }
+
+  Future<Inventory?> getByUuid(String uuid) =>
+      _isar.inventorys.filter().syncUuidEqualTo(uuid).findFirst();
+
+  Future<Inventory?> getById(int id) => _isar.inventorys.get(id);
 
   Future<void> delete(int id) async {
     final row = await _isar.inventorys.get(id);

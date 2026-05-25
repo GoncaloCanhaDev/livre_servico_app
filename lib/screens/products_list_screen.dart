@@ -187,12 +187,48 @@ class _ProductTabState extends State<_ProductTab>
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (_, i) {
                   final p = items[i];
+                  final incomplete = p.sapCode.trim().isEmpty ||
+                      p.name.trim().isEmpty;
                   return ListTile(
-                    title: Text(p.name,
-                        style:
-                            const TextStyle(fontWeight: FontWeight.w600)),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(p.name.trim().isEmpty ? '—' : p.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                        if (incomplete)
+                          Tooltip(
+                            message: 'Informação incompleta',
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: Colors.amber.withValues(alpha: 0.6)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.warning_amber_rounded,
+                                      size: 14,
+                                      color: Colors.amber.shade800),
+                                  const SizedBox(width: 4),
+                                  Text('Incompleto',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.amber.shade900)),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     subtitle: Text(
-                        'EAN ${p.ean}  ·  SAP ${p.sapCode}${widget.department == null ? '\n${p.department.label}' : ''}'),
+                        'EAN ${p.ean}  ·  SAP ${p.sapCode.trim().isEmpty ? '—' : p.sapCode}${widget.department == null ? '\n${p.department.label}' : ''}'),
                     isThreeLine: widget.department == null,
                     trailing: const Icon(Icons.chevron_right,
                         color: AppColors.green),
