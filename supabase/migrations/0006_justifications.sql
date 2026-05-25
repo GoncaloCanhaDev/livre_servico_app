@@ -52,5 +52,10 @@ drop trigger if exists preserve_user_id_trg on justifications;
 create trigger preserve_user_id_trg before update on justifications
   for each row execute function public.preserve_user_id();
 
--- Realtime broadcasts.
-alter publication supabase_realtime add table justifications;
+-- Realtime broadcasts (no-op if already added).
+do $$
+begin
+  alter publication supabase_realtime add table justifications;
+exception when duplicate_object then
+  null;
+end$$;

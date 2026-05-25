@@ -6,6 +6,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
+import '../models/inventory_line.dart';
 import '../models/justification.dart';
 import '../models/notification_log.dart';
 import '../models/opening_list.dart';
@@ -41,6 +42,7 @@ class ShiftService extends ChangeNotifier {
         VisualListSchema,
         DailyTasksSchema,
         InventorySchema,
+        InventoryLineSchema,
         InfoEntrySchema,
         NotificationLogSchema,
         JustificationSchema,
@@ -71,6 +73,7 @@ class ShiftService extends ChangeNotifier {
     await backfill(_isar.visualLists);
     await backfill(_isar.dailyTasks);
     await backfill(_isar.inventorys);
+    await backfill(_isar.inventoryLines);
     await backfill(_isar.infoEntrys);
     await backfill(_isar.notificationLogs);
     await backfill(_isar.justifications);

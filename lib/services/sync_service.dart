@@ -9,6 +9,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
+import '../models/inventory_line.dart';
 import '../models/justification.dart';
 import '../models/notification_log.dart';
 import '../models/opening_list.dart';
@@ -19,6 +20,7 @@ import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import 'auto_list_service.dart';
 import 'daily_tasks_service.dart';
+import 'inventory_line_service.dart';
 import 'inventory_service.dart';
 import 'justification_service.dart';
 import 'notification_service.dart';
@@ -136,6 +138,7 @@ class SyncService extends ChangeNotifier {
       VisualListService.instance,
       DailyTasksService.instance,
       InventoryService.instance,
+      InventoryLineService.instance,
       NotificationService.instance,
       JustificationService.instance,
     ];
@@ -251,6 +254,7 @@ class SyncService extends ChangeNotifier {
     _visualListMapper,
     _dailyTasksMapper,
     _inventoryMapper,
+    _inventoryLineMapper,
     _infoEntryMapper,
     _notificationLogMapper,
     _justificationMapper,
@@ -761,6 +765,12 @@ class _InventoryMapper extends _Mapper {
       'name': r.name,
       'value_cents': r.valueCents,
       'created_at': _iso(r.createdAt),
+      'code': r.code,
+      'started_at': _iso(r.startedAt),
+      'running_since': _iso(r.runningSince),
+      'accumulated_seconds': r.accumulatedSeconds,
+      'finished_at': _iso(r.finishedAt),
+      'final_value_cents': r.finalValueCents,
     };
   }
 
@@ -771,6 +781,61 @@ class _InventoryMapper extends _Mapper {
     r.name = json['name'] as String;
     r.valueCents = (json['value_cents'] as num).toInt();
     r.createdAt = DateTime.parse(json['created_at'] as String);
+    r.code = json['code'] as String?;
+    r.startedAt = _dt(json['started_at']);
+    r.runningSince = _dt(json['running_since']);
+    r.accumulatedSeconds =
+        ((json['accumulated_seconds'] as num?) ?? 0).toInt();
+    r.finishedAt = _dt(json['finished_at']);
+    r.finalValueCents = (json['final_value_cents'] as num?)?.toInt();
+    return r;
+  }
+}
+
+// InventoryLine --------------------------------------------------------------
+
+final _inventoryLineMapper = _InventoryLineMapper();
+
+class _InventoryLineMapper extends _Mapper {
+  @override
+  String get table => 'inventory_lines';
+
+  @override
+  Future<List<InventoryLine>> findDirty(Isar isar) =>
+      isar.inventoryLines.filter().syncedEqualTo(false).findAll();
+
+  @override
+  Future<InventoryLine?> findByUuid(Isar isar, String uuid) =>
+      isar.inventoryLines.filter().syncUuidEqualTo(uuid).findFirst();
+
+  @override
+  Future<void> putAllLocal(Isar isar, List<dynamic> rows) =>
+      isar.inventoryLines.putAll(rows.cast<InventoryLine>());
+
+  @override
+  Map<String, dynamic> toMap(dynamic row, {required String userId}) {
+    final r = row as InventoryLine;
+    return {
+      ..._syncMetaToMap(r, userId),
+      'parent_uuid': r.parentUuid,
+      'ean': r.ean,
+      'product_name': r.productName,
+      'count': r.count,
+      'created_at': _iso(r.createdAt),
+      'updated_at_local': _iso(r.updatedAt),
+    };
+  }
+
+  @override
+  InventoryLine fromMap(Map<String, dynamic> json, {dynamic existing}) {
+    final r = (existing as InventoryLine?) ?? InventoryLine();
+    _writeSyncMeta(r, json);
+    r.parentUuid = json['parent_uuid'] as String;
+    r.ean = json['ean'] as String;
+    r.productName = json['product_name'] as String?;
+    r.count = ((json['count'] as num?) ?? 0).toInt();
+    r.createdAt = DateTime.parse(json['created_at'] as String);
+    r.updatedAt = DateTime.parse(json['updated_at_local'] as String);
     return r;
   }
 }
