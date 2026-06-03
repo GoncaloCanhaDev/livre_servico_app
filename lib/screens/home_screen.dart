@@ -11,6 +11,7 @@ import 'dashboard_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
+import 'pedidos_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
@@ -250,6 +251,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
+                      icon: const Icon(Icons.receipt_long),
+                      label: const FittedBox(
+                          fit: BoxFit.scaleDown, child: Text('Pedidos')),
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const PedidosScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
                       icon: const Icon(Icons.info_outline),
                       label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Informações')),
                       onPressed: () {
@@ -259,7 +273,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.history),

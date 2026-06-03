@@ -10,6 +10,8 @@ import '../models/inventory_line.dart';
 import '../models/justification.dart';
 import '../models/notification_log.dart';
 import '../models/opening_list.dart';
+import '../models/pedido.dart';
+import '../models/pedido_line.dart';
 import '../models/product.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
@@ -46,6 +48,8 @@ class ShiftService extends ChangeNotifier {
         InfoEntrySchema,
         NotificationLogSchema,
         JustificationSchema,
+        PedidoSchema,
+        PedidoLineSchema,
       ],
       directory: dir.path,
       name: 'livre_servico',
@@ -77,6 +81,8 @@ class ShiftService extends ChangeNotifier {
     await backfill(_isar.infoEntrys);
     await backfill(_isar.notificationLogs);
     await backfill(_isar.justifications);
+    await backfill(_isar.pedidos);
+    await backfill(_isar.pedidoLines);
   }
 
   WorkStatus _status = WorkStatus.idle;

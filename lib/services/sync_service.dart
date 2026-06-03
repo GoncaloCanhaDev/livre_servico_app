@@ -13,6 +13,8 @@ import '../models/inventory_line.dart';
 import '../models/justification.dart';
 import '../models/notification_log.dart';
 import '../models/opening_list.dart';
+import '../models/pedido.dart';
+import '../models/pedido_line.dart';
 import '../models/product.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
@@ -25,6 +27,8 @@ import 'inventory_service.dart';
 import 'justification_service.dart';
 import 'notification_service.dart';
 import 'opening_list_service.dart';
+import 'pedido_line_service.dart';
+import 'pedido_service.dart';
 import 'product_service.dart';
 import 'report_list_service.dart';
 import 'shift_service.dart';
@@ -141,6 +145,8 @@ class SyncService extends ChangeNotifier {
       InventoryLineService.instance,
       NotificationService.instance,
       JustificationService.instance,
+      PedidoService.instance,
+      PedidoLineService.instance,
     ];
     for (final n in notifiers) {
       n.addListener(requestSync);
@@ -258,6 +264,8 @@ class SyncService extends ChangeNotifier {
     _infoEntryMapper,
     _notificationLogMapper,
     _justificationMapper,
+    _pedidoMapper,
+    _pedidoLineMapper,
   ];
 }
 
@@ -971,6 +979,97 @@ class _JustificationMapper extends _Mapper {
     r.serviceDay = DateTime.parse(json['service_day'] as String);
     r.kind = json['kind'] as String;
     r.reason = json['reason'] as String;
+    return r;
+  }
+}
+
+
+// Pedido ---------------------------------------------------------------------
+
+final _pedidoMapper = _PedidoMapper();
+
+class _PedidoMapper extends _Mapper {
+  @override
+  String get table => 'pedidos';
+
+  @override
+  Future<List<Pedido>> findDirty(Isar isar) =>
+      isar.pedidos.filter().syncedEqualTo(false).findAll();
+
+  @override
+  Future<Pedido?> findByUuid(Isar isar, String uuid) =>
+      isar.pedidos.filter().syncUuidEqualTo(uuid).findFirst();
+
+  @override
+  Future<void> putAllLocal(Isar isar, List<dynamic> rows) =>
+      isar.pedidos.putAll(rows.cast<Pedido>());
+
+  @override
+  Map<String, dynamic> toMap(dynamic row, {required String userId}) {
+    final r = row as Pedido;
+    return {
+      ..._syncMetaToMap(r, userId),
+      'created_at': _iso(r.createdAt),
+      'finished_at': _iso(r.finishedAt),
+      'numero': r.numero,
+    };
+  }
+
+  @override
+  Pedido fromMap(Map<String, dynamic> json, {dynamic existing}) {
+    final r = (existing as Pedido?) ?? Pedido();
+    _writeSyncMeta(r, json);
+    r.createdAt = DateTime.parse(json['created_at'] as String);
+    r.finishedAt = _dt(json['finished_at']);
+    r.numero = json['numero'] as String?;
+    return r;
+  }
+}
+
+// PedidoLine -----------------------------------------------------------------
+
+final _pedidoLineMapper = _PedidoLineMapper();
+
+class _PedidoLineMapper extends _Mapper {
+  @override
+  String get table => 'pedido_lines';
+
+  @override
+  Future<List<PedidoLine>> findDirty(Isar isar) =>
+      isar.pedidoLines.filter().syncedEqualTo(false).findAll();
+
+  @override
+  Future<PedidoLine?> findByUuid(Isar isar, String uuid) =>
+      isar.pedidoLines.filter().syncUuidEqualTo(uuid).findFirst();
+
+  @override
+  Future<void> putAllLocal(Isar isar, List<dynamic> rows) =>
+      isar.pedidoLines.putAll(rows.cast<PedidoLine>());
+
+  @override
+  Map<String, dynamic> toMap(dynamic row, {required String userId}) {
+    final r = row as PedidoLine;
+    return {
+      ..._syncMetaToMap(r, userId),
+      'parent_uuid': r.parentUuid,
+      'ean': r.ean,
+      'product_name': r.productName,
+      'caixas': r.caixas,
+      'created_at': _iso(r.createdAt),
+      'updated_at_local': _iso(r.updatedAt),
+    };
+  }
+
+  @override
+  PedidoLine fromMap(Map<String, dynamic> json, {dynamic existing}) {
+    final r = (existing as PedidoLine?) ?? PedidoLine();
+    _writeSyncMeta(r, json);
+    r.parentUuid = json['parent_uuid'] as String;
+    r.ean = json['ean'] as String;
+    r.productName = json['product_name'] as String?;
+    r.caixas = ((json['caixas'] as num?) ?? 0).toInt();
+    r.createdAt = DateTime.parse(json['created_at'] as String);
+    r.updatedAt = DateTime.parse(json['updated_at_local'] as String);
     return r;
   }
 }
