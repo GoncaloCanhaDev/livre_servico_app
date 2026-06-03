@@ -5,6 +5,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
+import '../models/pedido.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
 import '../models/truck_reception.dart';
@@ -13,6 +14,8 @@ import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
+import '../services/pedido_line_service.dart';
+import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
 import '../services/shift_service.dart';
 import '../services/truck_service.dart';
@@ -35,6 +38,7 @@ class HistoricoScreen extends StatelessWidget {
     'Visual',
     'Tarefas',
     'Inventários',
+    'Pedidos',
   ];
 
   Future<void> _clearTab(int index) async {
@@ -66,6 +70,9 @@ class HistoricoScreen extends StatelessWidget {
       case 8:
         await InventoryService.instance.deleteAll();
         break;
+      case 9:
+        await PedidoService.instance.deleteAll();
+        break;
     }
   }
 
@@ -78,6 +85,7 @@ class HistoricoScreen extends StatelessWidget {
     await VisualListService.instance.deleteAll();
     await DailyTasksService.instance.deleteAll();
     await InventoryService.instance.deleteAll();
+    await PedidoService.instance.deleteAll();
   }
 
   @override
@@ -141,6 +149,7 @@ class HistoricoScreen extends StatelessWidget {
                 _VisualTab(),
                 _TasksTab(),
                 _InventoryTab(),
+                _PedidosTab(),
               ],
             ),
           ),
@@ -1569,6 +1578,118 @@ class _InventoryTabState extends State<_InventoryTab>
                   ),
                 ),
               ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PedidosTab extends StatefulWidget {
+  const _PedidosTab();
+  @override
+  State<_PedidosTab> createState() => _PedidosTabState();
+}
+
+class _PedidosTabState extends State<_PedidosTab>
+    with AutomaticKeepAliveClientMixin {
+  late Future<List<Pedido>> _future;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+    PedidoService.instance.addListener(_reload);
+    PedidoLineService.instance.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    PedidoService.instance.removeListener(_reload);
+    PedidoLineService.instance.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = PedidoService.instance.history(includeDeleted: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final dateFmt = DateFormat("d 'de' MMMM, HH:mm", 'pt_PT');
+    return FutureBuilder<List<Pedido>>(
+      future: _future,
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final items = snap.data!;
+        if (items.isEmpty) {
+          return const Center(child: Text('Sem pedidos registados.'));
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: items.length,
+          itemBuilder: (context, i) {
+            final p = items[i];
+            final title = p.isFinalized
+                ? 'Pedido ${p.numero ?? '—'}'
+                : 'Pedido (em curso)';
+            return _dimmedIfDeleted(
+              deleted: p.syncDeletedAt != null,
+              child: _HistoryDismissible(
+                itemKey: ValueKey(p.id),
+                deletePromptName: 'pedido',
+                onDelete: () async {
+                  await PedidoService.instance.delete(p.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final lines =
+                      await PedidoLineService.instance.linesFor(p.syncUuid);
+                  final msg = StringBuffer()
+                    ..writeln('📝 Pedido nº ${p.numero ?? '—'}')
+                    ..writeln('${lines.length} produto(s)');
+                  for (final l in lines) {
+                    msg.writeln(
+                        '• ${l.productName ?? l.ean} (${l.ean}) — ${l.caixas} cx');
+                  }
+                  if (!ctx.mounted) return;
+                  await WhatsAppService.sendWithConfirm(
+                      ctx, msg.toString().trim());
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: Icon(Icons.receipt_long,
+                        color: p.isFinalized
+                            ? AppColors.green
+                            : AppColors.greenDark),
+                    title: Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(dateFmt.format(p.createdAt)),
+                    trailing: _trailingWithInitials(
+                      p.createdByInitials,
+                      Text(
+                        p.isFinalized ? 'Concluído' : 'A decorrer',
+                        style: TextStyle(
+                          color: p.isFinalized
+                              ? AppColors.green
+                              : Colors.black54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             );
           },
