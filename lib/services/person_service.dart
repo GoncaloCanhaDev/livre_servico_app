@@ -35,15 +35,17 @@ class PersonService extends ChangeNotifier {
     final row = await _isar.persons.get(id);
     if (row == null || row.syncDeletedAt != null) return;
     SyncMeta.softDelete(row);
-    // Anyone reporting directly to the removed person moves to the top of
-    // the hierarchy rather than being left pointing at a dangling uuid.
-    final reports = await _isar.persons
-        .filter()
-        .syncDeletedAtIsNull()
-        .managerUuidEqualTo(row.syncUuid)
-        .findAll();
+    // Anyone reporting to the removed person loses just that reporting
+    // line — they keep any other manager they still have, and only drop
+    // to the top of the hierarchy if this was their last one.
+    final all = await _isar.persons.filter().syncDeletedAtIsNull().findAll();
+    final reports = all
+        .where((p) => p.managerUuids.contains(row.syncUuid))
+        .toList();
     for (final r in reports) {
-      r.managerUuid = null;
+      r.managerUuids = r.managerUuids
+          .where((u) => u != row.syncUuid)
+          .toList();
       SyncMeta.stamp(r);
     }
     await _isar.writeTxn(() async {
@@ -74,29 +76,34 @@ class PersonService extends ChangeNotifier {
     await _isar.writeTxn(() => _isar.persons.putAll(needsFix));
   }
 
-  /// Groups [all] by manager syncUuid; the `null` key holds the roots —
-  /// people with no manager, or whose manager no longer exists among [all]
-  /// (e.g. it was soft-deleted without going through [delete]).
+  /// Groups [all] by manager syncUuid; a person with multiple managers is
+  /// added under each one (see `buildForest` in org_chart.dart, which
+  /// relies on this to render a dual-report person under every manager).
+  /// The `null` key holds the roots — people with no manager, or whose
+  /// only manager(s) no longer exist among [all] (e.g. soft-deleted
+  /// without going through [delete]).
   Map<String?, List<Person>> groupByManager(List<Person> all) {
     final uuids = all.map((p) => p.syncUuid).toSet();
     final map = <String?, List<Person>>{};
     for (final p in all) {
-      final key = (p.managerUuid != null && uuids.contains(p.managerUuid))
-          ? p.managerUuid
-          : null;
-      (map[key] ??= []).add(p);
+      final validManagers = p.managerUuids.where(uuids.contains).toList();
+      if (validManagers.isEmpty) {
+        (map[null] ??= []).add(p);
+      } else {
+        for (final m in validManagers) {
+          (map[m] ??= []).add(p);
+        }
+      }
     }
     return map;
   }
 
-  /// [rootUuid] plus every person under them (direct or indirect reports),
-  /// computed from [all]. Used to stop the manager picker from letting a
-  /// person be assigned as their own descendant's manager (a cycle).
   Set<String> subtreeUuids(List<Person> all, String rootUuid) {
     final childrenOf = <String, List<Person>>{};
     for (final p in all) {
-      final m = p.managerUuid;
-      if (m != null) (childrenOf[m] ??= []).add(p);
+      for (final m in p.managerUuids) {
+        (childrenOf[m] ??= []).add(p);
+      }
     }
     final result = <String>{rootUuid};
     final queue = <String>[rootUuid];
