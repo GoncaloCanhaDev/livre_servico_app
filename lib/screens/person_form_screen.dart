@@ -38,7 +38,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   bool _removePhoto = false;
 
   List<Person> _allPeople = const [];
-  Person? _manager;
+  List<Person> _managers = [];
   bool _loadingPeople = true;
   bool _saving = false;
 
@@ -58,20 +58,14 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
   Future<void> _loadPeople() async {
     final all = await PersonService.instance.allRaw();
-    final managerUuid = widget.existing?.managerUuid;
-    Person? manager;
-    if (managerUuid != null) {
-      for (final p in all) {
-        if (p.syncUuid == managerUuid) {
-          manager = p;
-          break;
-        }
-      }
-    }
+    final managerUuids = widget.existing?.managerUuids ?? const <String>[];
+    final managers = all
+        .where((p) => managerUuids.contains(p.syncUuid))
+        .toList();
     if (!mounted) return;
     setState(() {
       _allPeople = all;
-      _manager = manager;
+      _managers = managers;
       _loadingPeople = false;
     });
   }
@@ -161,7 +155,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     });
   }
 
-  Future<void> _pickManager() async {
+  Future<void> _pickManagers() async {
     final selfUuid = widget.existing?.syncUuid;
     final excluded = selfUuid == null
         ? <String>{}
@@ -169,12 +163,15 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     final candidates = _allPeople
         .where((p) => !excluded.contains(p.syncUuid))
         .toList();
-    final result = await showDialog<_ManagerChoice>(
+    final result = await showDialog<List<Person>>(
       context: context,
-      builder: (_) => _ManagerPickerDialog(candidates: candidates),
+      builder: (_) => _ManagerPickerDialog(
+        candidates: candidates,
+        initiallySelected: _managers,
+      ),
     );
     if (result == null) return;
-    setState(() => _manager = result.person);
+    setState(() => _managers = result);
   }
 
   Future<void> _save() async {
@@ -189,7 +186,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
         : _phoneCtrl.text.trim();
     person.dateOfBirth = _dob;
     person.hireDate = _hireDate;
-    person.managerUuid = _manager?.syncUuid;
+    person.managerUuids = _managers.map((p) => p.syncUuid).toList();
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
@@ -334,7 +331,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 leading: const Icon(Icons.account_tree_outlined),
                 title: const Text('Reporta a'),
                 subtitle: Text(
-                  _manager?.fullName ?? 'Ninguém (topo da hierarquia)',
+                  _managers.isEmpty
+                      ? 'Ninguém (topo da hierarquia)'
+                      : _managers.map((p) => p.fullName).join(', '),
                 ),
                 trailing: _loadingPeople
                     ? const SizedBox(
@@ -343,7 +342,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.chevron_right),
-                onTap: _loadingPeople ? null : _pickManager,
+                onTap: _loadingPeople ? null : _pickManagers,
               ),
             ],
           ),
@@ -399,14 +398,34 @@ class _DateRow extends StatelessWidget {
   }
 }
 
-class _ManagerChoice {
-  const _ManagerChoice(this.person);
-  final Person? person;
+class _ManagerPickerDialog extends StatefulWidget {
+  const _ManagerPickerDialog({
+    required this.candidates,
+    required this.initiallySelected,
+  });
+
+  final List<Person> candidates;
+  final List<Person> initiallySelected;
+
+  @override
+  State<_ManagerPickerDialog> createState() => _ManagerPickerDialogState();
 }
 
-class _ManagerPickerDialog extends StatelessWidget {
-  const _ManagerPickerDialog({required this.candidates});
-  final List<Person> candidates;
+class _ManagerPickerDialogState extends State<_ManagerPickerDialog> {
+  late Set<String> _selectedUuids;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedUuids = widget.initiallySelected.map((p) => p.syncUuid).toSet();
+  }
+
+  void _confirm() {
+    final selected = widget.candidates
+        .where((p) => _selectedUuids.contains(p.syncUuid))
+        .toList();
+    Navigator.of(context).pop(selected);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -422,12 +441,11 @@ class _ManagerPickerDialog extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.vertical_align_top),
               title: const Text('Ninguém (topo da hierarquia)'),
-              onTap: () =>
-                  Navigator.of(context).pop(const _ManagerChoice(null)),
+              onTap: () => Navigator.of(context).pop(const <Person>[]),
             ),
             const Divider(height: 1),
             Flexible(
-              child: candidates.isEmpty
+              child: widget.candidates.isEmpty
                   ? const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
@@ -437,15 +455,24 @@ class _ManagerPickerDialog extends StatelessWidget {
                     )
                   : ListView.builder(
                       shrinkWrap: true,
-                      itemCount: candidates.length,
+                      itemCount: widget.candidates.length,
                       itemBuilder: (_, i) {
-                        final p = candidates[i];
-                        return ListTile(
-                          leading: PersonInitialsBadge(name: p.fullName),
+                        final p = widget.candidates[i];
+                        final selected = _selectedUuids.contains(p.syncUuid);
+                        return CheckboxListTile(
+                          value: selected,
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked ?? false) {
+                                _selectedUuids.add(p.syncUuid);
+                              } else {
+                                _selectedUuids.remove(p.syncUuid);
+                              }
+                            });
+                          },
+                          secondary: PersonInitialsBadge(name: p.fullName),
                           title: Text(p.fullName),
                           subtitle: p.role == null ? null : Text(p.role!),
-                          onTap: () =>
-                              Navigator.of(context).pop(_ManagerChoice(p)),
                         );
                       },
                     ),
@@ -458,6 +485,7 @@ class _ManagerPickerDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
+        FilledButton(onPressed: _confirm, child: const Text('Concluído')),
       ],
     );
   }
