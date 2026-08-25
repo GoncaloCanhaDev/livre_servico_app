@@ -210,49 +210,68 @@ class _PeopleList extends StatelessWidget {
     return ListView.separated(
       itemCount: people.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (_, i) {
-        final p = people[i];
-        final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
-        return ListTile(
-          leading: hasPhoto
-              ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
-              : PersonInitialsBadge(name: p.fullName),
-          title: Text(
-            p.fullName,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            [
-              if (p.role != null && p.role!.isNotEmpty) p.role!,
-              if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
-            ].join(' · '),
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.green.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+      itemBuilder: (_, i) => _PersonTile(
+        person: people[i],
+        onTap: () => onTap(people[i]),
+        onLongPress: () => onLongPress(people[i]),
+      ),
+    );
+  }
+}
+
+class _PersonTile extends StatelessWidget {
+  const _PersonTile({
+    required this.person,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final Person person;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = person;
+    final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
+    return ListTile(
+      leading: hasPhoto
+          ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
+          : PersonInitialsBadge(name: p.fullName),
+      title: Text(
+        p.fullName,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        [
+          if (p.role != null && p.role!.isNotEmpty) p.role!,
+          if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
+        ].join(' · '),
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.green.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.stars, size: 14, color: AppColors.greenDark),
+            const SizedBox(width: 4),
+            Text(
+              '${p.points}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.greenDark,
+                fontSize: 13,
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars, size: 14, color: AppColors.greenDark),
-                const SizedBox(width: 4),
-                Text(
-                  '${p.points}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.greenDark,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          onTap: () => onTap(p),
-          onLongPress: () => onLongPress(p),
-        );
-      },
+          ],
+        ),
+      ),
+      onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 }
