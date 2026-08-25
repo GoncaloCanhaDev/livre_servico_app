@@ -13,19 +13,26 @@ class PersonNode {
 }
 
 /// Builds the forest of [PersonNode]s from a manager-uuid grouping (see
-/// `PersonService.groupByManager`). Guards against cycles defensively —
-/// the app itself should never create one (see `subtreeUuids`), but a
-/// corrupted/edited-outside-the-app row shouldn't be able to hang the UI.
+/// `PersonService.groupByManager`). A person with several managers gets a
+/// full card+subtree rendered once under each of them — this is a
+/// deliberate "replicate the node" rendering for dual-reporting, not a
+/// bug. The cycle guard tracks visited uuids per root-to-node path (not
+/// globally) so a legitimate dual-report isn't mistaken for a repeat
+/// visit; the app itself should never create an actual cycle (see
+/// `PersonService.subtreeUuids`), but a corrupted/edited-outside-the-app
+/// row still shouldn't be able to hang the UI.
 List<PersonNode> buildForest(Map<String?, List<Person>> byManager) {
-  final visited = <String>{};
-  PersonNode build(Person p) {
-    if (!visited.add(p.syncUuid)) return PersonNode(p, const []);
+  PersonNode build(Person p, Set<String> pathVisited) {
+    if (!pathVisited.add(p.syncUuid)) return PersonNode(p, const []);
     final kids = byManager[p.syncUuid] ?? const <Person>[];
-    return PersonNode(p, kids.map(build).toList());
+    return PersonNode(
+      p,
+      kids.map((k) => build(k, {...pathVisited})).toList(),
+    );
   }
 
   final roots = byManager[null] ?? const <Person>[];
-  return roots.map(build).toList();
+  return roots.map((r) => build(r, <String>{})).toList();
 }
 
 const _lineColor = Color(0xFFBDBDBD);
