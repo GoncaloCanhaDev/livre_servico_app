@@ -33,13 +33,18 @@ class Person {
   String? photoPath;
   String? phoneNumber;
 
-  /// syncUuid of this person's manager, or null if they're at the top of
-  /// the hierarchy. Self-referencing rather than an Isar Link so it can be
-  /// resolved the same way every other cross-model reference in this app
-  /// is (see CLAUDE.md's SyncMeta/soft-delete notes) — a manager whose row
-  /// gets soft-deleted simply leaves this dangling, which readers treat as
-  /// "no manager" rather than as an error.
+  /// Legacy single-manager field, superseded by [managerUuids]. Kept only
+  /// so [PersonService.migrateManagerUuids] can read pre-upgrade data on
+  /// existing on-device databases — nothing else reads or writes it.
   String? managerUuid;
+
+  /// syncUuids of this person's managers (zero, one, or many — no
+  /// primary/secondary ordering). Empty means they're at the top of the
+  /// hierarchy. Self-referencing rather than Isar Links, same rationale as
+  /// the old [managerUuid]: a manager whose row gets soft-deleted just
+  /// leaves a dangling uuid here, which readers treat as "not a manager
+  /// anymore" rather than as an error.
+  List<String> managerUuids = [];
 
   int points = 0;
   List<PointEvent> pointHistory = [];

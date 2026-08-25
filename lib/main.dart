@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/person_history_service.dart';
+import 'services/person_service.dart';
 import 'services/settings_service.dart';
 import 'services/shift_service.dart';
 import 'services/task_notification_service.dart';
@@ -18,6 +19,7 @@ void main() async {
   try {
     await SettingsService.instance.init();
     await ShiftService.init();
+    await PersonService.instance.migrateManagerUuids();
     await PersonHistoryService.instance.init();
     await PersonHistoryService.instance.maybeRollover();
     await NotificationService.instance.init();

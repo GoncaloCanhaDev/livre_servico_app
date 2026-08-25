@@ -47,41 +47,46 @@ const PersonSchema = CollectionSchema(
       name: r'managerUuid',
       type: IsarType.string,
     ),
-    r'phoneNumber': PropertySchema(
+    r'managerUuids': PropertySchema(
       id: 6,
+      name: r'managerUuids',
+      type: IsarType.stringList,
+    ),
+    r'phoneNumber': PropertySchema(
+      id: 7,
       name: r'phoneNumber',
       type: IsarType.string,
     ),
     r'photoPath': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'photoPath',
       type: IsarType.string,
     ),
     r'pointHistory': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'pointHistory',
       type: IsarType.objectList,
 
       target: r'PointEvent',
     ),
-    r'points': PropertySchema(id: 9, name: r'points', type: IsarType.long),
-    r'role': PropertySchema(id: 10, name: r'role', type: IsarType.string),
+    r'points': PropertySchema(id: 10, name: r'points', type: IsarType.long),
+    r'role': PropertySchema(id: 11, name: r'role', type: IsarType.string),
     r'syncDeletedAt': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 14, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 15, name: r'synced', type: IsarType.bool),
   },
 
   estimateSize: _personEstimateSize,
@@ -127,6 +132,13 @@ int _personEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.managerUuids.length * 3;
+  {
+    for (var i = 0; i < object.managerUuids.length; i++) {
+      final value = object.managerUuids[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.phoneNumber;
     if (value != null) {
@@ -169,20 +181,21 @@ void _personSerialize(
   writer.writeString(offsets[3], object.fullName);
   writer.writeDateTime(offsets[4], object.hireDate);
   writer.writeString(offsets[5], object.managerUuid);
-  writer.writeString(offsets[6], object.phoneNumber);
-  writer.writeString(offsets[7], object.photoPath);
+  writer.writeStringList(offsets[6], object.managerUuids);
+  writer.writeString(offsets[7], object.phoneNumber);
+  writer.writeString(offsets[8], object.photoPath);
   writer.writeObjectList<PointEvent>(
-    offsets[8],
+    offsets[9],
     allOffsets,
     PointEventSchema.serialize,
     object.pointHistory,
   );
-  writer.writeLong(offsets[9], object.points);
-  writer.writeString(offsets[10], object.role);
-  writer.writeDateTime(offsets[11], object.syncDeletedAt);
-  writer.writeDateTime(offsets[12], object.syncUpdatedAt);
-  writer.writeString(offsets[13], object.syncUuid);
-  writer.writeBool(offsets[14], object.synced);
+  writer.writeLong(offsets[10], object.points);
+  writer.writeString(offsets[11], object.role);
+  writer.writeDateTime(offsets[12], object.syncDeletedAt);
+  writer.writeDateTime(offsets[13], object.syncUpdatedAt);
+  writer.writeString(offsets[14], object.syncUuid);
+  writer.writeBool(offsets[15], object.synced);
 }
 
 Person _personDeserialize(
@@ -199,22 +212,23 @@ Person _personDeserialize(
   object.hireDate = reader.readDateTimeOrNull(offsets[4]);
   object.id = id;
   object.managerUuid = reader.readStringOrNull(offsets[5]);
-  object.phoneNumber = reader.readStringOrNull(offsets[6]);
-  object.photoPath = reader.readStringOrNull(offsets[7]);
+  object.managerUuids = reader.readStringList(offsets[6]) ?? [];
+  object.phoneNumber = reader.readStringOrNull(offsets[7]);
+  object.photoPath = reader.readStringOrNull(offsets[8]);
   object.pointHistory =
       reader.readObjectList<PointEvent>(
-        offsets[8],
+        offsets[9],
         PointEventSchema.deserialize,
         allOffsets,
         PointEvent(),
       ) ??
       [];
-  object.points = reader.readLong(offsets[9]);
-  object.role = reader.readStringOrNull(offsets[10]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[11]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[12]);
-  object.syncUuid = reader.readString(offsets[13]);
-  object.synced = reader.readBool(offsets[14]);
+  object.points = reader.readLong(offsets[10]);
+  object.role = reader.readStringOrNull(offsets[11]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[12]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[13]);
+  object.syncUuid = reader.readString(offsets[14]);
+  object.synced = reader.readBool(offsets[15]);
   return object;
 }
 
@@ -238,10 +252,12 @@ P _personDeserializeProp<P>(
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
       return (reader.readObjectList<PointEvent>(
                 offset,
                 PointEventSchema.deserialize,
@@ -250,17 +266,17 @@ P _personDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 9:
-      return (reader.readLong(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1126,6 +1142,198 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'managerUuid', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'managerUuids',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'managerUuids',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'managerUuids',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'managerUuids', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'managerUuids', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsLengthEqualTo(
+    int length,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'managerUuids', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'managerUuids', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'managerUuids', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'managerUuids', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition>
+  managerUuidsLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'managerUuids', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'managerUuids',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -2425,6 +2633,12 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
+  QueryBuilder<Person, Person, QDistinct> distinctByManagerUuids() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'managerUuids');
+    });
+  }
+
   QueryBuilder<Person, Person, QDistinct> distinctByPhoneNumber({
     bool caseSensitive = true,
   }) {
@@ -2522,6 +2736,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, String?, QQueryOperations> managerUuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'managerUuid');
+    });
+  }
+
+  QueryBuilder<Person, List<String>, QQueryOperations> managerUuidsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'managerUuids');
     });
   }
 

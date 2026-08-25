@@ -53,6 +53,27 @@ class PersonService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// One-time upgrade path: pre-multi-manager rows only have the legacy
+  /// [Person.managerUuid] populated. Copies it into [Person.managerUuids]
+  /// so existing org-chart assignments survive the upgrade. Safe to call
+  /// every startup — a person already migrated (or created after the
+  /// upgrade) has a non-empty managerUuids and is left alone. Runs over
+  /// every row (not just non-deleted ones), mirroring
+  /// `ShiftService._backfillSync`.
+  Future<void> migrateManagerUuids() async {
+    final rows = await _isar.persons.where().findAll();
+    final needsFix = rows.where((p) {
+      final legacy = p.managerUuid;
+      return p.managerUuids.isEmpty && legacy != null && legacy.isNotEmpty;
+    }).toList();
+    if (needsFix.isEmpty) return;
+    for (final p in needsFix) {
+      p.managerUuids = [p.managerUuid!];
+      SyncMeta.stamp(p);
+    }
+    await _isar.writeTxn(() => _isar.persons.putAll(needsFix));
+  }
+
   /// Groups [all] by manager syncUuid; the `null` key holds the roots —
   /// people with no manager, or whose manager no longer exists among [all]
   /// (e.g. it was soft-deleted without going through [delete]).
