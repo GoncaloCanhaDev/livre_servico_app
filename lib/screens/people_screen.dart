@@ -10,6 +10,8 @@ import 'person_form_screen.dart';
 import 'widgets/org_chart.dart';
 import 'widgets/person_picker.dart';
 
+enum _ViewMode { list, teams, chart }
+
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
 
@@ -19,7 +21,30 @@ class PeopleScreen extends StatefulWidget {
 
 class _PeopleScreenState extends State<PeopleScreen> {
   late Future<List<Person>> _future;
-  bool _listView = false;
+  _ViewMode _viewMode = _ViewMode.chart;
+
+  static const _viewModeOrder = [
+    _ViewMode.chart,
+    _ViewMode.list,
+    _ViewMode.teams,
+  ];
+
+  static const _viewModeLabel = {
+    _ViewMode.list: 'Ver lista',
+    _ViewMode.teams: 'Ver equipas',
+    _ViewMode.chart: 'Ver organograma',
+  };
+
+  static const _viewModeIcon = {
+    _ViewMode.list: Icons.list,
+    _ViewMode.teams: Icons.groups_outlined,
+    _ViewMode.chart: Icons.account_tree_outlined,
+  };
+
+  _ViewMode get _nextViewMode {
+    final i = _viewModeOrder.indexOf(_viewMode);
+    return _viewModeOrder[(i + 1) % _viewModeOrder.length];
+  }
 
   @override
   void initState() {
@@ -141,9 +166,9 @@ class _PeopleScreenState extends State<PeopleScreen> {
         title: const Text('Pessoas'),
         actions: [
           IconButton(
-            tooltip: _listView ? 'Ver organograma' : 'Ver lista',
-            icon: Icon(_listView ? Icons.account_tree_outlined : Icons.list),
-            onPressed: () => setState(() => _listView = !_listView),
+            tooltip: _viewModeLabel[_nextViewMode],
+            icon: Icon(_viewModeIcon[_nextViewMode]),
+            onPressed: () => setState(() => _viewMode = _nextViewMode),
           ),
           IconButton(icon: const Icon(Icons.add), onPressed: () => _openForm()),
           IconButton(
@@ -173,7 +198,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 ),
               );
             }
-            if (_listView) {
+            if (_viewMode == _ViewMode.list) {
               return _PeopleList(
                 people: items,
                 onTap: _openDetail,
@@ -181,6 +206,13 @@ class _PeopleScreenState extends State<PeopleScreen> {
               );
             }
             final byManager = PersonService.instance.groupByManager(items);
+            if (_viewMode == _ViewMode.teams) {
+              return _TeamsList(
+                byManager: byManager,
+                onTap: _openDetail,
+                onLongPress: _showActions,
+              );
+            }
             final roots = buildForest(byManager);
             return OrgChart(
               roots: roots,
@@ -272,6 +304,93 @@ class _PersonTile extends StatelessWidget {
       ),
       onTap: onTap,
       onLongPress: onLongPress,
+    );
+  }
+}
+
+class _TeamSection extends StatelessWidget {
+  const _TeamSection({
+    required this.title,
+    required this.people,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final String title;
+  final List<Person> people;
+  final void Function(Person) onTap;
+  final void Function(Person) onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
+        ),
+        for (final p in people)
+          _PersonTile(
+            person: p,
+            onTap: () => onTap(p),
+            onLongPress: () => onLongPress(p),
+          ),
+        const Divider(height: 1),
+      ],
+    );
+  }
+}
+
+/// Renders [byManager] (see `PersonService.groupByManager`) as sections —
+/// one per manager who has direct reports, plus "Topo da hierarquia" for
+/// the `null` key. A person reporting to two managers appears in both
+/// their sections, same as they'd appear twice in the org chart.
+class _TeamsList extends StatelessWidget {
+  const _TeamsList({
+    required this.byManager,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final Map<String?, List<Person>> byManager;
+  final void Function(Person) onTap;
+  final void Function(Person) onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final allPeople = {
+      for (final list in byManager.values)
+        for (final p in list) p.syncUuid: p,
+    };
+    final sections =
+        byManager.keys.whereType<String>().map((uuid) {
+          final name = allPeople[uuid]?.fullName ?? '—';
+          return MapEntry(name, byManager[uuid]!);
+        }).toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+    final roots = byManager[null] ?? const <Person>[];
+
+    return ListView(
+      children: [
+        if (roots.isNotEmpty)
+          _TeamSection(
+            title: 'Topo da hierarquia',
+            people: roots,
+            onTap: onTap,
+            onLongPress: onLongPress,
+          ),
+        for (final section in sections)
+          _TeamSection(
+            title: section.key,
+            people: section.value,
+            onTap: onTap,
+            onLongPress: onLongPress,
+          ),
+      ],
     );
   }
 }
