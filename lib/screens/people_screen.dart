@@ -115,7 +115,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Remover pessoa'),
         content: Text(
-          'Queres remover "${p.fullName}"? Quem lhe reportava passa para o topo da hierarquia.',
+          'Queres remover "${p.fullName}"? Quem lhe reportava deixa de o ter como responsável; quem ficar sem responsáveis passa para o topo da hierarquia.',
         ),
         actions: [
           TextButton(

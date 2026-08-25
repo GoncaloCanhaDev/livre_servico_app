@@ -71,6 +71,7 @@ class PersonService extends ChangeNotifier {
     if (needsFix.isEmpty) return;
     for (final p in needsFix) {
       p.managerUuids = [p.managerUuid!];
+      p.managerUuid = null; // consumed — never migrate this row again
       SyncMeta.stamp(p);
     }
     await _isar.writeTxn(() => _isar.persons.putAll(needsFix));
@@ -98,6 +99,10 @@ class PersonService extends ChangeNotifier {
     return map;
   }
 
+  /// [rootUuid] plus every person under them (direct or indirect reports,
+  /// through any of their managers), computed from [all]. Used to stop the
+  /// manager picker from letting a person be assigned as manager of one of
+  /// their own descendants (a cycle).
   Set<String> subtreeUuids(List<Person> all, String rootUuid) {
     final childrenOf = <String, List<Person>>{};
     for (final p in all) {
