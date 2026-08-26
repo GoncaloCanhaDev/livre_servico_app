@@ -7,6 +7,7 @@ import '../services/backup_service.dart';
 import '../services/shift_service.dart';
 import '../services/task_notification_service.dart';
 import '../theme.dart';
+import 'custom_tasks_screen.dart';
 import 'daily_tasks_screen.dart';
 import 'dashboard_screen.dart';
 import 'historico_screen.dart';
@@ -256,6 +257,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const WeeklyTasksScreen(),
+                      ),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.playlist_add_check,
+                    label: 'Tarefas Personalizadas',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CustomTasksScreen(),
                       ),
                     ),
                   ),
