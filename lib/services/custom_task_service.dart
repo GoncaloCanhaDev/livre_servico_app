@@ -59,7 +59,7 @@ class CustomTaskService extends ChangeNotifier {
   Future<void> complete({
     required String taskUuid,
     required DateTime periodKey,
-    required String who,
+    required List<String> who,
     int? count,
     bool backdated = false,
   }) async {
@@ -68,7 +68,7 @@ class CustomTaskService extends ChangeNotifier {
       ..taskUuid = taskUuid
       ..periodKey = periodKey;
     entry.done = true;
-    entry.doneBy = who;
+    entry.doneByNames = who;
     entry.doneAt = DateTime.now();
     entry.count = count;
     entry.backdated = backdated;

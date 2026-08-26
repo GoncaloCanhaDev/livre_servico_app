@@ -78,7 +78,7 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
 
   Future<void> _complete(_TaskRow row, {int? count}) async {
     final today = currentServiceDay();
-    final result = await pickPersonAndDay(
+    final result = await pickPeopleAndDay(
       context,
       title: 'Quem concluiu?',
       subtitle:
@@ -86,7 +86,8 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
       initialDay: DateTime(today.year, today.month, today.day),
     );
     if (result == null) return;
-    final who = result.person.fullName;
+    final names = result.people.map((p) => p.fullName).toList();
+    final who = joinNames(names);
     final currentPeriodKey = _periodKeyFor(row.task.frequency);
 
     late final DateTime targetPeriodKey;
@@ -113,7 +114,7 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
     await CustomTaskService.instance.complete(
       taskUuid: row.task.syncUuid,
       periodKey: targetPeriodKey,
-      who: who,
+      who: names,
       count: count,
       backdated: backdated,
     );
@@ -236,8 +237,11 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
   }
 
   Widget _tileFor(_TaskRow row) {
-    final by = row.entry?.doneBy ?? '';
-    final byStr = by.isEmpty ? '' : ' (por $by)';
+    final names = resolveNames(
+      row.entry?.doneByNames ?? const [],
+      row.entry?.doneBy,
+    );
+    final byStr = names.isEmpty ? '' : ' (por ${joinNames(names)})';
     if (row.task.inputType == CustomTaskInputType.count) {
       final count = row.entry?.count;
       final countStr = count == null ? '' : ' ($count)';
@@ -304,7 +308,10 @@ class _CustomManualTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = row.done;
-    final by = row.entry?.doneBy ?? '';
+    final names = resolveNames(
+      row.entry?.doneByNames ?? const [],
+      row.entry?.doneBy,
+    );
     return GestureDetector(
       onLongPress: onSendWhatsApp,
       child: Card(
@@ -330,15 +337,12 @@ class _CustomManualTile extends StatelessWidget {
           secondary: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (done && by.isNotEmpty) ...[
-                PersonInitialsBadge(name: by),
+              if (done && names.isNotEmpty) ...[
+                PersonInitialsRow(names: names),
                 const SizedBox(width: 4),
               ],
               IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                ),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 tooltip: 'Remover tarefa',
                 onPressed: onDelete,
               ),
@@ -390,7 +394,10 @@ class _CustomCountTileState extends State<_CustomCountTile> {
   Widget build(BuildContext context) {
     final row = widget.row;
     final done = row.done;
-    final by = row.entry?.doneBy ?? '';
+    final names = resolveNames(
+      row.entry?.doneByNames ?? const [],
+      row.entry?.doneBy,
+    );
     return GestureDetector(
       onLongPress: widget.onSendWhatsApp,
       child: Card(
@@ -416,9 +423,9 @@ class _CustomCountTileState extends State<_CustomCountTile> {
                   ),
                 ),
               ),
-              if (done && by.isNotEmpty) ...[
+              if (done && names.isNotEmpty) ...[
                 const SizedBox(width: 8),
-                PersonInitialsBadge(name: by),
+                PersonInitialsRow(names: names),
               ],
             ],
           ),
@@ -448,10 +455,7 @@ class _CustomCountTileState extends State<_CustomCountTile> {
                 ),
               ),
               IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                ),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 tooltip: 'Remover tarefa',
                 onPressed: widget.onDelete,
               ),
