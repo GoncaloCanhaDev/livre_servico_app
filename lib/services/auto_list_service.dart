@@ -4,7 +4,6 @@ import 'package:isar_community/isar.dart';
 import '../models/auto_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class AutoListService extends ChangeNotifier {
   AutoListService._();
@@ -13,20 +12,23 @@ class AutoListService extends ChangeNotifier {
   Isar get _isar => ShiftService.instance.isar;
 
   Future<void> add({
+    String? syncUuid,
     required int congelados,
     required int opls,
     required int naoPereciveis,
+    List<String>? by,
   }) async {
     final entry = AutoList()
       ..createdAt = DateTime.now()
       ..congelados = congelados
       ..opls = opls
-      ..naoPereciveis = naoPereciveis;
+      ..naoPereciveis = naoPereciveis
+      ..createdByNames = by ?? [];
+    if (syncUuid != null) entry.syncUuid = syncUuid;
     SyncMeta.stamp(entry);
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(entry);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -35,19 +37,29 @@ class AutoListService extends ChangeNotifier {
     required int congelados,
     required int opls,
     required int naoPereciveis,
+    List<String>? by,
   }) async {
     final entry = AutoList()
-      ..createdAt = DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
+      ..createdAt = DateTime(
+        serviceDay.year,
+        serviceDay.month,
+        serviceDay.day,
+        12,
+      )
       ..congelados = congelados
       ..opls = opls
-      ..naoPereciveis = naoPereciveis;
+      ..naoPereciveis = naoPereciveis
+      ..createdByNames = by ?? []
+      ..backdated = true;
     SyncMeta.stamp(entry);
     await _isar.writeTxn(() => _isar.autoLists.put(entry));
     notifyListeners();
   }
 
-  Future<List<AutoList>> entriesForServiceDay(DateTime day,
-      {bool includeDeleted = false}) async {
+  Future<List<AutoList>> entriesForServiceDay(
+    DateTime day, {
+    bool includeDeleted = false,
+  }) async {
     final start = DateTime(day.year, day.month, day.day, 5);
     final end = start.add(const Duration(days: 1));
     if (includeDeleted) {
@@ -68,8 +80,7 @@ class AutoListService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.autoLists.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.autoLists.filter().syncDeletedAtIsNull().findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);
@@ -77,7 +88,6 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -88,7 +98,6 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

@@ -5,7 +5,6 @@ import '../models/opening_list.dart';
 import '../models/visual_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class VisualListService extends ChangeNotifier {
   VisualListService._();
@@ -14,9 +13,11 @@ class VisualListService extends ChangeNotifier {
   Isar get _isar => ShiftService.instance.isar;
 
   Future<void> add({
+    String? syncUuid,
     required int itensPicados,
     required int quebraCents,
     required int beneficioCents,
+    List<String>? by,
   }) async {
     final now = DateTime.now();
     final entry = VisualList()
@@ -24,13 +25,13 @@ class VisualListService extends ChangeNotifier {
       ..serviceDay = currentServiceDay(now)
       ..itensPicados = itensPicados
       ..quebraCents = quebraCents
-      ..beneficioCents = beneficioCents;
+      ..beneficioCents = beneficioCents
+      ..createdByNames = by ?? [];
+    if (syncUuid != null) entry.syncUuid = syncUuid;
     SyncMeta.stamp(entry);
     await _isar.writeTxn(() async {
       await _isar.visualLists.put(entry);
     });
-    await TaskNotificationService.instance.rescheduleAll();
-    await TaskNotificationService.instance.checkVisualGoal();
     notifyListeners();
   }
 
@@ -39,20 +40,30 @@ class VisualListService extends ChangeNotifier {
     required int itensPicados,
     required int quebraCents,
     required int beneficioCents,
+    List<String>? by,
   }) async {
     final entry = VisualList()
-      ..createdAt = DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
+      ..createdAt = DateTime(
+        serviceDay.year,
+        serviceDay.month,
+        serviceDay.day,
+        12,
+      )
       ..serviceDay = serviceDay
       ..itensPicados = itensPicados
       ..quebraCents = quebraCents
-      ..beneficioCents = beneficioCents;
+      ..beneficioCents = beneficioCents
+      ..createdByNames = by ?? []
+      ..backdated = true;
     SyncMeta.stamp(entry);
     await _isar.writeTxn(() => _isar.visualLists.put(entry));
     notifyListeners();
   }
 
-  Future<List<VisualList>> entriesForServiceDay(DateTime day,
-      {bool includeDeleted = false}) {
+  Future<List<VisualList>> entriesForServiceDay(
+    DateTime day, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
       return _isar.visualLists
           .filter()
@@ -69,8 +80,10 @@ class VisualListService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.visualLists.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.visualLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);
@@ -78,7 +91,6 @@ class VisualListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.visualLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -89,7 +101,6 @@ class VisualListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.visualLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/opening_list.dart';
+import '../../models/task_timer.dart';
 import '../../models/visual_list.dart';
+import '../../services/task_notification_service.dart';
+import '../../services/task_timer_service.dart';
 import '../../services/visual_list_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
+import '../widgets/person_picker.dart';
+import '../widgets/task_timer_control.dart';
 
 class VisualTab extends StatefulWidget {
   const VisualTab({super.key});
@@ -18,6 +25,7 @@ class _VisualTabState extends State<VisualTab> {
   final _itens = TextEditingController();
   final _quebra = TextEditingController();
   final _beneficio = TextEditingController();
+  String _draftUuid = const Uuid().v4();
 
   List<VisualList> _todayEntries = [];
 
@@ -38,16 +46,15 @@ class _VisualTabState extends State<VisualTab> {
   }
 
   Future<void> _loadToday() async {
-    final list = await VisualListService.instance
-        .entriesForServiceDay(currentServiceDay());
+    final list = await VisualListService.instance.entriesForServiceDay(
+      currentServiceDay(),
+    );
     if (!mounted) return;
     setState(() => _todayEntries = list);
   }
 
-  int get _todayItens =>
-      _todayEntries.fold(0, (s, e) => s + e.itensPicados);
-  int get _todayQuebra =>
-      _todayEntries.fold(0, (s, e) => s + e.quebraCents);
+  int get _todayItens => _todayEntries.fold(0, (s, e) => s + e.itensPicados);
+  int get _todayQuebra => _todayEntries.fold(0, (s, e) => s + e.quebraCents);
   int get _todayBeneficio =>
       _todayEntries.fold(0, (s, e) => s + e.beneficioCents);
 
@@ -61,19 +68,57 @@ class _VisualTabState extends State<VisualTab> {
       );
       return;
     }
-    await VisualListService.instance.add(
-      itensPicados: i,
-      quebraCents: q,
-      beneficioCents: b,
+    final today = currentServiceDay();
+    final result = await pickPeopleAndDay(
+      context,
+      title: 'Quem fez esta lista?',
+      initialDay: DateTime(today.year, today.month, today.day),
     );
+    if (result == null || !mounted) return;
+    final names = result.people.map((p) => p.fullName).toList();
+    final targetDay = DateTime(
+      result.day.year,
+      result.day.month,
+      result.day.day,
+      5,
+    );
+    await TaskTimerService.instance.finishOrCreateFinished(
+      parentKind: TimerKind.visual,
+      parentUuid: _draftUuid,
+      taskKey: 'main',
+    );
+    if (targetDay == today) {
+      await VisualListService.instance.add(
+        syncUuid: _draftUuid,
+        itensPicados: i,
+        quebraCents: q,
+        beneficioCents: b,
+        by: names,
+      );
+      await TaskNotificationService.instance.rescheduleAll();
+      await TaskNotificationService.instance.checkVisualGoal(_todayItens + i);
+    } else {
+      await VisualListService.instance.addForDay(
+        serviceDay: targetDay,
+        itensPicados: i,
+        quebraCents: q,
+        beneficioCents: b,
+        by: names,
+      );
+    }
     if (!mounted) return;
 
     final total = b - q;
-    final msg = '👁 Lista Visual\n'
+    final dayNote = targetDay == today
+        ? ''
+        : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
+    final msg =
+        '👁 Lista Visual$dayNote\n'
         'Itens Picados: $i\n'
         'Quebra: -${formatCents(q)} €\n'
         'Benefício: ${formatCents(b)} €\n'
-        'Total: ${formatCents(total)} €';
+        'Total: ${formatCents(total)} €\n'
+        'Por: ${joinNames(names)}';
     await WhatsAppService.sendWithConfirm(context, msg);
     if (!mounted) return;
 
@@ -81,10 +126,11 @@ class _VisualTabState extends State<VisualTab> {
       _itens.clear();
       _quebra.clear();
       _beneficio.clear();
+      _draftUuid = const Uuid().v4();
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lista guardada.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Lista guardada.')));
   }
 
   @override
@@ -93,9 +139,21 @@ class _VisualTabState extends State<VisualTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Nova lista visual',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Nova lista visual',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              TaskTimerControl(
+                key: ValueKey(_draftUuid),
+                parentKind: TimerKind.visual,
+                parentUuid: _draftUuid,
+                taskKey: 'main',
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           _IntRow(
@@ -157,26 +215,36 @@ class _DayTotalsCard extends StatelessWidget {
             Text(
               'Totais de hoje  ·  $entriesCount entrada${entriesCount == 1 ? '' : 's'}',
               style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  letterSpacing: 1),
+                color: Colors.white70,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
             ),
             const SizedBox(height: 12),
             _totalLine('Itens Picados', '$itens'),
             const SizedBox(height: 6),
-            _totalLine('Quebra', '-${formatCents(quebraCents)} €',
-                valueColor: Colors.redAccent),
+            _totalLine(
+              'Quebra',
+              '-${formatCents(quebraCents)} €',
+              valueColor: Colors.redAccent,
+            ),
             const SizedBox(height: 6),
-            _totalLine('Benefício', '${formatCents(beneficioCents)} €',
-                valueColor: AppColors.green),
+            _totalLine(
+              'Benefício',
+              '${formatCents(beneficioCents)} €',
+              valueColor: AppColors.green,
+            ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(color: Colors.white24, height: 1),
             ),
-            _totalLine('Total', '${formatCents(beneficioCents - quebraCents)} €',
-                valueColor: (beneficioCents - quebraCents) >= 0
-                    ? AppColors.green
-                    : Colors.redAccent),
+            _totalLine(
+              'Total',
+              '${formatCents(beneficioCents - quebraCents)} €',
+              valueColor: (beneficioCents - quebraCents) >= 0
+                  ? AppColors.green
+                  : Colors.redAccent,
+            ),
           ],
         ),
       ),
@@ -188,11 +256,14 @@ class _DayTotalsCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(color: Colors.white)),
-        Text(value,
-            style: TextStyle(
-                color: valueColor ?? Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor ?? Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
@@ -218,9 +289,13 @@ class _IntRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             SizedBox(
               width: 130,
@@ -230,7 +305,9 @@ class _IntRow extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: const InputDecoration(
                   hintText: '0',
                   border: OutlineInputBorder(),
@@ -266,9 +343,13 @@ class _MoneyRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             SizedBox(
               width: 130,
@@ -276,12 +357,15 @@ class _MoneyRow extends StatelessWidget {
                 controller: controller,
                 textAlign: TextAlign.center,
                 keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                  decimal: true,
+                ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
                 style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: const InputDecoration(
                   hintText: '0,00',
                   border: OutlineInputBorder(),
