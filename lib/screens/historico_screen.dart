@@ -8,6 +8,7 @@ import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
+import '../models/task_timer.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
@@ -17,11 +18,14 @@ import '../services/opening_list_service.dart';
 import '../services/pedido_line_service.dart';
 import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
+import '../services/settings_service.dart';
 import '../services/shift_service.dart';
 import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'widgets/person_picker.dart';
+import 'widgets/timer_badge.dart';
 
 class HistoricoScreen extends StatelessWidget {
   const HistoricoScreen({super.key, this.initialTab = 0});
@@ -106,12 +110,16 @@ class HistoricoScreen extends StatelessWidget {
                   if (v == 'tab') {
                     final name = _tabNames[controller.index];
                     if (await _confirmHardDelete(
-                        ctx, 'Apagar histórico de $name?')) {
+                      ctx,
+                      'Apagar histórico de $name?',
+                    )) {
                       await _clearTab(controller.index);
                     }
                   } else if (v == 'all') {
                     if (await _confirmHardDelete(
-                        ctx, 'Apagar TODO o histórico?')) {
+                      ctx,
+                      'Apagar TODO o histórico?',
+                    )) {
                       await _clearEverything();
                     }
                   }
@@ -123,8 +131,10 @@ class HistoricoScreen extends StatelessWidget {
                   ),
                   PopupMenuItem(
                     value: 'all',
-                    child: Text('Apagar todo o histórico',
-                        style: TextStyle(color: Colors.red)),
+                    child: Text(
+                      'Apagar todo o histórico',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ],
               ),
@@ -165,15 +175,17 @@ Future<bool> _confirmHardDelete(BuildContext context, String title) async {
     builder: (dialogCtx) => AlertDialog(
       title: Text(title),
       content: const Text(
-          'Vai apagar permanentemente todos os registos. Esta ação não pode ser desfeita.'),
+        'Vai apagar permanentemente todos os registos. Esta ação não pode ser desfeita.',
+      ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('Cancelar')),
+          onPressed: () => Navigator.pop(dialogCtx, false),
+          child: const Text('Cancelar'),
+        ),
         TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Apagar tudo',
-                style: TextStyle(color: Colors.red))),
+          onPressed: () => Navigator.pop(dialogCtx, true),
+          child: const Text('Apagar tudo', style: TextStyle(color: Colors.red)),
+        ),
       ],
     ),
   );
@@ -190,11 +202,13 @@ Future<bool> _confirmDelete(BuildContext context, String what) async {
       content: const Text('Esta ação não pode ser desfeita.'),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('Cancelar')),
+          onPressed: () => Navigator.pop(dialogCtx, false),
+          child: const Text('Cancelar'),
+        ),
         TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Apagar', style: TextStyle(color: Colors.red))),
+          onPressed: () => Navigator.pop(dialogCtx, true),
+          child: const Text('Apagar', style: TextStyle(color: Colors.red)),
+        ),
       ],
     ),
   );
@@ -202,24 +216,54 @@ Future<bool> _confirmDelete(BuildContext context, String what) async {
 }
 
 Widget _emptyMsg(String msg) => Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(msg,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black54)),
-      ),
-    );
+  child: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Text(
+      msg,
+      textAlign: TextAlign.center,
+      style: const TextStyle(color: Colors.black54),
+    ),
+  ),
+);
 
 // --- Tudo (All) ---
 
 enum _ItemType { shift, truck, opening, auto, report, visual, tasks, inventory }
 
 class _HistoryInitials extends StatelessWidget {
-  const _HistoryInitials({required this.initials});
-  final String initials;
+  const _HistoryInitials({required this.names});
+  final List<String> names;
 
   @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    if (names.isEmpty) return const SizedBox.shrink();
+    return Tooltip(
+      message: joinNames(names),
+      child: PersonInitialsRow(names: names, size: 28),
+    );
+  }
+}
+
+class _BackdatedRow extends StatelessWidget {
+  const _BackdatedRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.history_toggle_off, size: 12, color: Colors.black45),
+          SizedBox(width: 4),
+          Text(
+            'Preenchido a posteriori',
+            style: TextStyle(fontSize: 11, color: Colors.black45),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 Widget _dimmedIfDeleted({required bool deleted, required Widget child}) {
@@ -237,7 +281,7 @@ class _DayItem {
     required this.subtitle,
     this.icon = Icons.circle,
     this.iconColor = AppColors.green,
-    this.initials,
+    this.names = const [],
     this.deleted = false,
   });
   final _ItemType type;
@@ -246,7 +290,7 @@ class _DayItem {
   final String subtitle;
   final IconData icon;
   final Color iconColor;
-  final String? initials;
+  final List<String> names;
   final bool deleted;
 }
 
@@ -289,7 +333,9 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
   }
 
   void _reload() {
-    setState(() { _future = _load(); });
+    setState(() {
+      _future = _load();
+    });
   }
 
   DateTime _toServiceDay(DateTime dt) {
@@ -305,11 +351,14 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
     final timeFmt = DateFormat('HH:mm');
 
     // Shifts
-    final shiftIds =
-        await ShiftService.instance.allShiftIdsDesc(includeDeleted: true);
+    final shiftIds = await ShiftService.instance.allShiftIdsDesc(
+      includeDeleted: true,
+    );
     for (final id in shiftIds) {
-      final events = await ShiftService.instance
-          .eventsForShift(id, includeDeleted: true);
+      final events = await ShiftService.instance.eventsForShift(
+        id,
+        includeDeleted: true,
+      );
       if (events.isEmpty) continue;
       final start = events.first.timestamp;
       final end = events.last.type == ShiftEventType.clockOut
@@ -318,15 +367,18 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
       if (end == null) continue; // Only show finished shifts
       final worked = computeWorked(events);
       final deleted = events.every((e) => e.syncDeletedAt != null);
-      items.add(_DayItem(
-        type: _ItemType.shift,
-        time: end,
-        title: '🕒 Turno',
-        subtitle: '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
-        icon: Icons.schedule,
-        initials: events.first.createdByInitials,
-        deleted: deleted,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.shift,
+          time: end,
+          title: '🕒 Turno',
+          subtitle:
+              '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
+          icon: Icons.schedule,
+          names: resolveNames(const [], events.first.createdByInitials),
+          deleted: deleted,
+        ),
+      );
     }
 
     // Trucks
@@ -336,101 +388,118 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         if (t.licensePlate != null) t.licensePlate!,
         if (t.supplier != null) t.supplier!,
       ];
-      items.add(_DayItem(
-        type: _ItemType.truck,
-        time: t.arrivalTime,
-        title: '🚛 Camião',
-        subtitle: '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
-        icon: Icons.local_shipping,
-        initials: t.createdByInitials,
-        deleted: t.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.truck,
+          time: t.arrivalTime,
+          title: '🚛 Camião',
+          subtitle:
+              '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
+          icon: Icons.local_shipping,
+          names: resolveNames(t.createdByNames, t.createdByInitials),
+          deleted: t.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Opening lists (only finalized)
-    final openings =
-        await OpeningListService.instance.history(includeDeleted: true);
+    final openings = await OpeningListService.instance.history(
+      includeDeleted: true,
+    );
     for (final o in openings) {
       if (!o.isFinalized) continue;
-      items.add(_DayItem(
-        type: _ItemType.opening,
-        time: o.finalizedAt ?? o.serviceDay,
-        title: '📋 Lista de Abertura',
-        subtitle: 'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
-        icon: Icons.check_circle,
-        iconColor: AppColors.green,
-        initials: o.createdByInitials,
-        deleted: o.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.opening,
+          time: o.finalizedAt ?? o.serviceDay,
+          title: '📋 Lista de Abertura',
+          subtitle:
+              'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
+          icon: Icons.check_circle,
+          iconColor: AppColors.green,
+          names: resolveNames(o.createdByNames, o.createdByInitials),
+          deleted: o.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Auto lists
-    final autos =
-        await AutoListService.instance.history(includeDeleted: true);
+    final autos = await AutoListService.instance.history(includeDeleted: true);
     for (final a in autos) {
-      items.add(_DayItem(
-        type: _ItemType.auto,
-        time: a.createdAt,
-        title: '⚡ Lista Automática',
-        subtitle: 'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
-        icon: Icons.bolt,
-        initials: a.createdByInitials,
-        deleted: a.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.auto,
+          time: a.createdAt,
+          title: '⚡ Lista Automática',
+          subtitle:
+              'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
+          icon: Icons.bolt,
+          names: resolveNames(a.createdByNames, a.createdByInitials),
+          deleted: a.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Reports (only finalized)
-    final reports =
-        await ReportListService.instance.history(includeDeleted: true);
+    final reports = await ReportListService.instance.history(
+      includeDeleted: true,
+    );
     for (final r in reports) {
       if (!r.isFinalized) continue;
-      items.add(_DayItem(
-        type: _ItemType.report,
-        time: r.finalizedAt ?? r.serviceDay,
-        title: '📊 Relatório',
-        subtitle: 'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
-        icon: Icons.check_circle,
-        iconColor: AppColors.green,
-        initials: r.createdByInitials,
-        deleted: r.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.report,
+          time: r.finalizedAt ?? r.serviceDay,
+          title: '📊 Relatório',
+          subtitle:
+              'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
+          icon: Icons.check_circle,
+          iconColor: AppColors.green,
+          names: resolveNames(r.createdByNames, r.createdByInitials),
+          deleted: r.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Visual lists
-    final visuals =
-        await VisualListService.instance.all(includeDeleted: true);
+    final visuals = await VisualListService.instance.all(includeDeleted: true);
     for (final v in visuals) {
-      items.add(_DayItem(
-        type: _ItemType.visual,
-        time: v.createdAt,
-        title: '👁 Lista Visual',
-        subtitle: '${v.itensPicados} itens picados',
-        icon: Icons.visibility,
-        initials: v.createdByInitials,
-        deleted: v.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.visual,
+          time: v.createdAt,
+          title: '👁 Lista Visual',
+          subtitle: '${v.itensPicados} itens picados',
+          icon: Icons.visibility,
+          names: resolveNames(v.createdByNames, v.createdByInitials),
+          deleted: v.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Tasks (same counting logic as the Tasks tab — includes derived tasks)
-    final tasks =
-        await DailyTasksService.instance.history(includeDeleted: true);
+    final tasks = await DailyTasksService.instance.history(
+      includeDeleted: true,
+    );
     for (final t in tasks) {
       final day = t.serviceDay;
-      final openingEntries =
-          await OpeningListService.instance.entriesForServiceDay(day);
+      final openingEntries = await OpeningListService.instance
+          .entriesForServiceDay(day);
       final aberturaDone = openingEntries.any((o) => o.isFinalized);
-      final reportEntries =
-          await ReportListService.instance.entriesForServiceDay(day);
+      final reportEntries = await ReportListService.instance
+          .entriesForServiceDay(day);
       final relatorioDone = reportEntries.any((r) => r.isFinalized);
-      final visualEntries =
-          await VisualListService.instance.entriesForServiceDay(day);
-      final visualItens =
-          visualEntries.fold<int>(0, (s, e) => s + e.itensPicados);
-      final visualDone = visualItens >= 200;
-      final autoEntries =
-          await AutoListService.instance.entriesForServiceDay(day);
+      final visualEntries = await VisualListService.instance
+          .entriesForServiceDay(day);
+      final visualItens = visualEntries.fold<int>(
+        0,
+        (s, e) => s + e.itensPicados,
+      );
+      final visualDone = visualItens >= SettingsService.instance.visualGoal;
+      final autoEntries = await AutoListService.instance.entriesForServiceDay(
+        day,
+      );
       final autoDone = autoEntries.isNotEmpty;
-      final isSaturday = day.weekday == DateTime.saturday;
 
       final flags = <bool>[
         t.kiwiAbertura,
@@ -443,35 +512,37 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         autoDone,
         t.verificacaoValidades,
         t.kiwiFecho,
-        if (isSaturday) t.limpezaMaquinaVoltas,
       ];
       final total = flags.length;
       final doneCount = flags.where((v) => v).length;
-      items.add(_DayItem(
-        type: _ItemType.tasks,
-        time: t.lastUpdatedAt ?? t.serviceDay,
-        title: '✅ Tarefas Diárias',
-        subtitle: '$doneCount/$total concluídas',
-        icon: Icons.task_alt,
-        iconColor: doneCount == total ? AppColors.green : Colors.black54,
-        deleted: t.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.tasks,
+          time: t.lastUpdatedAt ?? t.serviceDay,
+          title: '✅ Tarefas Diárias',
+          subtitle: '$doneCount/$total concluídas',
+          icon: Icons.task_alt,
+          iconColor: doneCount == total ? AppColors.green : Colors.black54,
+          deleted: t.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Inventories
-    final invs =
-        await InventoryService.instance.history(includeDeleted: true);
+    final invs = await InventoryService.instance.history(includeDeleted: true);
     for (final inv in invs) {
-      items.add(_DayItem(
-        type: _ItemType.inventory,
-        time: inv.createdAt,
-        title: '📦 Inventário: ${inv.name}',
-        subtitle: '${formatCents(inv.valueCents)} €',
-        icon: Icons.assignment,
-        iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
-        initials: inv.createdByInitials,
-        deleted: inv.syncDeletedAt != null,
-      ));
+      items.add(
+        _DayItem(
+          type: _ItemType.inventory,
+          time: inv.createdAt,
+          title: '📦 Inventário: ${inv.name}',
+          subtitle: '${formatCents(inv.valueCents)} €',
+          icon: Icons.assignment,
+          iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
+          names: resolveNames(inv.createdByNames, inv.createdByInitials),
+          deleted: inv.syncDeletedAt != null,
+        ),
+      );
     }
 
     // Group by service day
@@ -531,31 +602,40 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: Icon(item.icon, color: item.iconColor, size: 24),
-                      title: Text(item.title,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              decoration: item.deleted
-                                  ? TextDecoration.lineThrough
-                                  : null)),
-                      subtitle: Text(item.subtitle, style: const TextStyle(fontSize: 12)),
+                      title: Text(
+                        item.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          decoration: item.deleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      subtitle: Text(
+                        item.subtitle,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if ((item.initials ?? '').isNotEmpty) ...[
-                            _HistoryInitials(initials: item.initials!),
+                          if (item.names.isNotEmpty) ...[
+                            _HistoryInitials(names: item.names),
                             const SizedBox(width: 6),
                           ],
-                          Text(timeFmt.format(item.time),
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.black45)),
+                          Text(
+                            timeFmt.format(item.time),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black45,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   );
                   return item.deleted
-                      ? IgnorePointer(
-                          child: Opacity(opacity: 0.4, child: card))
+                      ? IgnorePointer(child: Opacity(opacity: 0.4, child: card))
                       : card;
                 }),
               ],
@@ -566,7 +646,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
     );
   }
 }
-
 
 class _HistoryDismissible extends StatelessWidget {
   const _HistoryDismissible({
@@ -629,7 +708,8 @@ class _ShiftsTab extends StatefulWidget {
   State<_ShiftsTab> createState() => _ShiftsTabState();
 }
 
-class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMixin {
+class _ShiftsTabState extends State<_ShiftsTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<_ShiftRow>> _future;
@@ -648,7 +728,9 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
   }
 
   void _reload() {
-    setState(() { _future = _load(); });
+    setState(() {
+      _future = _load();
+    });
   }
 
   Future<List<_ShiftRow>> _load() async {
@@ -658,11 +740,13 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
     for (final id in ids) {
       final events = await svc.eventsForShift(id, includeDeleted: true);
       if (events.isEmpty) continue;
-      out.add(_ShiftRow(
-        events: events,
-        worked: computeWorked(events),
-        paused: computePaused(events),
-      ));
+      out.add(
+        _ShiftRow(
+          events: events,
+          worked: computeWorked(events),
+          paused: computePaused(events),
+        ),
+      );
     }
     return out;
   }
@@ -693,50 +777,64 @@ class _ShiftsTabState extends State<_ShiftsTab> with AutomaticKeepAliveClientMix
             return _dimmedIfDeleted(
               deleted: deleted,
               child: _HistoryDismissible(
-              itemKey: ValueKey(r.events.first.id), // Using first event ID as shift key
-              deletePromptName: 'turno',
-              onDelete: () async {
-                await ShiftService.instance.deleteShift(r.events.first.shiftId);
-                setState(() {
-                  _future = _load();
-                });
-              },
-              onSendWhatsApp: (ctx) async {
-                final startStr = timeFmt.format(start);
-                final endStr = end == null ? 'Em curso' : timeFmt.format(end);
-                final msg = '🕒 Turno: ${dateFmt.format(start)}\n'
-                    'Início: $startStr\n'
-                    'Fim: $endStr\n'
-                    'Trabalhado: ${_fmtH(r.worked)}\n'
-                    'Pausa: ${_fmtH(r.paused)}';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
-                  title: Text(dateFmt.format(start),
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text([
-                    end == null
-                        ? 'Em curso · ${_fmtH(r.worked)}'
-                        : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(r.worked)}',
-                    if (r.paused.inSeconds > 0) 'Pausa: ${_fmtH(r.paused)}',
-                  ].join('\n')),
-                  trailing: Icon(
-                    end == null ? Icons.timer : Icons.check_circle,
-                    color: AppColors.green,
-                  ),
-                  children: [
-                    ...r.events.map((e) => ListTile(
+                itemKey: ValueKey(
+                  r.events.first.id,
+                ), // Using first event ID as shift key
+                deletePromptName: 'turno',
+                onDelete: () async {
+                  await ShiftService.instance.deleteShift(
+                    r.events.first.shiftId,
+                  );
+                  setState(() {
+                    _future = _load();
+                  });
+                },
+                onSendWhatsApp: (ctx) async {
+                  final startStr = timeFmt.format(start);
+                  final endStr = end == null ? 'Em curso' : timeFmt.format(end);
+                  final msg =
+                      '🕒 Turno: ${dateFmt.format(start)}\n'
+                      'Início: $startStr\n'
+                      'Fim: $endStr\n'
+                      'Trabalhado: ${_fmtH(r.worked)}\n'
+                      'Pausa: ${_fmtH(r.paused)}';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    title: Text(
+                      dateFmt.format(start),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      [
+                        end == null
+                            ? 'Em curso · ${_fmtH(r.worked)}'
+                            : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(r.worked)}',
+                        if (r.paused.inSeconds > 0) 'Pausa: ${_fmtH(r.paused)}',
+                      ].join('\n'),
+                    ),
+                    trailing: Icon(
+                      end == null ? Icons.timer : Icons.check_circle,
+                      color: AppColors.green,
+                    ),
+                    children: [
+                      ...r.events.map(
+                        (e) => ListTile(
                           dense: true,
-                          leading: Icon(_shiftIcon(e.type),
-                              size: 20, color: AppColors.green),
+                          leading: Icon(
+                            _shiftIcon(e.type),
+                            size: 20,
+                            color: AppColors.green,
+                          ),
                           title: Text(_shiftLabel(e.type)),
                           trailing: Text(timeFmt.format(e.timestamp)),
-                        )),
-                  ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             );
           },
@@ -791,7 +889,8 @@ class _TrucksTab extends StatefulWidget {
   State<_TrucksTab> createState() => _TrucksTabState();
 }
 
-class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMixin {
+class _TrucksTabState extends State<_TrucksTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<TruckReception>> _future;
@@ -839,60 +938,105 @@ class _TrucksTabState extends State<_TrucksTab> with AutomaticKeepAliveClientMix
             return _dimmedIfDeleted(
               deleted: t.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(t.id),
-              deletePromptName: 'camião',
-              onDelete: () async {
-                await TruckService.instance.delete(t.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                final dateFmtWa = DateFormat("d/MM/y, HH:mm", 'pt_PT');
-                final lines = StringBuffer();
-                lines.writeln('🚛 Receção de Camião');
-                lines.writeln('Hora: ${dateFmtWa.format(t.arrivalTime)}');
-                if (t.licensePlate != null) lines.writeln('Matrícula: ${t.licensePlate}');
-                if (t.supplier != null) lines.writeln('Fornecedor: ${t.supplier}');
-                for (final p in t.pallets) {
-                  final mista = p.mistas > 0 ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})' : '';
-                  lines.writeln('${p.category.label}: ${p.total}$mista');
-                }
-                lines.writeln('Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas');
-                if (t.notes != null) lines.writeln('Notas: ${t.notes}');
-                await WhatsAppService.sendWithConfirm(ctx, lines.toString().trim());
-              },
-              child: Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
-                  title: Text(dateFmt.format(t.arrivalTime),
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text([
-                    if (parts.isNotEmpty) parts.join(' · '),
-                    '${t.totalPallets} paletes · ${t.totalMistas} mistas',
-                  ].join('\n')),
-                  trailing: _trailingWithInitials(
-                    t.createdByInitials,
-                    const Icon(Icons.local_shipping, color: AppColors.green),
-                  ),
-                  children: [
-                    ...t.pallets.map((p) => ListTile(
+                itemKey: ValueKey(t.id),
+                deletePromptName: 'camião',
+                onDelete: () async {
+                  await TruckService.instance.delete(t.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final dateFmtWa = DateFormat("d/MM/y, HH:mm", 'pt_PT');
+                  final lines = StringBuffer();
+                  lines.writeln('🚛 Receção de Camião');
+                  lines.writeln('Hora: ${dateFmtWa.format(t.arrivalTime)}');
+                  if (t.licensePlate != null)
+                    lines.writeln('Matrícula: ${t.licensePlate}');
+                  if (t.supplier != null)
+                    lines.writeln('Fornecedor: ${t.supplier}');
+                  for (final p in t.pallets) {
+                    final mista = p.mistas > 0
+                        ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
+                        : '';
+                    lines.writeln('${p.category.label}: ${p.total}$mista');
+                  }
+                  lines.writeln(
+                    'Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas',
+                  );
+                  if (t.issues != null) {
+                    lines.writeln('⚠️ Problemas: ${t.issues}');
+                  }
+                  if (t.notes != null) lines.writeln('Notas: ${t.notes}');
+                  await WhatsAppService.sendWithConfirm(
+                    ctx,
+                    lines.toString().trim(),
+                  );
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    title: Text(
+                      dateFmt.format(t.arrivalTime),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      [
+                        if (parts.isNotEmpty) parts.join(' · '),
+                        '${t.totalPallets} paletes · ${t.totalMistas} mistas',
+                        if (t.issues != null) '⚠️ Problemas registados',
+                      ].join('\n'),
+                    ),
+                    trailing: _trailingWithInitials(
+                      t.createdByInitials,
+                      Icon(
+                        t.issues != null
+                            ? Icons.warning_amber_rounded
+                            : Icons.local_shipping,
+                        color: t.issues != null
+                            ? Colors.orange.shade800
+                            : AppColors.green,
+                      ),
+                    ),
+                    children: [
+                      ...t.pallets.map(
+                        (p) => ListTile(
                           dense: true,
                           title: Text(p.category.label),
-                          trailing: Text('${p.total} (${p.mistas} mistas)',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
-                        )),
-                    if (t.notes != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text('Notas: ${t.notes}',
-                              style: const TextStyle(
-                                  fontStyle: FontStyle.italic)),
+                          trailing: Text(
+                            '${p.total} (${p.mistas} mistas)',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ),
-                  ],
+                      if (t.issues != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '⚠️ Problemas: ${t.issues}',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.orange.shade800,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (t.notes != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Notas: ${t.notes}',
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             );
           },
@@ -910,7 +1054,8 @@ class _OpeningTab extends StatefulWidget {
   State<_OpeningTab> createState() => _OpeningTabState();
 }
 
-class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientMixin {
+class _OpeningTabState extends State<_OpeningTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<OpeningList>> _future;
@@ -954,34 +1099,55 @@ class _OpeningTabState extends State<_OpeningTab> with AutomaticKeepAliveClientM
             return _dimmedIfDeleted(
               deleted: l.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(l.id),
-              deletePromptName: 'lista de abertura',
-              onDelete: () async {
-                await OpeningListService.instance.delete(l.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                final msg = '📋 Lista de Abertura (${dayFmt.format(l.serviceDay)})\n'
-                    'Congelados: ${l.congelados}\n'
-                    'OPLS: ${l.opls}\n'
-                    'Não Perecíveis: ${l.naoPereciveis}\n'
-                    'Total: ${l.total}';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: ListTile(
-                leading: Icon(
-                  l.isFinalized ? Icons.check_circle : Icons.edit,
-                  color: l.isFinalized ? AppColors.green : Colors.black45,
-                ),
-                title: Text(dayFmt.format(l.serviceDay)),
-                subtitle: Text(
-                    'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-                trailing: _trailingWithInitials(
-                  l.createdByInitials,
-                  Text('${l.total}',
+                itemKey: ValueKey(l.id),
+                deletePromptName: 'lista de abertura',
+                onDelete: () async {
+                  await OpeningListService.instance.delete(l.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final msg =
+                      '📋 Lista de Abertura (${dayFmt.format(l.serviceDay)})\n'
+                      'Congelados: ${l.congelados}\n'
+                      'OPLS: ${l.opls}\n'
+                      'Não Perecíveis: ${l.naoPereciveis}\n'
+                      'Total: ${l.total}';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: ListTile(
+                  leading: Icon(
+                    l.isFinalized ? Icons.check_circle : Icons.edit,
+                    color: l.isFinalized ? AppColors.green : Colors.black45,
+                  ),
+                  title: Text(dayFmt.format(l.serviceDay)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}',
+                      ),
+                      if (l.backdated) const _BackdatedRow(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: TimerBadge(
+                          parentKind: TimerKind.opening,
+                          parentUuid: l.syncUuid,
+                          taskKey: 'main',
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: _trailingWithInitials(
+                    l.createdByInitials,
+                    Text(
+                      '${l.total}',
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
               ),
             );
           },
@@ -1043,31 +1209,52 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
             return _dimmedIfDeleted(
               deleted: l.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(l.id),
-              deletePromptName: 'lista automática',
-              onDelete: () async {
-                await AutoListService.instance.delete(l.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                final msg = '📦 Lista Automática (${fmt.format(l.createdAt)})\n'
-                    'Congelados: ${l.congelados}\n'
-                    'OPLS: ${l.opls}\n'
-                    'Não Perecíveis: ${l.naoPereciveis}\n'
-                    'Total: ${l.total}';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: ListTile(
-                leading: const Icon(Icons.bolt, color: AppColors.green),
-                title: Text(fmt.format(l.createdAt)),
-                subtitle: Text(
-                    'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}'),
-                trailing: _trailingWithInitials(
-                  l.createdByInitials,
-                  Text('${l.total}',
+                itemKey: ValueKey(l.id),
+                deletePromptName: 'lista automática',
+                onDelete: () async {
+                  await AutoListService.instance.delete(l.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final msg =
+                      '📦 Lista Automática (${fmt.format(l.createdAt)})\n'
+                      'Congelados: ${l.congelados}\n'
+                      'OPLS: ${l.opls}\n'
+                      'Não Perecíveis: ${l.naoPereciveis}\n'
+                      'Total: ${l.total}';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: ListTile(
+                  leading: const Icon(Icons.bolt, color: AppColors.green),
+                  title: Text(fmt.format(l.createdAt)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}',
+                      ),
+                      if (l.backdated) const _BackdatedRow(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: TimerBadge(
+                          parentKind: TimerKind.auto,
+                          parentUuid: l.syncUuid,
+                          taskKey: 'main',
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: _trailingWithInitials(
+                    l.createdByInitials,
+                    Text(
+                      '${l.total}',
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
               ),
             );
           },
@@ -1085,7 +1272,8 @@ class _ReportTab extends StatefulWidget {
   State<_ReportTab> createState() => _ReportTabState();
 }
 
-class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMixin {
+class _ReportTabState extends State<_ReportTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<ReportList>> _future;
@@ -1129,35 +1317,56 @@ class _ReportTabState extends State<_ReportTab> with AutomaticKeepAliveClientMix
             return _dimmedIfDeleted(
               deleted: l.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(l.id),
-              deletePromptName: 'relatório',
-              onDelete: () async {
-                await ReportListService.instance.delete(l.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                final msg = '📊 Relatório (${dayFmt.format(l.serviceDay)})\n'
-                    'Dias s/ vendas: ${l.diasSemVendas}\n'
-                    'Regularizações: ${l.regularizacoes}\n'
-                    'Massiva: ${l.massiva}\n'
-                    'Repetidos: ${l.repetidos}\n'
-                    'Total: ${l.total}';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: ListTile(
-                leading: Icon(
-                  l.isFinalized ? Icons.check_circle : Icons.edit,
-                  color: l.isFinalized ? AppColors.green : Colors.black45,
-                ),
-                title: Text(dayFmt.format(l.serviceDay)),
-                subtitle: Text(
-                    'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}'),
-                trailing: _trailingWithInitials(
-                  l.createdByInitials,
-                  Text('${l.total}',
+                itemKey: ValueKey(l.id),
+                deletePromptName: 'relatório',
+                onDelete: () async {
+                  await ReportListService.instance.delete(l.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final msg =
+                      '📊 Relatório (${dayFmt.format(l.serviceDay)})\n'
+                      'Dias s/ vendas: ${l.diasSemVendas}\n'
+                      'Regularizações: ${l.regularizacoes}\n'
+                      'Massiva: ${l.massiva}\n'
+                      'Repetidos: ${l.repetidos}\n'
+                      'Total: ${l.total}';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: ListTile(
+                  leading: Icon(
+                    l.isFinalized ? Icons.check_circle : Icons.edit,
+                    color: l.isFinalized ? AppColors.green : Colors.black45,
+                  ),
+                  title: Text(dayFmt.format(l.serviceDay)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}',
+                      ),
+                      if (l.backdated) const _BackdatedRow(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: TimerBadge(
+                          parentKind: TimerKind.report,
+                          parentUuid: l.syncUuid,
+                          taskKey: 'main',
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: _trailingWithInitials(
+                    l.createdByInitials,
+                    Text(
+                      '${l.total}',
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
               ),
             );
           },
@@ -1175,7 +1384,8 @@ class _VisualTab extends StatefulWidget {
   State<_VisualTab> createState() => _VisualTabState();
 }
 
-class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMixin {
+class _VisualTabState extends State<_VisualTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<VisualList>> _future;
@@ -1231,72 +1441,118 @@ class _VisualTabState extends State<_VisualTab> with AutomaticKeepAliveClientMix
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
                 initiallyExpanded: i == 0,
-                title: Text(dayFmt.format(day),
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text.rich(TextSpan(
-                  style: const TextStyle(fontSize: 12),
-                  children: [
-                    TextSpan(text: 'Itens: $tI · Total: '),
-                    TextSpan(
-                      text: '${formatCents(tTotal)} €',
-                      style: TextStyle(
-                        color: tTotal >= 0 ? AppColors.green : Colors.redAccent,
-                        fontWeight: FontWeight.w600,
+                title: Text(
+                  dayFmt.format(day),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text.rich(
+                  TextSpan(
+                    style: const TextStyle(fontSize: 12),
+                    children: [
+                      TextSpan(text: 'Itens: $tI · Total: '),
+                      TextSpan(
+                        text: '${formatCents(tTotal)} €',
+                        style: TextStyle(
+                          color: tTotal >= 0
+                              ? AppColors.green
+                              : Colors.redAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                )),
+                    ],
+                  ),
+                ),
                 children: entries.map((e) {
                   final eTotal = e.beneficioCents - e.quebraCents;
                   return _dimmedIfDeleted(
                     deleted: e.syncDeletedAt != null,
                     child: _HistoryDismissible(
-                    itemKey: ValueKey(e.id),
-                    deletePromptName: 'entrada visual',
-                    onDelete: () async {
-                      await VisualListService.instance.delete(e.id);
-                    },
-                    onSendWhatsApp: (ctx) async {
-                      final msg = '👁 Lista Visual (${timeFmt.format(e.createdAt)})\n'
-                          'Itens Picados: ${e.itensPicados}\n'
-                          'Quebra: -${formatCents(e.quebraCents)} €\n'
-                          'Benefício: ${formatCents(e.beneficioCents)} €\n'
-                          'Total: ${formatCents(eTotal)} €';
-                      await WhatsAppService.sendWithConfirm(ctx, msg);
-                    },
-                    child: ListTile(
-                      dense: true,
-                      leading:
-                          const Icon(Icons.visibility, color: AppColors.green),
-                      title: Text(timeFmt.format(e.createdAt)),
-                      trailing: (e.createdByInitials ?? '').isEmpty
-                          ? null
-                          : _HistoryInitials(initials: e.createdByInitials!),
-                      subtitle: Text.rich(TextSpan(
-                        style: const TextStyle(fontSize: 12),
-                        children: [
-                          TextSpan(text: 'Itens: ${e.itensPicados} · Quebra: '),
-                          TextSpan(
-                            text: '-${formatCents(e.quebraCents)} €',
-                            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
-                          ),
-                          const TextSpan(text: ' · Benefício: '),
-                          TextSpan(
-                            text: '${formatCents(e.beneficioCents)} €',
-                            style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w600),
-                          ),
-                          const TextSpan(text: ' · Total: '),
-                          TextSpan(
-                            text: '${formatCents(eTotal)} €',
-                            style: TextStyle(
-                              color: eTotal >= 0 ? AppColors.green : Colors.redAccent,
-                              fontWeight: FontWeight.w600,
+                      itemKey: ValueKey(e.id),
+                      deletePromptName: 'entrada visual',
+                      onDelete: () async {
+                        await VisualListService.instance.delete(e.id);
+                      },
+                      onSendWhatsApp: (ctx) async {
+                        final msg =
+                            '👁 Lista Visual (${timeFmt.format(e.createdAt)})\n'
+                            'Itens Picados: ${e.itensPicados}\n'
+                            'Quebra: -${formatCents(e.quebraCents)} €\n'
+                            'Benefício: ${formatCents(e.beneficioCents)} €\n'
+                            'Total: ${formatCents(eTotal)} €';
+                        await WhatsAppService.sendWithConfirm(ctx, msg);
+                      },
+                      child: ListTile(
+                        dense: true,
+                        leading: const Icon(
+                          Icons.visibility,
+                          color: AppColors.green,
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(child: Text(timeFmt.format(e.createdAt))),
+                            TimerBadge(
+                              parentKind: TimerKind.visual,
+                              parentUuid: e.syncUuid,
+                              taskKey: 'main',
                             ),
-                          ),
-                        ],
-                      )),
+                          ],
+                        ),
+                        trailing:
+                            resolveNames(
+                              e.createdByNames,
+                              e.createdByInitials,
+                            ).isEmpty
+                            ? null
+                            : _HistoryInitials(
+                                names: resolveNames(
+                                  e.createdByNames,
+                                  e.createdByInitials,
+                                ),
+                              ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text.rich(
+                              TextSpan(
+                                style: const TextStyle(fontSize: 12),
+                                children: [
+                                  TextSpan(
+                                    text: 'Itens: ${e.itensPicados} · Quebra: ',
+                                  ),
+                                  TextSpan(
+                                    text: '-${formatCents(e.quebraCents)} €',
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' · Benefício: '),
+                                  TextSpan(
+                                    text: '${formatCents(e.beneficioCents)} €',
+                                    style: const TextStyle(
+                                      color: AppColors.green,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' · Total: '),
+                                  TextSpan(
+                                    text: '${formatCents(eTotal)} €',
+                                    style: TextStyle(
+                                      color: eTotal >= 0
+                                          ? AppColors.green
+                                          : Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (e.backdated) const _BackdatedRow(),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
                   );
                 }).toList(),
               ),
@@ -1316,7 +1572,8 @@ class _TasksTab extends StatefulWidget {
   State<_TasksTab> createState() => _TasksTabState();
 }
 
-class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin {
+class _TasksTabState extends State<_TasksTab>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   late Future<List<_TasksRow>> _future;
@@ -1341,29 +1598,50 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
   }
 
   Future<List<_TasksRow>> _load() async {
-    final all =
-        await DailyTasksService.instance.history(includeDeleted: true);
+    final all = await DailyTasksService.instance.history(includeDeleted: true);
     final rows = <_TasksRow>[];
     for (final t in all) {
       final day = t.serviceDay;
-      final openingEntries = await OpeningListService.instance.entriesForServiceDay(day);
+      final openingEntries = await OpeningListService.instance
+          .entriesForServiceDay(day);
       final aberturaDone = openingEntries.any((o) => o.isFinalized);
-      final reportEntries = await ReportListService.instance.entriesForServiceDay(day);
+      final aberturaBackdated = openingEntries.any(
+        (o) => o.isFinalized && o.backdated,
+      );
+      final reportEntries = await ReportListService.instance
+          .entriesForServiceDay(day);
       final relatorioDone = reportEntries.any((r) => r.isFinalized);
-      final visualEntries = await VisualListService.instance.entriesForServiceDay(day);
-      final visualItens = visualEntries.fold<int>(0, (s, e) => s + e.itensPicados);
-      final visualDone = visualItens >= 200;
-      final autoEntries = await AutoListService.instance.entriesForServiceDay(day);
+      final relatorioBackdated = reportEntries.any(
+        (r) => r.isFinalized && r.backdated,
+      );
+      final visualEntries = await VisualListService.instance
+          .entriesForServiceDay(day);
+      final visualItens = visualEntries.fold<int>(
+        0,
+        (s, e) => s + e.itensPicados,
+      );
+      final visualDone = visualItens >= SettingsService.instance.visualGoal;
+      final visualBackdated = visualEntries.any((e) => e.backdated);
+      final autoEntries = await AutoListService.instance.entriesForServiceDay(
+        day,
+      );
       final autoDone = autoEntries.isNotEmpty;
-      rows.add(_TasksRow(
-        tasks: t,
-        aberturaDone: aberturaDone,
-        relatorioDone: relatorioDone,
-        visualDone: visualDone,
-        visualItens: visualItens,
-        autoDone: autoDone,
-        autoCount: autoEntries.length,
-      ));
+      final autoBackdated = autoEntries.any((e) => e.backdated);
+      rows.add(
+        _TasksRow(
+          tasks: t,
+          aberturaDone: aberturaDone,
+          aberturaBackdated: aberturaBackdated,
+          relatorioDone: relatorioDone,
+          relatorioBackdated: relatorioBackdated,
+          visualDone: visualDone,
+          visualItens: visualItens,
+          visualBackdated: visualBackdated,
+          autoDone: autoDone,
+          autoCount: autoEntries.length,
+          autoBackdated: autoBackdated,
+        ),
+      );
     }
     return rows;
   }
@@ -1387,20 +1665,86 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
           itemBuilder: (_, i) {
             final r = items[i];
             final t = r.tasks;
-            final isSaturday = t.serviceDay.weekday == DateTime.saturday;
 
             final allTasks = <_TaskEntry>[
-              _TaskEntry('Kiwi Abertura', t.kiwiAbertura, by: t.kiwiAberturaBy),
-              _TaskEntry('Alterações de Preço (${t.alteracoesPrecoCount})', t.alteracoesPreco, by: t.alteracoesPrecoBy),
-              _TaskEntry('Verificação de Temperaturas', t.verificacaoTemperaturas, by: t.verificacaoTemperaturasBy),
-              _TaskEntry('Lista de Abertura', r.aberturaDone),
-              _TaskEntry('Relatório das Listas', r.relatorioDone),
-              _TaskEntry('Preenchimento do Quadro', t.preenchimentoQuadro, by: t.preenchimentoQuadroBy),
-              _TaskEntry('Lista Visual (${r.visualItens}/200)', r.visualDone),
-              _TaskEntry('Lista Automática (${r.autoCount})', r.autoDone),
-              _TaskEntry('Verificação de Validades (${t.verificacaoValidadesCount})', t.verificacaoValidades, by: t.verificacaoValidadesBy),
-              _TaskEntry('Kiwi Fecho', t.kiwiFecho, by: t.kiwiFechoBy),
-              if (isSaturday) _TaskEntry('Limpeza da Máquina Voltas', t.limpezaMaquinaVoltas, by: t.limpezaMaquinaVoltasBy),
+              _TaskEntry(
+                'Kiwi Abertura',
+                t.kiwiAbertura,
+                byNames: resolveNames(t.kiwiAberturaByNames, t.kiwiAberturaBy),
+                timerKey: 'kiwi_abertura',
+                backdated: t.backdatedTaskKeys.contains('kiwi_abertura'),
+              ),
+              _TaskEntry(
+                'Alterações de Preço (${t.alteracoesPrecoCount})',
+                t.alteracoesPreco,
+                byNames: resolveNames(
+                  t.alteracoesPrecoByNames,
+                  t.alteracoesPrecoBy,
+                ),
+                timerKey: 'alteracoes_preco',
+                backdated: t.backdatedTaskKeys.contains('alteracoes_preco'),
+              ),
+              _TaskEntry(
+                'Verificação de Temperaturas',
+                t.verificacaoTemperaturas,
+                byNames: resolveNames(
+                  t.verificacaoTemperaturasByNames,
+                  t.verificacaoTemperaturasBy,
+                ),
+                timerKey: 'verificacao_temperaturas',
+                backdated: t.backdatedTaskKeys.contains(
+                  'verificacao_temperaturas',
+                ),
+              ),
+              _TaskEntry(
+                'Lista de Abertura',
+                r.aberturaDone,
+                backdated: r.aberturaBackdated,
+              ),
+              _TaskEntry(
+                'Relatório das Listas',
+                r.relatorioDone,
+                backdated: r.relatorioBackdated,
+              ),
+              _TaskEntry(
+                'Preenchimento do Quadro',
+                t.preenchimentoQuadro,
+                byNames: resolveNames(
+                  t.preenchimentoQuadroByNames,
+                  t.preenchimentoQuadroBy,
+                ),
+                timerKey: 'preenchimento_quadro',
+                backdated: t.backdatedTaskKeys.contains('preenchimento_quadro'),
+              ),
+              _TaskEntry(
+                'Lista Visual (${r.visualItens}/${SettingsService.instance.visualGoal})',
+                r.visualDone,
+                backdated: r.visualBackdated,
+              ),
+              _TaskEntry(
+                'Lista Automática (${r.autoCount})',
+                r.autoDone,
+                backdated: r.autoBackdated,
+              ),
+              _TaskEntry(
+                'Verificação de Validades (${t.verificacaoValidadesCount})',
+                t.verificacaoValidades,
+                byNames: resolveNames(
+                  t.verificacaoValidadesByNames,
+                  t.verificacaoValidadesBy,
+                ),
+                timerKey: 'verificacao_validades',
+                backdated: t.backdatedTaskKeys.contains(
+                  'verificacao_validades',
+                ),
+              ),
+              _TaskEntry(
+                'Kiwi Fecho',
+                t.kiwiFecho,
+                byNames: resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy),
+                timerKey: 'kiwi_fecho',
+                backdated: t.backdatedTaskKeys.contains('kiwi_fecho'),
+              ),
             ];
             final totalTasks = allTasks.length;
             final doneCount = allTasks.where((e) => e.done).length;
@@ -1408,34 +1752,53 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
             return _dimmedIfDeleted(
               deleted: t.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(t.id),
-              deletePromptName: 'registo de tarefas',
-              onDelete: () async {
-                await DailyTasksService.instance.delete(t.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                String s(bool done, String label) => '${done ? '✅' : '❌'} $label';
-                final lines = allTasks.map((e) => s(e.done, e.label)).join('\n');
-                final msg = '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
-                    '$lines\n'
-                    'Total: $doneCount/$totalTasks';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
-                  title: Text(dayFmt.format(t.serviceDay),
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(
-                    '$doneCount/$totalTasks tarefas concluídas',
+                itemKey: ValueKey(t.id),
+                deletePromptName: 'registo de tarefas',
+                onDelete: () async {
+                  await DailyTasksService.instance.delete(t.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  String s(bool done, String label) =>
+                      '${done ? '✅' : '❌'} $label';
+                  final lines = allTasks
+                      .map((e) => s(e.done, e.label))
+                      .join('\n');
+                  final msg =
+                      '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
+                      '$lines\n'
+                      'Total: $doneCount/$totalTasks';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    title: Text(
+                      dayFmt.format(t.serviceDay),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text('$doneCount/$totalTasks tarefas concluídas'),
+                    trailing: Icon(
+                      doneCount == totalTasks
+                          ? Icons.check_circle
+                          : Icons.pending,
+                      color: doneCount == totalTasks
+                          ? AppColors.green
+                          : Colors.black45,
+                    ),
+                    children: allTasks
+                        .map(
+                          (e) => _taskTile(
+                            e.label,
+                            e.done,
+                            byNames: e.byNames,
+                            parentUuid: t.syncUuid,
+                            timerKey: e.timerKey,
+                            backdated: e.backdated,
+                          ),
+                        )
+                        .toList(),
                   ),
-                  trailing: Icon(
-                    doneCount == totalTasks ? Icons.check_circle : Icons.pending,
-                    color: doneCount == totalTasks ? AppColors.green : Colors.black45,
-                  ),
-                  children: allTasks.map((e) => _taskTile(e.label, e.done, by: e.by)).toList(),
                 ),
-              ),
               ),
             );
           },
@@ -1446,32 +1809,55 @@ class _TasksTabState extends State<_TasksTab> with AutomaticKeepAliveClientMixin
 }
 
 class _TaskEntry {
-  const _TaskEntry(this.label, this.done, {this.by});
+  const _TaskEntry(
+    this.label,
+    this.done, {
+    this.byNames = const [],
+    this.timerKey,
+    this.backdated = false,
+  });
   final String label;
   final bool done;
-  final String? by;
+  final List<String> byNames;
+  final String? timerKey;
+  final bool backdated;
 }
 
 class _TasksRow {
   _TasksRow({
     required this.tasks,
     required this.aberturaDone,
+    required this.aberturaBackdated,
     required this.relatorioDone,
+    required this.relatorioBackdated,
     required this.visualDone,
     required this.visualItens,
+    required this.visualBackdated,
     required this.autoDone,
     required this.autoCount,
+    required this.autoBackdated,
   });
   final DailyTasks tasks;
   final bool aberturaDone;
+  final bool aberturaBackdated;
   final bool relatorioDone;
+  final bool relatorioBackdated;
   final bool visualDone;
   final int visualItens;
+  final bool visualBackdated;
   final bool autoDone;
   final int autoCount;
+  final bool autoBackdated;
 }
 
-Widget _taskTile(String label, bool done, {String? by}) {
+Widget _taskTile(
+  String label,
+  bool done, {
+  List<String> byNames = const [],
+  String? parentUuid,
+  String? timerKey,
+  bool backdated = false,
+}) {
   return ListTile(
     dense: true,
     leading: Icon(
@@ -1486,9 +1872,31 @@ Widget _taskTile(String label, bool done, {String? by}) {
         color: done ? null : Colors.black45,
       ),
     ),
-    trailing: (done && (by ?? '').isNotEmpty)
-        ? _HistoryInitials(initials: by!)
+    subtitle: (done && backdated)
+        ? const Text(
+            'Preenchido a posteriori',
+            style: TextStyle(fontSize: 11, color: Colors.black45),
+          )
         : null,
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (done && backdated) ...[
+          const Icon(Icons.history_toggle_off, size: 16, color: Colors.black45),
+          const SizedBox(width: 4),
+        ],
+        if (parentUuid != null && timerKey != null)
+          TimerBadge(
+            parentKind: TimerKind.tasks,
+            parentUuid: parentUuid,
+            taskKey: timerKey,
+          ),
+        if (done && byNames.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          _HistoryInitials(names: byNames),
+        ],
+      ],
+    ),
   );
 }
 
@@ -1519,7 +1927,9 @@ class _InventoryTabState extends State<_InventoryTab>
   }
 
   void _reload() {
-    setState(() { _future = InventoryService.instance.history(includeDeleted: true); });
+    setState(() {
+      _future = InventoryService.instance.history(includeDeleted: true);
+    });
   }
 
   @override
@@ -1547,37 +1957,40 @@ class _InventoryTabState extends State<_InventoryTab>
             return _dimmedIfDeleted(
               deleted: inv.syncDeletedAt != null,
               child: _HistoryDismissible(
-              itemKey: ValueKey(inv.id),
-              deletePromptName: 'inventário',
-              onDelete: () async {
-                await InventoryService.instance.delete(inv.id);
-              },
-              onSendWhatsApp: (ctx) async {
-                final msg = '📦 Inventário: ${inv.name}\n'
-                    'Data: ${dateFmt.format(inv.createdAt)}\n'
-                    'Valor: ${formatCents(inv.valueCents)} €';
-                await WhatsAppService.sendWithConfirm(ctx, msg);
-              },
-              child: Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: Icon(Icons.assignment, color: color),
-                  title: Text(inv.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(dateFmt.format(inv.createdAt)),
-                  trailing: _trailingWithInitials(
-                    inv.createdByInitials,
-                    Text(
-                      '${formatCents(inv.valueCents)} €',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                itemKey: ValueKey(inv.id),
+                deletePromptName: 'inventário',
+                onDelete: () async {
+                  await InventoryService.instance.delete(inv.id);
+                },
+                onSendWhatsApp: (ctx) async {
+                  final msg =
+                      '📦 Inventário: ${inv.name}\n'
+                      'Data: ${dateFmt.format(inv.createdAt)}\n'
+                      'Valor: ${formatCents(inv.valueCents)} €';
+                  await WhatsAppService.sendWithConfirm(ctx, msg);
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: Icon(Icons.assignment, color: color),
+                    title: Text(
+                      inv.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(dateFmt.format(inv.createdAt)),
+                    trailing: _trailingWithInitials(
+                      inv.createdByInitials,
+                      Text(
+                        '${formatCents(inv.valueCents)} €',
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               ),
             );
           },
@@ -1643,6 +2056,11 @@ class _PedidosTabState extends State<_PedidosTab>
             final title = p.isFinalized
                 ? 'Pedido ${p.numero ?? '—'}'
                 : 'Pedido (em curso)';
+            final subtitleParts = <String>[
+              dateFmt.format(p.createdAt),
+              if (p.supplier != null) p.supplier!,
+              if (p.isOverdue) 'Atrasado',
+            ];
             return _dimmedIfDeleted(
               deleted: p.syncDeletedAt != null,
               child: _HistoryDismissible(
@@ -1652,29 +2070,47 @@ class _PedidosTabState extends State<_PedidosTab>
                   await PedidoService.instance.delete(p.id);
                 },
                 onSendWhatsApp: (ctx) async {
-                  final lines =
-                      await PedidoLineService.instance.linesFor(p.syncUuid);
+                  final lines = await PedidoLineService.instance.linesFor(
+                    p.syncUuid,
+                  );
                   final msg = StringBuffer()
                     ..writeln('📝 Pedido nº ${p.numero ?? '—'}')
                     ..writeln('${lines.length} produto(s)');
                   for (final l in lines) {
                     msg.writeln(
-                        '• ${l.productName ?? l.ean} (${l.ean}) — ${l.caixas} cx');
+                      '• ${l.productName ?? l.ean} (${l.ean}) — ${l.caixas} cx',
+                    );
                   }
                   if (!ctx.mounted) return;
                   await WhatsAppService.sendWithConfirm(
-                      ctx, msg.toString().trim());
+                    ctx,
+                    msg.toString().trim(),
+                  );
                 },
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    leading: Icon(Icons.receipt_long,
-                        color: p.isFinalized
-                            ? AppColors.green
-                            : AppColors.greenDark),
-                    title: Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(dateFmt.format(p.createdAt)),
+                    leading: Icon(
+                      p.isOverdue
+                          ? Icons.warning_amber_rounded
+                          : Icons.receipt_long,
+                      color: p.isOverdue
+                          ? Colors.orange.shade800
+                          : p.isFinalized
+                          ? AppColors.green
+                          : AppColors.greenDark,
+                    ),
+                    title: Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      subtitleParts.join(' · '),
+                      style: TextStyle(
+                        color: p.isOverdue ? Colors.orange.shade800 : null,
+                        fontWeight: p.isOverdue ? FontWeight.w600 : null,
+                      ),
+                    ),
                     trailing: _trailingWithInitials(
                       p.createdByInitials,
                       Text(
