@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../models/custom_task.dart';
 import '../models/opening_list.dart';
@@ -86,6 +87,7 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
     );
     if (result == null) return;
     final who = result.person.fullName;
+    final currentPeriodKey = _periodKeyFor(row.task.frequency);
 
     late final DateTime targetPeriodKey;
     late final bool backdated;
@@ -97,12 +99,12 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
           result.day.day,
           5,
         );
-        backdated = targetPeriodKey != row.periodKey;
+        backdated = targetPeriodKey != currentPeriodKey;
       case CustomTaskFrequency.weekly:
         targetPeriodKey = currentServiceWeek(
           DateTime(result.day.year, result.day.month, result.day.day, 12),
         );
-        backdated = targetPeriodKey != row.periodKey;
+        backdated = targetPeriodKey != currentPeriodKey;
       case CustomTaskFrequency.oneOff:
         targetPeriodKey = oneOffPeriodKey;
         backdated = false;
@@ -116,7 +118,18 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
       backdated: backdated,
     );
     final countSuffix = count == null ? '' : ' ($count)';
-    _sendMsg('✅ Tarefa concluída: ${row.task.title}$countSuffix (por $who)');
+    final baseMsg =
+        '✅ Tarefa concluída: ${row.task.title}$countSuffix (por $who)';
+    if (!backdated) {
+      _sendMsg(baseMsg);
+      return;
+    }
+    final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(result.day);
+    _sendMsg('$baseMsg — $dayFmt');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tarefa marcada como concluída em $dayFmt.')),
+    );
   }
 
   Future<void> _confirmDelete(CustomTask task) async {
