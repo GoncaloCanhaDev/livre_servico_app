@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/auto_list.dart';
+import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
@@ -52,6 +53,8 @@ class ShiftService extends ChangeNotifier {
         PedidoLineSchema,
         PersonSchema,
         TaskTimerSchema,
+        CustomTaskSchema,
+        CustomTaskEntrySchema,
       ],
       directory: dir.path,
       name: 'livre_servico',
