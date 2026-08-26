@@ -27,99 +27,124 @@ const DailyTasksSchema = CollectionSchema(
       name: r'alteracoesPrecoBy',
       type: IsarType.string,
     ),
-    r'alteracoesPrecoCount': PropertySchema(
+    r'alteracoesPrecoByNames': PropertySchema(
       id: 2,
+      name: r'alteracoesPrecoByNames',
+      type: IsarType.stringList,
+    ),
+    r'alteracoesPrecoCount': PropertySchema(
+      id: 3,
       name: r'alteracoesPrecoCount',
       type: IsarType.long,
     ),
+    r'backdatedTaskKeys': PropertySchema(
+      id: 4,
+      name: r'backdatedTaskKeys',
+      type: IsarType.stringList,
+    ),
     r'kiwiAbertura': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'kiwiAbertura',
       type: IsarType.bool,
     ),
     r'kiwiAberturaBy': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'kiwiAberturaBy',
       type: IsarType.string,
     ),
+    r'kiwiAberturaByNames': PropertySchema(
+      id: 7,
+      name: r'kiwiAberturaByNames',
+      type: IsarType.stringList,
+    ),
     r'kiwiFecho': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'kiwiFecho',
       type: IsarType.bool,
     ),
     r'kiwiFechoBy': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'kiwiFechoBy',
       type: IsarType.string,
     ),
+    r'kiwiFechoByNames': PropertySchema(
+      id: 10,
+      name: r'kiwiFechoByNames',
+      type: IsarType.stringList,
+    ),
     r'lastUpdatedAt': PropertySchema(
-      id: 7,
+      id: 11,
       name: r'lastUpdatedAt',
       type: IsarType.dateTime,
     ),
-    r'limpezaMaquinaVoltas': PropertySchema(
-      id: 8,
-      name: r'limpezaMaquinaVoltas',
-      type: IsarType.bool,
-    ),
-    r'limpezaMaquinaVoltasBy': PropertySchema(
-      id: 9,
-      name: r'limpezaMaquinaVoltasBy',
-      type: IsarType.string,
-    ),
     r'preenchimentoQuadro': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'preenchimentoQuadro',
       type: IsarType.bool,
     ),
     r'preenchimentoQuadroBy': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'preenchimentoQuadroBy',
       type: IsarType.string,
     ),
+    r'preenchimentoQuadroByNames': PropertySchema(
+      id: 14,
+      name: r'preenchimentoQuadroByNames',
+      type: IsarType.stringList,
+    ),
     r'serviceDay': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 16, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 19, name: r'synced', type: IsarType.bool),
     r'verificacaoTemperaturas': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'verificacaoTemperaturas',
       type: IsarType.bool,
     ),
     r'verificacaoTemperaturasBy': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'verificacaoTemperaturasBy',
       type: IsarType.string,
     ),
+    r'verificacaoTemperaturasByNames': PropertySchema(
+      id: 22,
+      name: r'verificacaoTemperaturasByNames',
+      type: IsarType.stringList,
+    ),
     r'verificacaoValidades': PropertySchema(
-      id: 19,
+      id: 23,
       name: r'verificacaoValidades',
       type: IsarType.bool,
     ),
     r'verificacaoValidadesBy': PropertySchema(
-      id: 20,
+      id: 24,
       name: r'verificacaoValidadesBy',
       type: IsarType.string,
     ),
+    r'verificacaoValidadesByNames': PropertySchema(
+      id: 25,
+      name: r'verificacaoValidadesByNames',
+      type: IsarType.stringList,
+    ),
     r'verificacaoValidadesCount': PropertySchema(
-      id: 21,
+      id: 26,
       name: r'verificacaoValidadesCount',
       type: IsarType.long,
     ),
@@ -179,10 +204,31 @@ int _dailyTasksEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.alteracoesPrecoByNames.length * 3;
+  {
+    for (var i = 0; i < object.alteracoesPrecoByNames.length; i++) {
+      final value = object.alteracoesPrecoByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.backdatedTaskKeys.length * 3;
+  {
+    for (var i = 0; i < object.backdatedTaskKeys.length; i++) {
+      final value = object.backdatedTaskKeys[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.kiwiAberturaBy;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.kiwiAberturaByNames.length * 3;
+  {
+    for (var i = 0; i < object.kiwiAberturaByNames.length; i++) {
+      final value = object.kiwiAberturaByNames[i];
+      bytesCount += value.length * 3;
     }
   }
   {
@@ -191,16 +237,24 @@ int _dailyTasksEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.kiwiFechoByNames.length * 3;
   {
-    final value = object.limpezaMaquinaVoltasBy;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
+    for (var i = 0; i < object.kiwiFechoByNames.length; i++) {
+      final value = object.kiwiFechoByNames[i];
+      bytesCount += value.length * 3;
     }
   }
   {
     final value = object.preenchimentoQuadroBy;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.preenchimentoQuadroByNames.length * 3;
+  {
+    for (var i = 0; i < object.preenchimentoQuadroByNames.length; i++) {
+      final value = object.preenchimentoQuadroByNames[i];
+      bytesCount += value.length * 3;
     }
   }
   bytesCount += 3 + object.syncUuid.length * 3;
@@ -210,10 +264,24 @@ int _dailyTasksEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.verificacaoTemperaturasByNames.length * 3;
+  {
+    for (var i = 0; i < object.verificacaoTemperaturasByNames.length; i++) {
+      final value = object.verificacaoTemperaturasByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.verificacaoValidadesBy;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.verificacaoValidadesByNames.length * 3;
+  {
+    for (var i = 0; i < object.verificacaoValidadesByNames.length; i++) {
+      final value = object.verificacaoValidadesByNames[i];
+      bytesCount += value.length * 3;
     }
   }
   return bytesCount;
@@ -227,26 +295,31 @@ void _dailyTasksSerialize(
 ) {
   writer.writeBool(offsets[0], object.alteracoesPreco);
   writer.writeString(offsets[1], object.alteracoesPrecoBy);
-  writer.writeLong(offsets[2], object.alteracoesPrecoCount);
-  writer.writeBool(offsets[3], object.kiwiAbertura);
-  writer.writeString(offsets[4], object.kiwiAberturaBy);
-  writer.writeBool(offsets[5], object.kiwiFecho);
-  writer.writeString(offsets[6], object.kiwiFechoBy);
-  writer.writeDateTime(offsets[7], object.lastUpdatedAt);
-  writer.writeBool(offsets[8], object.limpezaMaquinaVoltas);
-  writer.writeString(offsets[9], object.limpezaMaquinaVoltasBy);
-  writer.writeBool(offsets[10], object.preenchimentoQuadro);
-  writer.writeString(offsets[11], object.preenchimentoQuadroBy);
-  writer.writeDateTime(offsets[12], object.serviceDay);
-  writer.writeDateTime(offsets[13], object.syncDeletedAt);
-  writer.writeDateTime(offsets[14], object.syncUpdatedAt);
-  writer.writeString(offsets[15], object.syncUuid);
-  writer.writeBool(offsets[16], object.synced);
-  writer.writeBool(offsets[17], object.verificacaoTemperaturas);
-  writer.writeString(offsets[18], object.verificacaoTemperaturasBy);
-  writer.writeBool(offsets[19], object.verificacaoValidades);
-  writer.writeString(offsets[20], object.verificacaoValidadesBy);
-  writer.writeLong(offsets[21], object.verificacaoValidadesCount);
+  writer.writeStringList(offsets[2], object.alteracoesPrecoByNames);
+  writer.writeLong(offsets[3], object.alteracoesPrecoCount);
+  writer.writeStringList(offsets[4], object.backdatedTaskKeys);
+  writer.writeBool(offsets[5], object.kiwiAbertura);
+  writer.writeString(offsets[6], object.kiwiAberturaBy);
+  writer.writeStringList(offsets[7], object.kiwiAberturaByNames);
+  writer.writeBool(offsets[8], object.kiwiFecho);
+  writer.writeString(offsets[9], object.kiwiFechoBy);
+  writer.writeStringList(offsets[10], object.kiwiFechoByNames);
+  writer.writeDateTime(offsets[11], object.lastUpdatedAt);
+  writer.writeBool(offsets[12], object.preenchimentoQuadro);
+  writer.writeString(offsets[13], object.preenchimentoQuadroBy);
+  writer.writeStringList(offsets[14], object.preenchimentoQuadroByNames);
+  writer.writeDateTime(offsets[15], object.serviceDay);
+  writer.writeDateTime(offsets[16], object.syncDeletedAt);
+  writer.writeDateTime(offsets[17], object.syncUpdatedAt);
+  writer.writeString(offsets[18], object.syncUuid);
+  writer.writeBool(offsets[19], object.synced);
+  writer.writeBool(offsets[20], object.verificacaoTemperaturas);
+  writer.writeString(offsets[21], object.verificacaoTemperaturasBy);
+  writer.writeStringList(offsets[22], object.verificacaoTemperaturasByNames);
+  writer.writeBool(offsets[23], object.verificacaoValidades);
+  writer.writeString(offsets[24], object.verificacaoValidadesBy);
+  writer.writeStringList(offsets[25], object.verificacaoValidadesByNames);
+  writer.writeLong(offsets[26], object.verificacaoValidadesCount);
 }
 
 DailyTasks _dailyTasksDeserialize(
@@ -258,27 +331,33 @@ DailyTasks _dailyTasksDeserialize(
   final object = DailyTasks();
   object.alteracoesPreco = reader.readBool(offsets[0]);
   object.alteracoesPrecoBy = reader.readStringOrNull(offsets[1]);
-  object.alteracoesPrecoCount = reader.readLong(offsets[2]);
+  object.alteracoesPrecoByNames = reader.readStringList(offsets[2]) ?? [];
+  object.alteracoesPrecoCount = reader.readLong(offsets[3]);
+  object.backdatedTaskKeys = reader.readStringList(offsets[4]) ?? [];
   object.id = id;
-  object.kiwiAbertura = reader.readBool(offsets[3]);
-  object.kiwiAberturaBy = reader.readStringOrNull(offsets[4]);
-  object.kiwiFecho = reader.readBool(offsets[5]);
-  object.kiwiFechoBy = reader.readStringOrNull(offsets[6]);
-  object.lastUpdatedAt = reader.readDateTimeOrNull(offsets[7]);
-  object.limpezaMaquinaVoltas = reader.readBool(offsets[8]);
-  object.limpezaMaquinaVoltasBy = reader.readStringOrNull(offsets[9]);
-  object.preenchimentoQuadro = reader.readBool(offsets[10]);
-  object.preenchimentoQuadroBy = reader.readStringOrNull(offsets[11]);
-  object.serviceDay = reader.readDateTime(offsets[12]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[13]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[14]);
-  object.syncUuid = reader.readString(offsets[15]);
-  object.synced = reader.readBool(offsets[16]);
-  object.verificacaoTemperaturas = reader.readBool(offsets[17]);
-  object.verificacaoTemperaturasBy = reader.readStringOrNull(offsets[18]);
-  object.verificacaoValidades = reader.readBool(offsets[19]);
-  object.verificacaoValidadesBy = reader.readStringOrNull(offsets[20]);
-  object.verificacaoValidadesCount = reader.readLong(offsets[21]);
+  object.kiwiAbertura = reader.readBool(offsets[5]);
+  object.kiwiAberturaBy = reader.readStringOrNull(offsets[6]);
+  object.kiwiAberturaByNames = reader.readStringList(offsets[7]) ?? [];
+  object.kiwiFecho = reader.readBool(offsets[8]);
+  object.kiwiFechoBy = reader.readStringOrNull(offsets[9]);
+  object.kiwiFechoByNames = reader.readStringList(offsets[10]) ?? [];
+  object.lastUpdatedAt = reader.readDateTimeOrNull(offsets[11]);
+  object.preenchimentoQuadro = reader.readBool(offsets[12]);
+  object.preenchimentoQuadroBy = reader.readStringOrNull(offsets[13]);
+  object.preenchimentoQuadroByNames = reader.readStringList(offsets[14]) ?? [];
+  object.serviceDay = reader.readDateTime(offsets[15]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[16]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[17]);
+  object.syncUuid = reader.readString(offsets[18]);
+  object.synced = reader.readBool(offsets[19]);
+  object.verificacaoTemperaturas = reader.readBool(offsets[20]);
+  object.verificacaoTemperaturasBy = reader.readStringOrNull(offsets[21]);
+  object.verificacaoTemperaturasByNames =
+      reader.readStringList(offsets[22]) ?? [];
+  object.verificacaoValidades = reader.readBool(offsets[23]);
+  object.verificacaoValidadesBy = reader.readStringOrNull(offsets[24]);
+  object.verificacaoValidadesByNames = reader.readStringList(offsets[25]) ?? [];
+  object.verificacaoValidadesCount = reader.readLong(offsets[26]);
   return object;
 }
 
@@ -294,44 +373,54 @@ P _dailyTasksDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
-    case 12:
-      return (reader.readDateTime(offset)) as P;
-    case 13:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 14:
-      return (reader.readDateTime(offset)) as P;
-    case 15:
-      return (reader.readString(offset)) as P;
-    case 16:
+    case 12:
       return (reader.readBool(offset)) as P;
-    case 17:
-      return (reader.readBool(offset)) as P;
-    case 18:
+    case 13:
       return (reader.readStringOrNull(offset)) as P;
+    case 14:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 15:
+      return (reader.readDateTime(offset)) as P;
+    case 16:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 17:
+      return (reader.readDateTime(offset)) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
     case 19:
       return (reader.readBool(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 23:
+      return (reader.readBool(offset)) as P;
+    case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 26:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -827,6 +916,242 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'alteracoesPrecoByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'alteracoesPrecoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'alteracoesPrecoByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'alteracoesPrecoByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'alteracoesPrecoByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'alteracoesPrecoByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'alteracoesPrecoByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'alteracoesPrecoByNames',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'alteracoesPrecoByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'alteracoesPrecoByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  alteracoesPrecoByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'alteracoesPrecoByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   alteracoesPrecoCountEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -880,6 +1205,209 @@ extension DailyTasksQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'backdatedTaskKeys',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'backdatedTaskKeys',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'backdatedTaskKeys',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'backdatedTaskKeys', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'backdatedTaskKeys', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'backdatedTaskKeys', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'backdatedTaskKeys', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'backdatedTaskKeys', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'backdatedTaskKeys', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'backdatedTaskKeys',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  backdatedTaskKeysLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'backdatedTaskKeys',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -1111,6 +1639,227 @@ extension DailyTasksQueryFilter
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'kiwiAberturaByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'kiwiAberturaByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'kiwiAberturaByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'kiwiAberturaByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'kiwiAberturaByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'kiwiAberturaByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiAberturaByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiAberturaByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiAberturaByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'kiwiAberturaByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiAberturaByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'kiwiAberturaByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition> kiwiFechoEqualTo(
     bool value,
   ) {
@@ -1281,6 +2030,206 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'kiwiFechoByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'kiwiFechoByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'kiwiFechoByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'kiwiFechoByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'kiwiFechoByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiFechoByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiFechoByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiFechoByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'kiwiFechoByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'kiwiFechoByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  kiwiFechoByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'kiwiFechoByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   lastUpdatedAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1348,180 +2297,6 @@ extension DailyTasksQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'limpezaMaquinaVoltas',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'limpezaMaquinaVoltasBy'),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'limpezaMaquinaVoltasBy'),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByEqualTo(String? value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'limpezaMaquinaVoltasBy',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByStartsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByEndsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'limpezaMaquinaVoltasBy',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'limpezaMaquinaVoltasBy',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'limpezaMaquinaVoltasBy', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
-  limpezaMaquinaVoltasByIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          property: r'limpezaMaquinaVoltasBy',
-          value: '',
         ),
       );
     });
@@ -1694,6 +2469,248 @@ extension DailyTasksQueryFilter
           property: r'preenchimentoQuadroBy',
           value: '',
         ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'preenchimentoQuadroByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'preenchimentoQuadroByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'preenchimentoQuadroByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'preenchimentoQuadroByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'preenchimentoQuadroByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'preenchimentoQuadroByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'preenchimentoQuadroByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'preenchimentoQuadroByNames',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'preenchimentoQuadroByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'preenchimentoQuadroByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  preenchimentoQuadroByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'preenchimentoQuadroByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -2222,6 +3239,257 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'verificacaoTemperaturasByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'verificacaoTemperaturasByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'verificacaoTemperaturasByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoTemperaturasByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'verificacaoTemperaturasByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoTemperaturasByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoTemperaturasByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   verificacaoValidadesEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2396,6 +3664,251 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'verificacaoValidadesByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'verificacaoValidadesByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'verificacaoValidadesByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'verificacaoValidadesByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'verificacaoValidadesByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoValidadesByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'verificacaoValidadesByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoValidadesByNames',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoValidadesByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoValidadesByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  verificacaoValidadesByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'verificacaoValidadesByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   verificacaoValidadesCountEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2560,34 +4073,6 @@ extension DailyTasksQuerySortBy
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> sortByLastUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdatedAt', Sort.desc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  sortByLimpezaMaquinaVoltas() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltas', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  sortByLimpezaMaquinaVoltasDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltas', Sort.desc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  sortByLimpezaMaquinaVoltasBy() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltasBy', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  sortByLimpezaMaquinaVoltasByDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltasBy', Sort.desc);
     });
   }
 
@@ -2866,34 +4351,6 @@ extension DailyTasksQuerySortThenBy
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  thenByLimpezaMaquinaVoltas() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltas', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  thenByLimpezaMaquinaVoltasDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltas', Sort.desc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  thenByLimpezaMaquinaVoltasBy() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltasBy', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
-  thenByLimpezaMaquinaVoltasByDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'limpezaMaquinaVoltasBy', Sort.desc);
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   thenByPreenchimentoQuadro() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preenchimentoQuadro', Sort.asc);
@@ -3072,9 +4529,23 @@ extension DailyTasksQueryWhereDistinct
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByAlteracoesPrecoByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'alteracoesPrecoByNames');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
   distinctByAlteracoesPrecoCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'alteracoesPrecoCount');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByBackdatedTaskKeys() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backdatedTaskKeys');
     });
   }
 
@@ -3095,6 +4566,13 @@ extension DailyTasksQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByKiwiAberturaByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'kiwiAberturaByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByKiwiFecho() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'kiwiFecho');
@@ -3109,26 +4587,15 @@ extension DailyTasksQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByKiwiFechoByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'kiwiFechoByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByLastUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdatedAt');
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
-  distinctByLimpezaMaquinaVoltas() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'limpezaMaquinaVoltas');
-    });
-  }
-
-  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
-  distinctByLimpezaMaquinaVoltasBy({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(
-        r'limpezaMaquinaVoltasBy',
-        caseSensitive: caseSensitive,
-      );
     });
   }
 
@@ -3146,6 +4613,13 @@ extension DailyTasksQueryWhereDistinct
         r'preenchimentoQuadroBy',
         caseSensitive: caseSensitive,
       );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByPreenchimentoQuadroByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'preenchimentoQuadroByNames');
     });
   }
 
@@ -3199,6 +4673,13 @@ extension DailyTasksQueryWhereDistinct
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByVerificacaoTemperaturasByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'verificacaoTemperaturasByNames');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
   distinctByVerificacaoValidades() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'verificacaoValidades');
@@ -3212,6 +4693,13 @@ extension DailyTasksQueryWhereDistinct
         r'verificacaoValidadesBy',
         caseSensitive: caseSensitive,
       );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByVerificacaoValidadesByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'verificacaoValidadesByNames');
     });
   }
 
@@ -3244,10 +4732,24 @@ extension DailyTasksQueryProperty
     });
   }
 
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  alteracoesPrecoByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'alteracoesPrecoByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, int, QQueryOperations>
   alteracoesPrecoCountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'alteracoesPrecoCount');
+    });
+  }
+
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  backdatedTaskKeysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backdatedTaskKeys');
     });
   }
 
@@ -3263,6 +4765,13 @@ extension DailyTasksQueryProperty
     });
   }
 
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  kiwiAberturaByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'kiwiAberturaByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, bool, QQueryOperations> kiwiFechoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'kiwiFecho');
@@ -3275,24 +4784,17 @@ extension DailyTasksQueryProperty
     });
   }
 
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  kiwiFechoByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'kiwiFechoByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, DateTime?, QQueryOperations>
   lastUpdatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdatedAt');
-    });
-  }
-
-  QueryBuilder<DailyTasks, bool, QQueryOperations>
-  limpezaMaquinaVoltasProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'limpezaMaquinaVoltas');
-    });
-  }
-
-  QueryBuilder<DailyTasks, String?, QQueryOperations>
-  limpezaMaquinaVoltasByProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'limpezaMaquinaVoltasBy');
     });
   }
 
@@ -3307,6 +4809,13 @@ extension DailyTasksQueryProperty
   preenchimentoQuadroByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'preenchimentoQuadroBy');
+    });
+  }
+
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  preenchimentoQuadroByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'preenchimentoQuadroByNames');
     });
   }
 
@@ -3355,6 +4864,13 @@ extension DailyTasksQueryProperty
     });
   }
 
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  verificacaoTemperaturasByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'verificacaoTemperaturasByNames');
+    });
+  }
+
   QueryBuilder<DailyTasks, bool, QQueryOperations>
   verificacaoValidadesProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3366,6 +4882,13 @@ extension DailyTasksQueryProperty
   verificacaoValidadesByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'verificacaoValidadesBy');
+    });
+  }
+
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  verificacaoValidadesByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'verificacaoValidadesByNames');
     });
   }
 

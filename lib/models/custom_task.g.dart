@@ -1338,29 +1338,34 @@ const CustomTaskEntrySchema = CollectionSchema(
     r'done': PropertySchema(id: 2, name: r'done', type: IsarType.bool),
     r'doneAt': PropertySchema(id: 3, name: r'doneAt', type: IsarType.dateTime),
     r'doneBy': PropertySchema(id: 4, name: r'doneBy', type: IsarType.string),
-    r'periodKey': PropertySchema(
+    r'doneByNames': PropertySchema(
       id: 5,
+      name: r'doneByNames',
+      type: IsarType.stringList,
+    ),
+    r'periodKey': PropertySchema(
+      id: 6,
       name: r'periodKey',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 9, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 10, name: r'synced', type: IsarType.bool),
     r'taskUuid': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'taskUuid',
       type: IsarType.string,
     ),
@@ -1433,6 +1438,13 @@ int _customTaskEntryEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.doneByNames.length * 3;
+  {
+    for (var i = 0; i < object.doneByNames.length; i++) {
+      final value = object.doneByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   bytesCount += 3 + object.taskUuid.length * 3;
   return bytesCount;
@@ -1449,12 +1461,13 @@ void _customTaskEntrySerialize(
   writer.writeBool(offsets[2], object.done);
   writer.writeDateTime(offsets[3], object.doneAt);
   writer.writeString(offsets[4], object.doneBy);
-  writer.writeDateTime(offsets[5], object.periodKey);
-  writer.writeDateTime(offsets[6], object.syncDeletedAt);
-  writer.writeDateTime(offsets[7], object.syncUpdatedAt);
-  writer.writeString(offsets[8], object.syncUuid);
-  writer.writeBool(offsets[9], object.synced);
-  writer.writeString(offsets[10], object.taskUuid);
+  writer.writeStringList(offsets[5], object.doneByNames);
+  writer.writeDateTime(offsets[6], object.periodKey);
+  writer.writeDateTime(offsets[7], object.syncDeletedAt);
+  writer.writeDateTime(offsets[8], object.syncUpdatedAt);
+  writer.writeString(offsets[9], object.syncUuid);
+  writer.writeBool(offsets[10], object.synced);
+  writer.writeString(offsets[11], object.taskUuid);
 }
 
 CustomTaskEntry _customTaskEntryDeserialize(
@@ -1469,13 +1482,14 @@ CustomTaskEntry _customTaskEntryDeserialize(
   object.done = reader.readBool(offsets[2]);
   object.doneAt = reader.readDateTimeOrNull(offsets[3]);
   object.doneBy = reader.readStringOrNull(offsets[4]);
+  object.doneByNames = reader.readStringList(offsets[5]) ?? [];
   object.id = id;
-  object.periodKey = reader.readDateTime(offsets[5]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[7]);
-  object.syncUuid = reader.readString(offsets[8]);
-  object.synced = reader.readBool(offsets[9]);
-  object.taskUuid = reader.readString(offsets[10]);
+  object.periodKey = reader.readDateTime(offsets[6]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[8]);
+  object.syncUuid = reader.readString(offsets[9]);
+  object.synced = reader.readBool(offsets[10]);
+  object.taskUuid = reader.readString(offsets[11]);
   return object;
 }
 
@@ -1497,16 +1511,18 @@ P _customTaskEntryDeserializeProp<P>(
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 7:
       return (reader.readDateTime(offset)) as P;
+    case 7:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 10:
+      return (reader.readBool(offset)) as P;
+    case 11:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2143,6 +2159,200 @@ extension CustomTaskEntryQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'doneBy', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'doneByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'doneByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'doneByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'doneByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'doneByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'doneByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'doneByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'doneByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'doneByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'doneByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QAfterFilterCondition>
+  doneByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'doneByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -3035,6 +3245,13 @@ extension CustomTaskEntryQueryWhereDistinct
   }
 
   QueryBuilder<CustomTaskEntry, CustomTaskEntry, QDistinct>
+  distinctByDoneByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'doneByNames');
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, CustomTaskEntry, QDistinct>
   distinctByPeriodKey() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'periodKey');
@@ -3113,6 +3330,13 @@ extension CustomTaskEntryQueryProperty
   QueryBuilder<CustomTaskEntry, String?, QQueryOperations> doneByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'doneBy');
+    });
+  }
+
+  QueryBuilder<CustomTaskEntry, List<String>, QQueryOperations>
+  doneByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'doneByNames');
     });
   }
 

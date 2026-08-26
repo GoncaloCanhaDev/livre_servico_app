@@ -17,54 +17,64 @@ const OpeningListSchema = CollectionSchema(
   name: r'OpeningList',
   id: -1264859112631077036,
   properties: {
-    r'congelados': PropertySchema(
+    r'backdated': PropertySchema(
       id: 0,
+      name: r'backdated',
+      type: IsarType.bool,
+    ),
+    r'congelados': PropertySchema(
+      id: 1,
       name: r'congelados',
       type: IsarType.long,
     ),
     r'createdByInitials': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdByInitials',
       type: IsarType.string,
     ),
+    r'createdByNames': PropertySchema(
+      id: 3,
+      name: r'createdByNames',
+      type: IsarType.stringList,
+    ),
     r'finalizedAt': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'finalizedAt',
       type: IsarType.dateTime,
     ),
     r'isFinalized': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'isFinalized',
       type: IsarType.bool,
     ),
     r'naoPereciveis': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'naoPereciveis',
       type: IsarType.long,
     ),
-    r'opls': PropertySchema(id: 5, name: r'opls', type: IsarType.long),
+    r'opls': PropertySchema(id: 7, name: r'opls', type: IsarType.long),
     r'serviceDay': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 10, name: r'synced', type: IsarType.bool),
-    r'total': PropertySchema(id: 11, name: r'total', type: IsarType.long),
+    r'synced': PropertySchema(id: 12, name: r'synced', type: IsarType.bool),
+    r'total': PropertySchema(id: 13, name: r'total', type: IsarType.long),
   },
 
   estimateSize: _openingListEstimateSize,
@@ -121,6 +131,13 @@ int _openingListEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.createdByNames.length * 3;
+  {
+    for (var i = 0; i < object.createdByNames.length; i++) {
+      final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
@@ -131,18 +148,20 @@ void _openingListSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.congelados);
-  writer.writeString(offsets[1], object.createdByInitials);
-  writer.writeDateTime(offsets[2], object.finalizedAt);
-  writer.writeBool(offsets[3], object.isFinalized);
-  writer.writeLong(offsets[4], object.naoPereciveis);
-  writer.writeLong(offsets[5], object.opls);
-  writer.writeDateTime(offsets[6], object.serviceDay);
-  writer.writeDateTime(offsets[7], object.syncDeletedAt);
-  writer.writeDateTime(offsets[8], object.syncUpdatedAt);
-  writer.writeString(offsets[9], object.syncUuid);
-  writer.writeBool(offsets[10], object.synced);
-  writer.writeLong(offsets[11], object.total);
+  writer.writeBool(offsets[0], object.backdated);
+  writer.writeLong(offsets[1], object.congelados);
+  writer.writeString(offsets[2], object.createdByInitials);
+  writer.writeStringList(offsets[3], object.createdByNames);
+  writer.writeDateTime(offsets[4], object.finalizedAt);
+  writer.writeBool(offsets[5], object.isFinalized);
+  writer.writeLong(offsets[6], object.naoPereciveis);
+  writer.writeLong(offsets[7], object.opls);
+  writer.writeDateTime(offsets[8], object.serviceDay);
+  writer.writeDateTime(offsets[9], object.syncDeletedAt);
+  writer.writeDateTime(offsets[10], object.syncUpdatedAt);
+  writer.writeString(offsets[11], object.syncUuid);
+  writer.writeBool(offsets[12], object.synced);
+  writer.writeLong(offsets[13], object.total);
 }
 
 OpeningList _openingListDeserialize(
@@ -152,17 +171,19 @@ OpeningList _openingListDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = OpeningList();
-  object.congelados = reader.readLong(offsets[0]);
-  object.createdByInitials = reader.readStringOrNull(offsets[1]);
-  object.finalizedAt = reader.readDateTimeOrNull(offsets[2]);
+  object.backdated = reader.readBool(offsets[0]);
+  object.congelados = reader.readLong(offsets[1]);
+  object.createdByInitials = reader.readStringOrNull(offsets[2]);
+  object.createdByNames = reader.readStringList(offsets[3]) ?? [];
+  object.finalizedAt = reader.readDateTimeOrNull(offsets[4]);
   object.id = id;
-  object.naoPereciveis = reader.readLong(offsets[4]);
-  object.opls = reader.readLong(offsets[5]);
-  object.serviceDay = reader.readDateTime(offsets[6]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[7]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[8]);
-  object.syncUuid = reader.readString(offsets[9]);
-  object.synced = reader.readBool(offsets[10]);
+  object.naoPereciveis = reader.readLong(offsets[6]);
+  object.opls = reader.readLong(offsets[7]);
+  object.serviceDay = reader.readDateTime(offsets[8]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[10]);
+  object.syncUuid = reader.readString(offsets[11]);
+  object.synced = reader.readBool(offsets[12]);
   return object;
 }
 
@@ -174,28 +195,32 @@ P _openingListDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
-    case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    case 2:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 3:
       return (reader.readBool(offset)) as P;
+    case 1:
+      return (reader.readLong(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringList(offset) ?? []) as P;
     case 4:
-      return (reader.readLong(offset)) as P;
-    case 5:
-      return (reader.readLong(offset)) as P;
-    case 6:
-      return (reader.readDateTime(offset)) as P;
-    case 7:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
+      return (reader.readLong(offset)) as P;
     case 8:
       return (reader.readDateTime(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -526,6 +551,15 @@ extension OpeningListQueryWhere
 extension OpeningListQueryFilter
     on QueryBuilder<OpeningList, OpeningList, QFilterCondition> {
   QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  backdatedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'backdated', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
   congeladosEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -735,6 +769,200 @@ extension OpeningListQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  createdByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -1397,6 +1625,18 @@ extension OpeningListQueryLinks
 
 extension OpeningListQuerySortBy
     on QueryBuilder<OpeningList, OpeningList, QSortBy> {
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'congelados', Sort.asc);
@@ -1549,6 +1789,18 @@ extension OpeningListQuerySortBy
 
 extension OpeningListQuerySortThenBy
     on QueryBuilder<OpeningList, OpeningList, QSortThenBy> {
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'congelados', Sort.asc);
@@ -1713,6 +1965,12 @@ extension OpeningListQuerySortThenBy
 
 extension OpeningListQueryWhereDistinct
     on QueryBuilder<OpeningList, OpeningList, QDistinct> {
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backdated');
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'congelados');
@@ -1726,6 +1984,12 @@ extension OpeningListQueryWhereDistinct
         r'createdByInitials',
         caseSensitive: caseSensitive,
       );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByCreatedByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByNames');
     });
   }
 
@@ -1800,6 +2064,12 @@ extension OpeningListQueryProperty
     });
   }
 
+  QueryBuilder<OpeningList, bool, QQueryOperations> backdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backdated');
+    });
+  }
+
   QueryBuilder<OpeningList, int, QQueryOperations> congeladosProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'congelados');
@@ -1810,6 +2080,13 @@ extension OpeningListQueryProperty
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByInitials');
+    });
+  }
+
+  QueryBuilder<OpeningList, List<String>, QQueryOperations>
+  createdByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByNames');
     });
   }
 

@@ -11,7 +11,9 @@ class VisualList {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
+  List<String> createdByNames = [];
 
   @Index()
   late DateTime createdAt;
@@ -22,6 +24,9 @@ class VisualList {
   int itensPicados = 0;
   int quebraCents = 0;
   int beneficioCents = 0;
+
+  /// True when this entry was added via the backdate flow instead of on its own day.
+  bool backdated = false;
 }
 
 int parseEurosToCents(String input) {

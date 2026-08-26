@@ -16,21 +16,35 @@ class DailyTasks {
   late DateTime serviceDay;
 
   bool kiwiAbertura = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? kiwiAberturaBy;
+  List<String> kiwiAberturaByNames = [];
   bool alteracoesPreco = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? alteracoesPrecoBy;
+  List<String> alteracoesPrecoByNames = [];
   int alteracoesPrecoCount = 0;
   bool verificacaoTemperaturas = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? verificacaoTemperaturasBy;
+  List<String> verificacaoTemperaturasByNames = [];
   bool preenchimentoQuadro = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? preenchimentoQuadroBy;
+  List<String> preenchimentoQuadroByNames = [];
   bool verificacaoValidades = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? verificacaoValidadesBy;
+  List<String> verificacaoValidadesByNames = [];
   int verificacaoValidadesCount = 0;
   bool kiwiFecho = false;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? kiwiFechoBy;
-  bool limpezaMaquinaVoltas = false;
-  String? limpezaMaquinaVoltasBy;
+  List<String> kiwiFechoByNames = [];
+
+  /// Task keys (see the `timerKey` passed to `_completeTask`) that were marked done via the
+  /// backdate flow rather than on this row's own service day.
+  List<String> backdatedTaskKeys = [];
 
   DateTime? lastUpdatedAt;
 }

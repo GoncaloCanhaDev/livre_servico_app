@@ -11,7 +11,9 @@ class OpeningList {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
+  List<String> createdByNames = [];
 
   @Index(unique: true, replace: true)
   late DateTime serviceDay;
@@ -19,6 +21,9 @@ class OpeningList {
   int congelados = 0;
   int opls = 0;
   int naoPereciveis = 0;
+
+  /// True when this row was finalized via the backdate flow instead of on its own day.
+  bool backdated = false;
 
   DateTime? finalizedAt;
 

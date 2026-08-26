@@ -33,57 +33,62 @@ const InventorySchema = CollectionSchema(
       name: r'createdByInitials',
       type: IsarType.string,
     ),
-    r'finalValueCents': PropertySchema(
+    r'createdByNames': PropertySchema(
       id: 4,
+      name: r'createdByNames',
+      type: IsarType.stringList,
+    ),
+    r'finalValueCents': PropertySchema(
+      id: 5,
       name: r'finalValueCents',
       type: IsarType.long,
     ),
     r'finishedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'finishedAt',
       type: IsarType.dateTime,
     ),
     r'isFinalized': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isFinalized',
       type: IsarType.bool,
     ),
-    r'isLegacy': PropertySchema(id: 7, name: r'isLegacy', type: IsarType.bool),
-    r'isPaused': PropertySchema(id: 8, name: r'isPaused', type: IsarType.bool),
+    r'isLegacy': PropertySchema(id: 8, name: r'isLegacy', type: IsarType.bool),
+    r'isPaused': PropertySchema(id: 9, name: r'isPaused', type: IsarType.bool),
     r'isRunning': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isRunning',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(id: 10, name: r'name', type: IsarType.string),
+    r'name': PropertySchema(id: 11, name: r'name', type: IsarType.string),
     r'runningSince': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'runningSince',
       type: IsarType.dateTime,
     ),
     r'startedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'startedAt',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 16, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 17, name: r'synced', type: IsarType.bool),
     r'valueCents': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'valueCents',
       type: IsarType.long,
     ),
@@ -136,6 +141,13 @@ int _inventoryEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.createdByNames.length * 3;
+  {
+    for (var i = 0; i < object.createdByNames.length; i++) {
+      final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
@@ -151,20 +163,21 @@ void _inventorySerialize(
   writer.writeString(offsets[1], object.code);
   writer.writeDateTime(offsets[2], object.createdAt);
   writer.writeString(offsets[3], object.createdByInitials);
-  writer.writeLong(offsets[4], object.finalValueCents);
-  writer.writeDateTime(offsets[5], object.finishedAt);
-  writer.writeBool(offsets[6], object.isFinalized);
-  writer.writeBool(offsets[7], object.isLegacy);
-  writer.writeBool(offsets[8], object.isPaused);
-  writer.writeBool(offsets[9], object.isRunning);
-  writer.writeString(offsets[10], object.name);
-  writer.writeDateTime(offsets[11], object.runningSince);
-  writer.writeDateTime(offsets[12], object.startedAt);
-  writer.writeDateTime(offsets[13], object.syncDeletedAt);
-  writer.writeDateTime(offsets[14], object.syncUpdatedAt);
-  writer.writeString(offsets[15], object.syncUuid);
-  writer.writeBool(offsets[16], object.synced);
-  writer.writeLong(offsets[17], object.valueCents);
+  writer.writeStringList(offsets[4], object.createdByNames);
+  writer.writeLong(offsets[5], object.finalValueCents);
+  writer.writeDateTime(offsets[6], object.finishedAt);
+  writer.writeBool(offsets[7], object.isFinalized);
+  writer.writeBool(offsets[8], object.isLegacy);
+  writer.writeBool(offsets[9], object.isPaused);
+  writer.writeBool(offsets[10], object.isRunning);
+  writer.writeString(offsets[11], object.name);
+  writer.writeDateTime(offsets[12], object.runningSince);
+  writer.writeDateTime(offsets[13], object.startedAt);
+  writer.writeDateTime(offsets[14], object.syncDeletedAt);
+  writer.writeDateTime(offsets[15], object.syncUpdatedAt);
+  writer.writeString(offsets[16], object.syncUuid);
+  writer.writeBool(offsets[17], object.synced);
+  writer.writeLong(offsets[18], object.valueCents);
 }
 
 Inventory _inventoryDeserialize(
@@ -178,17 +191,18 @@ Inventory _inventoryDeserialize(
   object.code = reader.readStringOrNull(offsets[1]);
   object.createdAt = reader.readDateTime(offsets[2]);
   object.createdByInitials = reader.readStringOrNull(offsets[3]);
-  object.finalValueCents = reader.readLongOrNull(offsets[4]);
-  object.finishedAt = reader.readDateTimeOrNull(offsets[5]);
+  object.createdByNames = reader.readStringList(offsets[4]) ?? [];
+  object.finalValueCents = reader.readLongOrNull(offsets[5]);
+  object.finishedAt = reader.readDateTimeOrNull(offsets[6]);
   object.id = id;
-  object.name = reader.readString(offsets[10]);
-  object.runningSince = reader.readDateTimeOrNull(offsets[11]);
-  object.startedAt = reader.readDateTimeOrNull(offsets[12]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[13]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[14]);
-  object.syncUuid = reader.readString(offsets[15]);
-  object.synced = reader.readBool(offsets[16]);
-  object.valueCents = reader.readLong(offsets[17]);
+  object.name = reader.readString(offsets[11]);
+  object.runningSince = reader.readDateTimeOrNull(offsets[12]);
+  object.startedAt = reader.readDateTimeOrNull(offsets[13]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[14]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[15]);
+  object.syncUuid = reader.readString(offsets[16]);
+  object.synced = reader.readBool(offsets[17]);
+  object.valueCents = reader.readLong(offsets[18]);
   return object;
 }
 
@@ -208,11 +222,11 @@ P _inventoryDeserializeProp<P>(
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
@@ -220,20 +234,22 @@ P _inventoryDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 16:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 17:
+      return (reader.readBool(offset)) as P;
+    case 18:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -817,6 +833,200 @@ extension InventoryQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
+  createdByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -2195,6 +2405,12 @@ extension InventoryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Inventory, Inventory, QDistinct> distinctByCreatedByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByNames');
+    });
+  }
+
   QueryBuilder<Inventory, Inventory, QDistinct> distinctByFinalValueCents() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'finalValueCents');
@@ -2314,6 +2530,13 @@ extension InventoryQueryProperty
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByInitials');
+    });
+  }
+
+  QueryBuilder<Inventory, List<String>, QQueryOperations>
+  createdByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByNames');
     });
   }
 

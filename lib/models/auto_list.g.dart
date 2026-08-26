@@ -17,44 +17,54 @@ const AutoListSchema = CollectionSchema(
   name: r'AutoList',
   id: 1397854283516863816,
   properties: {
-    r'congelados': PropertySchema(
+    r'backdated': PropertySchema(
       id: 0,
+      name: r'backdated',
+      type: IsarType.bool,
+    ),
+    r'congelados': PropertySchema(
+      id: 1,
       name: r'congelados',
       type: IsarType.long,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'createdByInitials': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'createdByInitials',
       type: IsarType.string,
     ),
+    r'createdByNames': PropertySchema(
+      id: 4,
+      name: r'createdByNames',
+      type: IsarType.stringList,
+    ),
     r'naoPereciveis': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'naoPereciveis',
       type: IsarType.long,
     ),
-    r'opls': PropertySchema(id: 4, name: r'opls', type: IsarType.long),
+    r'opls': PropertySchema(id: 6, name: r'opls', type: IsarType.long),
     r'syncDeletedAt': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 8, name: r'synced', type: IsarType.bool),
-    r'total': PropertySchema(id: 9, name: r'total', type: IsarType.long),
+    r'synced': PropertySchema(id: 10, name: r'synced', type: IsarType.bool),
+    r'total': PropertySchema(id: 11, name: r'total', type: IsarType.long),
   },
 
   estimateSize: _autoListEstimateSize,
@@ -111,6 +121,13 @@ int _autoListEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.createdByNames.length * 3;
+  {
+    for (var i = 0; i < object.createdByNames.length; i++) {
+      final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
@@ -121,16 +138,18 @@ void _autoListSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.congelados);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.createdByInitials);
-  writer.writeLong(offsets[3], object.naoPereciveis);
-  writer.writeLong(offsets[4], object.opls);
-  writer.writeDateTime(offsets[5], object.syncDeletedAt);
-  writer.writeDateTime(offsets[6], object.syncUpdatedAt);
-  writer.writeString(offsets[7], object.syncUuid);
-  writer.writeBool(offsets[8], object.synced);
-  writer.writeLong(offsets[9], object.total);
+  writer.writeBool(offsets[0], object.backdated);
+  writer.writeLong(offsets[1], object.congelados);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.createdByInitials);
+  writer.writeStringList(offsets[4], object.createdByNames);
+  writer.writeLong(offsets[5], object.naoPereciveis);
+  writer.writeLong(offsets[6], object.opls);
+  writer.writeDateTime(offsets[7], object.syncDeletedAt);
+  writer.writeDateTime(offsets[8], object.syncUpdatedAt);
+  writer.writeString(offsets[9], object.syncUuid);
+  writer.writeBool(offsets[10], object.synced);
+  writer.writeLong(offsets[11], object.total);
 }
 
 AutoList _autoListDeserialize(
@@ -140,16 +159,18 @@ AutoList _autoListDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = AutoList();
-  object.congelados = reader.readLong(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.createdByInitials = reader.readStringOrNull(offsets[2]);
+  object.backdated = reader.readBool(offsets[0]);
+  object.congelados = reader.readLong(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.createdByInitials = reader.readStringOrNull(offsets[3]);
+  object.createdByNames = reader.readStringList(offsets[4]) ?? [];
   object.id = id;
-  object.naoPereciveis = reader.readLong(offsets[3]);
-  object.opls = reader.readLong(offsets[4]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[6]);
-  object.syncUuid = reader.readString(offsets[7]);
-  object.synced = reader.readBool(offsets[8]);
+  object.naoPereciveis = reader.readLong(offsets[5]);
+  object.opls = reader.readLong(offsets[6]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[8]);
+  object.syncUuid = reader.readString(offsets[9]);
+  object.synced = reader.readBool(offsets[10]);
   return object;
 }
 
@@ -161,24 +182,28 @@ P _autoListDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
-    case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
-      return (reader.readLong(offset)) as P;
-    case 4:
-      return (reader.readLong(offset)) as P;
-    case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 6:
-      return (reader.readDateTime(offset)) as P;
-    case 7:
-      return (reader.readString(offset)) as P;
-    case 8:
       return (reader.readBool(offset)) as P;
+    case 1:
+      return (reader.readLong(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 5:
+      return (reader.readLong(offset)) as P;
+    case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 8:
+      return (reader.readDateTime(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readBool(offset)) as P;
+    case 11:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -444,6 +469,16 @@ extension AutoListQueryWhere on QueryBuilder<AutoList, AutoList, QWhereClause> {
 
 extension AutoListQueryFilter
     on QueryBuilder<AutoList, AutoList, QFilterCondition> {
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition> backdatedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'backdated', value: value),
+      );
+    });
+  }
+
   QueryBuilder<AutoList, AutoList, QAfterFilterCondition> congeladosEqualTo(
     int value,
   ) {
@@ -717,6 +752,200 @@ extension AutoListQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterFilterCondition>
+  createdByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -1249,6 +1478,18 @@ extension AutoListQueryLinks
     on QueryBuilder<AutoList, AutoList, QFilterCondition> {}
 
 extension AutoListQuerySortBy on QueryBuilder<AutoList, AutoList, QSortBy> {
+  QueryBuilder<AutoList, AutoList, QAfterSortBy> sortByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterSortBy> sortByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<AutoList, AutoList, QAfterSortBy> sortByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'congelados', Sort.asc);
@@ -1372,6 +1613,18 @@ extension AutoListQuerySortBy on QueryBuilder<AutoList, AutoList, QSortBy> {
 
 extension AutoListQuerySortThenBy
     on QueryBuilder<AutoList, AutoList, QSortThenBy> {
+  QueryBuilder<AutoList, AutoList, QAfterSortBy> thenByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QAfterSortBy> thenByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<AutoList, AutoList, QAfterSortBy> thenByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'congelados', Sort.asc);
@@ -1507,6 +1760,12 @@ extension AutoListQuerySortThenBy
 
 extension AutoListQueryWhereDistinct
     on QueryBuilder<AutoList, AutoList, QDistinct> {
+  QueryBuilder<AutoList, AutoList, QDistinct> distinctByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backdated');
+    });
+  }
+
   QueryBuilder<AutoList, AutoList, QDistinct> distinctByCongelados() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'congelados');
@@ -1527,6 +1786,12 @@ extension AutoListQueryWhereDistinct
         r'createdByInitials',
         caseSensitive: caseSensitive,
       );
+    });
+  }
+
+  QueryBuilder<AutoList, AutoList, QDistinct> distinctByCreatedByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByNames');
     });
   }
 
@@ -1583,6 +1848,12 @@ extension AutoListQueryProperty
     });
   }
 
+  QueryBuilder<AutoList, bool, QQueryOperations> backdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backdated');
+    });
+  }
+
   QueryBuilder<AutoList, int, QQueryOperations> congeladosProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'congelados');
@@ -1599,6 +1870,13 @@ extension AutoListQueryProperty
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByInitials');
+    });
+  }
+
+  QueryBuilder<AutoList, List<String>, QQueryOperations>
+  createdByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByNames');
     });
   }
 

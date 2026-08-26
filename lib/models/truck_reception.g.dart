@@ -27,54 +27,60 @@ const TruckReceptionSchema = CollectionSchema(
       name: r'createdByInitials',
       type: IsarType.string,
     ),
-    r'licensePlate': PropertySchema(
+    r'createdByNames': PropertySchema(
       id: 2,
+      name: r'createdByNames',
+      type: IsarType.stringList,
+    ),
+    r'issues': PropertySchema(id: 3, name: r'issues', type: IsarType.string),
+    r'licensePlate': PropertySchema(
+      id: 4,
       name: r'licensePlate',
       type: IsarType.string,
     ),
-    r'notes': PropertySchema(id: 3, name: r'notes', type: IsarType.string),
+    r'notes': PropertySchema(id: 5, name: r'notes', type: IsarType.string),
     r'pallets': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'pallets',
       type: IsarType.objectList,
 
       target: r'PalletCount',
     ),
     r'sentVasilhame': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'sentVasilhame',
       type: IsarType.objectList,
 
       target: r'SentVasilhameItem',
     ),
     r'supplier': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'supplier',
       type: IsarType.string,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 10, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 12, name: r'synced', type: IsarType.bool),
     r'totalMistas': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'totalMistas',
       type: IsarType.long,
     ),
     r'totalPallets': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'totalPallets',
       type: IsarType.long,
     ),
@@ -137,6 +143,19 @@ int _truckReceptionEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.createdByNames.length * 3;
+  {
+    for (var i = 0; i < object.createdByNames.length; i++) {
+      final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  {
+    final value = object.issues;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.licensePlate;
     if (value != null) {
@@ -187,27 +206,29 @@ void _truckReceptionSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.arrivalTime);
   writer.writeString(offsets[1], object.createdByInitials);
-  writer.writeString(offsets[2], object.licensePlate);
-  writer.writeString(offsets[3], object.notes);
+  writer.writeStringList(offsets[2], object.createdByNames);
+  writer.writeString(offsets[3], object.issues);
+  writer.writeString(offsets[4], object.licensePlate);
+  writer.writeString(offsets[5], object.notes);
   writer.writeObjectList<PalletCount>(
-    offsets[4],
+    offsets[6],
     allOffsets,
     PalletCountSchema.serialize,
     object.pallets,
   );
   writer.writeObjectList<SentVasilhameItem>(
-    offsets[5],
+    offsets[7],
     allOffsets,
     SentVasilhameItemSchema.serialize,
     object.sentVasilhame,
   );
-  writer.writeString(offsets[6], object.supplier);
-  writer.writeDateTime(offsets[7], object.syncDeletedAt);
-  writer.writeDateTime(offsets[8], object.syncUpdatedAt);
-  writer.writeString(offsets[9], object.syncUuid);
-  writer.writeBool(offsets[10], object.synced);
-  writer.writeLong(offsets[11], object.totalMistas);
-  writer.writeLong(offsets[12], object.totalPallets);
+  writer.writeString(offsets[8], object.supplier);
+  writer.writeDateTime(offsets[9], object.syncDeletedAt);
+  writer.writeDateTime(offsets[10], object.syncUpdatedAt);
+  writer.writeString(offsets[11], object.syncUuid);
+  writer.writeBool(offsets[12], object.synced);
+  writer.writeLong(offsets[13], object.totalMistas);
+  writer.writeLong(offsets[14], object.totalPallets);
 }
 
 TruckReception _truckReceptionDeserialize(
@@ -219,12 +240,14 @@ TruckReception _truckReceptionDeserialize(
   final object = TruckReception();
   object.arrivalTime = reader.readDateTime(offsets[0]);
   object.createdByInitials = reader.readStringOrNull(offsets[1]);
+  object.createdByNames = reader.readStringList(offsets[2]) ?? [];
   object.id = id;
-  object.licensePlate = reader.readStringOrNull(offsets[2]);
-  object.notes = reader.readStringOrNull(offsets[3]);
+  object.issues = reader.readStringOrNull(offsets[3]);
+  object.licensePlate = reader.readStringOrNull(offsets[4]);
+  object.notes = reader.readStringOrNull(offsets[5]);
   object.pallets =
       reader.readObjectList<PalletCount>(
-        offsets[4],
+        offsets[6],
         PalletCountSchema.deserialize,
         allOffsets,
         PalletCount(),
@@ -232,17 +255,17 @@ TruckReception _truckReceptionDeserialize(
       [];
   object.sentVasilhame =
       reader.readObjectList<SentVasilhameItem>(
-        offsets[5],
+        offsets[7],
         SentVasilhameItemSchema.deserialize,
         allOffsets,
         SentVasilhameItem(),
       ) ??
       [];
-  object.supplier = reader.readStringOrNull(offsets[6]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[7]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[8]);
-  object.syncUuid = reader.readString(offsets[9]);
-  object.synced = reader.readBool(offsets[10]);
+  object.supplier = reader.readStringOrNull(offsets[8]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[10]);
+  object.syncUuid = reader.readString(offsets[11]);
+  object.synced = reader.readBool(offsets[12]);
   return object;
 }
 
@@ -258,10 +281,14 @@ P _truckReceptionDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
+      return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
+    case 6:
       return (reader.readObjectList<PalletCount>(
                 offset,
                 PalletCountSchema.deserialize,
@@ -270,7 +297,7 @@ P _truckReceptionDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 5:
+    case 7:
       return (reader.readObjectList<SentVasilhameItem>(
                 offset,
                 SentVasilhameItemSchema.deserialize,
@@ -279,19 +306,19 @@ P _truckReceptionDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 6:
-      return (reader.readStringOrNull(offset)) as P;
-    case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 11:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
+      return (reader.readLong(offset)) as P;
+    case 14:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -777,6 +804,200 @@ extension TruckReceptionQueryFilter
     });
   }
 
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  createdByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition> idEqualTo(
     Id value,
   ) {
@@ -828,6 +1049,165 @@ extension TruckReceptionQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'issues'),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'issues'),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'issues',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'issues',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'issues',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'issues', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  issuesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'issues', value: ''),
       );
     });
   }
@@ -1854,6 +2234,19 @@ extension TruckReceptionQuerySortBy
     });
   }
 
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> sortByIssues() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'issues', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  sortByIssuesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'issues', Sort.desc);
+    });
+  }
+
   QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
   sortByLicensePlate() {
     return QueryBuilder.apply(this, (query) {
@@ -2018,6 +2411,19 @@ extension TruckReceptionQuerySortThenBy
     });
   }
 
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> thenByIssues() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'issues', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  thenByIssuesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'issues', Sort.desc);
+    });
+  }
+
   QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
   thenByLicensePlate() {
     return QueryBuilder.apply(this, (query) {
@@ -2160,6 +2566,21 @@ extension TruckReceptionQueryWhereDistinct
   }
 
   QueryBuilder<TruckReception, TruckReception, QDistinct>
+  distinctByCreatedByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByNames');
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QDistinct> distinctByIssues({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'issues', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QDistinct>
   distinctByLicensePlate({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'licensePlate', caseSensitive: caseSensitive);
@@ -2244,6 +2665,19 @@ extension TruckReceptionQueryProperty
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByInitials');
+    });
+  }
+
+  QueryBuilder<TruckReception, List<String>, QQueryOperations>
+  createdByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByNames');
+    });
+  }
+
+  QueryBuilder<TruckReception, String?, QQueryOperations> issuesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'issues');
     });
   }
 

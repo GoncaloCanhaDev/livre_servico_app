@@ -12,10 +12,10 @@ enum PalletCategory {
   leite,
   animal,
   vasilhame,
-  congelados,
-
+  congelados
   /// Categories available for truck reception (excludes vasilhame).
   ;
+
   static const truckCategories = [
     congelados,
     frescosCharcutaria,
@@ -79,7 +79,9 @@ class TruckReception {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
+  List<String> createdByNames = [];
 
   @Index()
   late DateTime arrivalTime;
@@ -88,11 +90,13 @@ class TruckReception {
   String? supplier;
   String? notes;
 
+  /// Optional free-text note for problems with this delivery (shortages,
+  /// damaged goods, wrong products, etc.) — left null on a normal reception.
+  String? issues;
+
   List<PalletCount> pallets = [];
   List<SentVasilhameItem> sentVasilhame = [];
 
-  int get totalPallets =>
-      pallets.fold(0, (sum, p) => sum + p.total);
-  int get totalMistas =>
-      pallets.fold(0, (sum, p) => sum + p.mistas);
+  int get totalPallets => pallets.fold(0, (sum, p) => sum + p.total);
+  int get totalMistas => pallets.fold(0, (sum, p) => sum + p.mistas);
 }

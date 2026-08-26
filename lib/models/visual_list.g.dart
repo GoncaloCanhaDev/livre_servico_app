@@ -17,52 +17,62 @@ const VisualListSchema = CollectionSchema(
   name: r'VisualList',
   id: 5448947017900679418,
   properties: {
-    r'beneficioCents': PropertySchema(
+    r'backdated': PropertySchema(
       id: 0,
+      name: r'backdated',
+      type: IsarType.bool,
+    ),
+    r'beneficioCents': PropertySchema(
+      id: 1,
       name: r'beneficioCents',
       type: IsarType.long,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'createdByInitials': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'createdByInitials',
       type: IsarType.string,
     ),
+    r'createdByNames': PropertySchema(
+      id: 4,
+      name: r'createdByNames',
+      type: IsarType.stringList,
+    ),
     r'itensPicados': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'itensPicados',
       type: IsarType.long,
     ),
     r'quebraCents': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'quebraCents',
       type: IsarType.long,
     ),
     r'serviceDay': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 9, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 11, name: r'synced', type: IsarType.bool),
   },
 
   estimateSize: _visualListEstimateSize,
@@ -132,6 +142,13 @@ int _visualListEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.createdByNames.length * 3;
+  {
+    for (var i = 0; i < object.createdByNames.length; i++) {
+      final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
@@ -142,16 +159,18 @@ void _visualListSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.beneficioCents);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.createdByInitials);
-  writer.writeLong(offsets[3], object.itensPicados);
-  writer.writeLong(offsets[4], object.quebraCents);
-  writer.writeDateTime(offsets[5], object.serviceDay);
-  writer.writeDateTime(offsets[6], object.syncDeletedAt);
-  writer.writeDateTime(offsets[7], object.syncUpdatedAt);
-  writer.writeString(offsets[8], object.syncUuid);
-  writer.writeBool(offsets[9], object.synced);
+  writer.writeBool(offsets[0], object.backdated);
+  writer.writeLong(offsets[1], object.beneficioCents);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.createdByInitials);
+  writer.writeStringList(offsets[4], object.createdByNames);
+  writer.writeLong(offsets[5], object.itensPicados);
+  writer.writeLong(offsets[6], object.quebraCents);
+  writer.writeDateTime(offsets[7], object.serviceDay);
+  writer.writeDateTime(offsets[8], object.syncDeletedAt);
+  writer.writeDateTime(offsets[9], object.syncUpdatedAt);
+  writer.writeString(offsets[10], object.syncUuid);
+  writer.writeBool(offsets[11], object.synced);
 }
 
 VisualList _visualListDeserialize(
@@ -161,17 +180,19 @@ VisualList _visualListDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = VisualList();
-  object.beneficioCents = reader.readLong(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.createdByInitials = reader.readStringOrNull(offsets[2]);
+  object.backdated = reader.readBool(offsets[0]);
+  object.beneficioCents = reader.readLong(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.createdByInitials = reader.readStringOrNull(offsets[3]);
+  object.createdByNames = reader.readStringList(offsets[4]) ?? [];
   object.id = id;
-  object.itensPicados = reader.readLong(offsets[3]);
-  object.quebraCents = reader.readLong(offsets[4]);
-  object.serviceDay = reader.readDateTime(offsets[5]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[7]);
-  object.syncUuid = reader.readString(offsets[8]);
-  object.synced = reader.readBool(offsets[9]);
+  object.itensPicados = reader.readLong(offsets[5]);
+  object.quebraCents = reader.readLong(offsets[6]);
+  object.serviceDay = reader.readDateTime(offsets[7]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[9]);
+  object.syncUuid = reader.readString(offsets[10]);
+  object.synced = reader.readBool(offsets[11]);
   return object;
 }
 
@@ -183,24 +204,28 @@ P _visualListDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
-      return (reader.readLong(offset)) as P;
-    case 4:
-      return (reader.readLong(offset)) as P;
-    case 5:
       return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 5:
+      return (reader.readLong(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 7:
       return (reader.readDateTime(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
+      return (reader.readDateTime(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -581,6 +606,16 @@ extension VisualListQueryWhere
 
 extension VisualListQueryFilter
     on QueryBuilder<VisualList, VisualList, QFilterCondition> {
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition> backdatedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'backdated', value: value),
+      );
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
   beneficioCentsEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
@@ -848,6 +883,200 @@ extension VisualListQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'createdByInitials', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'createdByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'createdByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'createdByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'createdByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterFilterCondition>
+  createdByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -1370,6 +1599,18 @@ extension VisualListQueryLinks
 
 extension VisualListQuerySortBy
     on QueryBuilder<VisualList, VisualList, QSortBy> {
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> sortByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> sortByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QAfterSortBy> sortByBeneficioCents() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'beneficioCents', Sort.asc);
@@ -1495,6 +1736,18 @@ extension VisualListQuerySortBy
 
 extension VisualListQuerySortThenBy
     on QueryBuilder<VisualList, VisualList, QSortThenBy> {
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> thenByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QAfterSortBy> thenByBackdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QAfterSortBy> thenByBeneficioCents() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'beneficioCents', Sort.asc);
@@ -1632,6 +1885,12 @@ extension VisualListQuerySortThenBy
 
 extension VisualListQueryWhereDistinct
     on QueryBuilder<VisualList, VisualList, QDistinct> {
+  QueryBuilder<VisualList, VisualList, QDistinct> distinctByBackdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backdated');
+    });
+  }
+
   QueryBuilder<VisualList, VisualList, QDistinct> distinctByBeneficioCents() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'beneficioCents');
@@ -1652,6 +1911,12 @@ extension VisualListQueryWhereDistinct
         r'createdByInitials',
         caseSensitive: caseSensitive,
       );
+    });
+  }
+
+  QueryBuilder<VisualList, VisualList, QDistinct> distinctByCreatedByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByNames');
     });
   }
 
@@ -1708,6 +1973,12 @@ extension VisualListQueryProperty
     });
   }
 
+  QueryBuilder<VisualList, bool, QQueryOperations> backdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backdated');
+    });
+  }
+
   QueryBuilder<VisualList, int, QQueryOperations> beneficioCentsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'beneficioCents');
@@ -1724,6 +1995,13 @@ extension VisualListQueryProperty
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByInitials');
+    });
+  }
+
+  QueryBuilder<VisualList, List<String>, QQueryOperations>
+  createdByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByNames');
     });
   }
 

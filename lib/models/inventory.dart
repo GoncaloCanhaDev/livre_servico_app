@@ -11,7 +11,9 @@ class Inventory {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+  /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
+  List<String> createdByNames = [];
 
   late String name;
 
@@ -44,7 +46,7 @@ class Inventory {
 
   bool get isLegacy => startedAt == null;
   bool get isFinalized => finishedAt != null;
-  bool get isPaused => !isFinalized && runningSince == null && startedAt != null;
+  bool get isPaused =>
+      !isFinalized && runningSince == null && startedAt != null;
   bool get isRunning => !isFinalized && runningSince != null;
 }
-
