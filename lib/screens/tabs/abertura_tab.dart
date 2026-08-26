@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/opening_list.dart';
+import '../../models/task_timer.dart';
 import '../../services/opening_list_service.dart';
+import '../../services/task_notification_service.dart';
+import '../../services/task_timer_service.dart';
 import '../../services/whatsapp_service.dart';
+import '../widgets/person_picker.dart';
+import '../widgets/task_timer_control.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -44,8 +49,9 @@ class _AberturaTabState extends State<AberturaTab> {
       _list = list;
       _congelados.text = list.congelados == 0 ? '' : '${list.congelados}';
       _opls.text = list.opls == 0 ? '' : '${list.opls}';
-      _naoPereciveis.text =
-          list.naoPereciveis == 0 ? '' : '${list.naoPereciveis}';
+      _naoPereciveis.text = list.naoPereciveis == 0
+          ? ''
+          : '${list.naoPereciveis}';
     });
   }
 
@@ -67,32 +73,69 @@ class _AberturaTabState extends State<AberturaTab> {
   Future<void> _finalize() async {
     final list = _list;
     if (list == null || list.isFinalized) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Finalizar lista?'),
-        content: const Text(
-            'A lista ficará bloqueada. Será criada uma nova às 5h.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Finalizar')),
-        ],
-      ),
+    final today = DateTime(
+      list.serviceDay.year,
+      list.serviceDay.month,
+      list.serviceDay.day,
     );
-    if (ok != true) return;
-    await _persistField();
-    await OpeningListService.instance.finalize(list);
+    final result = await pickPeopleAndDay(
+      context,
+      title: 'Finalizar por quem?',
+      subtitle: 'A lista ficará bloqueada. Será criada uma nova às 5h.',
+      initialDay: today,
+    );
+    if (result == null) return;
+    final names = result.people.map((p) => p.fullName).toList();
+    final targetDay = DateTime(
+      result.day.year,
+      result.day.month,
+      result.day.day,
+      5,
+    );
+    final c = list.congelados;
+    final o = list.opls;
+    final n = list.naoPereciveis;
+
+    await TaskTimerService.instance.finishOrCreateFinished(
+      parentKind: TimerKind.opening,
+      parentUuid: list.syncUuid,
+      taskKey: 'main',
+    );
+
+    if (targetDay == list.serviceDay) {
+      list.createdByNames = names;
+      await _persistField();
+      await OpeningListService.instance.finalize(list);
+      await TaskNotificationService.instance.rescheduleAll();
+    } else {
+      await OpeningListService.instance.backfillFinalized(
+        serviceDay: targetDay,
+        congelados: c,
+        opls: o,
+        naoPereciveis: n,
+      );
+      await OpeningListService.instance.updateValues(
+        list,
+        congelados: 0,
+        opls: 0,
+        naoPereciveis: 0,
+      );
+      _congelados.clear();
+      _opls.clear();
+      _naoPereciveis.clear();
+    }
 
     if (mounted) {
-      final msg = '📋 Lista de Abertura\n'
-          'Congelados: ${list.congelados}\n'
-          'OPLS: ${list.opls}\n'
-          'Não Perecíveis: ${list.naoPereciveis}\n'
-          'Total: ${list.total}';
+      final dayNote = targetDay == list.serviceDay
+          ? ''
+          : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
+      final msg =
+          '📋 Lista de Abertura$dayNote\n'
+          'Congelados: $c\n'
+          'OPLS: $o\n'
+          'Não Perecíveis: $n\n'
+          'Total: ${c + o + n}\n'
+          'Por: ${joinNames(names)}';
       await WhatsAppService.sendWithConfirm(context, msg);
     }
     if (mounted) _load();
@@ -111,10 +154,24 @@ class _AberturaTabState extends State<AberturaTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            dayFmt.format(list.serviceDay),
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dayFmt.format(list.serviceDay),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TaskTimerControl(
+                parentKind: TimerKind.opening,
+                parentUuid: list.syncUuid,
+                taskKey: 'main',
+                enabled: !locked,
+              ),
+            ],
           ),
           if (locked)
             Card(
@@ -161,17 +218,21 @@ class _AberturaTabState extends State<AberturaTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          letterSpacing: 1)),
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   Text(
                     '${list.total}',
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),

@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/report_list.dart';
+import '../../models/task_timer.dart';
 import '../../services/report_list_service.dart';
+import '../../services/task_notification_service.dart';
+import '../../services/task_timer_service.dart';
 import '../../services/whatsapp_service.dart';
+import '../widgets/person_picker.dart';
+import '../widgets/task_timer_control.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -41,10 +46,12 @@ class _RelatorioTabState extends State<RelatorioTab> {
     if (!mounted) return;
     setState(() {
       _list = list;
-      _diasSemVendas.text =
-          list.diasSemVendas == 0 ? '' : '${list.diasSemVendas}';
-      _regularizacoes.text =
-          list.regularizacoes == 0 ? '' : '${list.regularizacoes}';
+      _diasSemVendas.text = list.diasSemVendas == 0
+          ? ''
+          : '${list.diasSemVendas}';
+      _regularizacoes.text = list.regularizacoes == 0
+          ? ''
+          : '${list.regularizacoes}';
       _massiva.text = list.massiva == 0 ? '' : '${list.massiva}';
       _repetidos.text = list.repetidos == 0 ? '' : '${list.repetidos}';
     });
@@ -70,33 +77,74 @@ class _RelatorioTabState extends State<RelatorioTab> {
   Future<void> _finalize() async {
     final list = _list;
     if (list == null || list.isFinalized) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Finalizar relatório?'),
-        content: const Text(
-            'O relatório ficará bloqueado. Será criado um novo às 5h.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Finalizar')),
-        ],
-      ),
+    final today = DateTime(
+      list.serviceDay.year,
+      list.serviceDay.month,
+      list.serviceDay.day,
     );
-    if (ok != true) return;
-    await _persistField();
-    await ReportListService.instance.finalize(list);
+    final result = await pickPeopleAndDay(
+      context,
+      title: 'Finalizar por quem?',
+      subtitle: 'O relatório ficará bloqueado. Será criado um novo às 5h.',
+      initialDay: today,
+    );
+    if (result == null) return;
+    final names = result.people.map((p) => p.fullName).toList();
+    final targetDay = DateTime(
+      result.day.year,
+      result.day.month,
+      result.day.day,
+      5,
+    );
+    final dsv = list.diasSemVendas;
+    final reg = list.regularizacoes;
+    final mas = list.massiva;
+    final rep = list.repetidos;
+
+    await TaskTimerService.instance.finishOrCreateFinished(
+      parentKind: TimerKind.report,
+      parentUuid: list.syncUuid,
+      taskKey: 'main',
+    );
+
+    if (targetDay == list.serviceDay) {
+      list.createdByNames = names;
+      await _persistField();
+      await ReportListService.instance.finalize(list);
+      await TaskNotificationService.instance.rescheduleAll();
+    } else {
+      await ReportListService.instance.backfillFinalized(
+        serviceDay: targetDay,
+        diasSemVendas: dsv,
+        regularizacoes: reg,
+        massiva: mas,
+        repetidos: rep,
+      );
+      await ReportListService.instance.updateValues(
+        list,
+        diasSemVendas: 0,
+        regularizacoes: 0,
+        massiva: 0,
+        repetidos: 0,
+      );
+      _diasSemVendas.clear();
+      _regularizacoes.clear();
+      _massiva.clear();
+      _repetidos.clear();
+    }
 
     if (mounted) {
-      final msg = '📊 Relatório\n'
-          'Dias s/ vendas: ${list.diasSemVendas}\n'
-          'Regularizações: ${list.regularizacoes}\n'
-          'Massiva: ${list.massiva}\n'
-          'Repetidos: ${list.repetidos}\n'
-          'Total: ${list.total}';
+      final dayNote = targetDay == list.serviceDay
+          ? ''
+          : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
+      final msg =
+          '📊 Relatório$dayNote\n'
+          'Dias s/ vendas: $dsv\n'
+          'Regularizações: $reg\n'
+          'Massiva: $mas\n'
+          'Repetidos: $rep\n'
+          'Total: ${dsv + reg + mas + rep}\n'
+          'Por: ${joinNames(names)}';
       await WhatsAppService.sendWithConfirm(context, msg);
     }
     if (mounted) _load();
@@ -115,10 +163,24 @@ class _RelatorioTabState extends State<RelatorioTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            dayFmt.format(list.serviceDay),
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dayFmt.format(list.serviceDay),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TaskTimerControl(
+                parentKind: TimerKind.report,
+                parentUuid: list.syncUuid,
+                taskKey: 'main',
+                enabled: !locked,
+              ),
+            ],
           ),
           if (locked)
             Card(
@@ -171,17 +233,21 @@ class _RelatorioTabState extends State<RelatorioTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          letterSpacing: 1)),
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   Text(
                     '${list.total}',
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
