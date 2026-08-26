@@ -1,0 +1,547 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../models/person.dart';
+import '../../services/person_service.dart';
+import '../../theme.dart';
+
+/// Prompts the user to pick a person. Returns the chosen [Person] or null
+/// if the picker is cancelled / no one is selected.
+///
+/// Deprecated in favor of [pickPeople] — kept only until every call site in
+/// this codebase has migrated (tracked by the multi-claim-tasks plan), then
+/// removed.
+Future<Person?> pickPerson(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+}) {
+  return showDialog<Person>(
+    context: context,
+    builder: (_) => _PersonPickerDialog(title: title, subtitle: subtitle),
+  );
+}
+
+/// A person plus the (plain, time-stripped) calendar date the task they
+/// picked was actually completed on — defaults to today but can be
+/// overridden via [pickPersonAndDay].
+class PersonAndDay {
+  const PersonAndDay(this.person, this.day);
+  final Person person;
+  final DateTime day;
+}
+
+/// Like [pickPerson], but also lets the user say the task wasn't done today.
+/// [initialDay] is the default/selected date (time-of-day is ignored).
+///
+/// Deprecated in favor of [pickPeopleAndDay] — kept only until every call
+/// site in this codebase has migrated, then removed.
+Future<PersonAndDay?> pickPersonAndDay(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+  required DateTime initialDay,
+  DateTime? firstDay,
+  bool Function(DateTime)? selectableDayPredicate,
+}) {
+  final day = DateTime(initialDay.year, initialDay.month, initialDay.day);
+  return showDialog<PersonAndDay>(
+    context: context,
+    builder: (_) => _PersonPickerDialog(
+      title: title,
+      subtitle: subtitle,
+      initialDay: day,
+      firstDay: firstDay ?? day.subtract(const Duration(days: 90)),
+      selectableDayPredicate: selectableDayPredicate,
+    ),
+  );
+}
+
+/// Prompts the user to pick one or more people. Returns the chosen people
+/// (never an empty list) or null if the picker is cancelled.
+Future<List<Person>?> pickPeople(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+}) {
+  return showDialog<List<Person>>(
+    context: context,
+    builder: (_) => _MultiPersonPickerDialog(title: title, subtitle: subtitle),
+  );
+}
+
+/// One or more people plus the (plain, time-stripped) calendar date the
+/// task they picked was actually completed on — defaults to today but can
+/// be overridden via [pickPeopleAndDay].
+class PeopleAndDay {
+  const PeopleAndDay(this.people, this.day);
+  final List<Person> people;
+  final DateTime day;
+}
+
+/// Like [pickPeople], but also lets the user say the task wasn't done
+/// today. [initialDay] is the default/selected date (time-of-day is
+/// ignored).
+Future<PeopleAndDay?> pickPeopleAndDay(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+  required DateTime initialDay,
+  DateTime? firstDay,
+  bool Function(DateTime)? selectableDayPredicate,
+}) {
+  final day = DateTime(initialDay.year, initialDay.month, initialDay.day);
+  return showDialog<PeopleAndDay>(
+    context: context,
+    builder: (_) => _MultiPersonPickerDialog(
+      title: title,
+      subtitle: subtitle,
+      initialDay: day,
+      firstDay: firstDay ?? day.subtract(const Duration(days: 90)),
+      selectableDayPredicate: selectableDayPredicate,
+    ),
+  );
+}
+
+/// Names to treat as "who did this": the new list if it has anything,
+/// otherwise the single legacy name (wrapped in a list) if there is one,
+/// otherwise empty. Read-time fallback for rows saved before this field
+/// existed — old rows are never rewritten.
+List<String> resolveNames(List<String> names, String? legacy) {
+  if (names.isNotEmpty) return names;
+  if (legacy == null || legacy.isEmpty) return [];
+  return [legacy];
+}
+
+/// Portuguese-style join for display: "A", "A e B", "A, B e C".
+String joinNames(List<String> names) {
+  if (names.isEmpty) return '';
+  if (names.length == 1) return names.first;
+  return '${names.sublist(0, names.length - 1).join(', ')} e ${names.last}';
+}
+
+class _PersonPickerDialog extends StatefulWidget {
+  const _PersonPickerDialog({
+    required this.title,
+    this.subtitle,
+    this.initialDay,
+    this.firstDay,
+    this.selectableDayPredicate,
+  });
+  final String title;
+  final String? subtitle;
+
+  /// When non-null, this dialog is running in "pick person + day" mode and
+  /// pops a [PersonAndDay] instead of a bare [Person].
+  final DateTime? initialDay;
+  final DateTime? firstDay;
+  final bool Function(DateTime)? selectableDayPredicate;
+
+  @override
+  State<_PersonPickerDialog> createState() => _PersonPickerDialogState();
+}
+
+class _PersonPickerDialogState extends State<_PersonPickerDialog> {
+  late Future<List<Person>> _future;
+  late DateTime _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = PersonService.instance.all();
+    _selectedDay = widget.initialDay ?? DateTime.now();
+  }
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDay.year == now.year &&
+        _selectedDay.month == now.month &&
+        _selectedDay.day == now.day;
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate:
+          widget.firstDay ?? _selectedDay.subtract(const Duration(days: 90)),
+      lastDate: DateTime.now(),
+      locale: const Locale('pt', 'PT'),
+      selectableDayPredicate: widget.selectableDayPredicate,
+      helpText: 'Quando foi concluída?',
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedDay = DateTime(picked.year, picked.month, picked.day);
+    });
+  }
+
+  void _choose(Person p) {
+    if (widget.initialDay != null) {
+      Navigator.of(context).pop(PersonAndDay(p, _selectedDay));
+    } else {
+      Navigator.of(context).pop(p);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      contentPadding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: FutureBuilder<List<Person>>(
+          future: _future,
+          builder: (ctx, snap) {
+            if (!snap.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final people = snap.data!;
+            if (people.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Sem pessoas registadas.\nAdiciona-as no separador "Pessoas".',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.subtitle != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Text(
+                      widget.subtitle!,
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                if (widget.initialDay != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.event,
+                          size: 18,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _isToday
+                                ? 'Hoje'
+                                : DateFormat(
+                                    "d 'de' MMMM",
+                                    'pt_PT',
+                                  ).format(_selectedDay),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _pickDate,
+                          child: const Text('Alterar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: people.length,
+                    itemBuilder: (_, i) {
+                      final p = people[i];
+                      return ListTile(
+                        leading: PersonInitialsBadge(name: p.fullName),
+                        title: Text(p.fullName),
+                        subtitle: p.collaboratorNumber.isEmpty
+                            ? null
+                            : Text('Nº ${p.collaboratorNumber}'),
+                        onTap: () => _choose(p),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _MultiPersonPickerDialog extends StatefulWidget {
+  const _MultiPersonPickerDialog({
+    required this.title,
+    this.subtitle,
+    this.initialDay,
+    this.firstDay,
+    this.selectableDayPredicate,
+  });
+  final String title;
+  final String? subtitle;
+
+  /// When non-null, this dialog is running in "pick people + day" mode and
+  /// pops a [PeopleAndDay] instead of a bare `List<Person>`.
+  final DateTime? initialDay;
+  final DateTime? firstDay;
+  final bool Function(DateTime)? selectableDayPredicate;
+
+  @override
+  State<_MultiPersonPickerDialog> createState() =>
+      _MultiPersonPickerDialogState();
+}
+
+class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
+  late Future<List<Person>> _future;
+  late DateTime _selectedDay;
+  final Set<int> _selectedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _future = PersonService.instance.all();
+    _selectedDay = widget.initialDay ?? DateTime.now();
+  }
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDay.year == now.year &&
+        _selectedDay.month == now.month &&
+        _selectedDay.day == now.day;
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate:
+          widget.firstDay ?? _selectedDay.subtract(const Duration(days: 90)),
+      lastDate: DateTime.now(),
+      locale: const Locale('pt', 'PT'),
+      selectableDayPredicate: widget.selectableDayPredicate,
+      helpText: 'Quando foi concluída?',
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedDay = DateTime(picked.year, picked.month, picked.day);
+    });
+  }
+
+  void _toggle(Person p, bool? checked) {
+    setState(() {
+      if (checked ?? false) {
+        _selectedIds.add(p.id);
+      } else {
+        _selectedIds.remove(p.id);
+      }
+    });
+  }
+
+  void _confirm(List<Person> people) {
+    final chosen = people.where((p) => _selectedIds.contains(p.id)).toList();
+    if (chosen.isEmpty) return;
+    if (widget.initialDay != null) {
+      Navigator.of(context).pop(PeopleAndDay(chosen, _selectedDay));
+    } else {
+      Navigator.of(context).pop(chosen);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      contentPadding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: FutureBuilder<List<Person>>(
+          future: _future,
+          builder: (ctx, snap) {
+            if (!snap.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final people = snap.data!;
+            if (people.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Sem pessoas registadas.\nAdiciona-as no separador "Pessoas".',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.subtitle != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Text(
+                      widget.subtitle!,
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                if (widget.initialDay != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.event,
+                          size: 18,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _isToday
+                                ? 'Hoje'
+                                : DateFormat(
+                                    "d 'de' MMMM",
+                                    'pt_PT',
+                                  ).format(_selectedDay),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _pickDate,
+                          child: const Text('Alterar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: people.length,
+                    itemBuilder: (_, i) {
+                      final p = people[i];
+                      return CheckboxListTile(
+                        secondary: PersonInitialsBadge(name: p.fullName),
+                        title: Text(p.fullName),
+                        subtitle: p.collaboratorNumber.isEmpty
+                            ? null
+                            : Text('Nº ${p.collaboratorNumber}'),
+                        value: _selectedIds.contains(p.id),
+                        onChanged: (checked) => _toggle(p, checked),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      onPressed: _selectedIds.isEmpty
+                          ? null
+                          : () => _confirm(people),
+                      child: Text(
+                        _selectedIds.isEmpty
+                            ? 'Confirmar'
+                            : 'Confirmar (${_selectedIds.length})',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Small circular badge displaying the initials derived from a person's name.
+class PersonInitialsBadge extends StatelessWidget {
+  const PersonInitialsBadge({
+    super.key,
+    required this.name,
+    this.size = 32,
+    this.background = AppColors.green,
+    this.foreground = Colors.white,
+  });
+
+  final String name;
+  final double size;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      child: Text(
+        initialsOf(name),
+        style: TextStyle(
+          color: foreground,
+          fontSize: size * 0.42,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// A row of [PersonInitialsBadge]s, one per name — for displaying everyone
+/// credited on the same completion. Renders nothing for an empty [names].
+class PersonInitialsRow extends StatelessWidget {
+  const PersonInitialsRow({super.key, required this.names, this.size = 32});
+  final List<String> names;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (names.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        for (final name in names) PersonInitialsBadge(name: name, size: size),
+      ],
+    );
+  }
+}
+
+String initialsOf(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((s) => s.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    final s = parts.first;
+    return s.substring(0, s.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+      .toUpperCase();
+}
