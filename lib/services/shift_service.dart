@@ -8,18 +8,18 @@ import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/inventory_line.dart';
 import '../models/justification.dart';
-import '../models/notification_log.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/pedido_line.dart';
+import '../models/person.dart';
 import '../models/product.dart';
 import '../models/report_list.dart';
 import '../models/shift_event.dart';
+import '../models/task_timer.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
-import 'notification_service.dart';
+import '../models/weekly_tasks.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 enum WorkStatus { idle, working, paused }
 
@@ -43,13 +43,15 @@ class ShiftService extends ChangeNotifier {
         ReportListSchema,
         VisualListSchema,
         DailyTasksSchema,
+        WeeklyTasksSchema,
         InventorySchema,
         InventoryLineSchema,
         InfoEntrySchema,
-        NotificationLogSchema,
         JustificationSchema,
         PedidoSchema,
         PedidoLineSchema,
+        PersonSchema,
+        TaskTimerSchema,
       ],
       directory: dir.path,
       name: 'livre_servico',
@@ -62,8 +64,7 @@ class ShiftService extends ChangeNotifier {
   Future<void> _backfillSync() async {
     Future<void> backfill<T>(IsarCollection<T> col) async {
       final rows = await col.where().findAll();
-      final needsFix =
-          rows.where((r) => SyncMeta.backfillIfNeeded(r)).toList();
+      final needsFix = rows.where((r) => SyncMeta.backfillIfNeeded(r)).toList();
       if (needsFix.isEmpty) return;
       await _isar.writeTxn(() => col.putAll(needsFix));
     }
@@ -76,13 +77,15 @@ class ShiftService extends ChangeNotifier {
     await backfill(_isar.reportLists);
     await backfill(_isar.visualLists);
     await backfill(_isar.dailyTasks);
+    await backfill(_isar.weeklyTasks);
     await backfill(_isar.inventorys);
     await backfill(_isar.inventoryLines);
     await backfill(_isar.infoEntrys);
-    await backfill(_isar.notificationLogs);
     await backfill(_isar.justifications);
     await backfill(_isar.pedidos);
     await backfill(_isar.pedidoLines);
+    await backfill(_isar.persons);
+    await backfill(_isar.taskTimers);
   }
 
   WorkStatus _status = WorkStatus.idle;
@@ -108,7 +111,9 @@ class ShiftService extends ChangeNotifier {
       _currentShiftId = null;
     } else {
       _currentShiftId = last.shiftId;
-      _status = (last.type == ShiftEventType.pause || last.type == ShiftEventType.lunch)
+      _status =
+          (last.type == ShiftEventType.pause ||
+              last.type == ShiftEventType.lunch)
           ? WorkStatus.paused
           : WorkStatus.working;
     }
@@ -128,16 +133,13 @@ class ShiftService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(event);
     });
-    await NotificationService.instance.scheduleStraightWorkReminders(Duration.zero);
-    await NotificationService.instance.scheduleTotalWorkReminders(now);
-    await TaskNotificationService.instance.rescheduleAll();
-    
+
     await _refresh();
   }
 
   Future<void> pause({bool isLunch = false}) async {
     if (_status != WorkStatus.working || _currentShiftId == null) return;
-    
+
     final pauseTime = DateTime.now();
     final event = ShiftEvent.create(
       timestamp: pauseTime,
@@ -148,13 +150,7 @@ class ShiftService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(event);
     });
-    
-    await NotificationService.instance.schedulePauseReminders(
-      isLunch: isLunch,
-      pauseTime: pauseTime,
-    );
-    await NotificationService.instance.cancelStraightWorkReminders();
-    
+
     await _refresh();
   }
 
@@ -169,12 +165,7 @@ class ShiftService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(event);
     });
-    
-    await NotificationService.instance.cancelPauseReminders();
-    final events = await eventsForShift(_currentShiftId!);
-    final worked = computeWorked(events);
-    await NotificationService.instance.scheduleStraightWorkReminders(worked);
-    
+
     await _refresh();
   }
 
@@ -189,16 +180,14 @@ class ShiftService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.shiftEvents.put(event);
     });
-    await NotificationService.instance.cancelPauseReminders();
-    await NotificationService.instance.cancelStraightWorkReminders();
-    await NotificationService.instance.cancelTotalWorkReminders();
-    await TaskNotificationService.instance.cancelAll();
-    
+
     await _refresh();
   }
 
-  Future<List<ShiftEvent>> eventsForShift(int shiftId,
-      {bool includeDeleted = false}) {
+  Future<List<ShiftEvent>> eventsForShift(
+    int shiftId, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
       return _isar.shiftEvents
           .filter()
@@ -249,10 +238,10 @@ class ShiftService extends ChangeNotifier {
     final all = includeDeleted
         ? await _isar.shiftEvents.where().sortByTimestampDesc().findAll()
         : await _isar.shiftEvents
-            .filter()
-            .syncDeletedAtIsNull()
-            .sortByTimestampDesc()
-            .findAll();
+              .filter()
+              .syncDeletedAtIsNull()
+              .sortByTimestampDesc()
+              .findAll();
     final seen = <int>{};
     final result = <int>[];
     for (final e in all) {

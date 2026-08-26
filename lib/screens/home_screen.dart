@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import '../models/shift_event.dart';
+import '../services/backup_service.dart';
 import '../services/shift_service.dart';
+import '../services/task_notification_service.dart';
 import '../theme.dart';
 import 'daily_tasks_screen.dart';
 import 'dashboard_screen.dart';
@@ -12,10 +13,12 @@ import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
 import 'pedidos_screen.dart';
+import 'people_screen.dart';
 import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
 import 'truck_form_screen.dart';
+import 'weekly_tasks_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,34 +27,77 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Timer? _ticker;
   List<ShiftEvent> _todayEvents = [];
-  String? _appVersion;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ShiftService.instance.addListener(_onChanged);
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
     _loadCurrent();
-    PackageInfo.fromPlatform().then((p) {
-      if (!mounted) return;
-      setState(() => _appVersion = p.version);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptBackup());
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
     ShiftService.instance.removeListener(_onChanged);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      TaskNotificationService.instance.rescheduleAll();
+    }
   }
 
   void _onChanged() {
     _loadCurrent();
+    TaskNotificationService.instance.rescheduleAll();
+  }
+
+  Future<void> _maybePromptBackup() async {
+    if (!await BackupService.instance.isBackupOverdue()) return;
+    if (!mounted) return;
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cópia de Segurança'),
+        content: const Text(
+          'Ainda não fizeste uma cópia de segurança há mais de 7 dias. '
+          'Queres exportar os dados agora?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Mais tarde'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Agora'),
+          ),
+        ],
+      ),
+    );
+    if (choice == true) {
+      try {
+        await BackupService.instance.exportToFile();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
+      }
+    } else {
+      await BackupService.instance.setLastPromptAt(DateTime.now());
+    }
   }
 
   Future<void> _loadCurrent() async {
@@ -76,7 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Tipo de Pausa'),
-        content: const Text('Vais fazer uma pausa normal (15m) ou de almoço (60m)?'),
+        content: const Text(
+          'Vais fazer uma pausa normal (15m) ou de almoço (60m)?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -100,50 +148,40 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = svc.status;
     final worked = computeWorked(_todayEvents);
     final paused = computePaused(_todayEvents);
-    final startTime = _todayEvents.isNotEmpty ? _todayEvents.first.timestamp : null;
+    final startTime = _todayEvents.isNotEmpty
+        ? _todayEvents.first.timestamp
+        : null;
 
     bool isPauseOverLimit = false;
     if (status == WorkStatus.paused && svc.lastEvent != null) {
       final pauseDuration = DateTime.now().difference(svc.lastEvent!.timestamp);
-      if (svc.lastEvent!.type == ShiftEventType.lunch && pauseDuration.inMinutes >= 60) {
+      if (svc.lastEvent!.type == ShiftEventType.lunch &&
+          pauseDuration.inMinutes >= 60) {
         isPauseOverLimit = true;
-      } else if (svc.lastEvent!.type == ShiftEventType.pause && pauseDuration.inMinutes >= 15) {
+      } else if (svc.lastEvent!.type == ShiftEventType.pause &&
+          pauseDuration.inMinutes >= 15) {
         isPauseOverLimit = true;
       }
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_appVersion != null) ...[
-              Text(
-                'v$_appVersion',
-                style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w400),
-              ),
-              const SizedBox(width: 8),
-            ],
-            const Flexible(child: Text('Livre Serviço Companion')),
-          ],
-        ),
+        title: const Text('Livre Serviço Companion'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _StatusCard(
@@ -156,143 +194,113 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPausePressed: _handlePause,
                 onResumePressed: svc.resume,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               ..._buildActions(status),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.local_shipping),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Camiões')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const TruckFormScreen(),
-                        ));
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.inventory_2),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Produtos')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const ProductsListScreen(),
-                        ));
-                      },
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 12),
-              Row(
+              GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: 76,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.checklist),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Listas')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const ReplenishmentListsScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.local_shipping,
+                    label: 'Camiões',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TruckFormScreen(),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.assignment),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Inventários')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const InventoryScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.inventory_2,
+                    label: 'Produtos',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProductsListScreen(),
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.task_alt),
-                      label: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text('Tarefas Diárias')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const DailyTasksScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.checklist,
+                    label: 'Listas',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ReplenishmentListsScreen(),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.insights),
-                      label: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text('Estatísticas')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const DashboardScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.assignment,
+                    label: 'Inventários',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const InventoryScreen(),
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.receipt_long),
-                      label: const FittedBox(
-                          fit: BoxFit.scaleDown, child: Text('Pedidos')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const PedidosScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.task_alt,
+                    label: 'Tarefas Diárias',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DailyTasksScreen(),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.info_outline),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Informações')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const InfoScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.event_repeat,
+                    label: 'Tarefas Semanais',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const WeeklyTasksScreen(),
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.history),
-                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Histórico')),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const HistoricoScreen(),
-                        ));
-                      },
+                  _NavButton(
+                    icon: Icons.insights,
+                    label: 'Estatísticas',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DashboardScreen(),
+                      ),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.receipt_long,
+                    label: 'Pedidos',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PedidosScreen()),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.info_outline,
+                    label: 'Informações',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const InfoScreen()),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.history,
+                    label: 'Histórico',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const HistoricoScreen(),
+                      ),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.people,
+                    label: 'Pessoas',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PeopleScreen()),
                     ),
                   ),
                 ],
               ),
             ],
-          ),
           ),
         ),
       ),
@@ -321,7 +329,27 @@ class _HomeScreenState extends State<HomeScreen> {
         ];
     }
   }
+}
 
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      icon: Icon(icon),
+      label: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
+      onPressed: onPressed,
+    );
+  }
 }
 
 class _StatusCard extends StatelessWidget {
@@ -350,7 +378,10 @@ class _StatusCard extends StatelessWidget {
     final (label, color) = switch (status) {
       WorkStatus.idle => ('Fora de serviço', AppColors.black),
       WorkStatus.working => ('Em serviço', AppColors.green),
-      WorkStatus.paused => (isLunch ? 'Em almoço' : 'Em pausa', AppColors.greenDark),
+      WorkStatus.paused => (
+        isLunch ? 'Em almoço' : 'Em pausa',
+        AppColors.greenDark,
+      ),
     };
 
     final pulse = isPauseOverLimit && DateTime.now().second % 2 == 0;
@@ -386,8 +417,10 @@ class _StatusCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            const Text('Tempo trabalhado',
-                style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Tempo trabalhado',
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 12),
             Container(height: 1, color: AppColors.grey),
             const SizedBox(height: 12),
@@ -402,7 +435,9 @@ class _StatusCard extends StatelessWidget {
                           ? onPausePressed
                           : onResumePressed,
                       icon: Icon(
-                        status == WorkStatus.working ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        status == WorkStatus.working
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_filled,
                         size: 32,
                         color: pauseColor,
                       ),
@@ -421,8 +456,10 @@ class _StatusCard extends StatelessWidget {
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                    const Text('Tempo em pausa',
-                        style: TextStyle(color: Colors.black54, fontSize: 12)),
+                    const Text(
+                      'Tempo em pausa',
+                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                    ),
                   ],
                 ),
               ],
