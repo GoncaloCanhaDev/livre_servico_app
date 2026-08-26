@@ -76,7 +76,7 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
   }
 
   Future<void> _complete(_TaskRow row, {int? count}) async {
-    final today = DateTime.now();
+    final today = currentServiceDay();
     final result = await pickPersonAndDay(
       context,
       title: 'Quem concluiu?',
