@@ -9,6 +9,7 @@ import '../services/product_service.dart';
 import '../services/truck_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'widgets/person_picker.dart';
 
 class TruckFormScreen extends StatefulWidget {
   const TruckFormScreen({super.key});
@@ -22,6 +23,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   final _plateCtrl = TextEditingController();
   final _supplierCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _issuesCtrl = TextEditingController();
 
   DateTime _arrival = DateTime.now();
   bool _showDetails = false;
@@ -40,28 +42,29 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     _plateCtrl.dispose();
     _supplierCtrl.dispose();
     _notesCtrl.dispose();
+    _issuesCtrl.dispose();
     for (final i in _inputs.values) {
       i.dispose();
     }
     super.dispose();
   }
 
-  int get _totalPallets =>
-      _inputs.values.fold(0, (s, i) => s + i.totalValue);
-  int get _totalMistas =>
-      _inputs.values.fold(0, (s, i) => s + i.mistasValue);
+  int get _totalPallets => _inputs.values.fold(0, (s, i) => s + i.totalValue);
+  int get _totalMistas => _inputs.values.fold(0, (s, i) => s + i.mistasValue);
 
   /// Categories available to pick (truck-eligible minus already selected).
-  List<PalletCategory> get _availableCategories =>
-      PalletCategory.truckCategories
-          .where((c) => !_selectedCategories.contains(c))
-          .toList();
+  List<PalletCategory> get _availableCategories => PalletCategory
+      .truckCategories
+      .where((c) => !_selectedCategories.contains(c))
+      .toList();
 
   void _addCategory() {
     final available = _availableCategories;
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Todos os departamentos já foram adicionados.')),
+        const SnackBar(
+          content: Text('Todos os departamentos já foram adicionados.'),
+        ),
       );
       return;
     }
@@ -76,20 +79,26 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Adicionar Departamento',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Adicionar Departamento',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
             const Divider(height: 1),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  ...available.map((c) => ListTile(
-                        leading: const Icon(Icons.add_circle_outline,
-                            color: AppColors.green),
-                        title: Text(c.label),
-                        onTap: () => Navigator.pop(ctx, c),
-                      )),
+                  ...available.map(
+                    (c) => ListTile(
+                      leading: const Icon(
+                        Icons.add_circle_outline,
+                        color: AppColors.green,
+                      ),
+                      title: Text(c.label),
+                      onTap: () => Navigator.pop(ctx, c),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -129,13 +138,20 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     if (time == null) return;
     setState(() {
       _arrival = DateTime(
-          date.year, date.month, date.day, time.hour, time.minute);
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
   Future<void> _showVasilhameModal() async {
     final allProducts = await ProductService.instance.all();
-    final products = allProducts.where((p) => p.department == PalletCategory.vasilhame).toList();
+    final products = allProducts
+        .where((p) => p.department == PalletCategory.vasilhame)
+        .toList();
 
     for (final p in products) {
       _vasilhameProductsMap[p.id] = p;
@@ -168,8 +184,13 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.all(16),
-                    child: Text('Enviar Vasilhame',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Enviar Vasilhame',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const Divider(height: 1),
                   Expanded(
@@ -204,7 +225,10 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                                 child: Text(
                                   qty.toString(),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                               IconButton(
@@ -223,7 +247,12 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).padding.bottom,
+                    ),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -247,36 +276,47 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     final hasVasilhame = _vasilhameQuantities.values.any((qty) => qty > 0);
     if (!hasPallets && !hasVasilhame) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indique pelo menos uma palete ou vasilhame.')),
+        const SnackBar(
+          content: Text('Indique pelo menos uma palete ou vasilhame.'),
+        ),
       );
       return;
     }
+    final people = await pickPeople(context, title: 'Quem recebeu o camião?');
+    if (people == null || !mounted) return;
+    final names = people.map((p) => p.fullName).toList();
     final truck = TruckReception()
       ..arrivalTime = _arrival
+      ..createdByNames = names
       ..licensePlate = _plateCtrl.text.trim().isEmpty
           ? null
           : _plateCtrl.text.trim().toUpperCase()
       ..supplier = _supplierCtrl.text.trim().isEmpty
           ? null
           : _supplierCtrl.text.trim()
-      ..notes = _notesCtrl.text.trim().isEmpty
+      ..notes = _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim()
+      ..issues = _issuesCtrl.text.trim().isEmpty
           ? null
-          : _notesCtrl.text.trim()
+          : _issuesCtrl.text.trim()
       ..pallets = _selectedCategories
           .where((c) {
             final inp = _inputs[c];
             return inp != null && (inp.totalValue > 0 || inp.mistasValue > 0);
           })
-          .map((c) => PalletCount()
-            ..category = c
-            ..total = _inputs[c]!.totalValue
-            ..mistas = _inputs[c]!.mistasValue)
+          .map(
+            (c) => PalletCount()
+              ..category = c
+              ..total = _inputs[c]!.totalValue
+              ..mistas = _inputs[c]!.mistasValue,
+          )
           .toList()
       ..sentVasilhame = _vasilhameQuantities.entries
           .where((e) => e.value > 0)
-          .map((e) => SentVasilhameItem()
-            ..productName = _vasilhameProductsMap[e.key]!.name
-            ..amount = e.value)
+          .map(
+            (e) => SentVasilhameItem()
+              ..productName = _vasilhameProductsMap[e.key]!.name
+              ..amount = e.value,
+          )
           .toList();
 
     await TruckService.instance.save(truck);
@@ -287,21 +327,30 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     final lines = StringBuffer();
     lines.writeln('🚛 Receção de Camião');
     lines.writeln('Hora: ${dateFmt.format(_arrival)}');
-    if (truck.licensePlate != null) lines.writeln('Matrícula: ${truck.licensePlate}');
+    if (truck.licensePlate != null)
+      lines.writeln('Matrícula: ${truck.licensePlate}');
     if (truck.supplier != null) lines.writeln('Fornecedor: ${truck.supplier}');
     for (final p in truck.pallets) {
-      final mista = p.mistas > 0 ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})' : '';
+      final mista = p.mistas > 0
+          ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
+          : '';
       lines.writeln('${p.category.label}: ${p.total}$mista');
     }
-    lines.writeln('Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas');
-    
+    lines.writeln(
+      'Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas',
+    );
+    lines.writeln('Por: ${joinNames(names)}');
+
     if (truck.sentVasilhame.isNotEmpty) {
       lines.writeln('\n📦 Vasilhame Enviado:');
       for (final v in truck.sentVasilhame) {
         lines.writeln('- ${v.productName}: ${v.amount}');
       }
     }
-    
+
+    if (truck.issues != null) {
+      lines.writeln('\n⚠️ Problemas: ${truck.issues}');
+    }
     if (truck.notes != null) lines.writeln('\nNotas: ${truck.notes}');
 
     await WhatsAppService.sendWithConfirm(context, lines.toString().trim());
@@ -323,7 +372,10 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
               // --- Hora de chegada (always visible) ---
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.access_time, color: AppColors.green),
+                  leading: const Icon(
+                    Icons.access_time,
+                    color: AppColors.green,
+                  ),
                   title: const Text('Hora de chegada'),
                   subtitle: Text(dateFmt.format(_arrival)),
                   trailing: const Icon(Icons.edit),
@@ -338,9 +390,13 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Paletes',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Paletes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     TextButton.icon(
                       onPressed: _addCategory,
                       icon: const Icon(Icons.add),
@@ -362,15 +418,19 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ),
                   ),
                 ),
-              ..._selectedCategories.map((c) => _CategoryRow(
-                    category: c,
-                    inputs: _inputs[c]!,
-                    onChanged: () => setState(() {}),
-                    onRemove: () => _removeCategory(c),
-                  )),
+              ..._selectedCategories.map(
+                (c) => _CategoryRow(
+                  category: c,
+                  inputs: _inputs[c]!,
+                  onChanged: () => setState(() {}),
+                  onRemove: () => _removeCategory(c),
+                ),
+              ),
               const SizedBox(height: 16),
               _TotalsCard(
-                  totalPallets: _totalPallets, totalMistas: _totalMistas),
+                totalPallets: _totalPallets,
+                totalMistas: _totalMistas,
+              ),
               const SizedBox(height: 16),
 
               // --- Vasilhame (new section) ---
@@ -379,9 +439,13 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Vasilhame a Enviar',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Vasilhame a Enviar',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     TextButton.icon(
                       onPressed: _showVasilhameModal,
                       icon: const Icon(Icons.local_shipping),
@@ -403,13 +467,24 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ),
                   ),
                 ),
-              ..._vasilhameQuantities.entries.where((e) => e.value > 0).map((e) {
+              ..._vasilhameQuantities.entries.where((e) => e.value > 0).map((
+                e,
+              ) {
                 final p = _vasilhameProductsMap[e.key]!;
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    trailing: Text('${e.value} un', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    title: Text(
+                      p.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    trailing: Text(
+                      '${e.value} un',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     onTap: () {
                       showDialog(
                         context: context,
@@ -417,7 +492,13 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                           content: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                              Text(
+                                p.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                               const SizedBox(height: 16),
                               BarcodeWidget(
                                 barcode: Barcode.ean13(),
@@ -449,15 +530,17 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                   children: [
                     ListTile(
                       leading: Icon(
-                        _showDetails
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                        _showDetails ? Icons.expand_less : Icons.expand_more,
                         color: AppColors.green,
                       ),
-                      title: const Text('Detalhes adicionais',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      title: const Text(
+                        'Detalhes adicionais',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       subtitle: !_showDetails
-                          ? const Text('Matrícula, fornecedor, notas')
+                          ? const Text(
+                              'Matrícula, fornecedor, notas, problemas',
+                            )
                           : null,
                       onTap: () => setState(() => _showDetails = !_showDetails),
                     ),
@@ -472,8 +555,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                                 labelText: 'Matrícula',
                                 border: OutlineInputBorder(),
                               ),
-                              textCapitalization:
-                                  TextCapitalization.characters,
+                              textCapitalization: TextCapitalization.characters,
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
@@ -488,6 +570,16 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                               controller: _notesCtrl,
                               decoration: const InputDecoration(
                                 labelText: 'Notas',
+                                border: OutlineInputBorder(),
+                              ),
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _issuesCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Problemas na receção (opcional)',
+                                hintText: 'Faltas, danos, produtos trocados…',
                                 border: OutlineInputBorder(),
                               ),
                               maxLines: 3,
@@ -551,8 +643,10 @@ class _CategoryRow extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(category.label,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    category.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
                 InkWell(
                   onTap: onRemove,
@@ -571,9 +665,7 @@ class _CategoryRow extends StatelessWidget {
                   child: TextFormField(
                     controller: inputs.total,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
                       labelText: 'Total',
                       border: OutlineInputBorder(),
@@ -593,9 +685,7 @@ class _CategoryRow extends StatelessWidget {
                   child: TextFormField(
                     controller: inputs.mistas,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
                       labelText: 'Mistas',
                       border: OutlineInputBorder(),
@@ -647,13 +737,18 @@ class _TotalCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('$value',
-            style: const TextStyle(
-                color: AppColors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold)),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        Text(
+          '$value',
+          style: const TextStyle(
+            color: AppColors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
       ],
     );
   }

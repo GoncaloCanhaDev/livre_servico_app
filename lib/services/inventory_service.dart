@@ -25,6 +25,7 @@ class InventoryService extends ChangeNotifier {
   Future<Inventory> startSession({
     required String name,
     required String code,
+    List<String>? by,
   }) async {
     final now = DateTime.now();
     final inv = Inventory()
@@ -34,7 +35,8 @@ class InventoryService extends ChangeNotifier {
       ..startedAt = now
       ..runningSince = now
       ..accumulatedSeconds = 0
-      ..valueCents = 0;
+      ..valueCents = 0
+      ..createdByNames = by ?? [];
     SyncMeta.stamp(inv);
     await _isar.writeTxn(() async {
       inv.id = await _isar.inventorys.put(inv);
@@ -46,8 +48,10 @@ class InventoryService extends ChangeNotifier {
   Future<void> pause(Inventory inv) async {
     if (!inv.isRunning) return;
     final now = DateTime.now();
-    inv.accumulatedSeconds +=
-        now.difference(inv.runningSince!).inSeconds.clamp(0, 1 << 31);
+    inv.accumulatedSeconds += now
+        .difference(inv.runningSince!)
+        .inSeconds
+        .clamp(0, 1 << 31);
     inv.runningSince = null;
     SyncMeta.stamp(inv);
     await _isar.writeTxn(() => _isar.inventorys.put(inv));
@@ -66,8 +70,10 @@ class InventoryService extends ChangeNotifier {
     if (inv.isFinalized) return;
     final now = DateTime.now();
     if (inv.runningSince != null) {
-      inv.accumulatedSeconds +=
-          now.difference(inv.runningSince!).inSeconds.clamp(0, 1 << 31);
+      inv.accumulatedSeconds += now
+          .difference(inv.runningSince!)
+          .inSeconds
+          .clamp(0, 1 << 31);
     }
     inv.runningSince = null;
     inv.finishedAt = now;
@@ -94,8 +100,10 @@ class InventoryService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.inventorys.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.inventorys
+        .filter()
+        .syncDeletedAtIsNull()
+        .findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);

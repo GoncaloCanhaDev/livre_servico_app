@@ -14,6 +14,7 @@ import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'product_form_screen.dart';
 import 'scanner_screen.dart';
+import 'widgets/person_picker.dart';
 
 // ============================================================================
 // List screen
@@ -54,15 +55,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
       builder: (_) => const _NewInventoryDialog(),
     );
     if (result == null || !mounted) return;
+    final people = await pickPeople(context, title: 'Quem faz o inventário?');
+    if (people == null || !mounted) return;
+    final names = people.map((p) => p.fullName).toList();
     if (result.action == _NewInventoryAction.start) {
       final inv = await InventoryService.instance.startSession(
         name: result.name,
         code: result.code,
+        by: names,
       );
       if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => InventorySessionScreen(inventoryId: inv.id),
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InventorySessionScreen(inventoryId: inv.id),
+        ),
+      );
       return;
     }
     // Send-only: prompt for value, save a finalized inventory, WhatsApp it.
@@ -77,11 +84,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ..finishedAt = now
       ..accumulatedSeconds = 0
       ..valueCents = cents
-      ..finalValueCents = cents;
+      ..finalValueCents = cents
+      ..createdByNames = names;
     await InventoryService.instance.save(inv);
     if (!mounted) return;
-    final msg = '📦 Inventário: ${result.name} (cód. ${result.code})\n'
-        'Valor: ${_fmtCents(cents)}';
+    final msg =
+        '📦 Inventário: ${result.name} (cód. ${result.code})\n'
+        'Valor: ${_fmtCents(cents)}\n'
+        'Por: ${joinNames(names)}';
     await WhatsAppService.sendWithConfirm(context, msg);
   }
 
@@ -95,10 +105,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
           controller: ctrl,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(
-              decimal: true, signed: true),
+            decimal: true,
+            signed: true,
+          ),
           inputFormatters: [
             FilteringTextInputFormatter.allow(
-                RegExp(r'^-?[0-9]*[.,]?[0-9]{0,2}')),
+              RegExp(r'^-?[0-9]*[.,]?[0-9]{0,2}'),
+            ),
           ],
           decoration: const InputDecoration(
             hintText: 'Ex.: -12,50',
@@ -113,8 +126,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.green),
             onPressed: () {
-              final v =
-                  double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
+              final v = double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
               if (v == null) return;
               Navigator.pop(ctx, (v * 100).round());
             },
@@ -128,13 +140,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Future<void> _open(Inventory inv) async {
     if (inv.isLegacy) return;
     if (inv.isFinalized) {
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => InventoryHistoryScreen(inventoryId: inv.id),
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InventoryHistoryScreen(inventoryId: inv.id),
+        ),
+      );
     } else {
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => InventorySessionScreen(inventoryId: inv.id),
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InventorySessionScreen(inventoryId: inv.id),
+        ),
+      );
     }
   }
 
@@ -161,18 +177,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text('Sem inventários registados.',
-                      style: TextStyle(color: Colors.black54)),
+                  child: Text(
+                    'Sem inventários registados.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
                 ),
               );
             }
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               itemCount: items.length,
-              itemBuilder: (_, i) => _InventoryCard(
-                inv: items[i],
-                onTap: () => _open(items[i]),
-              ),
+              itemBuilder: (_, i) =>
+                  _InventoryCard(inv: items[i], onTap: () => _open(items[i])),
             );
           },
         ),
@@ -227,26 +243,34 @@ class _InventoryCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(statusIcon, color: statusColor),
-        title: Text(inv.name,
-            style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          inv.name,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (subtitleParts.isNotEmpty)
-              Text(subtitleParts.join(' • '),
-                  style: const TextStyle(fontSize: 13)),
+              Text(
+                subtitleParts.join(' • '),
+                style: const TextStyle(fontSize: 13),
+              ),
             const SizedBox(height: 2),
             Row(
               children: [
-                Text(statusText,
-                    style: TextStyle(
-                        color: statusColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Text(dateFmt.format(inv.createdAt),
-                    style:
-                        const TextStyle(color: Colors.black45, fontSize: 12)),
+                Text(
+                  dateFmt.format(inv.createdAt),
+                  style: const TextStyle(color: Colors.black45, fontSize: 12),
+                ),
               ],
             ),
           ],
@@ -307,22 +331,18 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
                 labelText: 'Nome',
                 border: OutlineInputBorder(),
               ),
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _code,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
                 labelText: 'Código',
                 border: OutlineInputBorder(),
               ),
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
             ),
           ],
         ),
@@ -427,9 +447,9 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
   Future<void> _scan() async {
     final inv = _inv;
     if (inv == null || inv.isFinalized) return;
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const ScannerScreen()),
-    );
+    final code = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const ScannerScreen()));
     if (code == null || code.isEmpty || !mounted) return;
     final count = await _askCount(prefill: 1);
     if (count == null || count <= 0 || !mounted) return;
@@ -485,11 +505,13 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Cancelar inventário?'),
         content: const Text(
-            'Esta ação irá descartar este inventário e todas as linhas registadas. Não pode ser desfeita.'),
+          'Esta ação irá descartar este inventário e todas as linhas registadas. Não pode ser desfeita.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Manter')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Manter'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
@@ -521,15 +543,18 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
     if (cents == null || !mounted) return;
     await InventoryService.instance.finalize(inv, finalValueCents: cents);
     if (!mounted) return;
-    final msg = '📦 Inventário: ${inv.name} (cód. ${inv.code ?? '—'})\n'
+    final msg =
+        '📦 Inventário: ${inv.name} (cód. ${inv.code ?? '—'})\n'
         'Valor: ${_fmtCents(cents)}\n'
         'Duração: ${_fmtDuration(_elapsedSeconds())}\n'
         'Linhas: ${_lines.length}';
     await WhatsAppService.sendWithConfirm(context, msg);
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => InventoryHistoryScreen(inventoryId: inv.id),
-    ));
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => InventoryHistoryScreen(inventoryId: inv.id),
+      ),
+    );
   }
 
   Future<int?> _askFinalValue() async {
@@ -542,10 +567,13 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
           controller: ctrl,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(
-              decimal: true, signed: true),
+            decimal: true,
+            signed: true,
+          ),
           inputFormatters: [
             FilteringTextInputFormatter.allow(
-                RegExp(r'^-?[0-9]*[.,]?[0-9]{0,2}')),
+              RegExp(r'^-?[0-9]*[.,]?[0-9]{0,2}'),
+            ),
           ],
           decoration: const InputDecoration(
             hintText: 'Ex.: -12,50',
@@ -560,8 +588,7 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.green),
             onPressed: () {
-              final v = double.tryParse(
-                  ctrl.text.trim().replaceAll(',', '.'));
+              final v = double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
               if (v == null) return;
               Navigator.pop(context, (v * 100).round());
             },
@@ -605,15 +632,22 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Código ${inv.code ?? '—'}',
-                            style:
-                                const TextStyle(color: Colors.black54, fontSize: 13)),
+                        Text(
+                          'Código ${inv.code ?? '—'}',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text(_fmtDuration(_elapsedSeconds()),
-                            style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w800,
-                                fontFeatures: [FontFeature.tabularFigures()])),
+                        Text(
+                          _fmtDuration(_elapsedSeconds()),
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -632,21 +666,27 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
                   Expanded(
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.green,
-                          padding: const EdgeInsets.symmetric(vertical: 16)),
+                        backgroundColor: AppColors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                       onPressed: running ? _scan : null,
                       icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text('Ler código',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      label: const Text(
+                        'Ler código',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: _finalize,
                     style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 16)),
+                      foregroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 16,
+                      ),
+                    ),
                     icon: const Icon(Icons.check),
                     label: const Text('Finalizar'),
                   ),
@@ -663,18 +703,18 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
                     color: AppColors.green.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(_flashMessage!,
-                      style: const TextStyle(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    _flashMessage!,
+                    style: const TextStyle(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             const Divider(height: 1),
             Expanded(
-              child: _LinesList(
-                lines: _lines,
-                onProductFilled: _load,
-              ),
+              child: _LinesList(lines: _lines, onProductFilled: _load),
             ),
           ],
         ),
@@ -729,8 +769,7 @@ class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
     if (inv == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final totalCount =
-        _lines.fold<int>(0, (s, l) => s + l.count);
+    final totalCount = _lines.fold<int>(0, (s, l) => s + l.count);
     return Scaffold(
       appBar: AppBar(title: Text(inv.name)),
       body: SafeArea(
@@ -743,9 +782,10 @@ class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Código ${inv.code ?? '—'}',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700)),
+                  Text(
+                    'Código ${inv.code ?? '—'}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 16,
@@ -753,11 +793,9 @@ class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
                     children: [
                       _stat('Valor', _fmtCents(inv.valueCents)),
                       if (inv.accumulatedSeconds > 0)
-                        _stat('Duração',
-                            _fmtDuration(inv.accumulatedSeconds)),
+                        _stat('Duração', _fmtDuration(inv.accumulatedSeconds)),
                       _stat('Linhas', '${_lines.length}'),
-                      if (totalCount > 0)
-                        _stat('Unidades', '$totalCount'),
+                      if (totalCount > 0) _stat('Unidades', '$totalCount'),
                     ],
                   ),
                 ],
@@ -781,11 +819,14 @@ class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(color: Colors.black54, fontSize: 11)),
-        Text(value,
-            style: const TextStyle(
-                fontWeight: FontWeight.w700, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.black54, fontSize: 11),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
       ],
     );
   }
@@ -811,9 +852,11 @@ class _LinesList extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(emptyMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black54)),
+          child: Text(
+            emptyMessage,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.black54),
+          ),
         ),
       );
     }
@@ -843,15 +886,13 @@ class _LineTileState extends State<_LineTile> {
   Future<void> _addProduct() async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) =>
-            ProductFormScreen(prefilledEan: widget.line.ean),
+        builder: (_) => ProductFormScreen(prefilledEan: widget.line.ean),
       ),
     );
     if (saved != true || !mounted) return;
     final p = await ProductService.instance.findByEan(widget.line.ean);
     if (p != null) {
-      await InventoryLineService.instance
-          .setProductName(widget.line, p.name);
+      await InventoryLineService.instance.setProductName(widget.line, p.name);
     }
     widget.onProductFilled();
   }
@@ -909,8 +950,10 @@ class _LineTileState extends State<_LineTile> {
                     foregroundColor: unknown
                         ? Colors.amber.shade900
                         : AppColors.greenDark,
-                    child: Text('${l.count}',
-                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    child: Text(
+                      '${l.count}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -921,30 +964,31 @@ class _LineTileState extends State<_LineTile> {
                         if (!_expanded) ...[
                           SizedBox(
                             height: 44,
-                            child: _BarcodeImage(
-                              ean: l.ean,
-                              drawText: false,
-                            ),
+                            child: _BarcodeImage(ean: l.ean, drawText: false),
                           ),
                           const SizedBox(height: 4),
                         ] else
-                          Text(l.ean,
-                              style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13)),
+                          Text(
+                            l.ean,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
                         Text(
                           unknown ? 'Produto desconhecido' : l.productName!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              color: unknown
-                                  ? Colors.amber.shade800
-                                  : Colors.black87,
-                              fontSize: 12,
-                              fontStyle: unknown
-                                  ? FontStyle.italic
-                                  : FontStyle.normal),
+                            color: unknown
+                                ? Colors.amber.shade800
+                                : Colors.black87,
+                            fontSize: 12,
+                            fontStyle: unknown
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                          ),
                         ),
                       ],
                     ),
@@ -974,9 +1018,10 @@ class _LineTileState extends State<_LineTile> {
                       child: _BarcodeImage(ean: l.ean, drawText: true),
                     ),
                   ),
-                  Text('Última atualização: ${fmt.format(l.updatedAt)}',
-                      style: const TextStyle(
-                          color: Colors.black54, fontSize: 12)),
+                  Text(
+                    'Última atualização: ${fmt.format(l.updatedAt)}',
+                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -993,7 +1038,8 @@ class _LineTileState extends State<_LineTile> {
                           icon: const Icon(Icons.add, size: 16),
                           label: const Text('Adicionar produto'),
                           style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.greenDark),
+                            foregroundColor: AppColors.greenDark,
+                          ),
                         ),
                     ],
                   ),
@@ -1016,16 +1062,15 @@ class _BarcodeImage extends StatelessWidget {
     final type = ean.length == 13
         ? Barcode.ean13()
         : ean.length == 8
-            ? Barcode.ean8()
-            : Barcode.code128();
+        ? Barcode.ean8()
+        : Barcode.code128();
     return BarcodeWidget(
       barcode: type,
       data: ean,
       drawText: drawText,
       color: AppColors.black,
       backgroundColor: Colors.white,
-      style: const TextStyle(
-          fontSize: 11, fontWeight: FontWeight.w600),
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
     );
   }
 }
@@ -1046,4 +1091,3 @@ String _fmtCents(int cents) {
   final euros = cents / 100;
   return '${euros.toStringAsFixed(2).replaceAll('.', ',')} €';
 }
-
