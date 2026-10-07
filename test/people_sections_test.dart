@@ -9,6 +9,7 @@ Person _p(
   String? turno,
   String number = '',
   bool permanencia = false,
+  bool partTime = false,
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
@@ -16,7 +17,8 @@ Person _p(
   ..chefe = chefe
   ..turno = turno
   ..collaboratorNumber = number
-  ..permanencia = permanencia;
+  ..permanencia = permanencia
+  ..partTime = partTime;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -140,6 +142,21 @@ void main() {
           buildPeopleSections(tagged, query: q).expand(_names).toList();
       expect(find('permanencia'), ['Paula Reis']);
       expect(find('Permanência'), ['Paula Reis']);
+    });
+
+    test('a new person is full time', () {
+      expect(Person().partTime, isFalse);
+    });
+
+    test('"parcial" finds part-time people', () {
+      final mixed = [
+        ...people,
+        _p('Paulo Dias', team: 'talho', partTime: true),
+      ];
+      expect(
+        buildPeopleSections(mixed, query: 'parcial').expand(_names).toList(),
+        ['Paulo Dias'],
+      );
     });
 
     test('blank query keeps everyone', () {

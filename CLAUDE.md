@@ -51,7 +51,8 @@ multi-tenant product.
   Livre Serviço is split into a day and a night turno (`Team.hasTurnos`): `Person.turno`
   stores a `Turno.name`; read it through `turnoOf`, which takes a chefe's turno from their slot
   (Chefe de dia / Chefe de noite). `Person.permanencia` is an independent tag ("Permanência":
-  can stand in for management when no chefia is present).
+  can stand in for management when no chefia is present). `Person.partTime` is false for full
+  time ("Tempo inteiro", the default) and true for "Tempo parcial".
 
 ### Services layer
 

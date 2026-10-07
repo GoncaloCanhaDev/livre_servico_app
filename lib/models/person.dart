@@ -37,4 +37,8 @@ class Person {
   /// Tagged "Permanência": can stand in for management when no chefia is
   /// present. Independent of team and chefe role.
   bool permanencia = false;
+
+  /// Part-time ("Tempo parcial") rather than the default full time
+  /// ("Tempo inteiro").
+  bool partTime = false;
 }

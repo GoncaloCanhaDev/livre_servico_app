@@ -306,6 +306,7 @@ class _PersonTile extends StatelessWidget {
       subtitle: Text(
         [
           if (chefeSlotOf(p) != null) 'Chefe',
+          if (p.partTime) 'Tempo parcial',
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
         ].join(' · '),
       ),

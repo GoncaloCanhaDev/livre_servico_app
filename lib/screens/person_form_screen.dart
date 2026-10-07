@@ -40,6 +40,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   Turno? _turno; // only for teams split by turno
   bool _isChefe = false;
   bool _permanencia = false;
+  bool _partTime = false;
 
   /// The chefe slot the form would assign, or null for Membro (or a
   /// Livre Serviço chefe with no turno picked yet).
@@ -69,6 +70,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _isChefe = e != null && chefeSlotOf(e) != null;
     _turno = e == null ? null : turnoOf(e);
     _permanencia = e?.permanencia ?? false;
+    _partTime = e?.partTime ?? false;
     _loadPeople();
   }
 
@@ -207,6 +209,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
     person.chefe = slot?.name;
     person.permanencia = _permanencia;
+    person.partTime = _partTime;
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
@@ -348,6 +351,26 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                   onChanged: (v) => setState(() => _isChefe = v ?? false),
                 ),
               ],
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Horário',
+                  border: OutlineInputBorder(),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: false, label: Text('Tempo inteiro')),
+                      ButtonSegment(value: true, label: Text('Tempo parcial')),
+                    ],
+                    selected: {_partTime},
+                    onSelectionChanged: (v) =>
+                        setState(() => _partTime = v.first),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),

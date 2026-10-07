@@ -43,39 +43,40 @@ const PersonSchema = CollectionSchema(
       name: r'hireDate',
       type: IsarType.dateTime,
     ),
+    r'partTime': PropertySchema(id: 6, name: r'partTime', type: IsarType.bool),
     r'permanencia': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'permanencia',
       type: IsarType.bool,
     ),
     r'phoneNumber': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'phoneNumber',
       type: IsarType.string,
     ),
     r'photoPath': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'photoPath',
       type: IsarType.string,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 12, name: r'synced', type: IsarType.bool),
-    r'team': PropertySchema(id: 13, name: r'team', type: IsarType.string),
-    r'turno': PropertySchema(id: 14, name: r'turno', type: IsarType.string),
+    r'synced': PropertySchema(id: 13, name: r'synced', type: IsarType.bool),
+    r'team': PropertySchema(id: 14, name: r'team', type: IsarType.string),
+    r'turno': PropertySchema(id: 15, name: r'turno', type: IsarType.string),
   },
 
   estimateSize: _personEstimateSize,
@@ -161,15 +162,16 @@ void _personSerialize(
   writer.writeDateTime(offsets[3], object.dateOfBirth);
   writer.writeString(offsets[4], object.fullName);
   writer.writeDateTime(offsets[5], object.hireDate);
-  writer.writeBool(offsets[6], object.permanencia);
-  writer.writeString(offsets[7], object.phoneNumber);
-  writer.writeString(offsets[8], object.photoPath);
-  writer.writeDateTime(offsets[9], object.syncDeletedAt);
-  writer.writeDateTime(offsets[10], object.syncUpdatedAt);
-  writer.writeString(offsets[11], object.syncUuid);
-  writer.writeBool(offsets[12], object.synced);
-  writer.writeString(offsets[13], object.team);
-  writer.writeString(offsets[14], object.turno);
+  writer.writeBool(offsets[6], object.partTime);
+  writer.writeBool(offsets[7], object.permanencia);
+  writer.writeString(offsets[8], object.phoneNumber);
+  writer.writeString(offsets[9], object.photoPath);
+  writer.writeDateTime(offsets[10], object.syncDeletedAt);
+  writer.writeDateTime(offsets[11], object.syncUpdatedAt);
+  writer.writeString(offsets[12], object.syncUuid);
+  writer.writeBool(offsets[13], object.synced);
+  writer.writeString(offsets[14], object.team);
+  writer.writeString(offsets[15], object.turno);
 }
 
 Person _personDeserialize(
@@ -186,15 +188,16 @@ Person _personDeserialize(
   object.fullName = reader.readString(offsets[4]);
   object.hireDate = reader.readDateTimeOrNull(offsets[5]);
   object.id = id;
-  object.permanencia = reader.readBool(offsets[6]);
-  object.phoneNumber = reader.readStringOrNull(offsets[7]);
-  object.photoPath = reader.readStringOrNull(offsets[8]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[9]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[10]);
-  object.syncUuid = reader.readString(offsets[11]);
-  object.synced = reader.readBool(offsets[12]);
-  object.team = reader.readStringOrNull(offsets[13]);
-  object.turno = reader.readStringOrNull(offsets[14]);
+  object.partTime = reader.readBool(offsets[6]);
+  object.permanencia = reader.readBool(offsets[7]);
+  object.phoneNumber = reader.readStringOrNull(offsets[8]);
+  object.photoPath = reader.readStringOrNull(offsets[9]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[11]);
+  object.syncUuid = reader.readString(offsets[12]);
+  object.synced = reader.readBool(offsets[13]);
+  object.team = reader.readStringOrNull(offsets[14]);
+  object.turno = reader.readStringOrNull(offsets[15]);
   return object;
 }
 
@@ -220,20 +223,22 @@ P _personDeserializeProp<P>(
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 10:
-      return (reader.readDateTime(offset)) as P;
-    case 11:
-      return (reader.readString(offset)) as P;
-    case 12:
-      return (reader.readBool(offset)) as P;
-    case 13:
       return (reader.readStringOrNull(offset)) as P;
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readBool(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1099,6 +1104,16 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> partTimeEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'partTime', value: value),
       );
     });
   }
@@ -2129,6 +2144,18 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> sortByPartTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByPartTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partTime', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> sortByPermanencia() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'permanencia', Sort.asc);
@@ -2323,6 +2350,18 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> thenByPartTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByPartTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partTime', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> thenByPermanencia() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'permanencia', Sort.asc);
@@ -2478,6 +2517,12 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
+  QueryBuilder<Person, Person, QDistinct> distinctByPartTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'partTime');
+    });
+  }
+
   QueryBuilder<Person, Person, QDistinct> distinctByPermanencia() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'permanencia');
@@ -2583,6 +2628,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, DateTime?, QQueryOperations> hireDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hireDate');
+    });
+  }
+
+  QueryBuilder<Person, bool, QQueryOperations> partTimeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'partTime');
     });
   }
 

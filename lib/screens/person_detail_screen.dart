@@ -314,16 +314,17 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                             padding: EdgeInsets.symmetric(vertical: 2),
                             child: PermanenciaBadge(),
                           ),
-                        if (_teamLine(_person) != null ||
-                            _person.collaboratorNumber.isNotEmpty)
-                          Text(
-                            [
-                              ?_teamLine(_person),
-                              if (_person.collaboratorNumber.isNotEmpty)
-                                'Nº colaborador: ${_person.collaboratorNumber}',
-                            ].join(' · '),
-                            style: const TextStyle(color: Colors.black54),
-                          ),
+                        Text(
+                          [
+                            ?_teamLine(_person),
+                            _person.partTime
+                                ? 'Tempo parcial'
+                                : 'Tempo inteiro',
+                            if (_person.collaboratorNumber.isNotEmpty)
+                              'Nº colaborador: ${_person.collaboratorNumber}',
+                          ].join(' · '),
+                          style: const TextStyle(color: Colors.black54),
+                        ),
                         if (_person.phoneNumber != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
