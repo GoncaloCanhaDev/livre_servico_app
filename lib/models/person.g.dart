@@ -59,29 +59,34 @@ const PersonSchema = CollectionSchema(
       name: r'photoPath',
       type: IsarType.string,
     ),
-    r'supervisor': PropertySchema(
+    r'segundaLinha': PropertySchema(
       id: 10,
+      name: r'segundaLinha',
+      type: IsarType.bool,
+    ),
+    r'supervisor': PropertySchema(
+      id: 11,
       name: r'supervisor',
       type: IsarType.bool,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 14, name: r'synced', type: IsarType.bool),
-    r'team': PropertySchema(id: 15, name: r'team', type: IsarType.string),
-    r'turno': PropertySchema(id: 16, name: r'turno', type: IsarType.string),
+    r'synced': PropertySchema(id: 15, name: r'synced', type: IsarType.bool),
+    r'team': PropertySchema(id: 16, name: r'team', type: IsarType.string),
+    r'turno': PropertySchema(id: 17, name: r'turno', type: IsarType.string),
   },
 
   estimateSize: _personEstimateSize,
@@ -171,13 +176,14 @@ void _personSerialize(
   writer.writeBool(offsets[7], object.permanencia);
   writer.writeString(offsets[8], object.phoneNumber);
   writer.writeString(offsets[9], object.photoPath);
-  writer.writeBool(offsets[10], object.supervisor);
-  writer.writeDateTime(offsets[11], object.syncDeletedAt);
-  writer.writeDateTime(offsets[12], object.syncUpdatedAt);
-  writer.writeString(offsets[13], object.syncUuid);
-  writer.writeBool(offsets[14], object.synced);
-  writer.writeString(offsets[15], object.team);
-  writer.writeString(offsets[16], object.turno);
+  writer.writeBool(offsets[10], object.segundaLinha);
+  writer.writeBool(offsets[11], object.supervisor);
+  writer.writeDateTime(offsets[12], object.syncDeletedAt);
+  writer.writeDateTime(offsets[13], object.syncUpdatedAt);
+  writer.writeString(offsets[14], object.syncUuid);
+  writer.writeBool(offsets[15], object.synced);
+  writer.writeString(offsets[16], object.team);
+  writer.writeString(offsets[17], object.turno);
 }
 
 Person _personDeserialize(
@@ -198,13 +204,14 @@ Person _personDeserialize(
   object.permanencia = reader.readBool(offsets[7]);
   object.phoneNumber = reader.readStringOrNull(offsets[8]);
   object.photoPath = reader.readStringOrNull(offsets[9]);
-  object.supervisor = reader.readBool(offsets[10]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[11]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[12]);
-  object.syncUuid = reader.readString(offsets[13]);
-  object.synced = reader.readBool(offsets[14]);
-  object.team = reader.readStringOrNull(offsets[15]);
-  object.turno = reader.readStringOrNull(offsets[16]);
+  object.segundaLinha = reader.readBool(offsets[10]);
+  object.supervisor = reader.readBool(offsets[11]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[12]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[13]);
+  object.syncUuid = reader.readString(offsets[14]);
+  object.synced = reader.readBool(offsets[15]);
+  object.team = reader.readStringOrNull(offsets[16]);
+  object.turno = reader.readStringOrNull(offsets[17]);
   return object;
 }
 
@@ -238,16 +245,18 @@ P _personDeserializeProp<P>(
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 12:
-      return (reader.readDateTime(offset)) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
-    case 14:
       return (reader.readBool(offset)) as P;
+    case 12:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1461,6 +1470,16 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterFilterCondition> segundaLinhaEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'segundaLinha', value: value),
+      );
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterFilterCondition> supervisorEqualTo(
     bool value,
   ) {
@@ -2211,6 +2230,18 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> sortBySegundaLinha() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'segundaLinha', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortBySegundaLinhaDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'segundaLinha', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> sortBySupervisor() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'supervisor', Sort.asc);
@@ -2429,6 +2460,18 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> thenBySegundaLinha() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'segundaLinha', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenBySegundaLinhaDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'segundaLinha', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> thenBySupervisor() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'supervisor', Sort.asc);
@@ -2588,6 +2631,12 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
+  QueryBuilder<Person, Person, QDistinct> distinctBySegundaLinha() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'segundaLinha');
+    });
+  }
+
   QueryBuilder<Person, Person, QDistinct> distinctBySupervisor() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'supervisor');
@@ -2701,6 +2750,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, String?, QQueryOperations> photoPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'photoPath');
+    });
+  }
+
+  QueryBuilder<Person, bool, QQueryOperations> segundaLinhaProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'segundaLinha');
     });
   }
 

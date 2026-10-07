@@ -45,4 +45,8 @@ class Person {
   /// Supervisor in a team that has them (only Frente de Loja): between chefe
   /// and member, any number per team. Read it through `isSupervisor`.
   bool supervisor = false;
+
+  /// Segunda Linha (second in line after the chefe) in a team that has it.
+  /// Read it through `isSegundaLinha`.
+  bool segundaLinha = false;
 }

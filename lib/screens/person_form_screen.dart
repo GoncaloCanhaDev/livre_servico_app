@@ -10,10 +10,6 @@ import '../models/teams.dart';
 import '../services/person_service.dart';
 import '../services/sync_meta.dart';
 
-/// The "Função na equipa" choices; [supervisor] only for teams that have
-/// supervisors.
-enum _Funcao { membro, supervisor, chefe }
-
 /// Full-screen add/edit form for a [Person]: identity fields plus team and
 /// chefe role, and a profile picture. Used both from
 /// the people list ("+") and from [PersonDetailScreen]'s edit action.
@@ -42,7 +38,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
   String? _team; // Team.id, null = Sem equipa
   Turno? _turno; // only for teams split by turno
-  _Funcao _funcao = _Funcao.membro;
+  bool _isChefe = false;
+  bool _supervisor = false;
+  bool _segundaLinha = false;
   bool _permanencia = false;
   bool _partTime = false;
 
@@ -50,7 +48,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   /// Livre Serviço chefe with no turno picked yet).
   ChefeSlot? get _chefeSlot {
     final team = teamById(_team);
-    if (team == null || _funcao != _Funcao.chefe) return null;
+    if (team == null || !_isChefe) return null;
     if (!team.hasTurnos) return team.chefeSlots.first;
     final turno = _turno;
     return turno == null ? null : chefeSlotForTurno(turno);
@@ -71,13 +69,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _hireDate = e?.hireDate;
     _photoPath = e?.photoPath;
     _team = teamById(e?.team)?.id;
-    _funcao = e == null
-        ? _Funcao.membro
-        : chefeSlotOf(e) != null
-        ? _Funcao.chefe
-        : isSupervisor(e)
-        ? _Funcao.supervisor
-        : _Funcao.membro;
+    _isChefe = e != null && chefeSlotOf(e) != null;
+    _supervisor = e != null && isSupervisor(e);
+    _segundaLinha = e != null && isSegundaLinha(e);
     _turno = e == null ? null : turnoOf(e);
     _permanencia = e?.permanencia ?? false;
     _partTime = e?.partTime ?? false;
@@ -218,9 +212,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     person.team = _team;
     person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
     person.chefe = slot?.name;
+    final team = teamById(_team);
     person.supervisor =
-        _funcao == _Funcao.supervisor &&
-        teamById(_team)?.hasSupervisors == true;
+        _supervisor && slot == null && team?.hasSupervisors == true;
+    person.segundaLinha =
+        _segundaLinha && slot == null && team?.hasSegundaLinha == true;
     person.permanencia = _permanencia;
     person.partTime = _partTime;
     SyncMeta.stamp(person);
@@ -249,6 +245,43 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
     await PersonService.instance.save(person);
     if (mounted) Navigator.of(context).pop(person);
+  }
+
+  /// Tick-chips for the tags the chosen team allows (a chefe can only have
+  /// Permanência).
+  Widget _tagsField() {
+    final team = teamById(_team);
+    final canTag = !_isChefe;
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Tags',
+        helperText: 'Permanência: responsável quando não há chefia presente',
+        border: OutlineInputBorder(),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          if (canTag && team?.hasSupervisors == true)
+            FilterChip(
+              label: const Text('Supervisor'),
+              selected: _supervisor,
+              onSelected: (v) => setState(() => _supervisor = v),
+            ),
+          if (canTag && team?.hasSegundaLinha == true)
+            FilterChip(
+              label: const Text('Segunda Linha'),
+              selected: _segundaLinha,
+              onSelected: (v) => setState(() => _segundaLinha = v),
+            ),
+          FilterChip(
+            label: const Text('Permanência'),
+            selected: _permanencia,
+            onSelected: (v) => setState(() => _permanencia = v),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -327,7 +360,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ],
                 onChanged: (v) => setState(() {
                   _team = v;
-                  _funcao = _Funcao.membro;
+                  _isChefe = false;
+                  _supervisor = false;
+                  _segundaLinha = false;
                   _turno = teamById(v)?.hasTurnos == true ? Turno.dia : null;
                 }),
               ),
@@ -349,32 +384,28 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     onChanged: (v) => setState(() => _turno = v),
                   ),
                 ],
-                const SizedBox(height: 12),
-                DropdownButtonFormField<_Funcao>(
-                  key: ValueKey(team.id),
-                  initialValue: _funcao,
-                  decoration: const InputDecoration(
-                    labelText: 'Função na equipa',
-                    border: OutlineInputBorder(),
+                if (team.chefeSlots.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<bool>(
+                    key: ValueKey(team.id),
+                    initialValue: _isChefe,
+                    decoration: const InputDecoration(
+                      labelText: 'Função na equipa',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: false, child: Text('Membro')),
+                      DropdownMenuItem(value: true, child: Text('Chefe')),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _isChefe = v ?? false;
+                      if (_isChefe) {
+                        _supervisor = false;
+                        _segundaLinha = false;
+                      }
+                    }),
                   ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: _Funcao.membro,
-                      child: Text('Membro'),
-                    ),
-                    if (team.hasSupervisors)
-                      const DropdownMenuItem(
-                        value: _Funcao.supervisor,
-                        child: Text('Supervisor'),
-                      ),
-                    const DropdownMenuItem(
-                      value: _Funcao.chefe,
-                      child: Text('Chefe'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _funcao = v ?? _Funcao.membro),
-                ),
+                ],
               ],
               const SizedBox(height: 12),
               InputDecorator(
@@ -397,19 +428,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  side: const BorderSide(color: Colors.black26),
-                ),
-                title: const Text('Permanência'),
-                subtitle: const Text(
-                  'Responsável quando não há chefia presente',
-                ),
-                value: _permanencia,
-                onChanged: (v) => setState(() => _permanencia = v),
-              ),
+              _tagsField(),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _numberCtrl,

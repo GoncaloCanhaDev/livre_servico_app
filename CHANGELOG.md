@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.38.0] — 2026-10-07
+
+### Added
+- Segunda Linha tag for Charcutaria, Meal Solutions, Talho, Peixaria, Padaria and Fruta.
+- Personnel count at the top of Pessoas ("42 pessoas · 35 tempo inteiro · 7 tempo parcial";
+  "5 de 42 pessoas" while searching).
+
+### Changed
+- Roles are combinable tags, shown as badges (Chefe filled; Supervisor, Segunda Linha and
+  Permanência outlined) in Pessoas and on the person page. In the form, Função na equipa is
+  Membro/Chefe and the tags are tick-chips; Permanência moved there from its switch.
+- Frente de Loja and Bem Estar no longer have a chefe.
+
 ## [0.37.0] — 2026-10-07
 
 ### Added

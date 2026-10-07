@@ -18,8 +18,8 @@ import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
-import 'widgets/permanencia_badge.dart';
 import 'widgets/person_picker.dart';
+import 'widgets/role_badge.dart';
 
 class PersonDetailScreen extends StatefulWidget {
   const PersonDetailScreen({super.key, required this.person});
@@ -309,10 +309,15 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (_person.permanencia)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 2),
-                            child: PermanenciaBadge(),
+                        if (roleTagsOf(_person) case final tags
+                            when tags.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [for (final t in tags) RoleBadge(t)],
+                            ),
                           ),
                         Text(
                           [
@@ -477,15 +482,10 @@ class _ActivityItem {
   final String subtitle;
 }
 
-/// "Talho · Chefe", "Frente de Loja · Supervisor", "Livre Serviço · Noite",
-/// or null for Sem equipa.
+/// "Talho", "Livre Serviço · Noite", or null for Sem equipa. Roles are shown
+/// as badges instead.
 String? _teamLine(Person p) {
   final team = teamById(p.team);
   if (team == null) return null;
-  return [
-    team.name,
-    ?turnoOf(p)?.label,
-    if (chefeSlotOf(p) != null) 'Chefe',
-    if (isSupervisor(p)) 'Supervisor',
-  ].join(' · ');
+  return [team.name, ?turnoOf(p)?.label].join(' · ');
 }

@@ -8,8 +8,8 @@ import '../services/person_service.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
-import 'widgets/permanencia_badge.dart';
 import 'widgets/person_picker.dart';
+import 'widgets/role_badge.dart';
 
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
@@ -174,6 +174,16 @@ class _PeopleScreenState extends State<PeopleScreen> {
             );
             return Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      peopleCountText(items, query: _searchCtrl.text),
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ),
                 _SearchField(
                   controller: _searchCtrl,
                   onChanged: () => setState(() {}),
@@ -288,25 +298,17 @@ class _PersonTile extends StatelessWidget {
       leading: hasPhoto
           ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
           : PersonInitialsBadge(name: p.fullName),
-      title: Row(
+      title: Wrap(
+        spacing: 6,
+        runSpacing: 2,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Flexible(
-            child: Text(
-              p.fullName,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          if (p.permanencia) ...[
-            const SizedBox(width: 6),
-            const PermanenciaBadge(),
-          ],
+          Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
+          for (final tag in roleTagsOf(p)) RoleBadge(tag),
         ],
       ),
       subtitle: Text(
         [
-          if (chefeSlotOf(p) != null) 'Chefe',
-          if (isSupervisor(p)) 'Supervisor',
           if (p.partTime) 'Tempo parcial',
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
         ].join(' · '),

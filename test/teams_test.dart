@@ -8,6 +8,7 @@ Person _p(
   String? chefe,
   String? turno,
   bool supervisor = false,
+  bool segundaLinha = false,
   String uuid = '',
   bool deleted = false,
 }) => Person()
@@ -18,6 +19,7 @@ Person _p(
   ..chefe = chefe
   ..turno = turno
   ..supervisor = supervisor
+  ..segundaLinha = segundaLinha
   ..syncDeletedAt = deleted ? DateTime(2026) : null;
 
 void main() {
@@ -37,14 +39,30 @@ void main() {
       ]);
     });
 
-    test('Livre Serviço has day and night chefes, others one chefe', () {
+    test('Livre Serviço has day and night chefes', () {
       expect(teamById('livre_servico')!.chefeSlots, [
         ChefeSlot.dia,
         ChefeSlot.noite,
       ]);
+    });
+
+    test('Frente de Loja and Bem Estar have no chefe, others one', () {
+      const none = {'frente_de_loja', 'bem_estar'};
       for (final t in teams.skip(1)) {
-        expect(t.chefeSlots, [ChefeSlot.chefe], reason: t.name);
+        expect(
+          t.chefeSlots,
+          none.contains(t.id) ? isEmpty : [ChefeSlot.chefe],
+          reason: t.name,
+        );
       }
+    });
+
+    test('a chefe value in a team without chefes counts as member', () {
+      expect(
+        chefeSlotOf(_p('A', team: 'frente_de_loja', chefe: 'chefe')),
+        isNull,
+      );
+      expect(chefeSlotOf(_p('B', team: 'bem_estar', chefe: 'chefe')), isNull);
     });
 
     test('teamById returns null for null or unknown ids', () {
@@ -187,7 +205,61 @@ void main() {
         isSupervisor(
           _p('E', team: 'frente_de_loja', chefe: 'chefe', supervisor: true),
         ),
+        isTrue,
+        reason: 'Frente de Loja has no chefe, so a stale chefe value is moot',
+      );
+    });
+  });
+
+  group('segunda linha', () {
+    test('only the production teams have Segunda Linha', () {
+      expect(teams.where((t) => t.hasSegundaLinha).map((t) => t.id).toList(), [
+        'charcutaria',
+        'meal_solutions',
+        'talho',
+        'peixaria',
+        'padaria',
+        'fruta',
+      ]);
+    });
+
+    test('isSegundaLinha needs the flag, such a team and no chefe slot', () {
+      expect(
+        isSegundaLinha(_p('A', team: 'talho', segundaLinha: true)),
+        isTrue,
+      );
+      expect(isSegundaLinha(_p('B', team: 'talho')), isFalse);
+      expect(
+        isSegundaLinha(_p('C', team: 'gerencia', segundaLinha: true)),
         isFalse,
+      );
+      expect(isSegundaLinha(_p('D', segundaLinha: true)), isFalse);
+      expect(
+        isSegundaLinha(
+          _p('E', team: 'talho', chefe: 'chefe', segundaLinha: true),
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('roleTagsOf', () {
+    test('Chefe first, then the tags the team allows', () {
+      final p = _p('A', team: 'talho', chefe: 'chefe')..permanencia = true;
+      expect(roleTagsOf(p), ['Chefe', 'Permanência']);
+      final q = _p('B', team: 'talho', segundaLinha: true)..permanencia = true;
+      expect(roleTagsOf(q), ['Segunda Linha', 'Permanência']);
+      expect(roleTagsOf(_p('C', team: 'frente_de_loja', supervisor: true)), [
+        'Supervisor',
+      ]);
+    });
+
+    test('drops tags the team does not allow', () {
+      expect(
+        roleTagsOf(
+          _p('D', team: 'gerencia', supervisor: true, segundaLinha: true),
+        ),
+        isEmpty,
       );
     });
   });

@@ -52,15 +52,17 @@ bool _matches(Person p, String foldedQuery) =>
     foldText(p.collaboratorNumber).contains(foldedQuery) ||
     (p.permanencia && 'permanencia'.contains(foldedQuery)) ||
     (p.partTime && 'tempo parcial'.contains(foldedQuery)) ||
-    (isSupervisor(p) && 'supervisor'.contains(foldedQuery));
+    (isSupervisor(p) && 'supervisor'.contains(foldedQuery)) ||
+    (isSegundaLinha(p) && 'segunda linha'.contains(foldedQuery));
 
 /// Filters [people] by [query] (name, section title — team and turno —, nº
-/// de colaborador, the Permanência tag, "tempo parcial" or "supervisor",
-/// ignoring case and accents) and groups them into sections in [teams] order
-/// (Livre Serviço split into Dia, Noite and Sem turno), with people without a
-/// (known) team in a final "Sem equipa" section. Within a section, chefes
-/// come first in the team's slot order, then supervisors A–Z, then members
-/// A–Z. Empty sections are left out.
+/// de colaborador, a tag — Permanência, Supervisor, Segunda Linha — or
+/// "tempo parcial", ignoring case and accents) and groups them into sections
+/// in [teams] order (Livre Serviço split into Dia, Noite and Sem turno), with
+/// people without a (known) team in a final "Sem equipa" section. Within a
+/// section, chefes come first in the team's slot order, then Supervisores,
+/// then Segunda Linha, then members, each A–Z. Empty sections are left
+/// out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
@@ -76,7 +78,9 @@ List<PeopleSection> buildPeopleSections(
     int rank(Person p) {
       final slot = chefeSlotOf(p);
       if (team != null && slot != null) return team.chefeSlots.indexOf(slot);
-      return isSupervisor(p) ? 1 << 9 : 1 << 10;
+      if (isSupervisor(p)) return 100;
+      if (isSegundaLinha(p)) return 101;
+      return 102;
     }
 
     final r = rank(a).compareTo(rank(b));
@@ -88,4 +92,20 @@ List<PeopleSection> buildPeopleSections(
       if (bySection[title] case final members?)
         PeopleSection(title, members..sort((a, b) => byRank(team, a, b))),
   ];
+}
+
+/// The Pessoas count line: "42 pessoas · 35 tempo inteiro · 7 tempo
+/// parcial", or "5 de 42 pessoas" while [query] (as in [buildPeopleSections])
+/// filters the list.
+String peopleCountText(List<Person> people, {String query = ''}) {
+  final total = people.length;
+  final noun = total == 1 ? 'pessoa' : 'pessoas';
+  final q = foldText(query.trim());
+  if (q.isNotEmpty) {
+    final shown = people.where((p) => _matches(p, q)).length;
+    return '$shown de $total $noun';
+  }
+  final partTime = people.where((p) => p.partTime).length;
+  return '$total $noun · ${total - partTime} tempo inteiro · '
+      '$partTime tempo parcial';
 }

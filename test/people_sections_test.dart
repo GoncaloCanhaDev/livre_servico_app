@@ -11,6 +11,7 @@ Person _p(
   bool permanencia = false,
   bool partTime = false,
   bool supervisor = false,
+  bool segundaLinha = false,
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
@@ -20,7 +21,8 @@ Person _p(
   ..collaboratorNumber = number
   ..permanencia = permanencia
   ..partTime = partTime
-  ..supervisor = supervisor;
+  ..supervisor = supervisor
+  ..segundaLinha = segundaLinha;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -81,12 +83,12 @@ void main() {
       _p('Bruno', team: 'frente_de_loja', supervisor: true),
     ];
 
-    test('chefe first, then supervisors A–Z, then members A–Z', () {
+    test('supervisors A–Z, then members A–Z (no chefe here)', () {
       expect(_names(buildPeopleSections(people).single), [
-        'Chefe',
         'Bruno',
         'Rita',
         'Ana',
+        'Chefe',
         'Zé',
       ]);
     });
@@ -98,6 +100,63 @@ void main() {
           query: 'supervisor',
         ).expand(_names).toList(),
         ['Bruno', 'Rita'],
+      );
+    });
+  });
+
+  group('Segunda Linha', () {
+    final people = [
+      _p('Zé', team: 'talho'),
+      _p('Rui', team: 'talho', segundaLinha: true),
+      _p('Chefe', team: 'talho', chefe: 'chefe'),
+      _p('Ana', team: 'talho'),
+      _p('Bia', team: 'talho', segundaLinha: true),
+    ];
+
+    test('chefe, then Segunda Linha A–Z, then members A–Z', () {
+      expect(_names(buildPeopleSections(people).single), [
+        'Chefe',
+        'Bia',
+        'Rui',
+        'Ana',
+        'Zé',
+      ]);
+    });
+
+    test('search matches segunda linha', () {
+      expect(
+        buildPeopleSections(
+          people,
+          query: 'segunda linha',
+        ).expand(_names).toList(),
+        ['Bia', 'Rui'],
+      );
+    });
+  });
+
+  group('count line', () {
+    final people = [
+      _p('Ana', team: 'talho'),
+      _p('Rui', team: 'talho', partTime: true),
+      _p('Bia', team: 'gerencia'),
+    ];
+
+    test('totals everyone with the horário split', () {
+      expect(
+        peopleCountText(people),
+        '3 pessoas · 2 tempo inteiro · 1 tempo parcial',
+      );
+    });
+
+    test('while searching shows matches out of the total', () {
+      expect(peopleCountText(people, query: 'talho'), '2 de 3 pessoas');
+      expect(peopleCountText(people, query: 'bia'), '1 de 3 pessoas');
+    });
+
+    test('uses the singular for one person', () {
+      expect(
+        peopleCountText([_p('Ana')]),
+        '1 pessoa · 1 tempo inteiro · 0 tempo parcial',
       );
     });
   });

@@ -32,6 +32,7 @@ class Team {
     this.chefeSlots, {
     this.hasTurnos = false,
     this.hasSupervisors = false,
+    this.hasSegundaLinha = false,
   });
 
   final String id;
@@ -40,11 +41,14 @@ class Team {
   /// Whether members are split into [Turno]s (only Livre Serviço).
   final bool hasTurnos;
 
-  /// Whether members can be Supervisor (only Frente de Loja).
+  /// Whether members can be tagged Supervisor (only Frente de Loja).
   final bool hasSupervisors;
 
-  /// The team's chefe positions, in display order. Each is held by at most
-  /// one (non-deleted) member.
+  /// Whether members can be tagged Segunda Linha.
+  final bool hasSegundaLinha;
+
+  /// The team's chefe positions, in display order (empty for teams without
+  /// a chefe). Each is held by at most one (non-deleted) member.
   final List<ChefeSlot> chefeSlots;
 }
 
@@ -55,16 +59,16 @@ const teams = [
     ChefeSlot.noite,
   ], hasTurnos: true),
   Team('gerencia', 'Gerência', [ChefeSlot.chefe]),
-  Team('charcutaria', 'Charcutaria', [ChefeSlot.chefe]),
-  Team('meal_solutions', 'Meal Solutions', [ChefeSlot.chefe]),
-  Team('talho', 'Talho', [ChefeSlot.chefe]),
-  Team('peixaria', 'Peixaria', [ChefeSlot.chefe]),
-  Team('frente_de_loja', 'Frente de Loja', [
+  Team('charcutaria', 'Charcutaria', [ChefeSlot.chefe], hasSegundaLinha: true),
+  Team('meal_solutions', 'Meal Solutions', [
     ChefeSlot.chefe,
-  ], hasSupervisors: true),
-  Team('bem_estar', 'Bem Estar', [ChefeSlot.chefe]),
-  Team('padaria', 'Padaria', [ChefeSlot.chefe]),
-  Team('fruta', 'Fruta', [ChefeSlot.chefe]),
+  ], hasSegundaLinha: true),
+  Team('talho', 'Talho', [ChefeSlot.chefe], hasSegundaLinha: true),
+  Team('peixaria', 'Peixaria', [ChefeSlot.chefe], hasSegundaLinha: true),
+  Team('frente_de_loja', 'Frente de Loja', [], hasSupervisors: true),
+  Team('bem_estar', 'Bem Estar', []),
+  Team('padaria', 'Padaria', [ChefeSlot.chefe], hasSegundaLinha: true),
+  Team('fruta', 'Fruta', [ChefeSlot.chefe], hasSegundaLinha: true),
 ];
 
 /// The team with [id], or null for null/unknown ids (shown as "Sem equipa").
@@ -86,12 +90,29 @@ ChefeSlot? chefeSlotOf(Person p) {
   return null;
 }
 
-/// Whether [p] is a Supervisor: flagged, in a team that has supervisors, and
-/// not a chefe.
+/// Whether [p] is tagged Supervisor: flagged, in a team that has
+/// supervisors, and not a chefe.
 bool isSupervisor(Person p) =>
     p.supervisor &&
     teamById(p.team)?.hasSupervisors == true &&
     chefeSlotOf(p) == null;
+
+/// Whether [p] is tagged Segunda Linha: flagged, in a team that has it, and
+/// not a chefe.
+bool isSegundaLinha(Person p) =>
+    p.segundaLinha &&
+    teamById(p.team)?.hasSegundaLinha == true &&
+    chefeSlotOf(p) == null;
+
+/// [p]'s badge labels in display order: "Chefe" if they hold a chefe slot,
+/// then the tags their team allows (Supervisor, Segunda Linha) and
+/// Permanência.
+List<String> roleTagsOf(Person p) => [
+  if (chefeSlotOf(p) != null) 'Chefe',
+  if (isSupervisor(p)) 'Supervisor',
+  if (isSegundaLinha(p)) 'Segunda Linha',
+  if (p.permanencia) 'Permanência',
+];
 
 /// [p]'s turno, or null if their team isn't split by turno or they have no
 /// valid one. A chefe's turno is their slot's, whatever [Person.turno] says.
