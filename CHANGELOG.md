@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.39.0] — 2026-10-07
+
+### Added
+- Collapsible sections in Pessoas: tap a team's header to open or close it. Livre Serviço
+  starts open and the other teams collapsed; while searching, every matching section is open.
+
 ## [0.38.0] — 2026-10-07
 
 ### Added

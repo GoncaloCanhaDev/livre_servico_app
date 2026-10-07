@@ -172,6 +172,20 @@ void main() {
       _p('Chefe D', team: 'livre_servico', chefe: 'dia', turno: 'noite'),
     ];
 
+    test('only the Livre Serviço sections start open', () {
+      final sections = buildPeopleSections([...people, _p('Nobody')]);
+      expect(
+        {for (final s in sections) s.title: s.openByDefault},
+        {
+          'Livre Serviço · Dia': true,
+          'Livre Serviço · Noite': true,
+          'Livre Serviço · Sem turno': true,
+          'Talho': false,
+          'Sem equipa': false,
+        },
+      );
+    });
+
     test('split into Dia, Noite and Sem turno before the next team', () {
       final sections = buildPeopleSections(people);
       expect(_titles(sections), [

@@ -33,6 +33,7 @@ class Team {
     this.hasTurnos = false,
     this.hasSupervisors = false,
     this.hasSegundaLinha = false,
+    this.openByDefault = false,
   });
 
   final String id;
@@ -47,6 +48,9 @@ class Team {
   /// Whether members can be tagged Segunda Linha.
   final bool hasSegundaLinha;
 
+  /// Whether the team's Pessoas section(s) start expanded.
+  final bool openByDefault;
+
   /// The team's chefe positions, in display order (empty for teams without
   /// a chefe). Each is held by at most one (non-deleted) member.
   final List<ChefeSlot> chefeSlots;
@@ -54,10 +58,13 @@ class Team {
 
 /// Every team, in the order the Pessoas list shows them.
 const teams = [
-  Team('livre_servico', 'Livre Serviço', [
-    ChefeSlot.dia,
-    ChefeSlot.noite,
-  ], hasTurnos: true),
+  Team(
+    'livre_servico',
+    'Livre Serviço',
+    [ChefeSlot.dia, ChefeSlot.noite],
+    hasTurnos: true,
+    openByDefault: true,
+  ),
   Team('gerencia', 'Gerência', [ChefeSlot.chefe]),
   Team('charcutaria', 'Charcutaria', [ChefeSlot.chefe], hasSegundaLinha: true),
   Team('meal_solutions', 'Meal Solutions', [

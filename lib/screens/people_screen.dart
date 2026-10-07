@@ -22,6 +22,19 @@ class _PeopleScreenState extends State<PeopleScreen> {
   late Future<List<Person>> _future;
   final _searchCtrl = TextEditingController();
 
+  /// Sections the user opened or closed on this visit, by title; the rest
+  /// follow [PeopleSection.openByDefault].
+  final _openOverrides = <String, bool>{};
+
+  bool get _searching => _searchCtrl.text.trim().isNotEmpty;
+
+  /// Every matching section is open while searching.
+  bool _isOpen(PeopleSection s) =>
+      _searching || (_openOverrides[s.title] ?? s.openByDefault);
+
+  void _toggle(PeopleSection s) =>
+      setState(() => _openOverrides[s.title] = !_isOpen(s));
+
   @override
   void initState() {
     super.initState();
@@ -198,6 +211,8 @@ class _PeopleScreenState extends State<PeopleScreen> {
                         )
                       : _PeopleList(
                           sections: sections,
+                          isOpen: _isOpen,
+                          onToggle: _searching ? null : _toggle,
                           onTap: _openDetail,
                           onLongPress: _showActions,
                         ),
@@ -250,11 +265,17 @@ class _SearchField extends StatelessWidget {
 class _PeopleList extends StatelessWidget {
   const _PeopleList({
     required this.sections,
+    required this.isOpen,
+    required this.onToggle,
     required this.onTap,
     required this.onLongPress,
   });
 
   final List<PeopleSection> sections;
+  final bool Function(PeopleSection) isOpen;
+
+  /// Opens/closes a section; null while searching (everything is open).
+  final void Function(PeopleSection)? onToggle;
   final void Function(Person) onTap;
   final void Function(Person) onLongPress;
 
@@ -264,15 +285,20 @@ class _PeopleList extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         for (final section in sections) ...[
-          _SectionHeader('${section.title} (${section.people.length})'),
-          for (final (i, p) in section.people.indexed) ...[
-            if (i > 0) const Divider(height: 1),
-            _PersonTile(
-              person: p,
-              onTap: () => onTap(p),
-              onLongPress: () => onLongPress(p),
-            ),
-          ],
+          _SectionHeader(
+            '${section.title} (${section.people.length})',
+            open: isOpen(section),
+            onTap: onToggle == null ? null : () => onToggle!(section),
+          ),
+          if (isOpen(section))
+            for (final (i, p) in section.people.indexed) ...[
+              if (i > 0) const Divider(height: 1),
+              _PersonTile(
+                person: p,
+                onTap: () => onTap(p),
+                onLongPress: () => onLongPress(p),
+              ),
+            ],
         ],
       ],
     );
@@ -319,18 +345,36 @@ class _PersonTile extends StatelessWidget {
   }
 }
 
+/// A section's "Team (count)" title; tappable with a chevron when [onTap]
+/// is set.
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
+  const _SectionHeader(this.title, {required this.open, this.onTap});
 
   final String title;
+  final bool open;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            if (onTap != null)
+              Icon(open ? Icons.expand_less : Icons.expand_more),
+          ],
+        ),
       ),
     );
   }

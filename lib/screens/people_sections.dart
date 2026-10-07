@@ -3,10 +3,13 @@ import '../models/teams.dart';
 
 /// A team's people in the Pessoas list view.
 class PeopleSection {
-  const PeopleSection(this.title, this.people);
+  const PeopleSection(this.title, this.people, {this.openByDefault = false});
 
   final String title;
   final List<Person> people;
+
+  /// Whether the section starts expanded (the rest start collapsed).
+  final bool openByDefault;
 }
 
 const _accents = {
@@ -90,7 +93,11 @@ List<PeopleSection> buildPeopleSections(
   return [
     for (final (title, team) in _sectionOrder)
       if (bySection[title] case final members?)
-        PeopleSection(title, members..sort((a, b) => byRank(team, a, b))),
+        PeopleSection(
+          title,
+          members..sort((a, b) => byRank(team, a, b)),
+          openByDefault: team?.openByDefault ?? false,
+        ),
   ];
 }
 
