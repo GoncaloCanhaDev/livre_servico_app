@@ -2,11 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/screens/people_sections.dart';
 
-Person _p(String name, {String? role, String number = ''}) => Person()
-  ..fullName = name
-  ..createdAt = DateTime(2026)
-  ..role = role
-  ..collaboratorNumber = number;
+Person _p(String name, {String? team, String? chefe, String number = ''}) =>
+    Person()
+      ..fullName = name
+      ..createdAt = DateTime(2026)
+      ..team = team
+      ..chefe = chefe
+      ..collaboratorNumber = number;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -22,39 +24,48 @@ void main() {
   });
 
   group('grouping', () {
-    test('groups by cargo A–Z, people A–Z inside, Sem cargo last', () {
+    test('follows the fixed team order, Sem equipa last, empty hidden', () {
       final sections = buildPeopleSections([
-        _p('Rui', role: 'Operador'),
+        _p('Rui', team: 'talho'),
         _p('João'),
-        _p('Ana', role: 'operador '),
-        _p('Bia', role: 'Chefe de Secção'),
-        _p('Carla', role: '  '),
+        _p('Ana', team: 'livre_servico'),
+        _p('Bia', team: 'gerencia'),
+        _p('Velho', team: 'caixas'),
       ]);
-
-      expect(_titles(sections), ['Chefe de Secção', 'Operador', 'Sem cargo']);
-      expect(_names(sections[1]), ['Ana', 'Rui']);
-      expect(_names(sections[2]), ['Carla', 'João']);
+      expect(_titles(sections), [
+        'Livre Serviço',
+        'Gerência',
+        'Talho',
+        'Sem equipa',
+      ]);
+      expect(_names(sections.last), ['João', 'Velho']);
     });
 
-    test('orders people A–Z ignoring case and accents', () {
+    test('chefes first in slot order, then members A–Z', () {
       final sections = buildPeopleSections([
-        _p('Bruno Costa', role: 'Operador'),
-        _p('Álvaro Reis', role: 'Operador'),
-        _p('ana Martins', role: 'Operador'),
+        _p('Bruno', team: 'livre_servico'),
+        _p('Noite', team: 'livre_servico', chefe: 'noite'),
+        _p('álvaro', team: 'livre_servico'),
+        _p('Dia', team: 'livre_servico', chefe: 'dia'),
       ]);
+      expect(_names(sections.single), ['Dia', 'Noite', 'álvaro', 'Bruno']);
+    });
 
-      expect(_names(sections.single), [
-        'Álvaro Reis',
-        'ana Martins',
-        'Bruno Costa',
+    test('a slot that does not fit the team counts as a member', () {
+      final sections = buildPeopleSections([
+        _p('Zé', team: 'talho'),
+        _p('Ana', team: 'talho', chefe: 'dia'),
+        _p('Chefe', team: 'talho', chefe: 'chefe'),
       ]);
+      expect(_names(sections.single), ['Chefe', 'Ana', 'Zé']);
     });
   });
 
   group('search', () {
     final people = [
-      _p('João Pinto', role: 'Operador', number: '3101'),
-      _p('Ana Martins', role: 'Chefe de Secção', number: '1234'),
+      _p('João Pinto', team: 'talho', number: '3101'),
+      _p('Ana Martins', team: 'gerencia', number: '1234'),
+      _p('Rita Sousa', team: 'frente_de_loja'),
     ];
 
     List<String> found(String q) =>
@@ -64,8 +75,9 @@ void main() {
       expect(found('joao'), ['João Pinto']);
     });
 
-    test('matches cargo', () {
-      expect(found('seccao'), ['Ana Martins']);
+    test('matches team name ignoring accents', () {
+      expect(found('gerencia'), ['Ana Martins']);
+      expect(found('frente'), ['Rita Sousa']);
     });
 
     test('matches nº de colaborador', () {
@@ -73,13 +85,11 @@ void main() {
     });
 
     test('drops sections left empty', () {
-      expect(_titles(buildPeopleSections(people, query: 'ana')), [
-        'Chefe de Secção',
-      ]);
+      expect(_titles(buildPeopleSections(people, query: 'ana')), ['Gerência']);
     });
 
     test('blank query keeps everyone', () {
-      expect(found('  '), ['Ana Martins', 'João Pinto']);
+      expect(found('  '), ['Ana Martins', 'João Pinto', 'Rita Sousa']);
     });
   });
 }

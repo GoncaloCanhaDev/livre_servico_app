@@ -1,6 +1,7 @@
 import '../models/person.dart';
+import '../models/teams.dart';
 
-/// A cargo's people in the Pessoas list view.
+/// A team's people in the Pessoas list view.
 class PeopleSection {
   const PeopleSection(this.title, this.people);
 
@@ -26,37 +27,42 @@ int _byName(Person a, Person b) =>
 
 bool _matches(Person p, String foldedQuery) =>
     foldText(p.fullName).contains(foldedQuery) ||
-    foldText(p.role ?? '').contains(foldedQuery) ||
+    foldText(teamById(p.team)?.name ?? '').contains(foldedQuery) ||
     foldText(p.collaboratorNumber).contains(foldedQuery);
 
-/// Filters [people] by [query] (name, cargo or nº de colaborador, ignoring
-/// case and accents) and groups them by cargo: sections A–Z, people A–Z
-/// inside, people without a cargo in a final "Sem cargo" section. Cargos
-/// that differ only in case/accents/spacing share a section, titled with
-/// the first one seen (first letter capitalized). Empty sections are left
-/// out.
+/// Filters [people] by [query] (name, team name or nº de colaborador,
+/// ignoring case and accents) and groups them by team in [teams] order,
+/// with people without a (known) team in a final "Sem equipa" section.
+/// Within a team, chefes come first in the team's slot order, then members
+/// A–Z. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
 }) {
   final q = foldText(query.trim());
-  final buckets = <String, List<Person>>{};
-  final titles = <String, String>{};
-  final noRole = <Person>[];
+  final byTeam = <String?, List<Person>>{};
   for (final p in people) {
     if (q.isNotEmpty && !_matches(p, q)) continue;
-    final role = p.role?.trim() ?? '';
-    if (role.isEmpty) {
-      noRole.add(p);
-      continue;
-    }
-    final key = foldText(role);
-    titles.putIfAbsent(key, () => role[0].toUpperCase() + role.substring(1));
-    (buckets[key] ??= []).add(p);
+    (byTeam[teamById(p.team)?.id] ??= []).add(p);
   }
-  final keys = buckets.keys.toList()..sort();
+
+  int byRank(Team team, Person a, Person b) {
+    int rank(Person p) {
+      final slot = chefeSlotOf(p);
+      return slot == null
+          ? team.chefeSlots.length
+          : team.chefeSlots.indexOf(slot);
+    }
+
+    final r = rank(a).compareTo(rank(b));
+    return r != 0 ? r : _byName(a, b);
+  }
+
   return [
-    for (final k in keys) PeopleSection(titles[k]!, buckets[k]!..sort(_byName)),
-    if (noRole.isNotEmpty) PeopleSection('Sem cargo', noRole..sort(_byName)),
+    for (final t in teams)
+      if (byTeam[t.id] case final members?)
+        PeopleSection(t.name, members..sort((a, b) => byRank(t, a, b))),
+    if (byTeam[null] case final rest?)
+      PeopleSection('Sem equipa', rest..sort(_byName)),
   ];
 }

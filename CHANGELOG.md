@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.32.0] — 2026-10-07
+
+### Added
+- Premade teams for people (Livre Serviço, Gerência, Charcutaria, Meal Solutions, Talho,
+  Peixaria, Frente de Loja, BemEstar, Padaria), each with a chefe; Livre Serviço has a chefe de
+  dia and a chefe de noite. Pessoas is grouped by team, chefes first.
+
+### Removed
+- The cargo (job title) field, manager links ("Reporta a") and the manager-grouped Equipas view.
+  Existing people start in "Sem equipa".
+
 ## [0.31.1] — 2026-10-07
 
 ### Other

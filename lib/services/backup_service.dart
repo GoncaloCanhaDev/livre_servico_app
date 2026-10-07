@@ -17,7 +17,6 @@ import '../models/report_list.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import '../models/weekly_tasks.dart';
-import 'person_service.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
 
@@ -187,14 +186,17 @@ class BackupService {
       await _isar.weeklyTasks.importJson(items('WeeklyTasks'));
       await _isar.inventorys.importJson(items('Inventory'));
       await _isar.infoEntrys.importJson(items('InfoEntry'));
-      await _isar.persons.importJson(items('Person'));
+      await _isar.persons.importJson(
+        items('Person').map(personJsonForImport).toList(),
+      );
     });
-
-    // A backup taken before multi-manager support has `managerUuid`
-    // populated but no `managerUuids`; without this, the teams view would
-    // show a flat hierarchy until the next app launch's
-    // startup migration runs. Must stay outside the writeTxn above —
-    // migrateManagerUuids() opens its own transaction internally.
-    await PersonService.instance.migrateManagerUuids();
   }
 }
+
+/// [json] (a Person row from a backup file) without the fields removed in
+/// 0.32.0 (cargo and manager links), so older backups still import.
+Map<String, dynamic> personJsonForImport(Map<String, dynamic> json) =>
+    Map.of(json)
+      ..remove('role')
+      ..remove('managerUuid')
+      ..remove('managerUuids');

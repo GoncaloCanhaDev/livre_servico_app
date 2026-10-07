@@ -16,22 +16,16 @@ class Person {
   String collaboratorNumber = '';
   late DateTime createdAt;
 
-  String? role;
   DateTime? dateOfBirth;
   DateTime? hireDate;
   String? photoPath;
   String? phoneNumber;
 
-  /// Legacy single-manager field, superseded by [managerUuids]. Kept only
-  /// so [PersonService.migrateManagerUuids] can read pre-upgrade data on
-  /// existing on-device databases — nothing else reads or writes it.
-  String? managerUuid;
+  /// [Team.id] of the person's team (see `teams.dart`); null = Sem equipa.
+  String? team;
 
-  /// syncUuids of this person's managers (zero, one, or many — no
-  /// primary/secondary ordering). Empty means they're at the top of the
-  /// hierarchy. Self-referencing rather than Isar Links, same rationale as
-  /// the old [managerUuid]: a manager whose row gets soft-deleted just
-  /// leaves a dangling uuid here, which readers treat as "not a manager
-  /// anymore" rather than as an error.
-  List<String> managerUuids = [];
+  /// [ChefeSlot.name] if the person is a chefe of their team, else null.
+  /// Only meaningful when it is one of the team's slots — read it through
+  /// `chefeSlotOf`.
+  String? chefe;
 }

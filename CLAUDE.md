@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Livre Serviço Companion — a Flutter app for recording inventories (name, code, final value),
 truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tasks, "pedidos"
-(order headers: number, supplier, expected date), and the team's people and teams, used at a
+(order headers: number, supplier, expected date), and the store's people, grouped into fixed teams with chefes, used at a
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
 data lives in an on-device Isar database, there is no backend or remote sync currently wired up.
@@ -44,6 +44,10 @@ multi-tenant product.
   `ShiftService._backfillSync()` fills in missing UUIDs on legacy rows at startup.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
   pick a file) and a "clear all data" wipe, independent of the sync fields above.
+- People belong to one of the fixed teams in `lib/models/teams.dart` (`Person.team` stores the
+  `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
+  through `chefeSlotOf`, which ignores slots the team doesn't have. `PersonService.save` keeps
+  one holder per (team, slot) by clearing the previous holder in the same transaction.
 
 ### Services layer
 
@@ -72,7 +76,7 @@ multi-tenant product.
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`ShiftService.init()`, then `PersonService.instance.migrateManagerUuids()`.
+`ShiftService.init()`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 

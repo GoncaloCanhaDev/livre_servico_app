@@ -17,68 +17,59 @@ const PersonSchema = CollectionSchema(
   name: r'Person',
   id: 7854610480646705599,
   properties: {
+    r'chefe': PropertySchema(id: 0, name: r'chefe', type: IsarType.string),
     r'collaboratorNumber': PropertySchema(
-      id: 0,
+      id: 1,
       name: r'collaboratorNumber',
       type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'dateOfBirth': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'dateOfBirth',
       type: IsarType.dateTime,
     ),
     r'fullName': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'fullName',
       type: IsarType.string,
     ),
     r'hireDate': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'hireDate',
       type: IsarType.dateTime,
     ),
-    r'managerUuid': PropertySchema(
-      id: 5,
-      name: r'managerUuid',
-      type: IsarType.string,
-    ),
-    r'managerUuids': PropertySchema(
-      id: 6,
-      name: r'managerUuids',
-      type: IsarType.stringList,
-    ),
     r'phoneNumber': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'phoneNumber',
       type: IsarType.string,
     ),
     r'photoPath': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'photoPath',
       type: IsarType.string,
     ),
-    r'role': PropertySchema(id: 9, name: r'role', type: IsarType.string),
     r'syncDeletedAt': PropertySchema(
-      id: 10,
+      id: 8,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 11,
+      id: 9,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 12,
+      id: 10,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 13, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 11, name: r'synced', type: IsarType.bool),
+    r'team': PropertySchema(id: 12, name: r'team', type: IsarType.string),
   },
 
   estimateSize: _personEstimateSize,
@@ -116,21 +107,14 @@ int _personEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.collaboratorNumber.length * 3;
-  bytesCount += 3 + object.fullName.length * 3;
   {
-    final value = object.managerUuid;
+    final value = object.chefe;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.managerUuids.length * 3;
-  {
-    for (var i = 0; i < object.managerUuids.length; i++) {
-      final value = object.managerUuids[i];
-      bytesCount += value.length * 3;
-    }
-  }
+  bytesCount += 3 + object.collaboratorNumber.length * 3;
+  bytesCount += 3 + object.fullName.length * 3;
   {
     final value = object.phoneNumber;
     if (value != null) {
@@ -143,13 +127,13 @@ int _personEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.syncUuid.length * 3;
   {
-    final value = object.role;
+    final value = object.team;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
 
@@ -159,20 +143,19 @@ void _personSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.collaboratorNumber);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeDateTime(offsets[2], object.dateOfBirth);
-  writer.writeString(offsets[3], object.fullName);
-  writer.writeDateTime(offsets[4], object.hireDate);
-  writer.writeString(offsets[5], object.managerUuid);
-  writer.writeStringList(offsets[6], object.managerUuids);
-  writer.writeString(offsets[7], object.phoneNumber);
-  writer.writeString(offsets[8], object.photoPath);
-  writer.writeString(offsets[9], object.role);
-  writer.writeDateTime(offsets[10], object.syncDeletedAt);
-  writer.writeDateTime(offsets[11], object.syncUpdatedAt);
-  writer.writeString(offsets[12], object.syncUuid);
-  writer.writeBool(offsets[13], object.synced);
+  writer.writeString(offsets[0], object.chefe);
+  writer.writeString(offsets[1], object.collaboratorNumber);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeDateTime(offsets[3], object.dateOfBirth);
+  writer.writeString(offsets[4], object.fullName);
+  writer.writeDateTime(offsets[5], object.hireDate);
+  writer.writeString(offsets[6], object.phoneNumber);
+  writer.writeString(offsets[7], object.photoPath);
+  writer.writeDateTime(offsets[8], object.syncDeletedAt);
+  writer.writeDateTime(offsets[9], object.syncUpdatedAt);
+  writer.writeString(offsets[10], object.syncUuid);
+  writer.writeBool(offsets[11], object.synced);
+  writer.writeString(offsets[12], object.team);
 }
 
 Person _personDeserialize(
@@ -182,21 +165,20 @@ Person _personDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Person();
-  object.collaboratorNumber = reader.readString(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.dateOfBirth = reader.readDateTimeOrNull(offsets[2]);
-  object.fullName = reader.readString(offsets[3]);
-  object.hireDate = reader.readDateTimeOrNull(offsets[4]);
+  object.chefe = reader.readStringOrNull(offsets[0]);
+  object.collaboratorNumber = reader.readString(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.dateOfBirth = reader.readDateTimeOrNull(offsets[3]);
+  object.fullName = reader.readString(offsets[4]);
+  object.hireDate = reader.readDateTimeOrNull(offsets[5]);
   object.id = id;
-  object.managerUuid = reader.readStringOrNull(offsets[5]);
-  object.managerUuids = reader.readStringList(offsets[6]) ?? [];
-  object.phoneNumber = reader.readStringOrNull(offsets[7]);
-  object.photoPath = reader.readStringOrNull(offsets[8]);
-  object.role = reader.readStringOrNull(offsets[9]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[10]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[11]);
-  object.syncUuid = reader.readString(offsets[12]);
-  object.synced = reader.readBool(offsets[13]);
+  object.phoneNumber = reader.readStringOrNull(offsets[6]);
+  object.photoPath = reader.readStringOrNull(offsets[7]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[9]);
+  object.syncUuid = reader.readString(offsets[10]);
+  object.synced = reader.readBool(offsets[11]);
+  object.team = reader.readStringOrNull(offsets[12]);
   return object;
 }
 
@@ -208,33 +190,31 @@ P _personDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
-    case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 3:
-      return (reader.readString(offset)) as P;
-    case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 5:
       return (reader.readStringOrNull(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
-    case 9:
-      return (reader.readStringOrNull(offset)) as P;
-    case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 11:
+    case 9:
       return (reader.readDateTime(offset)) as P;
-    case 12:
+    case 10:
       return (reader.readString(offset)) as P;
-    case 13:
+    case 11:
       return (reader.readBool(offset)) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -385,6 +365,168 @@ extension PersonQueryWhere on QueryBuilder<Person, Person, QWhereClause> {
 }
 
 extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'chefe'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'chefe'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'chefe',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'chefe',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'chefe',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'chefe', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> chefeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'chefe', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterFilterCondition> collaboratorNumberEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -941,360 +1083,6 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'managerUuid'),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'managerUuid'),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'managerUuid',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidContains(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'managerUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidMatches(
-    String pattern, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'managerUuid',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'managerUuid', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'managerUuid', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementEqualTo(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'managerUuids',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementStartsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementEndsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'managerUuids',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'managerUuids',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'managerUuids', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'managerUuids', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsLengthEqualTo(
-    int length,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'managerUuids', length, true, length, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'managerUuids', 0, true, 0, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'managerUuids', 0, false, 999999, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsLengthLessThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'managerUuids', 0, true, length, include);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  managerUuidsLengthGreaterThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'managerUuids', length, include, 999999, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> managerUuidsLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'managerUuids',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterFilterCondition> phoneNumberIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1619,168 +1407,6 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'role'),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'role'),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'role',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleContains(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'role',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleMatches(
-    String pattern, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'role',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'role', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> roleIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'role', value: ''),
-      );
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterFilterCondition> syncDeletedAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2070,6 +1696,168 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
       );
     });
   }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'team'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'team'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'team',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'team',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'team',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'team', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> teamIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'team', value: ''),
+      );
+    });
+  }
 }
 
 extension PersonQueryObject on QueryBuilder<Person, Person, QFilterCondition> {}
@@ -2077,6 +1865,18 @@ extension PersonQueryObject on QueryBuilder<Person, Person, QFilterCondition> {}
 extension PersonQueryLinks on QueryBuilder<Person, Person, QFilterCondition> {}
 
 extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
+  QueryBuilder<Person, Person, QAfterSortBy> sortByChefe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chefe', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByChefeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chefe', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> sortByCollaboratorNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'collaboratorNumber', Sort.asc);
@@ -2137,18 +1937,6 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterSortBy> sortByManagerUuid() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'managerUuid', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> sortByManagerUuidDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'managerUuid', Sort.desc);
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterSortBy> sortByPhoneNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'phoneNumber', Sort.asc);
@@ -2170,18 +1958,6 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
   QueryBuilder<Person, Person, QAfterSortBy> sortByPhotoPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'photoPath', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> sortByRole() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'role', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> sortByRoleDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'role', Sort.desc);
     });
   }
 
@@ -2232,9 +2008,33 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
       return query.addSortBy(r'synced', Sort.desc);
     });
   }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByTeam() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'team', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByTeamDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'team', Sort.desc);
+    });
+  }
 }
 
 extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
+  QueryBuilder<Person, Person, QAfterSortBy> thenByChefe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chefe', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByChefeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chefe', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> thenByCollaboratorNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'collaboratorNumber', Sort.asc);
@@ -2307,18 +2107,6 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterSortBy> thenByManagerUuid() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'managerUuid', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> thenByManagerUuidDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'managerUuid', Sort.desc);
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterSortBy> thenByPhoneNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'phoneNumber', Sort.asc);
@@ -2340,18 +2128,6 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
   QueryBuilder<Person, Person, QAfterSortBy> thenByPhotoPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'photoPath', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> thenByRole() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'role', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> thenByRoleDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'role', Sort.desc);
     });
   }
 
@@ -2402,9 +2178,29 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
       return query.addSortBy(r'synced', Sort.desc);
     });
   }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByTeam() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'team', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByTeamDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'team', Sort.desc);
+    });
+  }
 }
 
 extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
+  QueryBuilder<Person, Person, QDistinct> distinctByChefe({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'chefe', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Person, Person, QDistinct> distinctByCollaboratorNumber({
     bool caseSensitive = true,
   }) {
@@ -2442,20 +2238,6 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
-  QueryBuilder<Person, Person, QDistinct> distinctByManagerUuid({
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'managerUuid', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<Person, Person, QDistinct> distinctByManagerUuids() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'managerUuids');
-    });
-  }
-
   QueryBuilder<Person, Person, QDistinct> distinctByPhoneNumber({
     bool caseSensitive = true,
   }) {
@@ -2469,14 +2251,6 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'photoPath', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<Person, Person, QDistinct> distinctByRole({
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'role', caseSensitive: caseSensitive);
     });
   }
 
@@ -2505,12 +2279,26 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
       return query.addDistinctBy(r'synced');
     });
   }
+
+  QueryBuilder<Person, Person, QDistinct> distinctByTeam({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'team', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<Person, String?, QQueryOperations> chefeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'chefe');
     });
   }
 
@@ -2544,18 +2332,6 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
     });
   }
 
-  QueryBuilder<Person, String?, QQueryOperations> managerUuidProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'managerUuid');
-    });
-  }
-
-  QueryBuilder<Person, List<String>, QQueryOperations> managerUuidsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'managerUuids');
-    });
-  }
-
   QueryBuilder<Person, String?, QQueryOperations> phoneNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'phoneNumber');
@@ -2565,12 +2341,6 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, String?, QQueryOperations> photoPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'photoPath');
-    });
-  }
-
-  QueryBuilder<Person, String?, QQueryOperations> roleProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'role');
     });
   }
 
@@ -2595,6 +2365,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, bool, QQueryOperations> syncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'synced');
+    });
+  }
+
+  QueryBuilder<Person, String?, QQueryOperations> teamProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'team');
     });
   }
 }

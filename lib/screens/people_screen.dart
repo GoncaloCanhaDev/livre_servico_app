@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../models/person.dart';
+import '../models/teams.dart';
 import '../services/person_service.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
 import 'widgets/person_picker.dart';
-
-enum _ViewMode { list, teams }
 
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
@@ -20,21 +19,6 @@ class PeopleScreen extends StatefulWidget {
 
 class _PeopleScreenState extends State<PeopleScreen> {
   late Future<List<Person>> _future;
-  _ViewMode _viewMode = _ViewMode.list;
-
-  static const _viewModeLabel = {
-    _ViewMode.list: 'Ver lista',
-    _ViewMode.teams: 'Ver equipas',
-  };
-
-  static const _viewModeIcon = {
-    _ViewMode.list: Icons.list,
-    _ViewMode.teams: Icons.groups_outlined,
-  };
-
-  _ViewMode get _nextViewMode =>
-      _viewMode == _ViewMode.list ? _ViewMode.teams : _ViewMode.list;
-
   final _searchCtrl = TextEditingController();
 
   @override
@@ -157,11 +141,6 @@ class _PeopleScreenState extends State<PeopleScreen> {
       appBar: AppBar(
         title: const Text('Pessoas'),
         actions: [
-          IconButton(
-            tooltip: _viewModeLabel[_nextViewMode],
-            icon: Icon(_viewModeIcon[_nextViewMode]),
-            onPressed: () => setState(() => _viewMode = _nextViewMode),
-          ),
           IconButton(icon: const Icon(Icons.add), onPressed: () => _openForm()),
           IconButton(
             tooltip: 'Remover todas as pessoas',
@@ -190,38 +169,31 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 ),
               );
             }
-            if (_viewMode == _ViewMode.list) {
-              final sections = buildPeopleSections(
-                items,
-                query: _searchCtrl.text,
-              );
-              return Column(
-                children: [
-                  _SearchField(
-                    controller: _searchCtrl,
-                    onChanged: () => setState(() {}),
-                  ),
-                  Expanded(
-                    child: sections.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Sem resultados.',
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          )
-                        : _PeopleList(
-                            sections: sections,
-                            onTap: _openDetail,
-                            onLongPress: _showActions,
+            final sections = buildPeopleSections(
+              items,
+              query: _searchCtrl.text,
+            );
+            return Column(
+              children: [
+                _SearchField(
+                  controller: _searchCtrl,
+                  onChanged: () => setState(() {}),
+                ),
+                Expanded(
+                  child: sections.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Sem resultados.',
+                            style: TextStyle(color: Colors.black54),
                           ),
-                  ),
-                ],
-              );
-            }
-            return _TeamsList(
-              byManager: PersonService.instance.groupByManager(items),
-              onTap: _openDetail,
-              onLongPress: _showActions,
+                        )
+                      : _PeopleList(
+                          sections: sections,
+                          onTap: _openDetail,
+                          onLongPress: _showActions,
+                        ),
+                ),
+              ],
             );
           },
         ),
@@ -323,7 +295,7 @@ class _PersonTile extends StatelessWidget {
       ),
       subtitle: Text(
         [
-          if (p.role != null && p.role!.isNotEmpty) p.role!,
+          if (chefeSlotOf(p) case final slot?) slot.label,
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
         ].join(' · '),
       ),
@@ -346,87 +318,6 @@ class _SectionHeader extends StatelessWidget {
         title,
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       ),
-    );
-  }
-}
-
-class _TeamSection extends StatelessWidget {
-  const _TeamSection({
-    required this.title,
-    required this.people,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  final String title;
-  final List<Person> people;
-  final void Function(Person) onTap;
-  final void Function(Person) onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(title),
-        for (final p in people)
-          _PersonTile(
-            person: p,
-            onTap: () => onTap(p),
-            onLongPress: () => onLongPress(p),
-          ),
-        const Divider(height: 1),
-      ],
-    );
-  }
-}
-
-/// Renders [byManager] (see `PersonService.groupByManager`) as sections —
-/// one per manager who has direct reports, plus "Topo da hierarquia" for
-/// the `null` key. A person reporting to two managers appears in both
-/// their sections.
-class _TeamsList extends StatelessWidget {
-  const _TeamsList({
-    required this.byManager,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  final Map<String?, List<Person>> byManager;
-  final void Function(Person) onTap;
-  final void Function(Person) onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final allPeople = {
-      for (final list in byManager.values)
-        for (final p in list) p.syncUuid: p,
-    };
-    final sections =
-        byManager.keys.whereType<String>().map((uuid) {
-          final name = allPeople[uuid]?.fullName ?? '—';
-          return MapEntry(name, byManager[uuid]!);
-        }).toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
-    final roots = byManager[null] ?? const <Person>[];
-
-    return ListView(
-      children: [
-        if (roots.isNotEmpty)
-          _TeamSection(
-            title: 'Topo da hierarquia',
-            people: roots,
-            onTap: onTap,
-            onLongPress: onLongPress,
-          ),
-        for (final section in sections)
-          _TeamSection(
-            title: section.key,
-            people: section.value,
-            onTap: onTap,
-            onLongPress: onLongPress,
-          ),
-      ],
     );
   }
 }

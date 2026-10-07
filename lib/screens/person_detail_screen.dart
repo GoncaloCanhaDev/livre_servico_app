@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/person.dart';
+import '../models/teams.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
@@ -307,11 +308,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (_person.role != null ||
+                        if (_teamLine(_person) != null ||
                             _person.collaboratorNumber.isNotEmpty)
                           Text(
                             [
-                              if (_person.role != null) _person.role!,
+                              ?_teamLine(_person),
                               if (_person.collaboratorNumber.isNotEmpty)
                                 'Nº colaborador: ${_person.collaboratorNumber}',
                             ].join(' · '),
@@ -467,4 +468,12 @@ class _ActivityItem {
   final Color iconColor;
   final String title;
   final String subtitle;
+}
+
+/// "Talho · Chefe", "Talho", or null for Sem equipa.
+String? _teamLine(Person p) {
+  final team = teamById(p.team);
+  if (team == null) return null;
+  final slot = chefeSlotOf(p);
+  return slot == null ? team.name : '${team.name} · ${slot.label}';
 }

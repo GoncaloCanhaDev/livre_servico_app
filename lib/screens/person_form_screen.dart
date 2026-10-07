@@ -6,12 +6,12 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/person.dart';
+import '../models/teams.dart';
 import '../services/person_service.dart';
 import '../services/sync_meta.dart';
-import 'widgets/person_picker.dart';
 
-/// Full-screen add/edit form for a [Person]: identity fields plus the
-/// hierarchy fields (role, manager) and a profile picture. Used both from
+/// Full-screen add/edit form for a [Person]: identity fields plus team and
+/// chefe role, and a profile picture. Used both from
 /// the people list ("+") and from [PersonDetailScreen]'s edit action.
 class PersonFormScreen extends StatefulWidget {
   const PersonFormScreen({super.key, this.existing});
@@ -26,7 +26,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _numberCtrl;
-  late final TextEditingController _roleCtrl;
   late final TextEditingController _phoneCtrl;
 
   DateTime? _dob;
@@ -37,8 +36,10 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   File? _pendingPhoto;
   bool _removePhoto = false;
 
+  String? _team; // Team.id, null = Sem equipa
+  ChefeSlot? _chefe; // null = Membro
+
   List<Person> _allPeople = const [];
-  List<Person> _managers = [];
   bool _loadingPeople = true;
   bool _saving = false;
 
@@ -48,24 +49,20 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     final e = widget.existing;
     _nameCtrl = TextEditingController(text: e?.fullName ?? '');
     _numberCtrl = TextEditingController(text: e?.collaboratorNumber ?? '');
-    _roleCtrl = TextEditingController(text: e?.role ?? '');
     _phoneCtrl = TextEditingController(text: e?.phoneNumber ?? '');
     _dob = e?.dateOfBirth;
     _hireDate = e?.hireDate;
     _photoPath = e?.photoPath;
+    _team = teamById(e?.team)?.id;
+    _chefe = e == null ? null : chefeSlotOf(e);
     _loadPeople();
   }
 
   Future<void> _loadPeople() async {
     final all = await PersonService.instance.all();
-    final managerUuids = widget.existing?.managerUuids ?? const <String>[];
-    final managers = all
-        .where((p) => managerUuids.contains(p.syncUuid))
-        .toList();
     if (!mounted) return;
     setState(() {
       _allPeople = all;
-      _managers = managers;
       _loadingPeople = false;
     });
   }
@@ -74,7 +71,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _numberCtrl.dispose();
-    _roleCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
@@ -155,38 +151,45 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     });
   }
 
-  Future<void> _pickManagers() async {
-    final selfUuid = widget.existing?.syncUuid;
-    final excluded = selfUuid == null
-        ? <String>{}
-        : PersonService.instance.subtreeUuids(_allPeople, selfUuid);
-    final candidates = _allPeople
-        .where((p) => !excluded.contains(p.syncUuid))
-        .toList();
-    final result = await showDialog<List<Person>>(
-      context: context,
-      builder: (_) => _ManagerPickerDialog(
-        candidates: candidates,
-        initiallySelected: _managers,
-      ),
-    );
-    if (result == null) return;
-    setState(() => _managers = result);
-  }
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
     final person = widget.existing ?? (Person()..createdAt = DateTime.now());
+    if (_team != null && _chefe != null) {
+      final holder = chefeHolder(_allPeople, _team!, _chefe!, except: person);
+      if (holder != null) {
+        final team = teamById(_team)!;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(
+              '${holder.fullName} é ${_chefe!.label} de ${team.name}. '
+              'Substituir?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Substituir'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !mounted) return;
+      }
+    }
+    setState(() => _saving = true);
     person.fullName = _nameCtrl.text.trim();
     person.collaboratorNumber = _numberCtrl.text.trim();
-    person.role = _roleCtrl.text.trim().isEmpty ? null : _roleCtrl.text.trim();
     person.phoneNumber = _phoneCtrl.text.trim().isEmpty
         ? null
         : _phoneCtrl.text.trim();
     person.dateOfBirth = _dob;
     person.hireDate = _hireDate;
-    person.managerUuids = _managers.map((p) => p.syncUuid).toList();
+    person.team = _team;
+    person.chefe = _chefe?.name;
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
@@ -275,16 +278,42 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _roleCtrl,
-                textCapitalization: TextCapitalization.words,
+              DropdownButtonFormField<String?>(
+                initialValue: _team,
                 decoration: const InputDecoration(
-                  labelText: 'Cargo',
+                  labelText: 'Equipa',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                items: [
+                  for (final t in teams)
+                    DropdownMenuItem(value: t.id, child: Text(t.name)),
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sem equipa'),
+                  ),
+                ],
+                onChanged: (v) => setState(() {
+                  _team = v;
+                  _chefe = null;
+                }),
               ),
+              if (teamById(_team) case final team?) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<ChefeSlot?>(
+                  key: ValueKey(team.id),
+                  initialValue: _chefe,
+                  decoration: const InputDecoration(
+                    labelText: 'Função na equipa',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Membro')),
+                    for (final s in team.chefeSlots)
+                      DropdownMenuItem(value: s, child: Text(s.label)),
+                  ],
+                  onChanged: (v) => setState(() => _chefe = v),
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _numberCtrl,
@@ -321,29 +350,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 onTap: () => _pickDate(isDob: false),
                 onClear: () => setState(() => _hireDate = null),
               ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  side: const BorderSide(color: Colors.black26),
-                ),
-                leading: const Icon(Icons.account_tree_outlined),
-                title: const Text('Reporta a'),
-                subtitle: Text(
-                  _managers.isEmpty
-                      ? 'Ninguém (topo da hierarquia)'
-                      : _managers.map((p) => p.fullName).join(', '),
-                ),
-                trailing: _loadingPeople
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.chevron_right),
-                onTap: _loadingPeople ? null : _pickManagers,
-              ),
             ],
           ),
         ),
@@ -352,7 +358,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: FilledButton(
-            onPressed: _saving ? null : _save,
+            onPressed: _saving || _loadingPeople ? null : _save,
             child: Text(isEdit ? 'Guardar' : 'Adicionar'),
           ),
         ),
@@ -394,99 +400,6 @@ class _DateRow extends StatelessWidget {
               onPressed: onClear,
             ),
       onTap: onTap,
-    );
-  }
-}
-
-class _ManagerPickerDialog extends StatefulWidget {
-  const _ManagerPickerDialog({
-    required this.candidates,
-    required this.initiallySelected,
-  });
-
-  final List<Person> candidates;
-  final List<Person> initiallySelected;
-
-  @override
-  State<_ManagerPickerDialog> createState() => _ManagerPickerDialogState();
-}
-
-class _ManagerPickerDialogState extends State<_ManagerPickerDialog> {
-  late Set<String> _selectedUuids;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedUuids = widget.initiallySelected.map((p) => p.syncUuid).toSet();
-  }
-
-  void _confirm() {
-    final selected = widget.candidates
-        .where((p) => _selectedUuids.contains(p.syncUuid))
-        .toList();
-    Navigator.of(context).pop(selected);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Reporta a'),
-      contentPadding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.vertical_align_top),
-              title: const Text('Ninguém (topo da hierarquia)'),
-              onTap: () => Navigator.of(context).pop(const <Person>[]),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: widget.candidates.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Sem outras pessoas disponíveis.',
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: widget.candidates.length,
-                      itemBuilder: (_, i) {
-                        final p = widget.candidates[i];
-                        final selected = _selectedUuids.contains(p.syncUuid);
-                        return CheckboxListTile(
-                          value: selected,
-                          onChanged: (checked) {
-                            setState(() {
-                              if (checked ?? false) {
-                                _selectedUuids.add(p.syncUuid);
-                              } else {
-                                _selectedUuids.remove(p.syncUuid);
-                              }
-                            });
-                          },
-                          secondary: PersonInitialsBadge(name: p.fullName),
-                          title: Text(p.fullName),
-                          subtitle: p.role == null ? null : Text(p.role!),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _confirm, child: const Text('Concluído')),
-      ],
     );
   }
 }
