@@ -21,7 +21,8 @@ multi-tenant product.
 - Regenerate Isar model code (`*.g.dart`) after changing any `@collection` class:
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
-- There is no test suite (no `test/` directory) — do not assume `flutter test` targets exist.
+- Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
+  `lib/screens/people_sections.dart` and `SettingsService`, no widget tests).
 
 ## Architecture
 

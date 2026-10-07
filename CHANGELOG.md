@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.30.0] — 2026-10-07
+
+### Added
+- Pessoas list: a search bar (name, cargo or nº de colaborador, ignoring accents) and an
+  "Ordenar" menu: by name with letter headers, by cargo with a section per cargo, by nº de
+  colaborador, or by antiguidade (hire date). The last choice is remembered.
+
 ## [0.29.0] — 2026-10-07
 
 ### Removed
