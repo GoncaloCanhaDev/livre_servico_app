@@ -1,11 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../models/person.dart';
 import '../services/person_service.dart';
-import '../services/settings_service.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
@@ -37,22 +35,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
   _ViewMode get _nextViewMode =>
       _viewMode == _ViewMode.list ? _ViewMode.teams : _ViewMode.list;
 
-  PeopleSort _sort =
-      PeopleSort.values.asNameMap()[SettingsService.instance.peopleSort] ??
-      PeopleSort.name;
   final _searchCtrl = TextEditingController();
-
-  static const _sortLabel = {
-    PeopleSort.name: 'Nome',
-    PeopleSort.role: 'Cargo',
-    PeopleSort.number: 'Nº de colaborador',
-    PeopleSort.seniority: 'Antiguidade',
-  };
-
-  void _setSort(PeopleSort sort) {
-    setState(() => _sort = sort);
-    SettingsService.instance.setPeopleSort(sort.name);
-  }
 
   @override
   void initState() {
@@ -179,20 +162,6 @@ class _PeopleScreenState extends State<PeopleScreen> {
             icon: Icon(_viewModeIcon[_nextViewMode]),
             onPressed: () => setState(() => _viewMode = _nextViewMode),
           ),
-          if (_viewMode == _ViewMode.list)
-            PopupMenuButton<PeopleSort>(
-              tooltip: 'Ordenar',
-              icon: const Icon(Icons.sort),
-              onSelected: _setSort,
-              itemBuilder: (_) => [
-                for (final sort in PeopleSort.values)
-                  CheckedPopupMenuItem(
-                    value: sort,
-                    checked: sort == _sort,
-                    child: Text(_sortLabel[sort]!),
-                  ),
-              ],
-            ),
           IconButton(icon: const Icon(Icons.add), onPressed: () => _openForm()),
           IconButton(
             tooltip: 'Remover todas as pessoas',
@@ -224,7 +193,6 @@ class _PeopleScreenState extends State<PeopleScreen> {
             if (_viewMode == _ViewMode.list) {
               final sections = buildPeopleSections(
                 items,
-                sort: _sort,
                 query: _searchCtrl.text,
               );
               return Column(
@@ -243,8 +211,6 @@ class _PeopleScreenState extends State<PeopleScreen> {
                           )
                         : _PeopleList(
                             sections: sections,
-                            showCounts: _sort == PeopleSort.role,
-                            showHireDate: _sort == PeopleSort.seniority,
                             onTap: _openDetail,
                             onLongPress: _showActions,
                           ),
@@ -298,20 +264,16 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-/// The list view: [sections] from [buildPeopleSections], each under its
-/// header (if it has one), with dividers between people.
+/// The list view: [sections] from [buildPeopleSections], each under a
+/// "Cargo (count)" header, with dividers between people.
 class _PeopleList extends StatelessWidget {
   const _PeopleList({
     required this.sections,
-    required this.showCounts,
-    required this.showHireDate,
     required this.onTap,
     required this.onLongPress,
   });
 
   final List<PeopleSection> sections;
-  final bool showCounts;
-  final bool showHireDate;
   final void Function(Person) onTap;
   final void Function(Person) onLongPress;
 
@@ -321,17 +283,11 @@ class _PeopleList extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         for (final section in sections) ...[
-          if (section.title != null)
-            _SectionHeader(
-              showCounts
-                  ? '${section.title} (${section.people.length})'
-                  : section.title!,
-            ),
+          _SectionHeader('${section.title} (${section.people.length})'),
           for (final (i, p) in section.people.indexed) ...[
             if (i > 0) const Divider(height: 1),
             _PersonTile(
               person: p,
-              showHireDate: showHireDate,
               onTap: () => onTap(p),
               onLongPress: () => onLongPress(p),
             ),
@@ -347,13 +303,11 @@ class _PersonTile extends StatelessWidget {
     required this.person,
     required this.onTap,
     required this.onLongPress,
-    this.showHireDate = false,
   });
 
   final Person person;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
-  final bool showHireDate;
 
   @override
   Widget build(BuildContext context) {
@@ -371,8 +325,6 @@ class _PersonTile extends StatelessWidget {
         [
           if (p.role != null && p.role!.isNotEmpty) p.role!,
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
-          if (showHireDate && p.hireDate != null)
-            'desde ${DateFormat('MM/yyyy').format(p.hireDate!)}',
         ].join(' · '),
       ),
       onTap: onTap,

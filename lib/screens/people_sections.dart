@@ -1,14 +1,10 @@
 import '../models/person.dart';
 
-/// How the Pessoas list view is ordered and grouped.
-enum PeopleSort { name, role, number, seniority }
-
-/// A run of people in the list view, under an optional header.
+/// A cargo's people in the Pessoas list view.
 class PeopleSection {
   const PeopleSection(this.title, this.people);
 
-  /// Header text, or null for a headerless section.
-  final String? title;
+  final String title;
   final List<Person> people;
 }
 
@@ -34,103 +30,33 @@ bool _matches(Person p, String foldedQuery) =>
     foldText(p.collaboratorNumber).contains(foldedQuery);
 
 /// Filters [people] by [query] (name, cargo or nº de colaborador, ignoring
-/// case and accents) and orders/groups them for [sort]. Sections that end
-/// up empty are left out.
+/// case and accents) and groups them by cargo: sections A–Z, people A–Z
+/// inside, people without a cargo in a final "Sem cargo" section. Cargos
+/// that differ only in case/accents/spacing share a section, titled with
+/// the first one seen (first letter capitalized). Empty sections are left
+/// out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
-  required PeopleSort sort,
   String query = '',
 }) {
   final q = foldText(query.trim());
-  final list = [
-    for (final p in people)
-      if (q.isEmpty || _matches(p, q)) p,
-  ];
-  if (list.isEmpty) return const [];
-
-  switch (sort) {
-    case PeopleSort.name:
-      return _grouped(
-        list,
-        keyOf: (p) {
-          final name = foldText(p.fullName.trim());
-          return name.isNotEmpty && RegExp('[a-z]').hasMatch(name[0])
-              ? name[0]
-              : null;
-        },
-        titleOf: (key, _) => key.toUpperCase(),
-        noKeyTitle: '#',
-      );
-    case PeopleSort.role:
-      return _grouped(
-        list,
-        keyOf: (p) {
-          final role = foldText(p.role?.trim() ?? '');
-          return role.isEmpty ? null : role;
-        },
-        titleOf: (_, first) {
-          final role = first.role!.trim();
-          return role[0].toUpperCase() + role.substring(1);
-        },
-        noKeyTitle: 'Sem cargo',
-      );
-    case PeopleSort.number:
-      int rank(Person p) {
-        final n = p.collaboratorNumber.trim();
-        if (n.isEmpty) return 2;
-        return int.tryParse(n) == null ? 1 : 0;
-      }
-      list.sort((a, b) {
-        final r = rank(a).compareTo(rank(b));
-        if (r != 0) return r;
-        if (rank(a) == 0) {
-          return int.parse(
-            a.collaboratorNumber.trim(),
-          ).compareTo(int.parse(b.collaboratorNumber.trim()));
-        }
-        final c = foldText(
-          a.collaboratorNumber,
-        ).compareTo(foldText(b.collaboratorNumber));
-        return c != 0 ? c : _byName(a, b);
-      });
-      return [PeopleSection(null, list)];
-    case PeopleSort.seniority:
-      list.sort((a, b) {
-        final ha = a.hireDate, hb = b.hireDate;
-        if (ha == null || hb == null) {
-          if (ha != hb) return ha == null ? 1 : -1;
-          return _byName(a, b);
-        }
-        final c = ha.compareTo(hb);
-        return c != 0 ? c : _byName(a, b);
-      });
-      return [PeopleSection(null, list)];
-  }
-}
-
-/// Buckets [list] by [keyOf] (sections A–Z by key, people A–Z inside), with
-/// people whose key is null in a final [noKeyTitle] section. [titleOf] gets
-/// the key and the first person in input order who has it.
-List<PeopleSection> _grouped(
-  List<Person> list, {
-  required String? Function(Person) keyOf,
-  required String Function(String key, Person first) titleOf,
-  required String noKeyTitle,
-}) {
   final buckets = <String, List<Person>>{};
-  final rest = <Person>[];
-  for (final p in list) {
-    final key = keyOf(p);
-    if (key == null) {
-      rest.add(p);
-    } else {
-      (buckets[key] ??= []).add(p);
+  final titles = <String, String>{};
+  final noRole = <Person>[];
+  for (final p in people) {
+    if (q.isNotEmpty && !_matches(p, q)) continue;
+    final role = p.role?.trim() ?? '';
+    if (role.isEmpty) {
+      noRole.add(p);
+      continue;
     }
+    final key = foldText(role);
+    titles.putIfAbsent(key, () => role[0].toUpperCase() + role.substring(1));
+    (buckets[key] ??= []).add(p);
   }
   final keys = buckets.keys.toList()..sort();
   return [
-    for (final k in keys)
-      PeopleSection(titleOf(k, buckets[k]!.first), buckets[k]!..sort(_byName)),
-    if (rest.isNotEmpty) PeopleSection(noKeyTitle, rest..sort(_byName)),
+    for (final k in keys) PeopleSection(titles[k]!, buckets[k]!..sort(_byName)),
+    if (noRole.isNotEmpty) PeopleSection('Sem cargo', noRole..sort(_byName)),
   ];
 }

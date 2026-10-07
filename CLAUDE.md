@@ -22,7 +22,7 @@ multi-tenant product.
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
-  `lib/screens/people_sections.dart` and `SettingsService`, no widget tests).
+  `lib/screens/people_sections.dart`, no widget tests).
 
 ## Architecture
 
