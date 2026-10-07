@@ -49,13 +49,14 @@ final List<(String, Team?)> _sectionOrder = [
 bool _matches(Person p, String foldedQuery) =>
     foldText(p.fullName).contains(foldedQuery) ||
     foldText(_sectionTitle(p)).contains(foldedQuery) ||
-    foldText(p.collaboratorNumber).contains(foldedQuery);
+    foldText(p.collaboratorNumber).contains(foldedQuery) ||
+    (p.permanencia && 'permanencia'.contains(foldedQuery));
 
-/// Filters [people] by [query] (name, section title — team and turno — or
-/// nº de colaborador, ignoring case and accents) and groups them into
-/// sections in [teams] order (Livre Serviço split into Dia, Noite and Sem
-/// turno), with people without a (known) team in a final "Sem equipa"
-/// section. Within a section, chefes come first in the team's slot order,
+/// Filters [people] by [query] (name, section title — team and turno —, nº
+/// de colaborador or the Permanência tag, ignoring case and accents) and
+/// groups them into sections in [teams] order (Livre Serviço split into Dia,
+/// Noite and Sem turno), with people without a (known) team in a final
+/// "Sem equipa" section. Within a section, chefes come first in the team's slot order,
 /// then members A–Z. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {

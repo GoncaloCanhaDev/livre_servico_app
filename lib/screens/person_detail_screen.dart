@@ -18,6 +18,7 @@ import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
+import 'widgets/permanencia_badge.dart';
 import 'widgets/person_picker.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -308,6 +309,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        if (_person.permanencia)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 2),
+                            child: PermanenciaBadge(),
+                          ),
                         if (_teamLine(_person) != null ||
                             _person.collaboratorNumber.isNotEmpty)
                           Text(

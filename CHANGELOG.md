@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.35.0] — 2026-10-07
+
+### Added
+- "Permanência" tag for people who can stand in for management when no chefia is present: a
+  switch in the person form, a badge in Pessoas and on the person page, and search matches it.
+
 ## [0.34.0] — 2026-10-07
 
 ### Added

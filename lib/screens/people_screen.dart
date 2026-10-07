@@ -8,6 +8,7 @@ import '../services/person_service.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
+import 'widgets/permanencia_badge.dart';
 import 'widgets/person_picker.dart';
 
 class PeopleScreen extends StatefulWidget {
@@ -287,9 +288,20 @@ class _PersonTile extends StatelessWidget {
       leading: hasPhoto
           ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
           : PersonInitialsBadge(name: p.fullName),
-      title: Text(
-        p.fullName,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              p.fullName,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (p.permanencia) ...[
+            const SizedBox(width: 6),
+            const PermanenciaBadge(),
+          ],
+        ],
       ),
       subtitle: Text(
         [

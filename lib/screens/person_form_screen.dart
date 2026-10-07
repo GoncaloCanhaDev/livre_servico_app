@@ -39,6 +39,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   String? _team; // Team.id, null = Sem equipa
   Turno? _turno; // only for teams split by turno
   bool _isChefe = false;
+  bool _permanencia = false;
 
   /// The chefe slot the form would assign, or null for Membro (or a
   /// Livre Serviço chefe with no turno picked yet).
@@ -67,6 +68,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _team = teamById(e?.team)?.id;
     _isChefe = e != null && chefeSlotOf(e) != null;
     _turno = e == null ? null : turnoOf(e);
+    _permanencia = e?.permanencia ?? false;
     _loadPeople();
   }
 
@@ -204,6 +206,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     person.team = _team;
     person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
     person.chefe = slot?.name;
+    person.permanencia = _permanencia;
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
@@ -345,6 +348,20 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                   onChanged: (v) => setState(() => _isChefe = v ?? false),
                 ),
               ],
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  side: const BorderSide(color: Colors.black26),
+                ),
+                title: const Text('Permanência'),
+                subtitle: const Text(
+                  'Responsável quando não há chefia presente',
+                ),
+                value: _permanencia,
+                onChanged: (v) => setState(() => _permanencia = v),
+              ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _numberCtrl,

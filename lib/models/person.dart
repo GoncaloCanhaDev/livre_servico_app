@@ -33,4 +33,8 @@ class Person {
   /// Livre Serviço chefe's turno comes from their slot — read it through
   /// `turnoOf`.
   String? turno;
+
+  /// Tagged "Permanência": can stand in for management when no chefia is
+  /// present. Independent of team and chefe role.
+  bool permanencia = false;
 }

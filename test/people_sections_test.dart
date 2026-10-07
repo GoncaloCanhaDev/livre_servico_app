@@ -8,13 +8,15 @@ Person _p(
   String? chefe,
   String? turno,
   String number = '',
+  bool permanencia = false,
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
   ..team = team
   ..chefe = chefe
   ..turno = turno
-  ..collaboratorNumber = number;
+  ..collaboratorNumber = number
+  ..permanencia = permanencia;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -127,6 +129,17 @@ void main() {
 
     test('drops sections left empty', () {
       expect(_titles(buildPeopleSections(people, query: 'ana')), ['Gerência']);
+    });
+
+    test('matches the Permanência tag, with or without the accent', () {
+      final tagged = [
+        ...people,
+        _p('Paula Reis', team: 'talho', permanencia: true),
+      ];
+      List<String> find(String q) =>
+          buildPeopleSections(tagged, query: q).expand(_names).toList();
+      expect(find('permanencia'), ['Paula Reis']);
+      expect(find('Permanência'), ['Paula Reis']);
     });
 
     test('blank query keeps everyone', () {
