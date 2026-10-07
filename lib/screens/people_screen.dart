@@ -10,6 +10,7 @@ import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
+import 'widgets/section_header.dart';
 
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
@@ -285,7 +286,7 @@ class _PeopleList extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         for (final section in sections) ...[
-          _SectionHeader(
+          SectionHeader(
             '${section.title} (${section.people.length})',
             open: isOpen(section),
             onTap: onToggle == null ? null : () => onToggle!(section),
@@ -341,41 +342,6 @@ class _PersonTile extends StatelessWidget {
       ),
       onTap: onTap,
       onLongPress: onLongPress,
-    );
-  }
-}
-
-/// A section's "Team (count)" title; tappable with a chevron when [onTap]
-/// is set.
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title, {required this.open, this.onTap});
-
-  final String title;
-  final bool open;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            if (onTap != null)
-              Icon(open ? Icons.expand_less : Icons.expand_more),
-          ],
-        ),
-      ),
     );
   }
 }

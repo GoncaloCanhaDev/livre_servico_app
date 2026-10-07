@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.41.0] — 2026-10-07
+
+### Changed
+- The people picker for marking tasks done is grouped like Pessoas, with collapsible sections:
+  only Livre Serviço · Dia starts open. Headers show how many are ticked inside ("2 ✓"), and a
+  search field opens every matching section.
+
 ## [0.40.0] — 2026-10-07
 
 ### Changed

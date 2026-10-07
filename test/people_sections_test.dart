@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/person.dart';
+import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/screens/people_sections.dart';
 
 Person _p(
@@ -182,6 +183,19 @@ void main() {
           'Livre Serviço · Sem turno': true,
           'Talho': false,
           'Sem equipa': false,
+        },
+      );
+    });
+
+    test('each section knows its turno', () {
+      final sections = buildPeopleSections(people);
+      expect(
+        {for (final s in sections) s.title: s.turno},
+        {
+          'Livre Serviço · Dia': Turno.dia,
+          'Livre Serviço · Noite': Turno.noite,
+          'Livre Serviço · Sem turno': null,
+          'Talho': null,
         },
       );
     });

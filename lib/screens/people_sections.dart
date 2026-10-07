@@ -3,13 +3,22 @@ import '../models/teams.dart';
 
 /// A team's people in the Pessoas list view.
 class PeopleSection {
-  const PeopleSection(this.title, this.people, {this.openByDefault = false});
+  const PeopleSection(
+    this.title,
+    this.people, {
+    this.openByDefault = false,
+    this.turno,
+  });
 
   final String title;
   final List<Person> people;
 
   /// Whether the section starts expanded (the rest start collapsed).
   final bool openByDefault;
+
+  /// The turno this section is for (Livre Serviço · Dia / · Noite), else
+  /// null.
+  final Turno? turno;
 }
 
 const _accents = {
@@ -38,15 +47,16 @@ String _sectionTitle(Person p) {
   return '${team.name} · ${turnoOf(p)?.label ?? 'Sem turno'}';
 }
 
-/// Every section title in list order, with the team each one belongs to.
-final List<(String, Team?)> _sectionOrder = [
+/// Every section title in list order, with its team and turno.
+final List<(String, Team?, Turno?)> _sectionOrder = [
   for (final t in teams)
     if (t.hasTurnos) ...[
-      for (final turno in Turno.values) ('${t.name} · ${turno.label}', t),
-      ('${t.name} · Sem turno', t),
+      for (final turno in Turno.values)
+        ('${t.name} · ${turno.label}', t, turno),
+      ('${t.name} · Sem turno', t, null),
     ] else
-      (t.name, t),
-  ('Sem equipa', null),
+      (t.name, t, null),
+  ('Sem equipa', null, null),
 ];
 
 bool _matches(Person p, String foldedQuery) =>
@@ -91,12 +101,13 @@ List<PeopleSection> buildPeopleSections(
   }
 
   return [
-    for (final (title, team) in _sectionOrder)
+    for (final (title, team, turno) in _sectionOrder)
       if (bySection[title] case final members?)
         PeopleSection(
           title,
           members..sort((a, b) => byRank(team, a, b)),
           openByDefault: team?.openByDefault ?? false,
+          turno: turno,
         ),
   ];
 }

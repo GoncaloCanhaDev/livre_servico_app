@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/person.dart';
+import '../../models/teams.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
+import '../people_sections.dart';
+import 'section_header.dart';
 
 /// Prompts the user to pick one or more people. Returns the chosen people
 /// (never an empty list) or null if the picker is cancelled.
@@ -94,12 +97,29 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
   late Future<List<Person>> _future;
   late DateTime _selectedDay;
   final Set<int> _selectedIds = {};
+  final _searchCtrl = TextEditingController();
+
+  /// Sections opened/closed in this dialog, by title; the rest start closed
+  /// except Livre Serviço · Dia.
+  final _openOverrides = <String, bool>{};
+
+  bool get _searching => _searchCtrl.text.trim().isNotEmpty;
+
+  /// Every matching section is open while searching.
+  bool _isOpen(PeopleSection s) =>
+      _searching || (_openOverrides[s.title] ?? s.turno == Turno.dia);
 
   @override
   void initState() {
     super.initState();
     _future = PersonService.instance.all();
     _selectedDay = widget.initialDay ?? DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   bool get _isToday {
@@ -144,6 +164,51 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
     } else {
       Navigator.of(context).pop(chosen);
     }
+  }
+
+  /// [people] grouped like the Pessoas list, each section collapsible and
+  /// showing how many of its people are ticked.
+  Widget _sectionList(List<Person> people) {
+    final sections = buildPeopleSections(people, query: _searchCtrl.text);
+    if (sections.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Sem resultados.', textAlign: TextAlign.center),
+      );
+    }
+    return ListView(
+      shrinkWrap: true,
+      children: [
+        for (final section in sections) ...[
+          SectionHeader(
+            '${section.title} (${section.people.length})',
+            open: _isOpen(section),
+            note: switch (section.people
+                .where((p) => _selectedIds.contains(p.id))
+                .length) {
+              0 => null,
+              final n => '$n ✓',
+            },
+            onTap: _searching
+                ? null
+                : () => setState(
+                    () => _openOverrides[section.title] = !_isOpen(section),
+                  ),
+          ),
+          if (_isOpen(section))
+            for (final p in section.people)
+              CheckboxListTile(
+                secondary: PersonInitialsBadge(name: p.fullName),
+                title: Text(p.fullName),
+                subtitle: p.collaboratorNumber.isEmpty
+                    ? null
+                    : Text('Nº ${p.collaboratorNumber}'),
+                value: _selectedIds.contains(p.id),
+                onChanged: (checked) => _toggle(p, checked),
+              ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -213,24 +278,20 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
                       ],
                     ),
                   ),
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: people.length,
-                    itemBuilder: (_, i) {
-                      final p = people[i];
-                      return CheckboxListTile(
-                        secondary: PersonInitialsBadge(name: p.fullName),
-                        title: Text(p.fullName),
-                        subtitle: p.collaboratorNumber.isEmpty
-                            ? null
-                            : Text('Nº ${p.collaboratorNumber}'),
-                        value: _selectedIds.contains(p.id),
-                        onChanged: (checked) => _toggle(p, checked),
-                      );
-                    },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: 'Procurar',
+                      prefixIcon: Icon(Icons.search),
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ),
+                Flexible(child: _sectionList(people)),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                   child: Align(
