@@ -10,6 +10,7 @@ Person _p(
   String number = '',
   bool permanencia = false,
   bool partTime = false,
+  bool supervisor = false,
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
@@ -18,7 +19,8 @@ Person _p(
   ..turno = turno
   ..collaboratorNumber = number
   ..permanencia = permanencia
-  ..partTime = partTime;
+  ..partTime = partTime
+  ..supervisor = supervisor;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -67,6 +69,36 @@ void main() {
         _p('Chefe', team: 'talho', chefe: 'chefe'),
       ]);
       expect(_names(sections.single), ['Chefe', 'Ana', 'Zé']);
+    });
+  });
+
+  group('Frente de Loja supervisors', () {
+    final people = [
+      _p('Zé', team: 'frente_de_loja'),
+      _p('Rita', team: 'frente_de_loja', supervisor: true),
+      _p('Chefe', team: 'frente_de_loja', chefe: 'chefe'),
+      _p('Ana', team: 'frente_de_loja'),
+      _p('Bruno', team: 'frente_de_loja', supervisor: true),
+    ];
+
+    test('chefe first, then supervisors A–Z, then members A–Z', () {
+      expect(_names(buildPeopleSections(people).single), [
+        'Chefe',
+        'Bruno',
+        'Rita',
+        'Ana',
+        'Zé',
+      ]);
+    });
+
+    test('search matches supervisor', () {
+      expect(
+        buildPeopleSections(
+          people,
+          query: 'supervisor',
+        ).expand(_names).toList(),
+        ['Bruno', 'Rita'],
+      );
     });
   });
 

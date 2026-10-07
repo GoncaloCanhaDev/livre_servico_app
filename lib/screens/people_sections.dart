@@ -51,14 +51,16 @@ bool _matches(Person p, String foldedQuery) =>
     foldText(_sectionTitle(p)).contains(foldedQuery) ||
     foldText(p.collaboratorNumber).contains(foldedQuery) ||
     (p.permanencia && 'permanencia'.contains(foldedQuery)) ||
-    (p.partTime && 'tempo parcial'.contains(foldedQuery));
+    (p.partTime && 'tempo parcial'.contains(foldedQuery)) ||
+    (isSupervisor(p) && 'supervisor'.contains(foldedQuery));
 
 /// Filters [people] by [query] (name, section title — team and turno —, nº
-/// de colaborador, the Permanência tag or "tempo parcial", ignoring case and
-/// accents) and groups them into sections in [teams] order (Livre Serviço
-/// split into Dia, Noite and Sem turno), with people without a (known) team
-/// in a final "Sem equipa" section. Within a section, chefes come first in
-/// the team's slot order, then members A–Z. Empty sections are left out.
+/// de colaborador, the Permanência tag, "tempo parcial" or "supervisor",
+/// ignoring case and accents) and groups them into sections in [teams] order
+/// (Livre Serviço split into Dia, Noite and Sem turno), with people without a
+/// (known) team in a final "Sem equipa" section. Within a section, chefes
+/// come first in the team's slot order, then supervisors A–Z, then members
+/// A–Z. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
@@ -73,8 +75,8 @@ List<PeopleSection> buildPeopleSections(
   int byRank(Team? team, Person a, Person b) {
     int rank(Person p) {
       final slot = chefeSlotOf(p);
-      if (team == null || slot == null) return 1 << 10;
-      return team.chefeSlots.indexOf(slot);
+      if (team != null && slot != null) return team.chefeSlots.indexOf(slot);
+      return isSupervisor(p) ? 1 << 9 : 1 << 10;
     }
 
     final r = rank(a).compareTo(rank(b));

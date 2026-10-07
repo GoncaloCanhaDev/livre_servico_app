@@ -41,4 +41,8 @@ class Person {
   /// Part-time ("Tempo parcial") rather than the default full time
   /// ("Tempo inteiro").
   bool partTime = false;
+
+  /// Supervisor in a team that has them (only Frente de Loja): between chefe
+  /// and member, any number per team. Read it through `isSupervisor`.
+  bool supervisor = false;
 }

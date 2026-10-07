@@ -26,13 +26,22 @@ ChefeSlot chefeSlotForTurno(Turno turno) =>
 /// One of the store's fixed teams. [id] is what [Person.team] stores, so
 /// [name] can change without touching saved data.
 class Team {
-  const Team(this.id, this.name, this.chefeSlots, {this.hasTurnos = false});
+  const Team(
+    this.id,
+    this.name,
+    this.chefeSlots, {
+    this.hasTurnos = false,
+    this.hasSupervisors = false,
+  });
 
   final String id;
   final String name;
 
   /// Whether members are split into [Turno]s (only Livre Serviço).
   final bool hasTurnos;
+
+  /// Whether members can be Supervisor (only Frente de Loja).
+  final bool hasSupervisors;
 
   /// The team's chefe positions, in display order. Each is held by at most
   /// one (non-deleted) member.
@@ -50,7 +59,9 @@ const teams = [
   Team('meal_solutions', 'Meal Solutions', [ChefeSlot.chefe]),
   Team('talho', 'Talho', [ChefeSlot.chefe]),
   Team('peixaria', 'Peixaria', [ChefeSlot.chefe]),
-  Team('frente_de_loja', 'Frente de Loja', [ChefeSlot.chefe]),
+  Team('frente_de_loja', 'Frente de Loja', [
+    ChefeSlot.chefe,
+  ], hasSupervisors: true),
   Team('bem_estar', 'Bem Estar', [ChefeSlot.chefe]),
   Team('padaria', 'Padaria', [ChefeSlot.chefe]),
   Team('fruta', 'Fruta', [ChefeSlot.chefe]),
@@ -74,6 +85,13 @@ ChefeSlot? chefeSlotOf(Person p) {
   }
   return null;
 }
+
+/// Whether [p] is a Supervisor: flagged, in a team that has supervisors, and
+/// not a chefe.
+bool isSupervisor(Person p) =>
+    p.supervisor &&
+    teamById(p.team)?.hasSupervisors == true &&
+    chefeSlotOf(p) == null;
 
 /// [p]'s turno, or null if their team isn't split by turno or they have no
 /// valid one. A chefe's turno is their slot's, whatever [Person.turno] says.

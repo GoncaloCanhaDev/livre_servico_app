@@ -7,6 +7,7 @@ Person _p(
   String? team,
   String? chefe,
   String? turno,
+  bool supervisor = false,
   String uuid = '',
   bool deleted = false,
 }) => Person()
@@ -16,6 +17,7 @@ Person _p(
   ..team = team
   ..chefe = chefe
   ..turno = turno
+  ..supervisor = supervisor
   ..syncDeletedAt = deleted ? DateTime(2026) : null;
 
 void main() {
@@ -162,6 +164,31 @@ void main() {
         deleted: true,
       );
       expect(chefeConflicts(ana, [anaFromDb, gone]), isEmpty);
+    });
+  });
+
+  group('supervisors', () {
+    test('only Frente de Loja has supervisors', () {
+      expect(teamById('frente_de_loja')!.hasSupervisors, isTrue);
+      for (final t in teams.where((t) => t.id != 'frente_de_loja')) {
+        expect(t.hasSupervisors, isFalse, reason: t.name);
+      }
+    });
+
+    test('isSupervisor needs the flag, Frente de Loja and no chefe slot', () {
+      expect(
+        isSupervisor(_p('A', team: 'frente_de_loja', supervisor: true)),
+        isTrue,
+      );
+      expect(isSupervisor(_p('B', team: 'frente_de_loja')), isFalse);
+      expect(isSupervisor(_p('C', team: 'talho', supervisor: true)), isFalse);
+      expect(isSupervisor(_p('D', supervisor: true)), isFalse);
+      expect(
+        isSupervisor(
+          _p('E', team: 'frente_de_loja', chefe: 'chefe', supervisor: true),
+        ),
+        isFalse,
+      );
     });
   });
 

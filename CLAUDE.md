@@ -52,7 +52,9 @@ multi-tenant product.
   stores a `Turno.name`; read it through `turnoOf`, which takes a chefe's turno from their slot
   (Chefe de dia / Chefe de noite). `Person.permanencia` is an independent tag ("Permanência":
   can stand in for management when no chefia is present). `Person.partTime` is false for full
-  time ("Tempo inteiro", the default) and true for "Tempo parcial".
+  time ("Tempo inteiro", the default) and true for "Tempo parcial". Frente de Loja also has
+  Supervisores (`Team.hasSupervisors`, any number): `Person.supervisor`, read through
+  `isSupervisor`, which ignores it outside such teams and for chefes.
 
 ### Services layer
 
