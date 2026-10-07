@@ -1,11 +1,12 @@
+import 'dart:convert';
+
 import 'package:barcode_widget/barcode_widget.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../models/product.dart';
 import '../models/truck_reception.dart';
-import '../services/product_service.dart';
 import '../services/truck_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -34,8 +35,9 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   /// Inputs for each selected category, created on demand.
   final Map<PalletCategory, _Inputs> _inputs = {};
 
-  final Map<int, Product> _vasilhameProductsMap = {};
-  final Map<int, int> _vasilhameQuantities = {};
+  /// Selected vasilhame quantities, keyed by item name.
+  final Map<String, int> _vasilhameQuantities = {};
+  final Map<String, _VasilhameItem> _vasilhameItems = {};
 
   @override
   void dispose() {
@@ -148,13 +150,19 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   }
 
   Future<void> _showVasilhameModal() async {
-    final allProducts = await ProductService.instance.all();
-    final products = allProducts
-        .where((p) => p.department == PalletCategory.vasilhame)
-        .toList();
+    final List<_VasilhameItem> products;
+    try {
+      products = await _loadVasilhameItems();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao ler a lista de vasilhame: $e')),
+      );
+      return;
+    }
 
     for (final p in products) {
-      _vasilhameProductsMap[p.id] = p;
+      _vasilhameItems[p.name] = p;
     }
 
     if (products.isEmpty && mounted) {
@@ -199,10 +207,10 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                       itemCount: products.length,
                       itemBuilder: (ctx, i) {
                         final p = products[i];
-                        final qty = _vasilhameQuantities[p.id] ?? 0;
+                        final qty = _vasilhameQuantities[p.name] ?? 0;
                         return ListTile(
                           title: Text(p.name),
-                          subtitle: Text(p.sapCode),
+                          subtitle: p.code == null ? null : Text(p.code!),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -211,9 +219,11 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                                 onPressed: qty > 0
                                     ? () {
                                         setModalState(() {
-                                          _vasilhameQuantities[p.id] = qty - 1;
-                                          if (_vasilhameQuantities[p.id] == 0) {
-                                            _vasilhameQuantities.remove(p.id);
+                                          _vasilhameQuantities[p.name] =
+                                              qty - 1;
+                                          if (_vasilhameQuantities[p.name] ==
+                                              0) {
+                                            _vasilhameQuantities.remove(p.name);
                                           }
                                         });
                                         setState(() {});
@@ -235,7 +245,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                                 icon: const Icon(Icons.add_circle_outline),
                                 onPressed: () {
                                   setModalState(() {
-                                    _vasilhameQuantities[p.id] = qty + 1;
+                                    _vasilhameQuantities[p.name] = qty + 1;
                                   });
                                   setState(() {});
                                 },
@@ -314,7 +324,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
           .where((e) => e.value > 0)
           .map(
             (e) => SentVasilhameItem()
-              ..productName = _vasilhameProductsMap[e.key]!.name
+              ..productName = e.key
               ..amount = e.value,
           )
           .toList();
@@ -470,7 +480,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
               ..._vasilhameQuantities.entries.where((e) => e.value > 0).map((
                 e,
               ) {
-                final p = _vasilhameProductsMap[e.key]!;
+                final p = _vasilhameItems[e.key]!;
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
@@ -485,39 +495,45 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                p.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                    onTap: p.ean == null
+                        ? null
+                        : () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      p.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    BarcodeWidget(
+                                      barcode: p.ean!.length == 13
+                                          ? Barcode.ean13()
+                                          : p.ean!.length == 8
+                                          ? Barcode.ean8()
+                                          : Barcode.code128(),
+                                      data: p.ean!,
+                                      width: double.infinity,
+                                      height: 120,
+                                      drawText: true,
+                                    ),
+                                  ],
                                 ),
-                                textAlign: TextAlign.center,
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Fechar'),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 16),
-                              BarcodeWidget(
-                                barcode: Barcode.ean13(),
-                                data: p.ean,
-                                width: double.infinity,
-                                height: 120,
-                                drawText: true,
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Fechar'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                            );
+                          },
                   ),
                 );
               }),
@@ -752,4 +768,37 @@ class _TotalCell extends StatelessWidget {
       ],
     );
   }
+}
+
+/// One entry of the bundled vasilhame list (`assets/vasilhame.json`).
+class _VasilhameItem {
+  const _VasilhameItem({required this.name, this.code, this.ean});
+  final String name;
+  final String? code;
+  final String? ean;
+}
+
+/// Reads `assets/vasilhame.json`: a JSON array of objects with a required
+/// `name` and optional `code` (shown under the name) and `ean` (shown as a
+/// barcode when the item is tapped).
+Future<List<_VasilhameItem>> _loadVasilhameItems() async {
+  final raw = await rootBundle.loadString('assets/vasilhame.json');
+  final decoded = jsonDecode(raw);
+  if (decoded is! List) {
+    throw const FormatException('esperada uma lista');
+  }
+  String? opt(Object? v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  return [
+    for (final e in decoded)
+      if (e is Map && opt(e['name']) != null)
+        _VasilhameItem(
+          name: opt(e['name'])!,
+          code: opt(e['code']),
+          ean: opt(e['ean']),
+        ),
+  ];
 }

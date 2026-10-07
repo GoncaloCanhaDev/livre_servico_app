@@ -9,7 +9,6 @@ import 'info_screen.dart';
 import 'inventory_screen.dart';
 import 'pedidos_screen.dart';
 import 'people_screen.dart';
-import 'products_list_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
 import 'truck_form_screen.dart';
@@ -102,15 +101,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const TruckFormScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.inventory_2,
-                    label: 'Produtos',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProductsListScreen(),
                       ),
                     ),
                   ),

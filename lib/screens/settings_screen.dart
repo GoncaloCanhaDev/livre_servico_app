@@ -174,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Apagar Todos os Dados'),
         content: const Text(
-          'Esta ação irá apagar permanentemente todos os dados da aplicação (listas, produtos, inventário, tarefas, receções).\n\nEsta ação não pode ser revertida. Desejas continuar?',
+          'Esta ação irá apagar permanentemente todos os dados da aplicação (listas, inventários, pedidos, tarefas, receções, pessoas).\n\nEsta ação não pode ser revertida. Desejas continuar?',
         ),
         actions: [
           TextButton(

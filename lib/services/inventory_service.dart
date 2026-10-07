@@ -11,7 +11,6 @@ class InventoryService extends ChangeNotifier {
 
   Isar get _isar => ShiftService.instance.isar;
 
-  /// Legacy save (used by the old name+value flow + sync engine).
   Future<int> save(Inventory inv) async {
     SyncMeta.stamp(inv);
     late int id;
@@ -20,27 +19,6 @@ class InventoryService extends ChangeNotifier {
     });
     notifyListeners();
     return id;
-  }
-
-  Future<Inventory> startSession({
-    required String name,
-    required String code,
-    List<String>? by,
-  }) async {
-    final now = DateTime.now();
-    final inv = Inventory()
-      ..name = name
-      ..code = code
-      ..createdAt = now
-      ..startedAt = now
-      ..valueCents = 0
-      ..createdByNames = by ?? [];
-    SyncMeta.stamp(inv);
-    await _isar.writeTxn(() async {
-      inv.id = await _isar.inventorys.put(inv);
-    });
-    notifyListeners();
-    return inv;
   }
 
   Future<void> finalize(Inventory inv, {required int finalValueCents}) async {

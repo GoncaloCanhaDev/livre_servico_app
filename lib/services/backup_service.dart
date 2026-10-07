@@ -13,7 +13,6 @@ import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
 import '../models/person.dart';
-import '../models/product.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
@@ -119,7 +118,6 @@ class BackupService {
     }
 
     await wipe(_isar.truckReceptions);
-    await wipe(_isar.products);
     await wipe(_isar.openingLists);
     await wipe(_isar.autoLists);
     await wipe(_isar.reportLists);
@@ -137,7 +135,6 @@ class BackupService {
       'exportedAt': DateTime.now().toIso8601String(),
       'collections': {
         'TruckReception': await _isar.truckReceptions.where().exportJson(),
-        'Product': await _isar.products.where().exportJson(),
         'OpeningList': await _isar.openingLists.where().exportJson(),
         'AutoList': await _isar.autoLists.where().exportJson(),
         'ReportList': await _isar.reportLists.where().exportJson(),
@@ -171,7 +168,6 @@ class BackupService {
 
     await _isar.writeTxn(() async {
       await _isar.truckReceptions.clear();
-      await _isar.products.clear();
       await _isar.openingLists.clear();
       await _isar.autoLists.clear();
       await _isar.reportLists.clear();
@@ -183,7 +179,6 @@ class BackupService {
       await _isar.persons.clear();
 
       await _isar.truckReceptions.importJson(items('TruckReception'));
-      await _isar.products.importJson(items('Product'));
       await _isar.openingLists.importJson(items('OpeningList'));
       await _isar.autoLists.importJson(items('AutoList'));
       await _isar.reportLists.importJson(items('ReportList'));

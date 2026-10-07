@@ -6,13 +6,10 @@ import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
-import '../models/inventory_line.dart';
 import '../models/justification.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
-import '../models/pedido_line.dart';
 import '../models/person.dart';
-import '../models/product.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
@@ -34,7 +31,6 @@ class ShiftService {
     final isar = await Isar.open(
       [
         TruckReceptionSchema,
-        ProductSchema,
         OpeningListSchema,
         AutoListSchema,
         ReportListSchema,
@@ -42,11 +38,9 @@ class ShiftService {
         DailyTasksSchema,
         WeeklyTasksSchema,
         InventorySchema,
-        InventoryLineSchema,
         InfoEntrySchema,
         JustificationSchema,
         PedidoSchema,
-        PedidoLineSchema,
         PersonSchema,
         CustomTaskSchema,
         CustomTaskEntrySchema,
@@ -67,7 +61,6 @@ class ShiftService {
     }
 
     await backfill(_isar.truckReceptions);
-    await backfill(_isar.products);
     await backfill(_isar.openingLists);
     await backfill(_isar.autoLists);
     await backfill(_isar.reportLists);
@@ -75,11 +68,9 @@ class ShiftService {
     await backfill(_isar.dailyTasks);
     await backfill(_isar.weeklyTasks);
     await backfill(_isar.inventorys);
-    await backfill(_isar.inventoryLines);
     await backfill(_isar.infoEntrys);
     await backfill(_isar.justifications);
     await backfill(_isar.pedidos);
-    await backfill(_isar.pedidoLines);
     await backfill(_isar.persons);
   }
 }

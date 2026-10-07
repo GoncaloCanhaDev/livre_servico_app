@@ -13,7 +13,6 @@ import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
-import '../services/pedido_line_service.dart';
 import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
 import '../services/settings_service.dart';
@@ -181,7 +180,6 @@ Future<bool> _confirmHardDelete(BuildContext context, String title) async {
   );
   return ok == true;
 }
-
 
 Future<bool> _confirmDelete(BuildContext context, String what) async {
   final ok = await showDialog<bool>(
@@ -1741,13 +1739,11 @@ class _PedidosTabState extends State<_PedidosTab>
     super.initState();
     _reload();
     PedidoService.instance.addListener(_reload);
-    PedidoLineService.instance.addListener(_reload);
   }
 
   @override
   void dispose() {
     PedidoService.instance.removeListener(_reload);
-    PedidoLineService.instance.removeListener(_reload);
     super.dispose();
   }
 
@@ -1793,18 +1789,11 @@ class _PedidosTabState extends State<_PedidosTab>
                   await PedidoService.instance.delete(p.id);
                 },
                 onSendWhatsApp: (ctx) async {
-                  final lines = await PedidoLineService.instance.linesFor(
-                    p.syncUuid,
-                  );
                   final msg = StringBuffer()
-                    ..writeln('📝 Pedido nº ${p.numero ?? '—'}')
-                    ..writeln('${lines.length} produto(s)');
-                  for (final l in lines) {
-                    msg.writeln(
-                      '• ${l.productName ?? l.ean} (${l.ean}) — ${l.caixas} cx',
-                    );
+                    ..writeln('📝 Pedido nº ${p.numero ?? '—'}');
+                  if (p.supplier != null) {
+                    msg.writeln('Fornecedor: ${p.supplier}');
                   }
-                  if (!ctx.mounted) return;
                   await WhatsAppService.sendWithConfirm(
                     ctx,
                     msg.toString().trim(),
