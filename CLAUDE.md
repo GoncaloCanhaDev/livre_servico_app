@@ -87,3 +87,15 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
 - `.env.example` still references `SUPABASE_URL`/`SUPABASE_ANON_KEY` from the removed backend
   integration; nothing in `lib/` reads env vars or calls Supabase today, so treat that file as
   stale rather than as a sign of an active integration.
+
+## Versioning
+
+- Every commit is a version. `pubspec.yaml` `version: MAJOR.MINOR.PATCH+BUILD` is the single
+  source of truth; bump it in the commit itself and tag that commit with an annotated tag
+  `vX.Y.Z` (`git tag -a vX.Y.Z -m "vX.Y.Z"`).
+- While the app is pre-1.0, a commit that adds or removes a feature bumps MINOR and resets PATCH;
+  any other commit (fix, improvement, refactor, docs, build change) bumps PATCH. BUILD (the
+  Android `versionCode`) goes up by exactly one on every commit, never reset.
+- Add the version's entry at the top of `CHANGELOG.md` in the same commit.
+- History was renumbered under this scheme on 2026-10-07 (old v0.4.0 is now v0.27.1); the old
+  v0.2.0–v0.4.0 release tags no longer exist.
