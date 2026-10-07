@@ -29,8 +29,9 @@ void main() {
         'Talho',
         'Peixaria',
         'Frente de Loja',
-        'BemEstar',
+        'Bem Estar',
         'Padaria',
+        'Fruta',
       ]);
     });
 

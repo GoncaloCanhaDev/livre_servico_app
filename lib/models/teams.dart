@@ -51,8 +51,9 @@ const teams = [
   Team('talho', 'Talho', [ChefeSlot.chefe]),
   Team('peixaria', 'Peixaria', [ChefeSlot.chefe]),
   Team('frente_de_loja', 'Frente de Loja', [ChefeSlot.chefe]),
-  Team('bem_estar', 'BemEstar', [ChefeSlot.chefe]),
+  Team('bem_estar', 'Bem Estar', [ChefeSlot.chefe]),
   Team('padaria', 'Padaria', [ChefeSlot.chefe]),
+  Team('fruta', 'Fruta', [ChefeSlot.chefe]),
 ];
 
 /// The team with [id], or null for null/unknown ids (shown as "Sem equipa").
