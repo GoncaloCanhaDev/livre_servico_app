@@ -274,195 +274,223 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dayFmt = DateFormat("EEEE, d 'de' MMMM y", 'pt_PT');
-    final timeFmt = DateFormat('HH:mm');
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_person.fullName),
-        actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _openEditForm),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Row(
-                children: [
-                  _person.photoPath != null &&
-                          File(_person.photoPath!).existsSync()
-                      ? CircleAvatar(
-                          radius: 24,
-                          backgroundImage: FileImage(File(_person.photoPath!)),
-                        )
-                      : PersonInitialsBadge(name: _person.fullName, size: 48),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _person.fullName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (roleTagsOf(_person) case final tags
-                            when tags.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [for (final t in tags) RoleBadge(t)],
-                            ),
-                          ),
-                        Text(
-                          [
-                            ?_teamLine(_person),
-                            _person.partTime
-                                ? 'Tempo parcial'
-                                : 'Tempo inteiro',
-                            if (_person.collaboratorNumber.isNotEmpty)
-                              'Nº colaborador: ${_person.collaboratorNumber}',
-                          ].join(' · '),
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                        if (_person.phoneNumber != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: InkWell(
-                              onTap: () => launchUrl(
-                                Uri(scheme: 'tel', path: _person.phoneNumber),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.phone,
-                                    size: 14,
-                                    color: AppColors.greenDark,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _person.phoneNumber!,
-                                    style: const TextStyle(
-                                      color: AppColors.greenDark,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (_person.dateOfBirth != null ||
-                            _person.hireDate != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              [
-                                if (_person.dateOfBirth != null)
-                                  'Nasc.: ${DateFormat("d/MM/y").format(_person.dateOfBirth!)}',
-                                if (_person.hireDate != null)
-                                  'Início: ${DateFormat("d/MM/y").format(_person.hireDate!)}',
-                              ].join('  ·  '),
-                              style: const TextStyle(
-                                color: Colors.black45,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: FutureBuilder<Map<DateTime, List<_ActivityItem>>>(
-                future: _future,
-                builder: (_, snap) {
-                  if (!snap.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final grouped = snap.data!;
-                  if (grouped.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Sem atividade registada.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ),
-                    );
-                  }
-                  final days = grouped.keys.toList();
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: days.length,
-                    itemBuilder: (_, i) {
-                      final day = days[i];
-                      final items = grouped[day]!;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (i > 0) const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              dayFmt.format(day),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.greenDark,
-                              ),
-                            ),
-                          ),
-                          ...items.map(
-                            (item) => Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: Icon(
-                                  item.icon,
-                                  color: item.iconColor,
-                                  size: 24,
-                                ),
-                                title: Text(
-                                  item.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  item.subtitle,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                trailing: Text(
-                                  timeFmt.format(item.time),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black45,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_person.fullName),
+          actions: [
+            IconButton(icon: const Icon(Icons.edit), onPressed: _openEditForm),
           ],
+          bottom: const TabBar(
+            labelColor: AppColors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: AppColors.white,
+            tabs: [
+              Tab(text: 'Detalhes'),
+              Tab(text: 'Histórico'),
+            ],
+          ),
+        ),
+        body: SafeArea(
+          child: TabBarView(
+            children: [
+              _DetailsTab(person: _person),
+              _historyTab(),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  /// The person's activity, grouped by day (newest first).
+  Widget _historyTab() {
+    final dayFmt = DateFormat("EEEE, d 'de' MMMM y", 'pt_PT');
+    final timeFmt = DateFormat('HH:mm');
+    return FutureBuilder<Map<DateTime, List<_ActivityItem>>>(
+      future: _future,
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final grouped = snap.data!;
+        if (grouped.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'Sem atividade registada.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+          );
+        }
+        final days = grouped.keys.toList();
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: days.length,
+          itemBuilder: (_, i) {
+            final day = days[i];
+            final items = grouped[day]!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (i > 0) const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    dayFmt.format(day),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
+                ),
+                ...items.map(
+                  (item) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(item.icon, color: item.iconColor, size: 24),
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        item.subtitle,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Text(
+                        timeFmt.format(item.time),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Everything recorded about [person]: photo, name and role badges, then one
+/// row per field (team and horário always; the rest only when filled in).
+class _DetailsTab extends StatelessWidget {
+  const _DetailsTab({required this.person});
+
+  final Person person;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = person;
+    final dateFmt = DateFormat("d 'de' MMMM y", 'pt_PT');
+    final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
+    final tags = roleTagsOf(p);
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      children: [
+        Center(
+          child: hasPhoto
+              ? CircleAvatar(
+                  radius: 44,
+                  backgroundImage: FileImage(File(p.photoPath!)),
+                )
+              : PersonInitialsBadge(name: p.fullName, size: 88),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          p.fullName,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
+        if (tags.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 6,
+              runSpacing: 4,
+              children: [for (final t in tags) RoleBadge(t)],
+            ),
+          ),
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        _InfoRow(
+          icon: Icons.groups_outlined,
+          label: 'Equipa',
+          value: _teamLine(p) ?? 'Sem equipa',
+        ),
+        _InfoRow(
+          icon: Icons.schedule,
+          label: 'Horário',
+          value: p.partTime ? 'Tempo parcial' : 'Tempo inteiro',
+        ),
+        if (p.collaboratorNumber.isNotEmpty)
+          _InfoRow(
+            icon: Icons.badge_outlined,
+            label: 'Nº colaborador',
+            value: p.collaboratorNumber,
+          ),
+        if (p.phoneNumber case final phone?)
+          _InfoRow(
+            icon: Icons.phone,
+            label: 'Telefone',
+            value: phone,
+            onTap: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+          ),
+        if (p.dateOfBirth case final dob?)
+          _InfoRow(
+            icon: Icons.cake_outlined,
+            label: 'Data de nascimento',
+            value: dateFmt.format(dob),
+          ),
+        if (p.hireDate case final hired?)
+          _InfoRow(
+            icon: Icons.work_outline,
+            label: 'Início na empresa',
+            value: dateFmt.format(hired),
+          ),
+      ],
+    );
+  }
+}
+
+/// One labeled field on the Detalhes tab; tappable (e.g. to call) when
+/// [onTap] is set.
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.greenDark),
+      title: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(label),
+      trailing: onTap == null
+          ? null
+          : const Icon(Icons.call, color: AppColors.greenDark),
+      onTap: onTap,
     );
   }
 }
