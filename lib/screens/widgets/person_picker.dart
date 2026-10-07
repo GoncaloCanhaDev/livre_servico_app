@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/person.dart';
+import '../../models/planning.dart';
 import '../../models/teams.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
@@ -167,9 +168,15 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
   }
 
   /// [people] grouped like the Pessoas list, each section collapsible and
-  /// showing how many of its people are ticked.
+  /// showing how many of its people are ticked. People off on the selected
+  /// day are greyed out with the reason and listed last, but can still be
+  /// ticked.
   Widget _sectionList(List<Person> people) {
-    final sections = buildPeopleSections(people, query: _searchCtrl.text);
+    final sections = buildPeopleSections(
+      people,
+      query: _searchCtrl.text,
+      offDay: _selectedDay,
+    );
     if (sections.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16),
@@ -197,15 +204,33 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
           ),
           if (_isOpen(section))
             for (final p in section.people)
-              CheckboxListTile(
-                secondary: PersonInitialsBadge(name: p.fullName),
-                title: Text(p.fullName),
-                subtitle: p.collaboratorNumber.isEmpty
-                    ? null
-                    : Text('Nº ${p.collaboratorNumber}'),
-                value: _selectedIds.contains(p.id),
-                onChanged: (checked) => _toggle(p, checked),
-              ),
+              if (offLabelOn(p, _selectedDay) case final off?)
+                CheckboxListTile(
+                  secondary: PersonInitialsBadge(
+                    name: p.fullName,
+                    background: Colors.black26,
+                  ),
+                  title: Text(
+                    p.fullName,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  subtitle: Text(
+                    off,
+                    style: TextStyle(color: Colors.orange.shade800),
+                  ),
+                  value: _selectedIds.contains(p.id),
+                  onChanged: (checked) => _toggle(p, checked),
+                )
+              else
+                CheckboxListTile(
+                  secondary: PersonInitialsBadge(name: p.fullName),
+                  title: Text(p.fullName),
+                  subtitle: p.collaboratorNumber.isEmpty
+                      ? null
+                      : Text('Nº ${p.collaboratorNumber}'),
+                  value: _selectedIds.contains(p.id),
+                  onChanged: (checked) => _toggle(p, checked),
+                ),
         ],
       ],
     );

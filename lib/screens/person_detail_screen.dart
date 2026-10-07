@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/person.dart';
+import '../models/planning.dart';
 import '../models/teams.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
@@ -384,8 +385,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   }
 }
 
-/// Everything recorded about [person]: photo, name and role badges, then one
-/// row per field (team and horário always; the rest only when filled in).
+/// Everything recorded about [person]: photo, name and role badges, whether
+/// they are off today, then one row per field (team and horário always; the
+/// rest only when filled in) under Planeamento, Datas and Notas headings.
 class _DetailsTab extends StatelessWidget {
   const _DetailsTab({required this.person});
 
@@ -397,6 +399,10 @@ class _DetailsTab extends StatelessWidget {
     final dateFmt = DateFormat("d 'de' MMMM y", 'pt_PT');
     final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
     final tags = roleTagsOf(p);
+    final today = DateTime.now();
+    final away = ausenciaOn(p, today);
+    final upcoming = upcomingAusencias(p, today);
+    final horario = horarioText(p);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
@@ -426,15 +432,24 @@ class _DetailsTab extends StatelessWidget {
           ),
         const SizedBox(height: 12),
         const Divider(height: 1),
+        if (away != null)
+          _InfoRow(
+            icon: Icons.event_busy,
+            label: 'Hoje',
+            value: '${away.tipo.label} até ${dateFmt.format(away.end)}',
+            highlight: true,
+          )
+        else if (p.folgas.contains(today.weekday))
+          const _InfoRow(
+            icon: Icons.event_busy,
+            label: 'Hoje',
+            value: 'Folga',
+            highlight: true,
+          ),
         _InfoRow(
           icon: Icons.groups_outlined,
           label: 'Equipa',
           value: _teamLine(p) ?? 'Sem equipa',
-        ),
-        _InfoRow(
-          icon: Icons.schedule,
-          label: 'Horário',
-          value: p.partTime ? 'Tempo parcial' : 'Tempo inteiro',
         ),
         if (p.collaboratorNumber.isNotEmpty)
           _InfoRow(
@@ -455,13 +470,75 @@ class _DetailsTab extends StatelessWidget {
             label: 'Data de nascimento',
             value: dateFmt.format(dob),
           ),
-        if (p.hireDate case final hired?)
+        const _DetailHeading('Planeamento'),
+        _InfoRow(
+          icon: Icons.schedule,
+          label: 'Horário',
+          value: [
+            p.partTime ? 'Tempo parcial' : 'Tempo inteiro',
+            if (p.weeklyHours case final h?) '$h h/semana',
+          ].join(' · '),
+        ),
+        if (horario != null)
+          _InfoRow(
+            icon: Icons.access_time,
+            label: 'Entrada e saída',
+            value: horario,
+          ),
+        if (p.folgas.isNotEmpty)
+          _InfoRow(
+            icon: Icons.weekend_outlined,
+            label: 'Folgas',
+            value: folgasText(p.folgas),
+          ),
+        for (final a in upcoming)
+          _InfoRow(
+            icon: Icons.event_busy,
+            label: a.tipo.label,
+            value: ausenciaRangeText(a),
+          ),
+        if (p.storeStartDate != null || p.hireDate != null)
+          const _DetailHeading('Datas'),
+        if (p.storeStartDate case final since?)
+          _InfoRow(
+            icon: Icons.storefront_outlined,
+            label: 'Na loja · desde ${dateFmt.format(since)}',
+            value: tenureText(since, today),
+          ),
+        if (p.hireDate case final since?)
           _InfoRow(
             icon: Icons.work_outline,
-            label: 'Início na empresa',
-            value: dateFmt.format(hired),
+            label: 'No Pingo Doce · desde ${dateFmt.format(since)}',
+            value: tenureText(since, today),
+          ),
+        if (p.notes.isNotEmpty) const _DetailHeading('Notas'),
+        for (final note in p.notes)
+          ListTile(
+            leading: const Icon(Icons.notes, color: AppColors.greenDark),
+            title: Text(note),
           ),
       ],
+    );
+  }
+}
+
+/// A group title on the Detalhes tab.
+class _DetailHeading extends StatelessWidget {
+  const _DetailHeading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: AppColors.greenDark,
+        ),
+      ),
     );
   }
 }
@@ -474,6 +551,7 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.onTap,
+    this.highlight = false,
   });
 
   final IconData icon;
@@ -481,11 +559,21 @@ class _InfoRow extends StatelessWidget {
   final String value;
   final VoidCallback? onTap;
 
+  /// Drawn in orange, for the person being off today.
+  final bool highlight;
+
   @override
   Widget build(BuildContext context) {
+    final color = highlight ? Colors.orange.shade800 : AppColors.greenDark;
     return ListTile(
-      leading: Icon(icon, color: AppColors.greenDark),
-      title: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      leading: Icon(icon, color: color),
+      title: Text(
+        value,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: highlight ? color : null,
+        ),
+      ),
       subtitle: Text(label),
       trailing: onTap == null
           ? null

@@ -49,4 +49,45 @@ class Person {
   /// Segunda Linha (second in line after the chefe) in a team that has it.
   /// Read it through `isSegundaLinha`.
   bool segundaLinha = false;
+
+  /// Fixed weekly days off, as [DateTime.weekday] values (1 = Monday).
+  List<int> folgas = [];
+
+  /// Contracted hours per week, if recorded.
+  int? weeklyHours;
+
+  /// Usual working hours, in minutes after midnight. The end can be earlier
+  /// than the start for a shift that crosses midnight.
+  int? shiftStart;
+  int? shiftEnd;
+
+  /// Férias, baixas and other absences, past and future.
+  List<Ausencia> ausencias = [];
+
+  /// When the person started at this store (the company start is
+  /// [hireDate]).
+  DateTime? storeStartDate;
+
+  /// Short free-text notes, one per entry.
+  List<String> notes = [];
+}
+
+enum AusenciaTipo {
+  ferias('Férias'),
+  baixa('Baixa'),
+  formacao('Formação'),
+  outra('Ausência');
+
+  const AusenciaTipo(this.label);
+  final String label;
+}
+
+/// A period away from work, from [start] to [end] (both whole days,
+/// inclusive). Baixas are recorded without a reason.
+@embedded
+class Ausencia {
+  @Enumerated(EnumType.name)
+  AusenciaTipo tipo = AusenciaTipo.ferias;
+  DateTime start = DateTime(2000);
+  DateTime end = DateTime(2000);
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../models/person.dart';
+import '../models/planning.dart';
 import '../models/teams.dart';
 import '../services/person_service.dart';
 import 'people_sections.dart';
@@ -334,11 +335,26 @@ class _PersonTile extends StatelessWidget {
           for (final tag in roleTagsOf(p)) RoleBadge(tag),
         ],
       ),
-      subtitle: Text(
-        [
-          if (p.partTime) 'Tempo parcial',
-          if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
-        ].join(' · '),
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            if (offLabelOn(p, DateTime.now()) case final off?)
+              TextSpan(
+                text: '$off  ',
+                style: TextStyle(
+                  color: Colors.orange.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            TextSpan(
+              text: [
+                if (p.partTime) 'Tempo parcial',
+                if (p.collaboratorNumber.isNotEmpty)
+                  'Nº ${p.collaboratorNumber}',
+              ].join(' · '),
+            ),
+          ],
+        ),
       ),
       onTap: onTap,
       onLongPress: onLongPress,

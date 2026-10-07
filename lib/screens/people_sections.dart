@@ -1,4 +1,5 @@
 import '../models/person.dart';
+import '../models/planning.dart';
 import '../models/teams.dart';
 
 /// A team's people in the Pessoas list view.
@@ -74,11 +75,13 @@ bool _matches(Person p, String foldedQuery) =>
 /// in [teams] order (Livre Serviço split into Dia, Noite and Sem turno), with
 /// people without a (known) team in a final "Sem equipa" section. Within a
 /// section, chefes come first in the team's slot order, then Supervisores,
-/// then Segunda Linha, then members, each A–Z. Empty sections are left
-/// out.
+/// then Segunda Linha, then members, each A–Z. With [offDay], people not
+/// working that day (see [offLabelOn]) go last in their section, in the same
+/// order. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
+  DateTime? offDay,
 }) {
   final q = foldText(query.trim());
   final bySection = <String, List<Person>>{};
@@ -88,6 +91,13 @@ List<PeopleSection> buildPeopleSections(
   }
 
   int byRank(Team? team, Person a, Person b) {
+    if (offDay != null) {
+      final off = (offLabelOn(a, offDay) != null ? 1 : 0).compareTo(
+        offLabelOn(b, offDay) != null ? 1 : 0,
+      );
+      if (off != 0) return off;
+    }
+
     int rank(Person p) {
       final slot = chefeSlotOf(p);
       if (team != null && slot != null) return team.chefeSlots.indexOf(slot);

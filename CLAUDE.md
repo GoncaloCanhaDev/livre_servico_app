@@ -22,7 +22,7 @@ multi-tenant product.
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
-  `lib/screens/people_sections.dart`, no widget tests).
+  `lib/screens/people_sections.dart` and `lib/models/planning.dart`, no widget tests).
 
 ## Architecture
 
@@ -58,6 +58,12 @@ multi-tenant product.
   the production teams) and Permanência (anyone). Read them through `isSupervisor` /
   `isSegundaLinha` (which ignore the flag outside such teams and for chefes); `roleTagsOf`
   gives the badge labels the UI shows.
+- Planning data on `Person` (`folgas` weekdays, `weeklyHours`, `shiftStart`/`shiftEnd` in
+  minutes after midnight, embedded `Ausencia` list) is read through the pure helpers in
+  `lib/models/planning.dart`: `offLabelOn(p, day)` says why someone isn't working that day (an
+  ausência beats a folga), used by Pessoas, the person page and the task picker
+  (`buildPeopleSections(offDay:)` lists them last). `hireDate` is the company (Pingo Doce)
+  start; `storeStartDate` is the start at this store.
 
 ### Services layer
 

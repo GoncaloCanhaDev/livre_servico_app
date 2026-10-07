@@ -6,12 +6,15 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/person.dart';
+import '../models/planning.dart';
 import '../models/teams.dart';
 import '../services/person_service.dart';
 import '../services/sync_meta.dart';
+import '../theme.dart';
 
-/// Full-screen add/edit form for a [Person]: identity fields plus team and
-/// chefe role, and a profile picture. Used both from
+/// Full-screen add/edit form for a [Person]: identity fields, team and
+/// roles, planning (horário, folgas, ausências), dates, notes and a profile
+/// picture. Used both from
 /// the people list ("+") and from [PersonDetailScreen]'s edit action.
 class PersonFormScreen extends StatefulWidget {
   const PersonFormScreen({super.key, this.existing});
@@ -27,9 +30,20 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _numberCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _weeklyHoursCtrl;
 
   DateTime? _dob;
   DateTime? _hireDate;
+  DateTime? _storeStart;
+
+  int? _shiftStart; // minutes after midnight
+  int? _shiftEnd;
+  late final Set<int> _folgas; // DateTime.weekday values
+  late final List<Ausencia> _ausencias;
+
+  /// One field per existing note, plus [_newNoteCtrl] for the next one.
+  late final List<TextEditingController> _noteCtrls;
+  final _newNoteCtrl = TextEditingController();
 
   /// Existing photo path (if editing and one was already set).
   String? _photoPath;
@@ -65,8 +79,26 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _nameCtrl = TextEditingController(text: e?.fullName ?? '');
     _numberCtrl = TextEditingController(text: e?.collaboratorNumber ?? '');
     _phoneCtrl = TextEditingController(text: e?.phoneNumber ?? '');
+    _weeklyHoursCtrl = TextEditingController(
+      text: e?.weeklyHours?.toString() ?? '',
+    );
     _dob = e?.dateOfBirth;
     _hireDate = e?.hireDate;
+    _storeStart = e?.storeStartDate;
+    _shiftStart = e?.shiftStart;
+    _shiftEnd = e?.shiftEnd;
+    _folgas = {...?e?.folgas};
+    _ausencias = [
+      for (final a in e?.ausencias ?? const <Ausencia>[])
+        Ausencia()
+          ..tipo = a.tipo
+          ..start = a.start
+          ..end = a.end,
+    ];
+    _noteCtrls = [
+      for (final n in e?.notes ?? const <String>[])
+        TextEditingController(text: n),
+    ];
     _photoPath = e?.photoPath;
     _team = teamById(e?.team)?.id;
     _isChefe = e != null && chefeSlotOf(e) != null;
@@ -92,6 +124,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _nameCtrl.dispose();
     _numberCtrl.dispose();
     _phoneCtrl.dispose();
+    _weeklyHoursCtrl.dispose();
+    for (final c in _noteCtrls) {
+      c.dispose();
+    }
+    _newNoteCtrl.dispose();
     super.dispose();
   }
 
@@ -150,25 +187,77 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   bool get _hasPhotoPreview =>
       _pendingPhoto != null || (!_removePhoto && _photoPath != null);
 
-  Future<void> _pickDate({required bool isDob}) async {
+  Future<void> _pickDate(
+    String helpText,
+    DateTime? current,
+    ValueChanged<DateTime> onPicked,
+  ) async {
     final now = DateTime.now();
-    final initial = (isDob ? _dob : _hireDate) ?? now;
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial,
+      initialDate: current ?? now,
       firstDate: DateTime(1950),
       lastDate: now,
       locale: const Locale('pt', 'PT'),
-      helpText: isDob ? 'Data de nascimento' : 'Data de início',
+      helpText: helpText,
     );
     if (picked == null) return;
+    setState(() => onPicked(picked));
+  }
+
+  Future<void> _pickTime({required bool start}) async {
+    final current = start ? _shiftStart : _shiftEnd;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: current == null
+          ? TimeOfDay(hour: start ? 7 : 15, minute: 0)
+          : TimeOfDay(hour: current ~/ 60, minute: current % 60),
+      helpText: start ? 'Entrada' : 'Saída',
+    );
+    if (picked == null) return;
+    final minutes = picked.hour * 60 + picked.minute;
     setState(() {
-      if (isDob) {
-        _dob = picked;
+      if (start) {
+        _shiftStart = minutes;
       } else {
-        _hireDate = picked;
+        _shiftEnd = minutes;
       }
     });
+  }
+
+  /// Adds an ausência, or edits [existing] in place.
+  Future<void> _editAusencia([Ausencia? existing]) async {
+    final result = await showDialog<Ausencia>(
+      context: context,
+      builder: (_) => _AusenciaDialog(existing: existing),
+    );
+    if (result == null) return;
+    setState(() {
+      if (existing == null) {
+        _ausencias.add(result);
+      } else {
+        existing
+          ..tipo = result.tipo
+          ..start = result.start
+          ..end = result.end;
+      }
+      _ausencias.sort((a, b) => a.start.compareTo(b.start));
+    });
+  }
+
+  /// Turns the text in the new-note field into a note of its own.
+  void _addNote() {
+    final text = _newNoteCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _noteCtrls.add(TextEditingController(text: text));
+      _newNoteCtrl.clear();
+    });
+  }
+
+  void _removeNote(TextEditingController c) {
+    setState(() => _noteCtrls.remove(c));
+    WidgetsBinding.instance.addPostFrameCallback((_) => c.dispose());
   }
 
   Future<void> _save() async {
@@ -209,6 +298,16 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
         : _phoneCtrl.text.trim();
     person.dateOfBirth = _dob;
     person.hireDate = _hireDate;
+    person.storeStartDate = _storeStart;
+    person.weeklyHours = int.tryParse(_weeklyHoursCtrl.text.trim());
+    person.shiftStart = _shiftStart;
+    person.shiftEnd = _shiftEnd;
+    person.folgas = _folgas.toList()..sort();
+    person.ausencias = _ausencias;
+    person.notes = [
+      for (final c in [..._noteCtrls, _newNoteCtrl])
+        if (c.text.trim().isNotEmpty) c.text.trim(),
+    ];
     person.team = _team;
     person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
     person.chefe = slot?.name;
@@ -284,6 +383,148 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     );
   }
 
+  /// Entrada and saída times, each optional.
+  Widget _shiftField() {
+    Widget button(bool start) {
+      final value = start ? _shiftStart : _shiftEnd;
+      return Expanded(
+        child: OutlinedButton(
+          onPressed: () => _pickTime(start: start),
+          child: Text(
+            value == null ? (start ? 'Entrada' : 'Saída') : timeText(value),
+          ),
+        ),
+      );
+    }
+
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Entrada e saída (opcional)',
+        border: OutlineInputBorder(),
+      ),
+      child: Row(
+        children: [
+          button(true),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text('–'),
+          ),
+          button(false),
+          if (_shiftStart != null || _shiftEnd != null)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () => setState(() {
+                _shiftStart = null;
+                _shiftEnd = null;
+              }),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// A chip per weekday; ticked days are the person's weekly folgas.
+  Widget _folgasField() {
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Folgas',
+        border: OutlineInputBorder(),
+      ),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          for (var d = DateTime.monday; d <= DateTime.sunday; d++)
+            FilterChip(
+              label: Text(weekdayShort[d - 1]),
+              showCheckmark: false,
+              selected: _folgas.contains(d),
+              onSelected: (v) => setState(() {
+                if (v) {
+                  _folgas.add(d);
+                } else {
+                  _folgas.remove(d);
+                }
+              }),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The person's ausências (tap to edit, ✕ to remove) and an add button.
+  Widget _ausenciasField() {
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Férias e ausências',
+        border: OutlineInputBorder(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final a in _ausencias)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(a.tipo.label),
+              subtitle: Text(ausenciaRangeText(a)),
+              trailing: IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => setState(() => _ausencias.remove(a)),
+              ),
+              onTap: () => _editAusencia(a),
+            ),
+          TextButton.icon(
+            onPressed: _editAusencia,
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar ausência'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One editable field per note, then an empty field whose text becomes a
+  /// new note on enter or +.
+  Widget _notesField() {
+    return Column(
+      children: [
+        for (final c in _noteCtrls)
+          Padding(
+            key: ObjectKey(c),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextField(
+              controller: c,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                isDense: true,
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => _removeNote(c),
+                ),
+              ),
+            ),
+          ),
+        TextField(
+          controller: _newNoteCtrl,
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _addNote(),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: 'Nova nota',
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _addNote,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
@@ -332,7 +573,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              const _FormHeading('Pessoa'),
               TextFormField(
                 controller: _nameCtrl,
                 textCapitalization: TextCapitalization.words,
@@ -344,6 +586,33 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
               ),
               const SizedBox(height: 12),
+              TextFormField(
+                controller: _numberCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Nº colaborador (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Telefone (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _DateRow(
+                label: 'Data de nascimento',
+                value: _dob,
+                formatted: _dob == null ? null : dateFmt.format(_dob!),
+                onTap: () =>
+                    _pickDate('Data de nascimento', _dob, (d) => _dob = d),
+                onClear: () => setState(() => _dob = null),
+              ),
+              const _FormHeading('Equipa'),
               DropdownButtonFormField<String?>(
                 initialValue: _team,
                 decoration: const InputDecoration(
@@ -408,6 +677,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ],
               ],
               const SizedBox(height: 12),
+              _tagsField(),
+              const _FormHeading('Planeamento'),
               InputDecorator(
                 decoration: const InputDecoration(
                   labelText: 'Horário',
@@ -428,43 +699,56 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              _tagsField(),
-              const SizedBox(height: 12),
               TextFormField(
-                controller: _numberCtrl,
+                controller: _weeklyHoursCtrl,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Nº colaborador (opcional)',
+                  labelText: 'Horas por semana (opcional)',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) {
+                  final text = v?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  final h = int.tryParse(text);
+                  return h == null || h < 1 || h > 80 ? 'Entre 1 e 80' : null;
+                },
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Telefone (opcional)',
-                  border: OutlineInputBorder(),
+              _shiftField(),
+              const SizedBox(height: 12),
+              _folgasField(),
+              const SizedBox(height: 12),
+              _ausenciasField(),
+              const _FormHeading('Datas'),
+              _DateRow(
+                label: 'Início na loja',
+                value: _storeStart,
+                formatted: _storeStart == null
+                    ? null
+                    : dateFmt.format(_storeStart!),
+                onTap: () => _pickDate(
+                  'Início na loja',
+                  _storeStart,
+                  (d) => _storeStart = d,
                 ),
+                onClear: () => setState(() => _storeStart = null),
               ),
               const SizedBox(height: 12),
               _DateRow(
-                label: 'Data de nascimento',
-                value: _dob,
-                formatted: _dob == null ? null : dateFmt.format(_dob!),
-                onTap: () => _pickDate(isDob: true),
-                onClear: () => setState(() => _dob = null),
-              ),
-              const SizedBox(height: 12),
-              _DateRow(
-                label: 'Data de início na empresa',
+                label: 'Início no Pingo Doce',
                 value: _hireDate,
                 formatted: _hireDate == null
                     ? null
                     : dateFmt.format(_hireDate!),
-                onTap: () => _pickDate(isDob: false),
+                onTap: () => _pickDate(
+                  'Início no Pingo Doce',
+                  _hireDate,
+                  (d) => _hireDate = d,
+                ),
                 onClear: () => setState(() => _hireDate = null),
               ),
+              const _FormHeading('Notas'),
+              _notesField(),
             ],
           ),
         ),
@@ -515,6 +799,117 @@ class _DateRow extends StatelessWidget {
               onPressed: onClear,
             ),
       onTap: onTap,
+    );
+  }
+}
+
+/// A section title in the form.
+class _FormHeading extends StatelessWidget {
+  const _FormHeading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: AppColors.greenDark,
+        ),
+      ),
+    );
+  }
+}
+
+/// Picks an ausência's type and dates; pops the new [Ausencia], or null.
+class _AusenciaDialog extends StatefulWidget {
+  const _AusenciaDialog({this.existing});
+
+  final Ausencia? existing;
+
+  @override
+  State<_AusenciaDialog> createState() => _AusenciaDialogState();
+}
+
+class _AusenciaDialogState extends State<_AusenciaDialog> {
+  late AusenciaTipo _tipo = widget.existing?.tipo ?? AusenciaTipo.ferias;
+  late DateTimeRange? _range = switch (widget.existing) {
+    final a? => DateTimeRange(start: a.start, end: a.end),
+    null => null,
+  };
+
+  Future<void> _pickRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 3),
+      locale: const Locale('pt', 'PT'),
+      helpText: _tipo.label,
+    );
+    if (picked != null) setState(() => _range = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final range = _range;
+    return AlertDialog(
+      title: Text(widget.existing == null ? 'Nova ausência' : 'Ausência'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<AusenciaTipo>(
+            initialValue: _tipo,
+            decoration: const InputDecoration(
+              labelText: 'Tipo',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              for (final t in AusenciaTipo.values)
+                DropdownMenuItem(value: t, child: Text(t.label)),
+            ],
+            onChanged: (v) => setState(() => _tipo = v ?? _tipo),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _pickRange,
+            icon: const Icon(Icons.date_range),
+            label: Text(
+              range == null
+                  ? 'Escolher datas'
+                  : ausenciaRangeText(
+                      Ausencia()
+                        ..start = range.start
+                        ..end = range.end,
+                    ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: range == null
+              ? null
+              : () => Navigator.pop(
+                  context,
+                  Ausencia()
+                    ..tipo = _tipo
+                    ..start = range.start
+                    ..end = range.end,
+                ),
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

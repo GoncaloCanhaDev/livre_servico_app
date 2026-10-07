@@ -13,6 +13,7 @@ Person _p(
   bool partTime = false,
   bool supervisor = false,
   bool segundaLinha = false,
+  List<int> folgas = const [],
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
@@ -23,7 +24,8 @@ Person _p(
   ..permanencia = permanencia
   ..partTime = partTime
   ..supervisor = supervisor
-  ..segundaLinha = segundaLinha;
+  ..segundaLinha = segundaLinha
+  ..folgas = [...folgas];
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -222,6 +224,34 @@ void main() {
         buildPeopleSections(people, query: 'noite').expand(_names).toList(),
         ['Chefe N', 'Ana', 'Rui'],
       );
+    });
+  });
+
+  group('people off on a day', () {
+    final people = [
+      _p('Ana', team: 'talho', folgas: [DateTime.monday]),
+      _p('Chefe', team: 'talho', chefe: 'chefe', folgas: [DateTime.monday]),
+      _p('Rui', team: 'talho'),
+      _p('Bia', team: 'talho', segundaLinha: true),
+    ];
+
+    test('go last in their section, keeping their order', () {
+      // 2026-10-05 is a Monday.
+      expect(
+        _names(
+          buildPeopleSections(people, offDay: DateTime(2026, 10, 5)).single,
+        ),
+        ['Bia', 'Rui', 'Chefe', 'Ana'],
+      );
+    });
+
+    test('stay in place without a day', () {
+      expect(_names(buildPeopleSections(people).single), [
+        'Chefe',
+        'Bia',
+        'Ana',
+        'Rui',
+      ]);
     });
   });
 

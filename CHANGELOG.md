@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.42.0] — 2026-10-07
+
+### Added
+- Planning for each person: hours per week, entrada and saída times, weekly folgas, and
+  ausências (Férias, Baixa, Formação or other, with first and last day; no reason is kept).
+- Someone off today shows it in orange in Pessoas ("Folga", "Férias até 14/10") and on their
+  page. In the task picker, people off on the chosen day are greyed out with the reason and
+  listed last in their section, but can still be ticked.
+- Separate start dates for the store (Início na loja) and the company (Início no Pingo Doce),
+  each with how long ago it was ("4 anos e 7 meses").
+- Notes, as a list of short entries.
+
+### Changed
+- The person form is split into Pessoa, Equipa, Planeamento, Datas and Notas; the person
+  page groups its fields the same way.
+
 ## [0.41.0] — 2026-10-07
 
 ### Changed
