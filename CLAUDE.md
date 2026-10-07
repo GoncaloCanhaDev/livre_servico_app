@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Livre Serviço Companion — a Flutter app for recording inventories (name, code, final value),
 truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tasks, "pedidos"
-(order headers: number, supplier, expected date), and the team's people/org chart, used at a
+(order headers: number, supplier, expected date), and the team's people and teams, used at a
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
 data lives in an on-device Isar database, there is no backend or remote sync currently wired up.

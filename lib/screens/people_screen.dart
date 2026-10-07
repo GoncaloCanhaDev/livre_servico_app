@@ -6,10 +6,9 @@ import '../models/person.dart';
 import '../services/person_service.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
-import 'widgets/org_chart.dart';
 import 'widgets/person_picker.dart';
 
-enum _ViewMode { list, teams, chart }
+enum _ViewMode { list, teams }
 
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
@@ -20,30 +19,20 @@ class PeopleScreen extends StatefulWidget {
 
 class _PeopleScreenState extends State<PeopleScreen> {
   late Future<List<Person>> _future;
-  _ViewMode _viewMode = _ViewMode.chart;
-
-  static const _viewModeOrder = [
-    _ViewMode.chart,
-    _ViewMode.list,
-    _ViewMode.teams,
-  ];
+  _ViewMode _viewMode = _ViewMode.list;
 
   static const _viewModeLabel = {
     _ViewMode.list: 'Ver lista',
     _ViewMode.teams: 'Ver equipas',
-    _ViewMode.chart: 'Ver organograma',
   };
 
   static const _viewModeIcon = {
     _ViewMode.list: Icons.list,
     _ViewMode.teams: Icons.groups_outlined,
-    _ViewMode.chart: Icons.account_tree_outlined,
   };
 
-  _ViewMode get _nextViewMode {
-    final i = _viewModeOrder.indexOf(_viewMode);
-    return _viewModeOrder[(i + 1) % _viewModeOrder.length];
-  }
+  _ViewMode get _nextViewMode =>
+      _viewMode == _ViewMode.list ? _ViewMode.teams : _ViewMode.list;
 
   @override
   void initState() {
@@ -204,17 +193,8 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 onLongPress: _showActions,
               );
             }
-            final byManager = PersonService.instance.groupByManager(items);
-            if (_viewMode == _ViewMode.teams) {
-              return _TeamsList(
-                byManager: byManager,
-                onTap: _openDetail,
-                onLongPress: _showActions,
-              );
-            }
-            final roots = buildForest(byManager);
-            return OrgChart(
-              roots: roots,
+            return _TeamsList(
+              byManager: PersonService.instance.groupByManager(items),
               onTap: _openDetail,
               onLongPress: _showActions,
             );
@@ -325,7 +305,7 @@ class _TeamSection extends StatelessWidget {
 /// Renders [byManager] (see `PersonService.groupByManager`) as sections —
 /// one per manager who has direct reports, plus "Topo da hierarquia" for
 /// the `null` key. A person reporting to two managers appears in both
-/// their sections, same as they'd appear twice in the org chart.
+/// their sections.
 class _TeamsList extends StatelessWidget {
   const _TeamsList({
     required this.byManager,

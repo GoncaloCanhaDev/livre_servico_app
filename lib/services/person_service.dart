@@ -73,8 +73,8 @@ class PersonService extends ChangeNotifier {
   }
 
   /// Groups [all] by manager syncUuid; a person with multiple managers is
-  /// added under each one (see `buildForest` in org_chart.dart, which
-  /// relies on this to render a dual-report person under every manager).
+  /// added under each one (the teams view shows them in every manager's
+  /// section).
   /// The `null` key holds the roots — people with no manager, or whose
   /// only manager(s) no longer exist among [all] (e.g. soft-deleted
   /// without going through [delete]).

@@ -191,8 +191,8 @@ class BackupService {
     });
 
     // A backup taken before multi-manager support has `managerUuid`
-    // populated but no `managerUuids`; without this, the org chart and
-    // teams view would show a flat hierarchy until the next app launch's
+    // populated but no `managerUuids`; without this, the teams view would
+    // show a flat hierarchy until the next app launch's
     // startup migration runs. Must stay outside the writeTxn above —
     // migrateManagerUuids() opens its own transaction internally.
     await PersonService.instance.migrateManagerUuids();
