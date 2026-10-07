@@ -8,8 +8,6 @@ import '../services/daily_tasks_service.dart';
 import '../services/inventory_service.dart';
 import '../services/justification_service.dart';
 import '../services/opening_list_service.dart';
-import '../services/person_history_service.dart';
-import '../services/person_service.dart';
 import '../services/report_list_service.dart';
 import '../services/settings_service.dart';
 import '../services/truck_service.dart';
@@ -366,7 +364,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Estatísticas'),
@@ -378,7 +376,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             tabs: [
               Tab(text: 'Resumo'),
               Tab(text: 'Listas'),
-              Tab(text: 'Pessoas'),
             ],
           ),
         ),
@@ -404,7 +401,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         _OverviewTab(stats: s),
                         _ListsTab(stats: s, onRefresh: refresh),
-                        const _PeopleTab(),
                       ],
                     ),
                   ),
@@ -737,235 +733,6 @@ class _ListsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-      ],
-    );
-  }
-}
-
-class _PeopleTab extends StatefulWidget {
-  const _PeopleTab();
-  @override
-  State<_PeopleTab> createState() => _PeopleTabState();
-}
-
-class _PeopleTabState extends State<_PeopleTab> {
-  late Future<_PeopleData> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
-    PersonService.instance.addListener(_reload);
-    PersonHistoryService.instance.addListener(_reload);
-  }
-
-  @override
-  void dispose() {
-    PersonService.instance.removeListener(_reload);
-    PersonHistoryService.instance.removeListener(_reload);
-    super.dispose();
-  }
-
-  void _reload() {
-    if (mounted) setState(() => _future = _load());
-  }
-
-  Future<_PeopleData> _load() async {
-    final people = await PersonService.instance.all();
-    final leaderboard = [
-      for (final p in people)
-        PersonMonthlyEntry(
-          uuid: p.syncUuid,
-          fullName: p.fullName,
-          collaboratorNumber: p.collaboratorNumber,
-          points: p.points,
-        ),
-    ]..sort((a, b) => b.points.compareTo(a.points));
-    final history = PersonHistoryService.instance.history();
-    final currentYm =
-        PersonHistoryService.instance.currentTrackedYearMonth() ??
-        (DateTime.now().year * 100 + DateTime.now().month);
-    return _PeopleData(
-      currentYear: currentYm ~/ 100,
-      currentMonth: currentYm % 100,
-      currentLeaderboard: leaderboard,
-      history: history,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<_PeopleData>(
-      future: _future,
-      builder: (_, snap) {
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final data = snap.data!;
-        final monthFmt = DateFormat("MMMM 'de' y", 'pt_PT');
-        final currentLabel = monthFmt.format(
-          DateTime(data.currentYear, data.currentMonth, 1),
-        );
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _sectionCard(
-              title: 'Este mês · ${_capitalize(currentLabel)}',
-              child: data.currentLeaderboard.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        'Sem pessoas registadas.',
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    )
-                  : _Leaderboard(entries: data.currentLeaderboard),
-            ),
-            const SizedBox(height: 16),
-            _sectionTitle('Histórico mensal'),
-            if (data.history.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Ainda não há meses concluídos.\nOs pontos são guardados aqui automaticamente no início de cada mês.',
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ),
-              )
-            else
-              for (final snapshot in data.history)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  clipBehavior: Clip.antiAlias,
-                  child: ExpansionTile(
-                    title: Text(
-                      _capitalize(
-                        monthFmt.format(
-                          DateTime(snapshot.year, snapshot.month, 1),
-                        ),
-                      ),
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(_historySubtitle(snapshot)),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: _Leaderboard(entries: snapshot.entries),
-                      ),
-                    ],
-                  ),
-                ),
-          ],
-        );
-      },
-    );
-  }
-
-  String _historySubtitle(PersonMonthlySnapshot s) {
-    if (s.entries.isEmpty) return 'Sem pontos registados';
-    final top = s.entries.first;
-    return '${s.entries.length} pessoa(s) · Top: ${top.fullName} (${top.points} pts)';
-  }
-}
-
-String _capitalize(String s) =>
-    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
-
-class _PeopleData {
-  _PeopleData({
-    required this.currentYear,
-    required this.currentMonth,
-    required this.currentLeaderboard,
-    required this.history,
-  });
-  final int currentYear;
-  final int currentMonth;
-  final List<PersonMonthlyEntry> currentLeaderboard;
-  final List<PersonMonthlySnapshot> history;
-}
-
-class _Leaderboard extends StatelessWidget {
-  const _Leaderboard({required this.entries});
-  final List<PersonMonthlyEntry> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    if (entries.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text('Sem pontos.', style: TextStyle(color: Colors.black54)),
-      );
-    }
-    return Column(
-      children: [
-        for (var i = 0; i < entries.length; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 28,
-                  child: Text(
-                    '${i + 1}.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: i < 3 ? AppColors.greenDark : Colors.black45,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entries[i].fullName.isEmpty
-                            ? '(sem nome)'
-                            : entries[i].fullName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      if (entries[i].collaboratorNumber.isNotEmpty)
-                        Text(
-                          'Nº ${entries[i].collaboratorNumber}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black45,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.green.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.stars,
-                        size: 14,
-                        color: AppColors.greenDark,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${entries[i].points}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.greenDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }

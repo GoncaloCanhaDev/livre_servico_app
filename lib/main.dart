@@ -3,7 +3,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
-import 'services/person_history_service.dart';
 import 'services/person_service.dart';
 import 'services/settings_service.dart';
 import 'services/shift_service.dart';
@@ -18,8 +17,6 @@ void main() async {
     await SettingsService.instance.init();
     await ShiftService.init();
     await PersonService.instance.migrateManagerUuids();
-    await PersonHistoryService.instance.init();
-    await PersonHistoryService.instance.maybeRollover();
   } catch (e) {
     bootError = '$e';
   }

@@ -62,31 +62,23 @@ const PersonSchema = CollectionSchema(
       name: r'photoPath',
       type: IsarType.string,
     ),
-    r'pointHistory': PropertySchema(
-      id: 9,
-      name: r'pointHistory',
-      type: IsarType.objectList,
-
-      target: r'PointEvent',
-    ),
-    r'points': PropertySchema(id: 10, name: r'points', type: IsarType.long),
-    r'role': PropertySchema(id: 11, name: r'role', type: IsarType.string),
+    r'role': PropertySchema(id: 9, name: r'role', type: IsarType.string),
     r'syncDeletedAt': PropertySchema(
-      id: 12,
+      id: 10,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 13,
+      id: 11,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 14,
+      id: 12,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 15, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 13, name: r'synced', type: IsarType.bool),
   },
 
   estimateSize: _personEstimateSize,
@@ -110,7 +102,7 @@ const PersonSchema = CollectionSchema(
     ),
   },
   links: {},
-  embeddedSchemas: {r'PointEvent': PointEventSchema},
+  embeddedSchemas: {},
 
   getId: _personGetId,
   getLinks: _personGetLinks,
@@ -151,14 +143,6 @@ int _personEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.pointHistory.length * 3;
-  {
-    final offsets = allOffsets[PointEvent]!;
-    for (var i = 0; i < object.pointHistory.length; i++) {
-      final value = object.pointHistory[i];
-      bytesCount += PointEventSchema.estimateSize(value, offsets, allOffsets);
-    }
-  }
   {
     final value = object.role;
     if (value != null) {
@@ -184,18 +168,11 @@ void _personSerialize(
   writer.writeStringList(offsets[6], object.managerUuids);
   writer.writeString(offsets[7], object.phoneNumber);
   writer.writeString(offsets[8], object.photoPath);
-  writer.writeObjectList<PointEvent>(
-    offsets[9],
-    allOffsets,
-    PointEventSchema.serialize,
-    object.pointHistory,
-  );
-  writer.writeLong(offsets[10], object.points);
-  writer.writeString(offsets[11], object.role);
-  writer.writeDateTime(offsets[12], object.syncDeletedAt);
-  writer.writeDateTime(offsets[13], object.syncUpdatedAt);
-  writer.writeString(offsets[14], object.syncUuid);
-  writer.writeBool(offsets[15], object.synced);
+  writer.writeString(offsets[9], object.role);
+  writer.writeDateTime(offsets[10], object.syncDeletedAt);
+  writer.writeDateTime(offsets[11], object.syncUpdatedAt);
+  writer.writeString(offsets[12], object.syncUuid);
+  writer.writeBool(offsets[13], object.synced);
 }
 
 Person _personDeserialize(
@@ -215,20 +192,11 @@ Person _personDeserialize(
   object.managerUuids = reader.readStringList(offsets[6]) ?? [];
   object.phoneNumber = reader.readStringOrNull(offsets[7]);
   object.photoPath = reader.readStringOrNull(offsets[8]);
-  object.pointHistory =
-      reader.readObjectList<PointEvent>(
-        offsets[9],
-        PointEventSchema.deserialize,
-        allOffsets,
-        PointEvent(),
-      ) ??
-      [];
-  object.points = reader.readLong(offsets[10]);
-  object.role = reader.readStringOrNull(offsets[11]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[12]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[13]);
-  object.syncUuid = reader.readString(offsets[14]);
-  object.synced = reader.readBool(offsets[15]);
+  object.role = reader.readStringOrNull(offsets[9]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[11]);
+  object.syncUuid = reader.readString(offsets[12]);
+  object.synced = reader.readBool(offsets[13]);
   return object;
 }
 
@@ -258,25 +226,14 @@ P _personDeserializeProp<P>(
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readObjectList<PointEvent>(
-                offset,
-                PointEventSchema.deserialize,
-                allOffsets,
-                PointEvent(),
-              ) ??
-              [])
-          as P;
-    case 10:
-      return (reader.readLong(offset)) as P;
-    case 11:
       return (reader.readStringOrNull(offset)) as P;
-    case 12:
+    case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 13:
+    case 11:
       return (reader.readDateTime(offset)) as P;
-    case 14:
+    case 12:
       return (reader.readString(offset)) as P;
-    case 15:
+    case 13:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1662,114 +1619,6 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointHistoryLengthEqualTo(
-    int length,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'pointHistory', length, true, length, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointHistoryIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'pointHistory', 0, true, 0, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointHistoryIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'pointHistory', 0, false, 999999, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  pointHistoryLengthLessThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'pointHistory', 0, true, length, include);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition>
-  pointHistoryLengthGreaterThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'pointHistory', length, include, 999999, true);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointHistoryLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'pointHistory',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointsEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'points', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointsGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'points',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointsLessThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'points',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointsBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'points',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterFilterCondition> roleIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2223,15 +2072,7 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
   }
 }
 
-extension PersonQueryObject on QueryBuilder<Person, Person, QFilterCondition> {
-  QueryBuilder<Person, Person, QAfterFilterCondition> pointHistoryElement(
-    FilterQuery<PointEvent> q,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'pointHistory');
-    });
-  }
-}
+extension PersonQueryObject on QueryBuilder<Person, Person, QFilterCondition> {}
 
 extension PersonQueryLinks on QueryBuilder<Person, Person, QFilterCondition> {}
 
@@ -2329,18 +2170,6 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
   QueryBuilder<Person, Person, QAfterSortBy> sortByPhotoPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'photoPath', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> sortByPoints() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'points', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> sortByPointsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'points', Sort.desc);
     });
   }
 
@@ -2514,18 +2343,6 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
     });
   }
 
-  QueryBuilder<Person, Person, QAfterSortBy> thenByPoints() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'points', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Person, Person, QAfterSortBy> thenByPointsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'points', Sort.desc);
-    });
-  }
-
   QueryBuilder<Person, Person, QAfterSortBy> thenByRole() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'role', Sort.asc);
@@ -2655,12 +2472,6 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
-  QueryBuilder<Person, Person, QDistinct> distinctByPoints() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'points');
-    });
-  }
-
   QueryBuilder<Person, Person, QDistinct> distinctByRole({
     bool caseSensitive = true,
   }) {
@@ -2757,19 +2568,6 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
     });
   }
 
-  QueryBuilder<Person, List<PointEvent>, QQueryOperations>
-  pointHistoryProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'pointHistory');
-    });
-  }
-
-  QueryBuilder<Person, int, QQueryOperations> pointsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'points');
-    });
-  }
-
   QueryBuilder<Person, String?, QQueryOperations> roleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'role');
@@ -2800,370 +2598,3 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
     });
   }
 }
-
-// **************************************************************************
-// IsarEmbeddedGenerator
-// **************************************************************************
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const PointEventSchema = Schema(
-  name: r'PointEvent',
-  id: -3056465650547168347,
-  properties: {
-    r'at': PropertySchema(id: 0, name: r'at', type: IsarType.dateTime),
-    r'delta': PropertySchema(id: 1, name: r'delta', type: IsarType.long),
-    r'reason': PropertySchema(id: 2, name: r'reason', type: IsarType.string),
-  },
-
-  estimateSize: _pointEventEstimateSize,
-  serialize: _pointEventSerialize,
-  deserialize: _pointEventDeserialize,
-  deserializeProp: _pointEventDeserializeProp,
-);
-
-int _pointEventEstimateSize(
-  PointEvent object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final value = object.reason;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  return bytesCount;
-}
-
-void _pointEventSerialize(
-  PointEvent object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeDateTime(offsets[0], object.at);
-  writer.writeLong(offsets[1], object.delta);
-  writer.writeString(offsets[2], object.reason);
-}
-
-PointEvent _pointEventDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = PointEvent();
-  object.at = reader.readDateTime(offsets[0]);
-  object.delta = reader.readLong(offsets[1]);
-  object.reason = reader.readStringOrNull(offsets[2]);
-  return object;
-}
-
-P _pointEventDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readDateTime(offset)) as P;
-    case 1:
-      return (reader.readLong(offset)) as P;
-    case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension PointEventQueryFilter
-    on QueryBuilder<PointEvent, PointEvent, QFilterCondition> {
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> atEqualTo(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'at', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> atGreaterThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'at',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> atLessThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'at',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> atBetween(
-    DateTime lower,
-    DateTime upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'at',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> deltaEqualTo(
-    int value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'delta', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> deltaGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'delta',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> deltaLessThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'delta',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> deltaBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'delta',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'reason'),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition>
-  reasonIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'reason'),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'reason',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonContains(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'reason',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonMatches(
-    String pattern, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'reason',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition> reasonIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'reason', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<PointEvent, PointEvent, QAfterFilterCondition>
-  reasonIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'reason', value: ''),
-      );
-    });
-  }
-}
-
-extension PointEventQueryObject
-    on QueryBuilder<PointEvent, PointEvent, QFilterCondition> {}

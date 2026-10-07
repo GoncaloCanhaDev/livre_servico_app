@@ -206,21 +206,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       }
     }
 
-    for (var i = 0; i < _person.pointHistory.length; i++) {
-      final ev = _person.pointHistory[i];
-      final sign = ev.delta > 0 ? '+' : '';
-      items.add(
-        _ActivityItem(
-          time: ev.at,
-          icon: Icons.stars,
-          iconColor: ev.delta >= 0 ? AppColors.greenDark : Colors.redAccent,
-          title: '$sign${ev.delta} ponto${ev.delta.abs() == 1 ? '' : 's'}',
-          subtitle: ev.reason ?? 'Sem motivo indicado',
-          pointIndex: i,
-        ),
-      );
-    }
-
     final grouped = <DateTime, List<_ActivityItem>>{};
     for (final item in items) {
       final day = _toServiceDay(item.time);
@@ -276,136 +261,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     return out;
   }
 
-  Future<void> _adjustPoints(int delta, String reason) async {
-    final updated = await PersonService.instance.adjustPoints(
-      _person.id,
-      delta,
-      reason: reason,
-    );
-    if (updated != null && mounted) {
-      setState(() => _person = updated);
-    }
-  }
-
-  Future<void> _openAdjustDialog() async {
-    final result = await showDialog<_PointsAdjustResult>(
-      context: context,
-      builder: (_) => const _PointsAdjustDialog(),
-    );
-    if (result != null && result.delta != 0) {
-      await _adjustPoints(result.delta, result.reason);
-    }
-  }
-
-  Future<void> _openEditPointEntry(int index) async {
-    final event = _person.pointHistory[index];
-    final result = await showDialog<_PointsAdjustResult>(
-      context: context,
-      builder: (_) => _PointsAdjustDialog(
-        title: 'Editar registo de pontos',
-        initialAmount: event.delta.abs(),
-        initialAdd: event.delta >= 0,
-        initialReason: event.reason,
-      ),
-    );
-    if (result == null || result.delta == 0) return;
-    final updated = await PersonService.instance.editPointEvent(
-      _person.id,
-      index,
-      delta: result.delta,
-      reason: result.reason,
-    );
-    if (updated != null && mounted) {
-      setState(() => _person = updated);
-    }
-  }
-
-  Future<void> _removePointEntry(int index) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remover registo'),
-        content: const Text(
-          'Tens a certeza que queres remover este registo de pontos? '
-          'A pontuação total é recalculada. Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remover'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final updated = await PersonService.instance.removePointEvent(
-      _person.id,
-      index,
-    );
-    if (updated != null && mounted) {
-      setState(() => _person = updated);
-    }
-  }
-
-  Future<void> _openPointEntryActions(int index) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar'),
-              onTap: () => Navigator.pop(ctx, 'edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Remover'),
-              onTap: () => Navigator.pop(ctx, 'remove'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (action == 'edit') {
-      await _openEditPointEntry(index);
-    } else if (action == 'remove') {
-      await _removePointEntry(index);
-    }
-  }
-
-  Future<void> _confirmResetPoints() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Apagar pontos'),
-        content: Text(
-          'Tens a certeza que queres apagar todos os pontos de "${_person.fullName}"? '
-          'O histórico de pontos também é removido. Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final updated = await PersonService.instance.resetPoints(_person.id);
-    if (updated != null && mounted) {
-      setState(() => _person = updated);
-    }
-  }
-
   Future<void> _openEditForm() async {
     final result = await Navigator.of(context).push<Person>(
       MaterialPageRoute(builder: (_) => PersonFormScreen(existing: _person)),
@@ -430,7 +285,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
                 children: [
                   _person.photoPath != null &&
@@ -512,61 +367,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.green.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.green.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.stars, color: AppColors.greenDark),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Pontos',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          Text(
-                            '${_person.points}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.greenDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Ajustar',
-                      onPressed: _openAdjustDialog,
-                      icon: const Icon(Icons.tune),
-                    ),
-                    IconButton(
-                      tooltip: 'Apagar pontos',
-                      onPressed: _confirmResetPoints,
-                      icon: const Icon(Icons.delete_outline),
-                      color: Colors.redAccent,
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const Divider(height: 1),
             Expanded(
               child: FutureBuilder<Map<DateTime, List<_ActivityItem>>>(
@@ -637,11 +437,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                     color: Colors.black45,
                                   ),
                                 ),
-                                onTap: item.pointIndex != null
-                                    ? () => _openPointEntryActions(
-                                        item.pointIndex!,
-                                      )
-                                    : null,
                               ),
                             ),
                           ),
@@ -666,131 +461,10 @@ class _ActivityItem {
     required this.iconColor,
     required this.title,
     required this.subtitle,
-    this.pointIndex,
   });
   final DateTime time;
   final IconData icon;
   final Color iconColor;
   final String title;
   final String subtitle;
-
-  /// Index into `Person.pointHistory`, set only for point-event items —
-  /// used to look the entry up again for edit/remove. Null for every other
-  /// activity type, which stays non-interactive.
-  final int? pointIndex;
-}
-
-class _PointsAdjustResult {
-  const _PointsAdjustResult({required this.delta, required this.reason});
-  final int delta;
-  final String reason;
-}
-
-class _PointsAdjustDialog extends StatefulWidget {
-  const _PointsAdjustDialog({
-    this.title = 'Ajustar pontos',
-    this.initialAmount,
-    this.initialAdd = true,
-    this.initialReason,
-  });
-
-  final String title;
-  final int? initialAmount;
-  final bool initialAdd;
-  final String? initialReason;
-
-  @override
-  State<_PointsAdjustDialog> createState() => _PointsAdjustDialogState();
-}
-
-class _PointsAdjustDialogState extends State<_PointsAdjustDialog> {
-  late final TextEditingController _ctrl = TextEditingController(
-    text: '${widget.initialAmount ?? 5}',
-  );
-  late final TextEditingController _reasonCtrl = TextEditingController(
-    text: widget.initialReason ?? '',
-  );
-  late bool _add = widget.initialAdd;
-  String? _reasonError;
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _reasonCtrl.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final n = int.tryParse(_ctrl.text.trim());
-    if (n == null || n <= 0) {
-      Navigator.of(context).pop();
-      return;
-    }
-    final reason = _reasonCtrl.text.trim();
-    if (reason.isEmpty) {
-      setState(() => _reasonError = 'Indica um motivo');
-      return;
-    }
-    Navigator.of(
-      context,
-    ).pop(_PointsAdjustResult(delta: _add ? n : -n, reason: reason));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(
-                value: true,
-                label: Text('Adicionar'),
-                icon: Icon(Icons.add),
-              ),
-              ButtonSegment(
-                value: false,
-                label: Text('Remover'),
-                icon: Icon(Icons.remove),
-              ),
-            ],
-            selected: {_add},
-            onSelectionChanged: (s) => setState(() => _add = s.first),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _ctrl,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Quantidade',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _reasonCtrl,
-            decoration: InputDecoration(
-              labelText: 'Motivo',
-              border: const OutlineInputBorder(),
-              errorText: _reasonError,
-            ),
-            onChanged: (_) {
-              if (_reasonError != null) setState(() => _reasonError = null);
-            },
-            onSubmitted: (_) => _submit(),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('Aplicar')),
-      ],
-    );
-  }
 }

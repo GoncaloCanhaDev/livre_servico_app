@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../models/person.dart';
-import '../../theme.dart';
 import 'person_picker.dart';
 
 class PersonNode {
@@ -181,63 +180,28 @@ class _PersonCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.topCenter,
-              children: [
-                Container(
-                  width: _diameter,
-                  height: _diameter,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
+            Container(
+              width: _diameter,
+              height: _diameter,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 3,
+                    offset: Offset(0, 1),
                   ),
-                  child: hasPhoto
-                      ? ClipOval(
-                          child: Image.file(File(photoPath), fit: BoxFit.cover),
-                        )
-                      : PersonInitialsBadge(
-                          name: person.fullName,
-                          size: _diameter,
-                        ),
-                ),
-                Positioned(
-                  top: -10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
+                ],
+              ),
+              child: hasPhoto
+                  ? ClipOval(
+                      child: Image.file(File(photoPath), fit: BoxFit.cover),
+                    )
+                  : PersonInitialsBadge(
+                      name: person.fullName,
+                      size: _diameter,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.green,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.stars, size: 11, color: Colors.white),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${person.points}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 8),
             Text(

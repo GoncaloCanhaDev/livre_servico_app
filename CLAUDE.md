@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Livre Serviço Companion — a Flutter app for tracking inventory, truck receptions,
-opening/report/visual/auto checklists, daily/weekly/custom tasks, "pedidos" (orders), and
-personnel points, used at a single site. UI text and user-facing strings are in Portuguese
-(pt_PT locale). The app is fully offline/local: all data lives in an on-device Isar database,
-there is no backend or remote sync currently wired up. It's built for and used by a single
-supervisor (livre serviço / reposição team lead at a Pingo Doce store) running it on their own
-phone to manage their shift and team's checklists day to day — not a multi-tenant product.
+Livre Serviço Companion — a Flutter app for recording inventories (name, code, final value),
+truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tasks, "pedidos"
+(order headers: number, supplier, expected date), and the team's people/org chart, used at a
+single site. There is no product catalogue, no barcode scanning and no points system. UI text
+and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
+data lives in an on-device Isar database, there is no backend or remote sync currently wired up.
+It's built for and used by a single supervisor (livre serviço / reposição team lead at a Pingo
+Doce store) running it on their own phone to manage their team's checklists day to day — not a
+multi-tenant product.
 
 ## Commands
 
@@ -56,12 +58,6 @@ phone to manage their shift and team's checklists day to day — not a multi-ten
   in `main()` before the app runs. There are no notifications/reminders of any kind.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
   then an HTTPS fallback, then the `whatsapp://` scheme.
-- `PersonHistoryService` (`lib/services/person_history_service.dart`) tracks per-person
-  `points` (on the `Person` Isar model) as a running monthly total. It does **not** use Isar for
-  history: month-end snapshots are stored as JSON in `shared_preferences`, keyed by `yyyymm`.
-  `maybeRollover()` (called once at startup, see below) detects a new calendar month, snapshots
-  every person's current `points` into that history under the *previous* month, then resets
-  `points` to 0 for the new month — so `Person.points` always reflects only the current month.
 
 ### UI layer
 
@@ -77,15 +73,17 @@ phone to manage their shift and team's checklists day to day — not a multi-ten
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`ShiftService.init()`, `PersonService.instance.migrateManagerUuids()`,
-`PersonHistoryService.instance.init()`, then `PersonHistoryService.instance.maybeRollover()`.
+`ShiftService.init()`, then `PersonService.instance.migrateManagerUuids()`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 
 ### Platform notes
 
-- `mobile_scanner` / `barcode_widget` are used for barcode scan/display flows (see
-  `scanner_screen.dart`, product screens).
+- The "Enviar Vasilhame" picker in `truck_form_screen.dart` reads its items from the bundled
+  `assets/vasilhame.json` (a JSON array of `{"name", "code"?, "ean"?}`), maintained by hand.
+  `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
+- `image_picker` (person photos) is the only camera use; Android declares no CAMERA permission
+  on purpose (declaring it would require a runtime grant before the camera intent works).
 - `.env.example` still references `SUPABASE_URL`/`SUPABASE_ANON_KEY` from the removed backend
   integration; nothing in `lib/` reads env vars or calls Supabase today, so treat that file as
   stale rather than as a sign of an active integration.

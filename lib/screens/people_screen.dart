@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../models/person.dart';
 import '../services/person_service.dart';
-import '../theme.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
 import 'widgets/org_chart.dart';
@@ -279,28 +278,6 @@ class _PersonTile extends StatelessWidget {
           if (p.role != null && p.role!.isNotEmpty) p.role!,
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
         ].join(' · '),
-      ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.green.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.stars, size: 14, color: AppColors.greenDark),
-            const SizedBox(width: 4),
-            Text(
-              '${p.points}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppColors.greenDark,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
       ),
       onTap: onTap,
       onLongPress: onLongPress,

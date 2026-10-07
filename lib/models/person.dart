@@ -2,17 +2,6 @@ import 'package:isar_community/isar.dart';
 
 part 'person.g.dart';
 
-/// One points adjustment, kept for accountability — so a past total can be
-/// explained later, not just shown as a running number.
-@embedded
-class PointEvent {
-  DateTime at = DateTime.now();
-  int delta = 0;
-
-  /// Optional — the person adjusting points isn't required to give a reason.
-  String? reason;
-}
-
 @collection
 class Person {
   Id id = Isar.autoIncrement;
@@ -45,7 +34,4 @@ class Person {
   /// leaves a dangling uuid here, which readers treat as "not a manager
   /// anymore" rather than as an error.
   List<String> managerUuids = [];
-
-  int points = 0;
-  List<PointEvent> pointHistory = [];
 }
