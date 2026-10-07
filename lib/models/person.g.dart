@@ -70,6 +70,7 @@ const PersonSchema = CollectionSchema(
     ),
     r'synced': PropertySchema(id: 11, name: r'synced', type: IsarType.bool),
     r'team': PropertySchema(id: 12, name: r'team', type: IsarType.string),
+    r'turno': PropertySchema(id: 13, name: r'turno', type: IsarType.string),
   },
 
   estimateSize: _personEstimateSize,
@@ -134,6 +135,12 @@ int _personEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.turno;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -156,6 +163,7 @@ void _personSerialize(
   writer.writeString(offsets[10], object.syncUuid);
   writer.writeBool(offsets[11], object.synced);
   writer.writeString(offsets[12], object.team);
+  writer.writeString(offsets[13], object.turno);
 }
 
 Person _personDeserialize(
@@ -179,6 +187,7 @@ Person _personDeserialize(
   object.syncUuid = reader.readString(offsets[10]);
   object.synced = reader.readBool(offsets[11]);
   object.team = reader.readStringOrNull(offsets[12]);
+  object.turno = reader.readStringOrNull(offsets[13]);
   return object;
 }
 
@@ -214,6 +223,8 @@ P _personDeserializeProp<P>(
     case 11:
       return (reader.readBool(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1858,6 +1869,168 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
       );
     });
   }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'turno'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'turno'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'turno',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'turno',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'turno',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'turno', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> turnoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'turno', value: ''),
+      );
+    });
+  }
 }
 
 extension PersonQueryObject on QueryBuilder<Person, Person, QFilterCondition> {}
@@ -2018,6 +2191,18 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
   QueryBuilder<Person, Person, QAfterSortBy> sortByTeamDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'team', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByTurno() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'turno', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByTurnoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'turno', Sort.desc);
     });
   }
 }
@@ -2190,6 +2375,18 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
       return query.addSortBy(r'team', Sort.desc);
     });
   }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByTurno() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'turno', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByTurnoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'turno', Sort.desc);
+    });
+  }
 }
 
 extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
@@ -2287,6 +2484,14 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
       return query.addDistinctBy(r'team', caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<Person, Person, QDistinct> distinctByTurno({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'turno', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
@@ -2371,6 +2576,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, String?, QQueryOperations> teamProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'team');
+    });
+  }
+
+  QueryBuilder<Person, String?, QQueryOperations> turnoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'turno');
     });
   }
 }

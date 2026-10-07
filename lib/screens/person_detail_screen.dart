@@ -470,10 +470,13 @@ class _ActivityItem {
   final String subtitle;
 }
 
-/// "Talho · Chefe", "Talho", or null for Sem equipa.
+/// "Talho · Chefe", "Livre Serviço · Noite", or null for Sem equipa.
 String? _teamLine(Person p) {
   final team = teamById(p.team);
   if (team == null) return null;
-  final slot = chefeSlotOf(p);
-  return slot == null ? team.name : '${team.name} · ${slot.label}';
+  return [
+    team.name,
+    ?turnoOf(p)?.label,
+    if (chefeSlotOf(p) != null) 'Chefe',
+  ].join(' · ');
 }

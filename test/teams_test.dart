@@ -6,6 +6,7 @@ Person _p(
   String name, {
   String? team,
   String? chefe,
+  String? turno,
   String uuid = '',
   bool deleted = false,
 }) => Person()
@@ -14,6 +15,7 @@ Person _p(
   ..syncUuid = uuid
   ..team = team
   ..chefe = chefe
+  ..turno = turno
   ..syncDeletedAt = deleted ? DateTime(2026) : null;
 
 void main() {
@@ -159,6 +161,45 @@ void main() {
         deleted: true,
       );
       expect(chefeConflicts(ana, [anaFromDb, gone]), isEmpty);
+    });
+  });
+
+  group('turnos', () {
+    test('only Livre Serviço is split by turno', () {
+      expect(teamById('livre_servico')!.hasTurnos, isTrue);
+      for (final t in teams.skip(1)) {
+        expect(t.hasTurnos, isFalse, reason: t.name);
+      }
+    });
+
+    test('turno labels and the chefe slot of each turno', () {
+      expect(Turno.dia.label, 'Dia');
+      expect(Turno.noite.label, 'Noite');
+      expect(chefeSlotForTurno(Turno.dia), ChefeSlot.dia);
+      expect(chefeSlotForTurno(Turno.noite), ChefeSlot.noite);
+    });
+
+    test('turnoOf reads a Livre Serviço member\'s turno', () {
+      expect(
+        turnoOf(_p('A', team: 'livre_servico', turno: 'noite')),
+        Turno.noite,
+      );
+      expect(turnoOf(_p('B', team: 'livre_servico', turno: 'dia')), Turno.dia);
+    });
+
+    test('a Livre Serviço chefe is on their slot\'s turno', () {
+      expect(turnoOf(_p('A', team: 'livre_servico', chefe: 'dia')), Turno.dia);
+      expect(
+        turnoOf(_p('B', team: 'livre_servico', chefe: 'noite', turno: 'dia')),
+        Turno.noite,
+      );
+    });
+
+    test('is null without a valid turno or outside Livre Serviço', () {
+      expect(turnoOf(_p('A', team: 'livre_servico')), isNull);
+      expect(turnoOf(_p('B', team: 'livre_servico', turno: 'tarde')), isNull);
+      expect(turnoOf(_p('C', team: 'talho', turno: 'noite')), isNull);
+      expect(turnoOf(_p('D', turno: 'dia')), isNull);
     });
   });
 }

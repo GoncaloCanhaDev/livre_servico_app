@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.33.0] — 2026-10-07
+
+### Added
+- Livre Serviço is split into a day and a night team: each member picks a turno (Dia/Noite) in
+  the form, and Pessoas shows "Livre Serviço · Dia" and "Livre Serviço · Noite", each led by its
+  chefe. Members without a turno yet show under "Livre Serviço · Sem turno".
+
 ## [0.32.1] — 2026-10-07
 
 ### Fixed

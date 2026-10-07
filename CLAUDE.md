@@ -48,6 +48,9 @@ multi-tenant product.
   `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
   through `chefeSlotOf`, which ignores slots the team doesn't have. `PersonService.save` keeps
   one holder per (team, slot) by clearing the previous holder in the same transaction.
+  Livre Serviço is split into a day and a night turno (`Team.hasTurnos`): `Person.turno`
+  stores a `Turno.name`; read it through `turnoOf`, which takes a chefe's turno from their slot
+  (Chefe de dia / Chefe de noite).
 
 ### Services layer
 

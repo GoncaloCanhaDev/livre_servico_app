@@ -2,13 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/screens/people_sections.dart';
 
-Person _p(String name, {String? team, String? chefe, String number = ''}) =>
-    Person()
-      ..fullName = name
-      ..createdAt = DateTime(2026)
-      ..team = team
-      ..chefe = chefe
-      ..collaboratorNumber = number;
+Person _p(
+  String name, {
+  String? team,
+  String? chefe,
+  String? turno,
+  String number = '',
+}) => Person()
+  ..fullName = name
+  ..createdAt = DateTime(2026)
+  ..team = team
+  ..chefe = chefe
+  ..turno = turno
+  ..collaboratorNumber = number;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -28,12 +34,12 @@ void main() {
       final sections = buildPeopleSections([
         _p('Rui', team: 'talho'),
         _p('João'),
-        _p('Ana', team: 'livre_servico'),
+        _p('Ana', team: 'livre_servico', turno: 'dia'),
         _p('Bia', team: 'gerencia'),
         _p('Velho', team: 'caixas'),
       ]);
       expect(_titles(sections), [
-        'Livre Serviço',
+        'Livre Serviço · Dia',
         'Gerência',
         'Talho',
         'Sem equipa',
@@ -41,14 +47,13 @@ void main() {
       expect(_names(sections.last), ['João', 'Velho']);
     });
 
-    test('chefes first in slot order, then members A–Z', () {
+    test('chefe first, then members A–Z ignoring case and accents', () {
       final sections = buildPeopleSections([
-        _p('Bruno', team: 'livre_servico'),
-        _p('Noite', team: 'livre_servico', chefe: 'noite'),
-        _p('álvaro', team: 'livre_servico'),
-        _p('Dia', team: 'livre_servico', chefe: 'dia'),
+        _p('Bruno', team: 'padaria'),
+        _p('Chefe', team: 'padaria', chefe: 'chefe'),
+        _p('álvaro', team: 'padaria'),
       ]);
-      expect(_names(sections.single), ['Dia', 'Noite', 'álvaro', 'Bruno']);
+      expect(_names(sections.single), ['Chefe', 'álvaro', 'Bruno']);
     });
 
     test('a slot that does not fit the team counts as a member', () {
@@ -58,6 +63,42 @@ void main() {
         _p('Chefe', team: 'talho', chefe: 'chefe'),
       ]);
       expect(_names(sections.single), ['Chefe', 'Ana', 'Zé']);
+    });
+  });
+
+  group('Livre Serviço turnos', () {
+    final people = [
+      _p('Rui', team: 'livre_servico', turno: 'noite'),
+      _p('Zé', team: 'talho'),
+      _p('Sem', team: 'livre_servico'),
+      _p('Bia', team: 'livre_servico', turno: 'dia'),
+      _p('Chefe N', team: 'livre_servico', chefe: 'noite'),
+      _p('Ana', team: 'livre_servico', turno: 'noite'),
+      _p('Chefe D', team: 'livre_servico', chefe: 'dia', turno: 'noite'),
+    ];
+
+    test('split into Dia, Noite and Sem turno before the next team', () {
+      final sections = buildPeopleSections(people);
+      expect(_titles(sections), [
+        'Livre Serviço · Dia',
+        'Livre Serviço · Noite',
+        'Livre Serviço · Sem turno',
+        'Talho',
+      ]);
+    });
+
+    test('each turno lists its chefe first, then members A–Z', () {
+      final sections = buildPeopleSections(people);
+      expect(_names(sections[0]), ['Chefe D', 'Bia']);
+      expect(_names(sections[1]), ['Chefe N', 'Ana', 'Rui']);
+      expect(_names(sections[2]), ['Sem']);
+    });
+
+    test('search matches the turno', () {
+      expect(
+        buildPeopleSections(people, query: 'noite').expand(_names).toList(),
+        ['Chefe N', 'Ana', 'Rui'],
+      );
     });
   });
 

@@ -37,7 +37,18 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   bool _removePhoto = false;
 
   String? _team; // Team.id, null = Sem equipa
-  ChefeSlot? _chefe; // null = Membro
+  Turno? _turno; // only for teams split by turno
+  bool _isChefe = false;
+
+  /// The chefe slot the form would assign, or null for Membro (or a
+  /// Livre Serviço chefe with no turno picked yet).
+  ChefeSlot? get _chefeSlot {
+    final team = teamById(_team);
+    if (team == null || !_isChefe) return null;
+    if (!team.hasTurnos) return team.chefeSlots.first;
+    final turno = _turno;
+    return turno == null ? null : chefeSlotForTurno(turno);
+  }
 
   List<Person> _allPeople = const [];
   bool _loadingPeople = true;
@@ -54,7 +65,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     _hireDate = e?.hireDate;
     _photoPath = e?.photoPath;
     _team = teamById(e?.team)?.id;
-    _chefe = e == null ? null : chefeSlotOf(e);
+    _isChefe = e != null && chefeSlotOf(e) != null;
+    _turno = e == null ? null : turnoOf(e);
     _loadPeople();
   }
 
@@ -154,15 +166,16 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final person = widget.existing ?? (Person()..createdAt = DateTime.now());
-    if (_team != null && _chefe != null) {
-      final holder = chefeHolder(_allPeople, _team!, _chefe!, except: person);
+    final slot = _chefeSlot;
+    if (_team != null && slot != null) {
+      final holder = chefeHolder(_allPeople, _team!, slot, except: person);
       if (holder != null) {
         final team = teamById(_team)!;
         final ok = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             content: Text(
-              '${holder.fullName} é ${_chefe!.label} de ${team.name}. '
+              '${holder.fullName} é ${slot.label} de ${team.name}. '
               'Substituir?',
             ),
             actions: [
@@ -189,7 +202,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     person.dateOfBirth = _dob;
     person.hireDate = _hireDate;
     person.team = _team;
-    person.chefe = _chefe?.name;
+    person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
+    person.chefe = slot?.name;
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
@@ -294,24 +308,41 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ],
                 onChanged: (v) => setState(() {
                   _team = v;
-                  _chefe = null;
+                  _isChefe = false;
+                  _turno = teamById(v)?.hasTurnos == true ? Turno.dia : null;
                 }),
               ),
               if (teamById(_team) case final team?) ...[
+                if (team.hasTurnos) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<Turno>(
+                    key: ValueKey('turno-${team.id}'),
+                    initialValue: _turno,
+                    decoration: const InputDecoration(
+                      labelText: 'Turno',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final t in Turno.values)
+                        DropdownMenuItem(value: t, child: Text(t.label)),
+                    ],
+                    validator: (v) => v == null ? 'Obrigatório' : null,
+                    onChanged: (v) => setState(() => _turno = v),
+                  ),
+                ],
                 const SizedBox(height: 12),
-                DropdownButtonFormField<ChefeSlot?>(
+                DropdownButtonFormField<bool>(
                   key: ValueKey(team.id),
-                  initialValue: _chefe,
+                  initialValue: _isChefe,
                   decoration: const InputDecoration(
                     labelText: 'Função na equipa',
                     border: OutlineInputBorder(),
                   ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Membro')),
-                    for (final s in team.chefeSlots)
-                      DropdownMenuItem(value: s, child: Text(s.label)),
+                  items: const [
+                    DropdownMenuItem(value: false, child: Text('Membro')),
+                    DropdownMenuItem(value: true, child: Text('Chefe')),
                   ],
-                  onChanged: (v) => setState(() => _chefe = v),
+                  onChanged: (v) => setState(() => _isChefe = v ?? false),
                 ),
               ],
               const SizedBox(height: 12),

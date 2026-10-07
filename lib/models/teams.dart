@@ -10,13 +10,29 @@ enum ChefeSlot {
   final String label;
 }
 
+/// Livre Serviço's day and night halves. Stored on [Person.turno] by name.
+enum Turno {
+  dia('Dia'),
+  noite('Noite');
+
+  const Turno(this.label);
+  final String label;
+}
+
+/// The Livre Serviço chefe slot that leads [turno].
+ChefeSlot chefeSlotForTurno(Turno turno) =>
+    turno == Turno.dia ? ChefeSlot.dia : ChefeSlot.noite;
+
 /// One of the store's fixed teams. [id] is what [Person.team] stores, so
 /// [name] can change without touching saved data.
 class Team {
-  const Team(this.id, this.name, this.chefeSlots);
+  const Team(this.id, this.name, this.chefeSlots, {this.hasTurnos = false});
 
   final String id;
   final String name;
+
+  /// Whether members are split into [Turno]s (only Livre Serviço).
+  final bool hasTurnos;
 
   /// The team's chefe positions, in display order. Each is held by at most
   /// one (non-deleted) member.
@@ -25,7 +41,10 @@ class Team {
 
 /// Every team, in the order the Pessoas list shows them.
 const teams = [
-  Team('livre_servico', 'Livre Serviço', [ChefeSlot.dia, ChefeSlot.noite]),
+  Team('livre_servico', 'Livre Serviço', [
+    ChefeSlot.dia,
+    ChefeSlot.noite,
+  ], hasTurnos: true),
   Team('gerencia', 'Gerência', [ChefeSlot.chefe]),
   Team('charcutaria', 'Charcutaria', [ChefeSlot.chefe]),
   Team('meal_solutions', 'Meal Solutions', [ChefeSlot.chefe]),
@@ -53,6 +72,20 @@ ChefeSlot? chefeSlotOf(Person p) {
     if (s.name == p.chefe) return s;
   }
   return null;
+}
+
+/// [p]'s turno, or null if their team isn't split by turno or they have no
+/// valid one. A chefe's turno is their slot's, whatever [Person.turno] says.
+Turno? turnoOf(Person p) {
+  if (teamById(p.team)?.hasTurnos != true) return null;
+  switch (chefeSlotOf(p)) {
+    case ChefeSlot.dia:
+      return Turno.dia;
+    case ChefeSlot.noite:
+      return Turno.noite;
+    case ChefeSlot.chefe || null:
+      return Turno.values.asNameMap()[p.turno];
+  }
 }
 
 /// Whether [a] and [b] are the same person: the same object, or the same

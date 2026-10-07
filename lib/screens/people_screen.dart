@@ -293,7 +293,7 @@ class _PersonTile extends StatelessWidget {
       ),
       subtitle: Text(
         [
-          if (chefeSlotOf(p) case final slot?) slot.label,
+          if (chefeSlotOf(p) != null) 'Chefe',
           if (p.collaboratorNumber.isNotEmpty) 'Nº ${p.collaboratorNumber}',
         ].join(' · '),
       ),

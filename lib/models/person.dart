@@ -28,4 +28,9 @@ class Person {
   /// Only meaningful when it is one of the team's slots — read it through
   /// `chefeSlotOf`.
   String? chefe;
+
+  /// [Turno.name] for Livre Serviço members; ignored for other teams. A
+  /// Livre Serviço chefe's turno comes from their slot — read it through
+  /// `turnoOf`.
+  String? turno;
 }

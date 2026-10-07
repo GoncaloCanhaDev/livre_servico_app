@@ -25,33 +25,54 @@ String foldText(String s) =>
 int _byName(Person a, Person b) =>
     foldText(a.fullName).compareTo(foldText(b.fullName));
 
+/// The list section [p] belongs in: their team's name ("Livre Serviço · Dia",
+/// "Livre Serviço · Noite" or "Livre Serviço · Sem turno" for a team split
+/// by turno), or "Sem equipa".
+String _sectionTitle(Person p) {
+  final team = teamById(p.team);
+  if (team == null) return 'Sem equipa';
+  if (!team.hasTurnos) return team.name;
+  return '${team.name} · ${turnoOf(p)?.label ?? 'Sem turno'}';
+}
+
+/// Every section title in list order, with the team each one belongs to.
+final List<(String, Team?)> _sectionOrder = [
+  for (final t in teams)
+    if (t.hasTurnos) ...[
+      for (final turno in Turno.values) ('${t.name} · ${turno.label}', t),
+      ('${t.name} · Sem turno', t),
+    ] else
+      (t.name, t),
+  ('Sem equipa', null),
+];
+
 bool _matches(Person p, String foldedQuery) =>
     foldText(p.fullName).contains(foldedQuery) ||
-    foldText(teamById(p.team)?.name ?? '').contains(foldedQuery) ||
+    foldText(_sectionTitle(p)).contains(foldedQuery) ||
     foldText(p.collaboratorNumber).contains(foldedQuery);
 
-/// Filters [people] by [query] (name, team name or nº de colaborador,
-/// ignoring case and accents) and groups them by team in [teams] order,
-/// with people without a (known) team in a final "Sem equipa" section.
-/// Within a team, chefes come first in the team's slot order, then members
-/// A–Z. Empty sections are left out.
+/// Filters [people] by [query] (name, section title — team and turno — or
+/// nº de colaborador, ignoring case and accents) and groups them into
+/// sections in [teams] order (Livre Serviço split into Dia, Noite and Sem
+/// turno), with people without a (known) team in a final "Sem equipa"
+/// section. Within a section, chefes come first in the team's slot order,
+/// then members A–Z. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
 }) {
   final q = foldText(query.trim());
-  final byTeam = <String?, List<Person>>{};
+  final bySection = <String, List<Person>>{};
   for (final p in people) {
     if (q.isNotEmpty && !_matches(p, q)) continue;
-    (byTeam[teamById(p.team)?.id] ??= []).add(p);
+    (bySection[_sectionTitle(p)] ??= []).add(p);
   }
 
-  int byRank(Team team, Person a, Person b) {
+  int byRank(Team? team, Person a, Person b) {
     int rank(Person p) {
       final slot = chefeSlotOf(p);
-      return slot == null
-          ? team.chefeSlots.length
-          : team.chefeSlots.indexOf(slot);
+      if (team == null || slot == null) return 1 << 10;
+      return team.chefeSlots.indexOf(slot);
     }
 
     final r = rank(a).compareTo(rank(b));
@@ -59,10 +80,8 @@ List<PeopleSection> buildPeopleSections(
   }
 
   return [
-    for (final t in teams)
-      if (byTeam[t.id] case final members?)
-        PeopleSection(t.name, members..sort((a, b) => byRank(t, a, b))),
-    if (byTeam[null] case final rest?)
-      PeopleSection('Sem equipa', rest..sort(_byName)),
+    for (final (title, team) in _sectionOrder)
+      if (bySection[title] case final members?)
+        PeopleSection(title, members..sort((a, b) => byRank(team, a, b))),
   ];
 }
