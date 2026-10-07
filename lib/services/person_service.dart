@@ -12,11 +12,6 @@ class PersonService extends ChangeNotifier {
   Isar get _isar => ShiftService.instance.isar;
   Isar get isar => _isar;
 
-  /// Same as [all], but without the negative-points migration write — used by
-  /// snapshot code that needs a plain read.
-  Future<List<Person>> allRaw() =>
-      _isar.persons.filter().syncDeletedAtIsNull().sortByFullName().findAll();
-
   /// Lets external services (e.g. month rollover) tell listeners the person
   /// data changed after they mutated it directly.
   void notifyExternal() => notifyListeners();
@@ -121,24 +116,11 @@ class PersonService extends ChangeNotifier {
     return result;
   }
 
-  Future<List<Person>> all() async {
-    final list = await _isar.persons
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByFullName()
-        .findAll();
-    final broken = list.where((p) => p.points < 0).toList();
-    if (broken.isNotEmpty) {
-      await _isar.writeTxn(() async {
-        for (final p in broken) {
-          p.points = 0;
-          SyncMeta.stamp(p);
-          await _isar.persons.put(p);
-        }
-      });
-    }
-    return list;
-  }
+  Future<List<Person>> all() => _isar.persons
+      .filter()
+      .syncDeletedAtIsNull()
+      .sortByFullName()
+      .findAll();
 
   Future<void> deleteAll() async {
     final rows = await _isar.persons.filter().syncDeletedAtIsNull().findAll();
@@ -163,20 +145,25 @@ class PersonService extends ChangeNotifier {
     return row;
   }
 
-  Future<Person?> adjustPoints(int id, int delta, {String? reason}) async {
+  Future<Person?> adjustPoints(
+    int id,
+    int delta, {
+    required String reason,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      throw ArgumentError('reason is required');
+    }
     final row = await _isar.persons.get(id);
     if (row == null || row.syncDeletedAt != null) return null;
-    final current = row.points < 0 ? 0 : row.points;
-    row.points = current + delta;
     row.pointHistory = [
       ...row.pointHistory,
       PointEvent()
         ..at = DateTime.now()
         ..delta = delta
-        ..reason = (reason == null || reason.trim().isEmpty)
-            ? null
-            : reason.trim(),
+        ..reason = trimmedReason,
     ];
+    row.points = _sumPoints(row.pointHistory);
     SyncMeta.stamp(row);
     await _isar.writeTxn(() async {
       await _isar.persons.put(row);
@@ -184,4 +171,56 @@ class PersonService extends ChangeNotifier {
     notifyListeners();
     return row;
   }
+
+  /// Edits the [PointEvent] at [index] of [id]'s `pointHistory` in place
+  /// (delta and reason), then recomputes `points` as the sum of the
+  /// (possibly reordered-by-value) history so the total never drifts from
+  /// the log.
+  Future<Person?> editPointEvent(
+    int id,
+    int index, {
+    required int delta,
+    required String reason,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      throw ArgumentError('reason is required');
+    }
+    final row = await _isar.persons.get(id);
+    if (row == null || row.syncDeletedAt != null) return null;
+    if (index < 0 || index >= row.pointHistory.length) return null;
+    final updated = [...row.pointHistory];
+    updated[index] = PointEvent()
+      ..at = updated[index].at
+      ..delta = delta
+      ..reason = trimmedReason;
+    row.pointHistory = updated;
+    row.points = _sumPoints(row.pointHistory);
+    SyncMeta.stamp(row);
+    await _isar.writeTxn(() async {
+      await _isar.persons.put(row);
+    });
+    notifyListeners();
+    return row;
+  }
+
+  /// Removes the [PointEvent] at [index] of [id]'s `pointHistory`, then
+  /// recomputes `points` from what remains.
+  Future<Person?> removePointEvent(int id, int index) async {
+    final row = await _isar.persons.get(id);
+    if (row == null || row.syncDeletedAt != null) return null;
+    if (index < 0 || index >= row.pointHistory.length) return null;
+    final updated = [...row.pointHistory]..removeAt(index);
+    row.pointHistory = updated;
+    row.points = _sumPoints(row.pointHistory);
+    SyncMeta.stamp(row);
+    await _isar.writeTxn(() async {
+      await _isar.persons.put(row);
+    });
+    notifyListeners();
+    return row;
+  }
+
+  int _sumPoints(List<PointEvent> history) =>
+      history.fold(0, (sum, e) => sum + e.delta);
 }

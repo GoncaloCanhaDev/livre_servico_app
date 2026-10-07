@@ -7,8 +7,6 @@ import '../models/inventory.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/report_list.dart';
-import '../models/shift_event.dart';
-import '../models/task_timer.dart';
 import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
@@ -19,13 +17,11 @@ import '../services/pedido_line_service.dart';
 import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
 import '../services/settings_service.dart';
-import '../services/shift_service.dart';
 import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'widgets/person_picker.dart';
-import 'widgets/timer_badge.dart';
 
 class HistoricoScreen extends StatelessWidget {
   const HistoricoScreen({super.key, this.initialTab = 0});
@@ -34,7 +30,6 @@ class HistoricoScreen extends StatelessWidget {
 
   static const _tabNames = [
     'Tudo',
-    'Turnos',
     'Camiões',
     'Abertura',
     'Automáticas',
@@ -51,37 +46,33 @@ class HistoricoScreen extends StatelessWidget {
         await _clearEverything();
         break;
       case 1:
-        await ShiftService.instance.deleteAllShifts();
-        break;
-      case 2:
         await TruckService.instance.deleteAll();
         break;
-      case 3:
+      case 2:
         await OpeningListService.instance.deleteAll();
         break;
-      case 4:
+      case 3:
         await AutoListService.instance.deleteAll();
         break;
-      case 5:
+      case 4:
         await ReportListService.instance.deleteAll();
         break;
-      case 6:
+      case 5:
         await VisualListService.instance.deleteAll();
         break;
-      case 7:
+      case 6:
         await DailyTasksService.instance.deleteAll();
         break;
-      case 8:
+      case 7:
         await InventoryService.instance.deleteAll();
         break;
-      case 9:
+      case 8:
         await PedidoService.instance.deleteAll();
         break;
     }
   }
 
   Future<void> _clearEverything() async {
-    await ShiftService.instance.deleteAllShifts();
     await TruckService.instance.deleteAll();
     await OpeningListService.instance.deleteAll();
     await AutoListService.instance.deleteAll();
@@ -151,7 +142,6 @@ class HistoricoScreen extends StatelessWidget {
             child: TabBarView(
               children: [
                 _AllTab(),
-                _ShiftsTab(),
                 _TrucksTab(),
                 _OpeningTab(),
                 _AutoTab(),
@@ -192,7 +182,6 @@ Future<bool> _confirmHardDelete(BuildContext context, String title) async {
   return ok == true;
 }
 
-String _fmtH(Duration d) => '${d.inHours}h ${d.inMinutes % 60}m';
 
 Future<bool> _confirmDelete(BuildContext context, String what) async {
   final ok = await showDialog<bool>(
@@ -228,7 +217,7 @@ Widget _emptyMsg(String msg) => Center(
 
 // --- Tudo (All) ---
 
-enum _ItemType { shift, truck, opening, auto, report, visual, tasks, inventory }
+enum _ItemType { truck, opening, auto, report, visual, tasks, inventory }
 
 class _HistoryInitials extends StatelessWidget {
   const _HistoryInitials({required this.names});
@@ -309,7 +298,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
     _future = _load();
-    ShiftService.instance.addListener(_reload);
     TruckService.instance.addListener(_reload);
     OpeningListService.instance.addListener(_reload);
     AutoListService.instance.addListener(_reload);
@@ -321,7 +309,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
 
   @override
   void dispose() {
-    ShiftService.instance.removeListener(_reload);
     TruckService.instance.removeListener(_reload);
     OpeningListService.instance.removeListener(_reload);
     AutoListService.instance.removeListener(_reload);
@@ -348,38 +335,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
 
   Future<Map<DateTime, List<_DayItem>>> _load() async {
     final items = <_DayItem>[];
-    final timeFmt = DateFormat('HH:mm');
-
-    // Shifts
-    final shiftIds = await ShiftService.instance.allShiftIdsDesc(
-      includeDeleted: true,
-    );
-    for (final id in shiftIds) {
-      final events = await ShiftService.instance.eventsForShift(
-        id,
-        includeDeleted: true,
-      );
-      if (events.isEmpty) continue;
-      final start = events.first.timestamp;
-      final end = events.last.type == ShiftEventType.clockOut
-          ? events.last.timestamp
-          : null;
-      if (end == null) continue; // Only show finished shifts
-      final worked = computeWorked(events);
-      final deleted = events.every((e) => e.syncDeletedAt != null);
-      items.add(
-        _DayItem(
-          type: _ItemType.shift,
-          time: end,
-          title: '🕒 Turno',
-          subtitle:
-              '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(worked)}',
-          icon: Icons.schedule,
-          names: resolveNames(const [], events.first.createdByInitials),
-          deleted: deleted,
-        ),
-      );
-    }
 
     // Trucks
     final trucks = await TruckService.instance.all(includeDeleted: true);
@@ -700,187 +655,6 @@ class _HistoryDismissible extends StatelessWidget {
   }
 }
 
-// --- Turnos ---
-
-class _ShiftsTab extends StatefulWidget {
-  const _ShiftsTab();
-  @override
-  State<_ShiftsTab> createState() => _ShiftsTabState();
-}
-
-class _ShiftsTabState extends State<_ShiftsTab>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-  late Future<List<_ShiftRow>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
-    ShiftService.instance.addListener(_reload);
-  }
-
-  @override
-  void dispose() {
-    ShiftService.instance.removeListener(_reload);
-    super.dispose();
-  }
-
-  void _reload() {
-    setState(() {
-      _future = _load();
-    });
-  }
-
-  Future<List<_ShiftRow>> _load() async {
-    final svc = ShiftService.instance;
-    final ids = await svc.allShiftIdsDesc(includeDeleted: true);
-    final out = <_ShiftRow>[];
-    for (final id in ids) {
-      final events = await svc.eventsForShift(id, includeDeleted: true);
-      if (events.isEmpty) continue;
-      out.add(
-        _ShiftRow(
-          events: events,
-          worked: computeWorked(events),
-          paused: computePaused(events),
-        ),
-      );
-    }
-    return out;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    final dateFmt = DateFormat("EEE, d 'de' MMMM", 'pt_PT');
-    final timeFmt = DateFormat('HH:mm');
-    return FutureBuilder<List<_ShiftRow>>(
-      future: _future,
-      builder: (_, snap) {
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final rows = snap.data!;
-        if (rows.isEmpty) return _emptyMsg('Ainda não há turnos registados.');
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: rows.length,
-          itemBuilder: (_, i) {
-            final r = rows[i];
-            final start = r.events.first.timestamp;
-            final end = r.events.last.type == ShiftEventType.clockOut
-                ? r.events.last.timestamp
-                : null;
-            final deleted = r.events.every((e) => e.syncDeletedAt != null);
-            return _dimmedIfDeleted(
-              deleted: deleted,
-              child: _HistoryDismissible(
-                itemKey: ValueKey(
-                  r.events.first.id,
-                ), // Using first event ID as shift key
-                deletePromptName: 'turno',
-                onDelete: () async {
-                  await ShiftService.instance.deleteShift(
-                    r.events.first.shiftId,
-                  );
-                  setState(() {
-                    _future = _load();
-                  });
-                },
-                onSendWhatsApp: (ctx) async {
-                  final startStr = timeFmt.format(start);
-                  final endStr = end == null ? 'Em curso' : timeFmt.format(end);
-                  final msg =
-                      '🕒 Turno: ${dateFmt.format(start)}\n'
-                      'Início: $startStr\n'
-                      'Fim: $endStr\n'
-                      'Trabalhado: ${_fmtH(r.worked)}\n'
-                      'Pausa: ${_fmtH(r.paused)}';
-                  await WhatsAppService.sendWithConfirm(ctx, msg);
-                },
-                child: Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ExpansionTile(
-                    title: Text(
-                      dateFmt.format(start),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      [
-                        end == null
-                            ? 'Em curso · ${_fmtH(r.worked)}'
-                            : '${timeFmt.format(start)} – ${timeFmt.format(end)} · ${_fmtH(r.worked)}',
-                        if (r.paused.inSeconds > 0) 'Pausa: ${_fmtH(r.paused)}',
-                      ].join('\n'),
-                    ),
-                    trailing: Icon(
-                      end == null ? Icons.timer : Icons.check_circle,
-                      color: AppColors.green,
-                    ),
-                    children: [
-                      ...r.events.map(
-                        (e) => ListTile(
-                          dense: true,
-                          leading: Icon(
-                            _shiftIcon(e.type),
-                            size: 20,
-                            color: AppColors.green,
-                          ),
-                          title: Text(_shiftLabel(e.type)),
-                          trailing: Text(timeFmt.format(e.timestamp)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _ShiftRow {
-  _ShiftRow({required this.events, required this.worked, required this.paused});
-  final List<ShiftEvent> events;
-  final Duration worked;
-  final Duration paused;
-}
-
-IconData _shiftIcon(ShiftEventType t) {
-  switch (t) {
-    case ShiftEventType.clockIn:
-      return Icons.login;
-    case ShiftEventType.pause:
-      return Icons.pause_circle;
-    case ShiftEventType.lunch:
-      return Icons.restaurant;
-    case ShiftEventType.resume:
-      return Icons.play_circle;
-    case ShiftEventType.clockOut:
-      return Icons.logout;
-  }
-}
-
-String _shiftLabel(ShiftEventType t) {
-  switch (t) {
-    case ShiftEventType.clockIn:
-      return 'Início de turno';
-    case ShiftEventType.pause:
-      return 'Pausa';
-    case ShiftEventType.lunch:
-      return 'Almoço';
-    case ShiftEventType.resume:
-      return 'Retoma';
-    case ShiftEventType.clockOut:
-      return 'Fim de turno';
-  }
-}
-
 // --- Camiões ---
 
 class _TrucksTab extends StatefulWidget {
@@ -1127,14 +901,6 @@ class _OpeningTabState extends State<_OpeningTab>
                         'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}',
                       ),
                       if (l.backdated) const _BackdatedRow(),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: TimerBadge(
-                          parentKind: TimerKind.opening,
-                          parentUuid: l.syncUuid,
-                          taskKey: 'main',
-                        ),
-                      ),
                     ],
                   ),
                   trailing: _trailingWithInitials(
@@ -1234,14 +1000,6 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
                         'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}',
                       ),
                       if (l.backdated) const _BackdatedRow(),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: TimerBadge(
-                          parentKind: TimerKind.auto,
-                          parentUuid: l.syncUuid,
-                          taskKey: 'main',
-                        ),
-                      ),
                     ],
                   ),
                   trailing: _trailingWithInitials(
@@ -1346,14 +1104,6 @@ class _ReportTabState extends State<_ReportTab>
                         'DSV: ${l.diasSemVendas} · Reg: ${l.regularizacoes} · Mas: ${l.massiva} · Rep: ${l.repetidos}',
                       ),
                       if (l.backdated) const _BackdatedRow(),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: TimerBadge(
-                          parentKind: TimerKind.report,
-                          parentUuid: l.syncUuid,
-                          taskKey: 'main',
-                        ),
-                      ),
                     ],
                   ),
                   trailing: _trailingWithInitials(
@@ -1487,16 +1237,7 @@ class _VisualTabState extends State<_VisualTab>
                           Icons.visibility,
                           color: AppColors.green,
                         ),
-                        title: Row(
-                          children: [
-                            Expanded(child: Text(timeFmt.format(e.createdAt))),
-                            TimerBadge(
-                              parentKind: TimerKind.visual,
-                              parentUuid: e.syncUuid,
-                              taskKey: 'main',
-                            ),
-                          ],
-                        ),
+                        title: Text(timeFmt.format(e.createdAt)),
                         trailing:
                             resolveNames(
                               e.createdByNames,
@@ -1671,7 +1412,6 @@ class _TasksTabState extends State<_TasksTab>
                 'Kiwi Abertura',
                 t.kiwiAbertura,
                 byNames: resolveNames(t.kiwiAberturaByNames, t.kiwiAberturaBy),
-                timerKey: 'kiwi_abertura',
                 backdated: t.backdatedTaskKeys.contains('kiwi_abertura'),
               ),
               _TaskEntry(
@@ -1681,7 +1421,6 @@ class _TasksTabState extends State<_TasksTab>
                   t.alteracoesPrecoByNames,
                   t.alteracoesPrecoBy,
                 ),
-                timerKey: 'alteracoes_preco',
                 backdated: t.backdatedTaskKeys.contains('alteracoes_preco'),
               ),
               _TaskEntry(
@@ -1691,7 +1430,6 @@ class _TasksTabState extends State<_TasksTab>
                   t.verificacaoTemperaturasByNames,
                   t.verificacaoTemperaturasBy,
                 ),
-                timerKey: 'verificacao_temperaturas',
                 backdated: t.backdatedTaskKeys.contains(
                   'verificacao_temperaturas',
                 ),
@@ -1713,7 +1451,6 @@ class _TasksTabState extends State<_TasksTab>
                   t.preenchimentoQuadroByNames,
                   t.preenchimentoQuadroBy,
                 ),
-                timerKey: 'preenchimento_quadro',
                 backdated: t.backdatedTaskKeys.contains('preenchimento_quadro'),
               ),
               _TaskEntry(
@@ -1733,7 +1470,6 @@ class _TasksTabState extends State<_TasksTab>
                   t.verificacaoValidadesByNames,
                   t.verificacaoValidadesBy,
                 ),
-                timerKey: 'verificacao_validades',
                 backdated: t.backdatedTaskKeys.contains(
                   'verificacao_validades',
                 ),
@@ -1742,7 +1478,6 @@ class _TasksTabState extends State<_TasksTab>
                 'Kiwi Fecho',
                 t.kiwiFecho,
                 byNames: resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy),
-                timerKey: 'kiwi_fecho',
                 backdated: t.backdatedTaskKeys.contains('kiwi_fecho'),
               ),
             ];
@@ -1791,8 +1526,6 @@ class _TasksTabState extends State<_TasksTab>
                             e.label,
                             e.done,
                             byNames: e.byNames,
-                            parentUuid: t.syncUuid,
-                            timerKey: e.timerKey,
                             backdated: e.backdated,
                           ),
                         )
@@ -1813,13 +1546,11 @@ class _TaskEntry {
     this.label,
     this.done, {
     this.byNames = const [],
-    this.timerKey,
     this.backdated = false,
   });
   final String label;
   final bool done;
   final List<String> byNames;
-  final String? timerKey;
   final bool backdated;
 }
 
@@ -1854,8 +1585,6 @@ Widget _taskTile(
   String label,
   bool done, {
   List<String> byNames = const [],
-  String? parentUuid,
-  String? timerKey,
   bool backdated = false,
 }) {
   return ListTile(
@@ -1885,12 +1614,6 @@ Widget _taskTile(
           const Icon(Icons.history_toggle_off, size: 16, color: Colors.black45),
           const SizedBox(width: 4),
         ],
-        if (parentUuid != null && timerKey != null)
-          TimerBadge(
-            parentKind: TimerKind.tasks,
-            parentUuid: parentUuid,
-            taskKey: timerKey,
-          ),
         if (done && byNames.isNotEmpty) ...[
           const SizedBox(width: 4),
           _HistoryInitials(names: byNames),

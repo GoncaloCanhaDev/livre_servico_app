@@ -23,6 +23,27 @@ class PedidoService extends ChangeNotifier {
 
   Future<Pedido?> getById(int id) => _isar.pedidos.get(id);
 
+  /// Both fields are optional — a supervisor can leave either unset.
+  Future<void> updateDetails(
+    Pedido p, {
+    String? supplier,
+    DateTime? expectedDate,
+    bool clearExpectedDate = false,
+  }) async {
+    if (p.isFinalized) return;
+    p.supplier = (supplier == null || supplier.trim().isEmpty)
+        ? null
+        : supplier.trim();
+    if (clearExpectedDate) {
+      p.expectedDate = null;
+    } else if (expectedDate != null) {
+      p.expectedDate = expectedDate;
+    }
+    SyncMeta.stamp(p);
+    await _isar.writeTxn(() => _isar.pedidos.put(p));
+    notifyListeners();
+  }
+
   Future<void> finalize(Pedido p, {required String numero}) async {
     if (p.isFinalized) return;
     p.numero = numero;
@@ -33,8 +54,7 @@ class PedidoService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.pedidos.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.pedidos.filter().syncDeletedAtIsNull().findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);

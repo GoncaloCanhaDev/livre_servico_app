@@ -4,7 +4,6 @@ import 'package:isar_community/isar.dart';
 import '../models/info_entry.dart';
 import '../services/shift_service.dart';
 import '../services/sync_meta.dart';
-import '../services/sync_service.dart';
 import '../theme.dart';
 
 class InfoScreen extends StatefulWidget {
@@ -60,13 +59,15 @@ class _InfoScreenState extends State<InfoScreen> {
               icon: Icons.contact_phone,
               buckets: const [
                 _Bucket(
-                    label: 'Responsável de Loja',
-                    key: 'contactos_responsavel',
-                    showContactField: true),
+                  label: 'Responsável de Loja',
+                  key: 'contactos_responsavel',
+                  showContactField: true,
+                ),
                 _Bucket(
-                    label: 'Suporte Técnico',
-                    key: 'contactos_suporte',
-                    showContactField: true),
+                  label: 'Suporte Técnico',
+                  key: 'contactos_suporte',
+                  showContactField: true,
+                ),
               ],
               onChanged: _reload,
             ),
@@ -172,7 +173,6 @@ class _BucketBodyState extends State<_BucketBody> {
       ..createdAt = DateTime.now();
     SyncMeta.stamp(entry);
     await isar.writeTxn(() => isar.infoEntrys.put(entry));
-    SyncService.instance.requestSync();
     if (mounted) _refresh();
   }
 
@@ -184,8 +184,9 @@ class _BucketBodyState extends State<_BucketBody> {
         content: Text('Apagar "${entry.title}"?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -198,7 +199,6 @@ class _BucketBodyState extends State<_BucketBody> {
     final isar = ShiftService.instance.isar;
     SyncMeta.softDelete(entry);
     await isar.writeTxn(() => isar.infoEntrys.put(entry));
-    SyncService.instance.requestSync();
     if (mounted) _refresh();
   }
 
@@ -214,8 +214,10 @@ class _BucketBodyState extends State<_BucketBody> {
               Expanded(
                 child: Text(
                   widget.bucket.label,
-                  style:
-                      const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               TextButton.icon(
@@ -256,47 +258,55 @@ class _BucketBodyState extends State<_BucketBody> {
                       child: IgnorePointer(
                         ignoring: e.syncDeletedAt != null,
                         child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: InkWell(
-                        onLongPress: () => _delete(e),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              e.title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            if (e.description.trim().isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                e.description,
-                                style: const TextStyle(
-                                    color: Colors.black87, height: 1.35),
-                              ),
-                            ],
-                            if ((e.contact ?? '').trim().isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  const Icon(Icons.phone,
-                                      size: 14, color: Colors.black54),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      e.contact!,
-                                      style: const TextStyle(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: InkWell(
+                            onLongPress: () => _delete(e),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                if (e.description.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    e.description,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      height: 1.35,
                                     ),
                                   ),
                                 ],
-                              ),
-                            ],
-                          ],
+                                if ((e.contact ?? '').trim().isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.phone,
+                                        size: 14,
+                                        color: Colors.black54,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          e.contact!,
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                       ),
                     ),
                 ],
@@ -310,8 +320,11 @@ class _BucketBodyState extends State<_BucketBody> {
 }
 
 class _EntryDraft {
-  const _EntryDraft(
-      {required this.title, required this.description, this.contact});
+  const _EntryDraft({
+    required this.title,
+    required this.description,
+    this.contact,
+  });
   final String title;
   final String description;
   final String? contact;
@@ -510,7 +523,6 @@ class _SingleFieldRowState extends State<_SingleFieldRow> {
     entry.description = saved;
     SyncMeta.stamp(entry);
     await isar.writeTxn(() => isar.infoEntrys.put(entry));
-    SyncService.instance.requestSync();
     if (!mounted) return;
     setState(() => _future = _load());
     widget.onChanged();
@@ -534,9 +546,13 @@ class _SingleFieldRowState extends State<_SingleFieldRow> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.field.label,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14)),
+                      Text(
+                        widget.field.label,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         body.isEmpty ? 'Por preencher.' : body,

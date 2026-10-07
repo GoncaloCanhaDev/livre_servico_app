@@ -32,9 +32,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _edit() async {
     final ok = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ProductFormScreen(existing: _product),
-      ),
+      MaterialPageRoute(builder: (_) => ProductFormScreen(existing: _product)),
     );
     if (ok == true) _load();
   }
@@ -47,11 +45,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         content: const Text('Esta ação não pode ser desfeita.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogCtx, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(dialogCtx, true),
-              child: const Text('Apagar')),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Apagar'),
+          ),
         ],
       ),
     );
@@ -68,10 +68,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       appBar: AppBar(
         title: const Text('Produto'),
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: p == null ? null : _edit),
           IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: p == null ? null : _delete),
+            icon: const Icon(Icons.edit),
+            onPressed: p == null ? null : _edit,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: p == null ? null : _delete,
+          ),
         ],
       ),
       body: p == null
@@ -98,25 +102,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(p.name,
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    p.name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.green,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(p.department.label,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12)),
+                      child: Text(
+                        p.department.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -143,12 +156,15 @@ class _Field extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
-                  letterSpacing: 0.8)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(value, style: const TextStyle(fontSize: 16)),
         ],

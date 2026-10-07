@@ -27,33 +27,48 @@ const PedidoSchema = CollectionSchema(
       name: r'createdByInitials',
       type: IsarType.string,
     ),
-    r'finishedAt': PropertySchema(
+    r'expectedDate': PropertySchema(
       id: 2,
+      name: r'expectedDate',
+      type: IsarType.dateTime,
+    ),
+    r'finishedAt': PropertySchema(
+      id: 3,
       name: r'finishedAt',
       type: IsarType.dateTime,
     ),
     r'isFinalized': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isFinalized',
       type: IsarType.bool,
     ),
-    r'numero': PropertySchema(id: 4, name: r'numero', type: IsarType.string),
-    r'syncDeletedAt': PropertySchema(
+    r'isOverdue': PropertySchema(
       id: 5,
+      name: r'isOverdue',
+      type: IsarType.bool,
+    ),
+    r'numero': PropertySchema(id: 6, name: r'numero', type: IsarType.string),
+    r'supplier': PropertySchema(
+      id: 7,
+      name: r'supplier',
+      type: IsarType.string,
+    ),
+    r'syncDeletedAt': PropertySchema(
+      id: 8,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 8, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 11, name: r'synced', type: IsarType.bool),
   },
 
   estimateSize: _pedidoEstimateSize,
@@ -103,6 +118,12 @@ int _pedidoEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.supplier;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.syncUuid.length * 3;
   return bytesCount;
 }
@@ -115,13 +136,16 @@ void _pedidoSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeString(offsets[1], object.createdByInitials);
-  writer.writeDateTime(offsets[2], object.finishedAt);
-  writer.writeBool(offsets[3], object.isFinalized);
-  writer.writeString(offsets[4], object.numero);
-  writer.writeDateTime(offsets[5], object.syncDeletedAt);
-  writer.writeDateTime(offsets[6], object.syncUpdatedAt);
-  writer.writeString(offsets[7], object.syncUuid);
-  writer.writeBool(offsets[8], object.synced);
+  writer.writeDateTime(offsets[2], object.expectedDate);
+  writer.writeDateTime(offsets[3], object.finishedAt);
+  writer.writeBool(offsets[4], object.isFinalized);
+  writer.writeBool(offsets[5], object.isOverdue);
+  writer.writeString(offsets[6], object.numero);
+  writer.writeString(offsets[7], object.supplier);
+  writer.writeDateTime(offsets[8], object.syncDeletedAt);
+  writer.writeDateTime(offsets[9], object.syncUpdatedAt);
+  writer.writeString(offsets[10], object.syncUuid);
+  writer.writeBool(offsets[11], object.synced);
 }
 
 Pedido _pedidoDeserialize(
@@ -133,13 +157,15 @@ Pedido _pedidoDeserialize(
   final object = Pedido();
   object.createdAt = reader.readDateTime(offsets[0]);
   object.createdByInitials = reader.readStringOrNull(offsets[1]);
-  object.finishedAt = reader.readDateTimeOrNull(offsets[2]);
+  object.expectedDate = reader.readDateTimeOrNull(offsets[2]);
+  object.finishedAt = reader.readDateTimeOrNull(offsets[3]);
   object.id = id;
-  object.numero = reader.readStringOrNull(offsets[4]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[6]);
-  object.syncUuid = reader.readString(offsets[7]);
-  object.synced = reader.readBool(offsets[8]);
+  object.numero = reader.readStringOrNull(offsets[6]);
+  object.supplier = reader.readStringOrNull(offsets[7]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[9]);
+  object.syncUuid = reader.readString(offsets[10]);
+  object.synced = reader.readBool(offsets[11]);
   return object;
 }
 
@@ -157,16 +183,22 @@ P _pedidoDeserializeProp<P>(
     case 2:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
-    case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 4:
+      return (reader.readBool(offset)) as P;
+    case 5:
+      return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 9:
+      return (reader.readDateTime(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -542,6 +574,81 @@ extension PedidoQueryFilter on QueryBuilder<Pedido, Pedido, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'expectedDate'),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'expectedDate'),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'expectedDate', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'expectedDate',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'expectedDate',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> expectedDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'expectedDate',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QAfterFilterCondition> finishedAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -680,6 +787,16 @@ extension PedidoQueryFilter on QueryBuilder<Pedido, Pedido, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'isFinalized', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> isOverdueEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isOverdue', value: value),
       );
     });
   }
@@ -842,6 +959,168 @@ extension PedidoQueryFilter on QueryBuilder<Pedido, Pedido, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'numero', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'supplier'),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'supplier'),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'supplier',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'supplier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'supplier',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'supplier', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterFilterCondition> supplierIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'supplier', value: ''),
       );
     });
   }
@@ -1166,6 +1445,18 @@ extension PedidoQuerySortBy on QueryBuilder<Pedido, Pedido, QSortBy> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByExpectedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expectedDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByExpectedDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expectedDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByFinishedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finishedAt', Sort.asc);
@@ -1190,6 +1481,18 @@ extension PedidoQuerySortBy on QueryBuilder<Pedido, Pedido, QSortBy> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByIsOverdue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isOverdue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByIsOverdueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isOverdue', Sort.desc);
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByNumero() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numero', Sort.asc);
@@ -1199,6 +1502,18 @@ extension PedidoQuerySortBy on QueryBuilder<Pedido, Pedido, QSortBy> {
   QueryBuilder<Pedido, Pedido, QAfterSortBy> sortByNumeroDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numero', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortBySupplier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> sortBySupplierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplier', Sort.desc);
     });
   }
 
@@ -1276,6 +1591,18 @@ extension PedidoQuerySortThenBy on QueryBuilder<Pedido, Pedido, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByExpectedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expectedDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByExpectedDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expectedDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByFinishedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finishedAt', Sort.asc);
@@ -1312,6 +1639,18 @@ extension PedidoQuerySortThenBy on QueryBuilder<Pedido, Pedido, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByIsOverdue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isOverdue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByIsOverdueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isOverdue', Sort.desc);
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByNumero() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numero', Sort.asc);
@@ -1321,6 +1660,18 @@ extension PedidoQuerySortThenBy on QueryBuilder<Pedido, Pedido, QSortThenBy> {
   QueryBuilder<Pedido, Pedido, QAfterSortBy> thenByNumeroDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numero', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenBySupplier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QAfterSortBy> thenBySupplierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplier', Sort.desc);
     });
   }
 
@@ -1391,6 +1742,12 @@ extension PedidoQueryWhereDistinct on QueryBuilder<Pedido, Pedido, QDistinct> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QDistinct> distinctByExpectedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expectedDate');
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QDistinct> distinctByFinishedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'finishedAt');
@@ -1403,11 +1760,25 @@ extension PedidoQueryWhereDistinct on QueryBuilder<Pedido, Pedido, QDistinct> {
     });
   }
 
+  QueryBuilder<Pedido, Pedido, QDistinct> distinctByIsOverdue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isOverdue');
+    });
+  }
+
   QueryBuilder<Pedido, Pedido, QDistinct> distinctByNumero({
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'numero', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Pedido, Pedido, QDistinct> distinctBySupplier({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'supplier', caseSensitive: caseSensitive);
     });
   }
 
@@ -1457,6 +1828,12 @@ extension PedidoQueryProperty on QueryBuilder<Pedido, Pedido, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Pedido, DateTime?, QQueryOperations> expectedDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expectedDate');
+    });
+  }
+
   QueryBuilder<Pedido, DateTime?, QQueryOperations> finishedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'finishedAt');
@@ -1469,9 +1846,21 @@ extension PedidoQueryProperty on QueryBuilder<Pedido, Pedido, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Pedido, bool, QQueryOperations> isOverdueProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isOverdue');
+    });
+  }
+
   QueryBuilder<Pedido, String?, QQueryOperations> numeroProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'numero');
+    });
+  }
+
+  QueryBuilder<Pedido, String?, QQueryOperations> supplierProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'supplier');
     });
   }
 

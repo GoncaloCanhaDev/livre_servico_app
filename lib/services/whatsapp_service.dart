@@ -11,26 +11,27 @@ class WhatsAppService {
 
     // Try the intent-style URL first (works best on Android)
     final intentUri = Uri.parse(
-        'intent://send?text=$encoded#Intent;package=com.whatsapp;scheme=whatsapp;end');
+      'intent://send?text=$encoded#Intent;package=com.whatsapp;scheme=whatsapp;end',
+    );
     try {
       final ok = await launchUrl(intentUri);
       if (ok) return true;
     } catch (_) {}
 
     // Fallback: HTTPS URL
-    final httpsUri =
-        Uri.parse('https://api.whatsapp.com/send?text=$encoded');
+    final httpsUri = Uri.parse('https://api.whatsapp.com/send?text=$encoded');
     try {
-      final ok = await launchUrl(httpsUri,
-          mode: LaunchMode.externalApplication);
+      final ok = await launchUrl(
+        httpsUri,
+        mode: LaunchMode.externalApplication,
+      );
       if (ok) return true;
     } catch (_) {}
 
     // Fallback: whatsapp:// scheme
     final waUri = Uri.parse('whatsapp://send?text=$encoded');
     try {
-      final ok = await launchUrl(waUri,
-          mode: LaunchMode.externalApplication);
+      final ok = await launchUrl(waUri, mode: LaunchMode.externalApplication);
       if (ok) return true;
     } catch (_) {}
 
@@ -47,10 +48,7 @@ class WhatsAppService {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Enviar por WhatsApp?'),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 13),
-        ),
+        content: Text(message, style: const TextStyle(fontSize: 13)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
@@ -67,10 +65,8 @@ class WhatsAppService {
     final sent = await send(message);
     if (!sent && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Não foi possível abrir o WhatsApp.')),
+        const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
       );
     }
   }
 }
-

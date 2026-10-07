@@ -5,7 +5,6 @@ import '../models/opening_list.dart';
 import '../models/visual_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class VisualListService extends ChangeNotifier {
   VisualListService._();
@@ -33,7 +32,6 @@ class VisualListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.visualLists.put(entry);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -93,7 +91,6 @@ class VisualListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.visualLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -104,7 +101,6 @@ class VisualListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.visualLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

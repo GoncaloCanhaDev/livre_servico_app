@@ -3,15 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/opening_list.dart';
-import '../../models/task_timer.dart';
 import '../../services/auto_list_service.dart';
-import '../../services/task_notification_service.dart';
-import '../../services/task_timer_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 import '../widgets/person_picker.dart';
-import '../widgets/task_timer_control.dart';
 
 class AutomaticasTab extends StatefulWidget {
   const AutomaticasTab({super.key});
@@ -63,11 +59,6 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
       result.day.day,
       5,
     );
-    await TaskTimerService.instance.finishOrCreateFinished(
-      parentKind: TimerKind.auto,
-      parentUuid: _draftUuid,
-      taskKey: 'main',
-    );
     if (targetDay == today) {
       await AutoListService.instance.add(
         syncUuid: _draftUuid,
@@ -76,7 +67,6 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
         naoPereciveis: n,
         by: names,
       );
-      await TaskNotificationService.instance.rescheduleAll();
     } else {
       await AutoListService.instance.addForDay(
         serviceDay: targetDay,
@@ -119,21 +109,9 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Nova lista automática',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              TaskTimerControl(
-                key: ValueKey(_draftUuid),
-                parentKind: TimerKind.auto,
-                parentUuid: _draftUuid,
-                taskKey: 'main',
-              ),
-            ],
+          const Text(
+            'Nova lista automática',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           NumberRow(

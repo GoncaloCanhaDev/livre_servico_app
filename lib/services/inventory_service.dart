@@ -33,8 +33,6 @@ class InventoryService extends ChangeNotifier {
       ..code = code
       ..createdAt = now
       ..startedAt = now
-      ..runningSince = now
-      ..accumulatedSeconds = 0
       ..valueCents = 0
       ..createdByNames = by ?? [];
     SyncMeta.stamp(inv);
@@ -45,38 +43,9 @@ class InventoryService extends ChangeNotifier {
     return inv;
   }
 
-  Future<void> pause(Inventory inv) async {
-    if (!inv.isRunning) return;
-    final now = DateTime.now();
-    inv.accumulatedSeconds += now
-        .difference(inv.runningSince!)
-        .inSeconds
-        .clamp(0, 1 << 31);
-    inv.runningSince = null;
-    SyncMeta.stamp(inv);
-    await _isar.writeTxn(() => _isar.inventorys.put(inv));
-    notifyListeners();
-  }
-
-  Future<void> resume(Inventory inv) async {
-    if (inv.isFinalized || inv.isRunning) return;
-    inv.runningSince = DateTime.now();
-    SyncMeta.stamp(inv);
-    await _isar.writeTxn(() => _isar.inventorys.put(inv));
-    notifyListeners();
-  }
-
   Future<void> finalize(Inventory inv, {required int finalValueCents}) async {
     if (inv.isFinalized) return;
-    final now = DateTime.now();
-    if (inv.runningSince != null) {
-      inv.accumulatedSeconds += now
-          .difference(inv.runningSince!)
-          .inSeconds
-          .clamp(0, 1 << 31);
-    }
-    inv.runningSince = null;
-    inv.finishedAt = now;
+    inv.finishedAt = DateTime.now();
     inv.finalValueCents = finalValueCents;
     inv.valueCents = finalValueCents;
     SyncMeta.stamp(inv);

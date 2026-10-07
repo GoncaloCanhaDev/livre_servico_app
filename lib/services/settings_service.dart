@@ -7,36 +7,27 @@ class SettingsService extends ChangeNotifier {
 
   late SharedPreferences _prefs;
 
-  bool _notificationsEnabled = false;
-  bool get notificationsEnabled => _notificationsEnabled;
-
   int _visualGoal = 200;
   int get visualGoal => _visualGoal;
 
+  int _autoGoal = 1;
+  int get autoGoal => _autoGoal;
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    _notificationsEnabled = _prefs.getBool('notificationsEnabled') ?? false;
     _visualGoal = _prefs.getInt('visualGoal') ?? 200;
-  }
-
-  Future<void> setNotificationsEnabled(bool enabled) async {
-    _notificationsEnabled = enabled;
-    await _prefs.setBool('notificationsEnabled', enabled);
-    notifyListeners();
-  }
-
-  bool isNotificationEnabled(String key) {
-    return _prefs.getBool('notify_$key') ?? true;
-  }
-
-  Future<void> setNotificationEnabled(String key, bool enabled) async {
-    await _prefs.setBool('notify_$key', enabled);
-    notifyListeners();
+    _autoGoal = _prefs.getInt('autoGoal') ?? 1;
   }
 
   Future<void> setVisualGoal(int goal) async {
     _visualGoal = goal;
     await _prefs.setInt('visualGoal', goal);
+    notifyListeners();
+  }
+
+  Future<void> setAutoGoal(int goal) async {
+    _autoGoal = goal;
+    await _prefs.setInt('autoGoal', goal);
     notifyListeners();
   }
 }

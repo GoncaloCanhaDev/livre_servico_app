@@ -4,7 +4,6 @@ import 'package:isar_community/isar.dart';
 import '../models/auto_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class AutoListService extends ChangeNotifier {
   AutoListService._();
@@ -30,7 +29,6 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(entry);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -90,7 +88,6 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -101,7 +98,6 @@ class AutoListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.autoLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

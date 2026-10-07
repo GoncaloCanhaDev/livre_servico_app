@@ -82,7 +82,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ..createdAt = now
       ..startedAt = now
       ..finishedAt = now
-      ..accumulatedSeconds = 0
       ..valueCents = cents
       ..finalValueCents = cents
       ..createdByNames = names;
@@ -217,10 +216,6 @@ class _InventoryCard extends StatelessWidget {
       statusColor = AppColors.green;
       statusText = 'Concluído';
       statusIcon = Icons.check_circle;
-    } else if (inv.isPaused) {
-      statusColor = Colors.amber.shade700;
-      statusText = 'Em pausa';
-      statusIcon = Icons.pause_circle;
     } else {
       statusColor = AppColors.greenDark;
       statusText = 'A decorrer';
@@ -233,9 +228,6 @@ class _InventoryCard extends StatelessWidget {
     }
     if (finalized) {
       subtitleParts.add(_fmtCents(inv.valueCents));
-      if (inv.accumulatedSeconds > 0) {
-        subtitleParts.add(_fmtDuration(inv.accumulatedSeconds));
-      }
     }
     final dateFmt = DateFormat('d/M HH:mm');
 
@@ -387,7 +379,7 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
 }
 
 // ============================================================================
-// Session screen (running / paused)
+// Session screen (in progress)
 // ============================================================================
 
 class InventorySessionScreen extends StatefulWidget {
@@ -401,7 +393,6 @@ class InventorySessionScreen extends StatefulWidget {
 class _InventorySessionScreenState extends State<InventorySessionScreen> {
   Inventory? _inv;
   List<InventoryLine> _lines = [];
-  Timer? _ticker;
   String? _flashMessage;
 
   @override
@@ -410,14 +401,10 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
     _load();
     InventoryService.instance.addListener(_load);
     InventoryLineService.instance.addListener(_load);
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && (_inv?.isRunning ?? false)) setState(() {});
-    });
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
     InventoryService.instance.removeListener(_load);
     InventoryLineService.instance.removeListener(_load);
     super.dispose();
@@ -432,16 +419,6 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
       _inv = inv;
       _lines = lines;
     });
-  }
-
-  int _elapsedSeconds() {
-    final inv = _inv;
-    if (inv == null) return 0;
-    var sec = inv.accumulatedSeconds;
-    if (inv.runningSince != null) {
-      sec += DateTime.now().difference(inv.runningSince!).inSeconds;
-    }
-    return sec;
   }
 
   Future<void> _scan() async {
@@ -526,16 +503,6 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _togglePause() async {
-    final inv = _inv;
-    if (inv == null || inv.isFinalized) return;
-    if (inv.isRunning) {
-      await InventoryService.instance.pause(inv);
-    } else {
-      await InventoryService.instance.resume(inv);
-    }
-  }
-
   Future<void> _finalize() async {
     final inv = _inv;
     if (inv == null || inv.isFinalized) return;
@@ -546,7 +513,6 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
     final msg =
         '📦 Inventário: ${inv.name} (cód. ${inv.code ?? '—'})\n'
         'Valor: ${_fmtCents(cents)}\n'
-        'Duração: ${_fmtDuration(_elapsedSeconds())}\n'
         'Linhas: ${_lines.length}';
     await WhatsAppService.sendWithConfirm(context, msg);
     if (!mounted) return;
@@ -605,11 +571,10 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
     if (inv == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final running = inv.isRunning;
     return Scaffold(
       appBar: AppBar(
         title: Text(inv.name),
-        backgroundColor: running ? AppColors.green : Colors.amber.shade700,
+        backgroundColor: AppColors.green,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -623,40 +588,12 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
         child: Column(
           children: [
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: (running ? AppColors.green : Colors.amber.shade700)
-                  .withValues(alpha: 0.08),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Código ${inv.code ?? '—'}',
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _fmtDuration(_elapsedSeconds()),
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _togglePause,
-                    icon: Icon(running ? Icons.pause : Icons.play_arrow),
-                    label: Text(running ? 'Pausar' : 'Retomar'),
-                  ),
-                ],
+              color: AppColors.green.withValues(alpha: 0.08),
+              child: Text(
+                'Código ${inv.code ?? '—'}',
+                style: const TextStyle(color: Colors.black54, fontSize: 13),
               ),
             ),
             Padding(
@@ -669,7 +606,7 @@ class _InventorySessionScreenState extends State<InventorySessionScreen> {
                         backgroundColor: AppColors.green,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      onPressed: running ? _scan : null,
+                      onPressed: _scan,
                       icon: const Icon(Icons.qr_code_scanner),
                       label: const Text(
                         'Ler código',
@@ -792,8 +729,6 @@ class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
                     runSpacing: 4,
                     children: [
                       _stat('Valor', _fmtCents(inv.valueCents)),
-                      if (inv.accumulatedSeconds > 0)
-                        _stat('Duração', _fmtDuration(inv.accumulatedSeconds)),
                       _stat('Linhas', '${_lines.length}'),
                       if (totalCount > 0) _stat('Unidades', '$totalCount'),
                     ],
@@ -1078,14 +1013,6 @@ class _BarcodeImage extends StatelessWidget {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-String _fmtDuration(int totalSeconds) {
-  final h = totalSeconds ~/ 3600;
-  final m = (totalSeconds % 3600) ~/ 60;
-  final s = totalSeconds % 60;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(h)}:${two(m)}:${two(s)}';
-}
 
 String _fmtCents(int cents) {
   final euros = cents / 100;

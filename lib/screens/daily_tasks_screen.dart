@@ -3,18 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'widgets/person_picker.dart';
-import 'widgets/task_timer_control.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
-import '../models/task_timer.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/opening_list_service.dart';
-import '../services/task_timer_service.dart';
 import '../services/report_list_service.dart';
 import '../services/settings_service.dart';
-import '../services/task_notification_service.dart';
 import '../services/visual_list_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -113,7 +109,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
 
   Future<void> _completeTask({
     required String taskName,
-    required String timerKey,
+    required String taskKey,
     required void Function(DailyTasks target, List<String> who) apply,
     required String Function(List<String> who) message,
   }) async {
@@ -142,26 +138,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
     if (targetDay == tasks.serviceDay) {
       setState(() => apply(tasks, who));
       await _saveTasks();
-      await TaskTimerService.instance.finishOrCreateFinished(
-        parentKind: TimerKind.tasks,
-        parentUuid: tasks.syncUuid,
-        taskKey: timerKey,
-      );
-      await TaskNotificationService.instance.rescheduleAll();
       _sendMsg(message(who));
       return;
     }
     final other = await DailyTasksService.instance.forDay(targetDay);
     apply(other, who);
-    if (!other.backdatedTaskKeys.contains(timerKey)) {
-      other.backdatedTaskKeys = [...other.backdatedTaskKeys, timerKey];
+    if (!other.backdatedTaskKeys.contains(taskKey)) {
+      other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
     await DailyTasksService.instance.save(other);
-    await TaskTimerService.instance.finishOrCreateFinished(
-      parentKind: TimerKind.tasks,
-      parentUuid: other.syncUuid,
-      taskKey: timerKey,
-    );
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
     _sendMsg('${message(who)} — $dayFmt');
     if (!mounted) return;
@@ -197,8 +182,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               checked: tasks.kiwiAbertura,
               byNames: resolveNames(tasks.kiwiAberturaByNames, tasks.kiwiAberturaBy),
               backdated: tasks.backdatedTaskKeys.contains('kiwi_abertura'),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'kiwi_abertura',
               onLongPress: tasks.kiwiAbertura
                   ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura')
                   : null,
@@ -206,7 +189,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 if (!v) return;
                 await _completeTask(
                   taskName: 'Kiwi Abertura',
-                  timerKey: 'kiwi_abertura',
+                  taskKey: 'kiwi_abertura',
                   apply: (t, who) {
                     t.kiwiAbertura = true;
                     t.kiwiAberturaByNames = who;
@@ -221,8 +204,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               checked: tasks.alteracoesPreco,
               byNames: resolveNames(tasks.alteracoesPrecoByNames, tasks.alteracoesPrecoBy),
               backdated: tasks.backdatedTaskKeys.contains('alteracoes_preco'),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'alteracoes_preco',
               countController: _alteracoesCtrl,
               onLongPress: tasks.alteracoesPreco
                   ? () => _sendMsg(
@@ -234,7 +215,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 final count = tasks.alteracoesPrecoCount;
                 await _completeTask(
                   taskName: 'Alterações de Preço',
-                  timerKey: 'alteracoes_preco',
+                  taskKey: 'alteracoes_preco',
                   apply: (t, who) {
                     t.alteracoesPreco = true;
                     t.alteracoesPrecoByNames = who;
@@ -256,8 +237,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               backdated: tasks.backdatedTaskKeys.contains(
                 'verificacao_temperaturas',
               ),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'verificacao_temperaturas',
               onLongPress: tasks.verificacaoTemperaturas
                   ? () => _sendMsg(
                       '✅ Tarefa concluída: Verificação de Temperaturas',
@@ -267,7 +246,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 if (!v) return;
                 await _completeTask(
                   taskName: 'Verificação de Temperaturas',
-                  timerKey: 'verificacao_temperaturas',
+                  taskKey: 'verificacao_temperaturas',
                   apply: (t, who) {
                     t.verificacaoTemperaturas = true;
                     t.verificacaoTemperaturasByNames = who;
@@ -300,8 +279,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               backdated: tasks.backdatedTaskKeys.contains(
                 'preenchimento_quadro',
               ),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'preenchimento_quadro',
               onLongPress: tasks.preenchimentoQuadro
                   ? () =>
                         _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro')
@@ -310,7 +287,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 if (!v) return;
                 await _completeTask(
                   taskName: 'Preenchimento do Quadro',
-                  timerKey: 'preenchimento_quadro',
+                  taskKey: 'preenchimento_quadro',
                   apply: (t, who) {
                     t.preenchimentoQuadro = true;
                     t.preenchimentoQuadroByNames = who;
@@ -345,8 +322,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               backdated: tasks.backdatedTaskKeys.contains(
                 'verificacao_validades',
               ),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'verificacao_validades',
               countController: _validadesCtrl,
               onLongPress: tasks.verificacaoValidades
                   ? () => _sendMsg(
@@ -358,7 +333,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 final count = tasks.verificacaoValidadesCount;
                 await _completeTask(
                   taskName: 'Verificação de Validades',
-                  timerKey: 'verificacao_validades',
+                  taskKey: 'verificacao_validades',
                   apply: (t, who) {
                     t.verificacaoValidades = true;
                     t.verificacaoValidadesByNames = who;
@@ -378,8 +353,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
               checked: tasks.kiwiFecho,
               byNames: resolveNames(tasks.kiwiFechoByNames, tasks.kiwiFechoBy),
               backdated: tasks.backdatedTaskKeys.contains('kiwi_fecho'),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'kiwi_fecho',
               onLongPress: tasks.kiwiFecho
                   ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho')
                   : null,
@@ -387,7 +360,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
                 if (!v) return;
                 await _completeTask(
                   taskName: 'Kiwi Fecho',
-                  timerKey: 'kiwi_fecho',
+                  taskKey: 'kiwi_fecho',
                   apply: (t, who) {
                     t.kiwiFecho = true;
                     t.kiwiFechoByNames = who;
@@ -434,8 +407,6 @@ class _ManualTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
-    this.parentUuid,
-    this.timerKey,
   });
 
   final String label;
@@ -444,8 +415,6 @@ class _ManualTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
-  final String? parentUuid;
-  final String? timerKey;
 
   @override
   Widget build(BuildContext context) {
@@ -453,43 +422,25 @@ class _ManualTask extends StatelessWidget {
       onLongPress: onLongPress,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: Column(
-          children: [
-            CheckboxListTile(
-              value: checked,
-              onChanged: (v) {
-                if (checked) return;
-                onChanged(v ?? false);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.green,
-              title: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  decoration: checked ? TextDecoration.lineThrough : null,
-                ),
-              ),
-              subtitle: (checked && backdated) ? const _BackdatedNote() : null,
-              secondary: (checked && byNames.isNotEmpty)
-                  ? PersonInitialsRow(names: byNames, size: 30)
-                  : null,
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: (v) {
+            if (checked) return;
+            onChanged(v ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              decoration: checked ? TextDecoration.lineThrough : null,
             ),
-            if (parentUuid != null && timerKey != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: TaskTimerControl(
-                    parentKind: TimerKind.tasks,
-                    parentUuid: parentUuid!,
-                    taskKey: timerKey!,
-                    enabled: !checked,
-                    compact: true,
-                  ),
-                ),
-              ),
-          ],
+          ),
+          subtitle: (checked && backdated) ? const _BackdatedNote() : null,
+          secondary: (checked && byNames.isNotEmpty)
+              ? PersonInitialsRow(names: byNames, size: 30)
+              : null,
         ),
       ),
     );
@@ -555,8 +506,6 @@ class _CountTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
-    this.parentUuid,
-    this.timerKey,
   });
 
   final String label;
@@ -567,8 +516,6 @@ class _CountTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
-  final String? parentUuid;
-  final String? timerKey;
 
   @override
   Widget build(BuildContext context) {
@@ -576,70 +523,52 @@ class _CountTask extends StatelessWidget {
       onLongPress: onLongPress,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: Column(
-          children: [
-            CheckboxListTile(
-              value: checked,
-              onChanged: (v) {
-                if (checked) return;
-                onCheckedChanged(v ?? false);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.green,
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        decoration: checked ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: (v) {
+            if (checked) return;
+            onCheckedChanged(v ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    decoration: checked ? TextDecoration.lineThrough : null,
                   ),
-                  if (checked && byNames.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    PersonInitialsRow(names: byNames, size: 30),
-                  ],
-                ],
-              ),
-              subtitle: (checked && backdated) ? const _BackdatedNote() : null,
-              secondary: SizedBox(
-                width: 90,
-                child: TextField(
-                  controller: countController,
-                  enabled: !checked,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '0',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
                 ),
               ),
+              if (checked && byNames.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                PersonInitialsRow(names: byNames, size: 30),
+              ],
+            ],
+          ),
+          subtitle: (checked && backdated) ? const _BackdatedNote() : null,
+          secondary: SizedBox(
+            width: 90,
+            child: TextField(
+              controller: countController,
+              enabled: !checked,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: const InputDecoration(
+                hintText: '0',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
             ),
-            if (parentUuid != null && timerKey != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: TaskTimerControl(
-                    parentKind: TimerKind.tasks,
-                    parentUuid: parentUuid!,
-                    taskKey: timerKey!,
-                    enabled: !checked,
-                    compact: true,
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

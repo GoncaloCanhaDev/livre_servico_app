@@ -54,13 +54,13 @@ class _MissedDaySheetState extends State<_MissedDaySheet> {
   }
 
   String get _kindLabel => switch (widget.kind) {
-        JustificationKind.opening => 'Lista de abertura',
-        JustificationKind.report => 'Relatório',
-        JustificationKind.auto => 'Lista automática',
-        JustificationKind.visual => 'Visual',
-        JustificationKind.tasks => 'Tarefas diárias',
-        _ => widget.kind,
-      };
+    JustificationKind.opening => 'Lista de abertura',
+    JustificationKind.report => 'Relatório',
+    JustificationKind.auto => 'Lista automática',
+    JustificationKind.visual => 'Visual',
+    JustificationKind.tasks => 'Tarefas diárias',
+    _ => widget.kind,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +76,17 @@ class _MissedDaySheetState extends State<_MissedDaySheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_kindLabel,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800)),
-              Text(fmt.format(widget.day),
-                  style: const TextStyle(color: Colors.black54)),
+              Text(
+                _kindLabel,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                fmt.format(widget.day),
+                style: const TextStyle(color: Colors.black54),
+              ),
               const SizedBox(height: 16),
               if (_existingJust != null) ...[
                 Container(
@@ -88,17 +94,22 @@ class _MissedDaySheetState extends State<_MissedDaySheet> {
                   decoration: BoxDecoration(
                     color: Colors.amber.withValues(alpha: 0.15),
                     border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.6)),
+                      color: Colors.amber.withValues(alpha: 0.6),
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Já justificado',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      const Text(
+                        'Já justificado',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       const SizedBox(height: 4),
-                      Text(_existingJust!.reason,
-                          style: const TextStyle(fontSize: 13)),
+                      Text(
+                        _existingJust!.reason,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ],
                   ),
                 ),
@@ -107,21 +118,26 @@ class _MissedDaySheetState extends State<_MissedDaySheet> {
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 initiallyExpanded: _existingJust == null,
-                title: const Text('Marcar como feito',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
+                title: const Text(
+                  'Marcar como feito',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
                 children: [_buildMarkDoneForm()],
               ),
               const Divider(),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 title: Text(
-                    _existingJust == null ? 'Justificar' : 'Editar justificação',
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                  _existingJust == null ? 'Justificar' : 'Editar justificação',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 children: [
                   _JustifyForm(
                     initial: _justInitialReason ?? '',
                     onSubmit: _saveJustification,
-                    onDelete: _existingJust == null ? null : _deleteJustification,
+                    onDelete: _existingJust == null
+                        ? null
+                        : _deleteJustification,
                     saving: _saving,
                   ),
                 ],
@@ -253,7 +269,10 @@ class _NumberFormState extends State<_NumberForm> {
   @override
   void initState() {
     super.initState();
-    _ctrls = List.generate(widget.labels.length, (_) => TextEditingController());
+    _ctrls = List.generate(
+      widget.labels.length,
+      (_) => TextEditingController(),
+    );
   }
 
   @override
@@ -300,8 +319,9 @@ class _NumberFormState extends State<_NumberForm> {
               padding: const EdgeInsets.only(bottom: 8),
               child: TextField(
                 controller: _ctrls[i],
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
                 ],
@@ -385,27 +405,41 @@ class _TasksFormState extends State<_TasksForm> {
       );
     }
     final t = _tasks!;
-    final isSaturday = widget.day.weekday == DateTime.saturday;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _check('Kiwi abertura', t.kiwiAbertura,
-              (v) => setState(() => t.kiwiAbertura = v)),
-          _check('Alterações de preço', t.alteracoesPreco,
-              (v) => setState(() => t.alteracoesPreco = v)),
-          _check('Verificação temperaturas', t.verificacaoTemperaturas,
-              (v) => setState(() => t.verificacaoTemperaturas = v)),
-          _check('Preenchimento quadro', t.preenchimentoQuadro,
-              (v) => setState(() => t.preenchimentoQuadro = v)),
-          _check('Verificação validades', t.verificacaoValidades,
-              (v) => setState(() => t.verificacaoValidades = v)),
-          _check('Kiwi fecho', t.kiwiFecho,
-              (v) => setState(() => t.kiwiFecho = v)),
-          if (isSaturday)
-            _check('Limpeza máquina voltas', t.limpezaMaquinaVoltas,
-                (v) => setState(() => t.limpezaMaquinaVoltas = v)),
+          _check(
+            'Kiwi abertura',
+            t.kiwiAbertura,
+            (v) => setState(() => t.kiwiAbertura = v),
+          ),
+          _check(
+            'Alterações de preço',
+            t.alteracoesPreco,
+            (v) => setState(() => t.alteracoesPreco = v),
+          ),
+          _check(
+            'Verificação temperaturas',
+            t.verificacaoTemperaturas,
+            (v) => setState(() => t.verificacaoTemperaturas = v),
+          ),
+          _check(
+            'Preenchimento quadro',
+            t.preenchimentoQuadro,
+            (v) => setState(() => t.preenchimentoQuadro = v),
+          ),
+          _check(
+            'Verificação validades',
+            t.verificacaoValidades,
+            (v) => setState(() => t.verificacaoValidades = v),
+          ),
+          _check(
+            'Kiwi fecho',
+            t.kiwiFecho,
+            (v) => setState(() => t.kiwiFecho = v),
+          ),
           const SizedBox(height: 8),
           FilledButton(
             onPressed: _saving ? null : _save,
@@ -435,8 +469,9 @@ class _JustifyForm extends StatefulWidget {
 }
 
 class _JustifyFormState extends State<_JustifyForm> {
-  late final TextEditingController _ctrl =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -468,7 +503,9 @@ class _JustifyFormState extends State<_JustifyForm> {
                   onPressed: widget.saving
                       ? null
                       : () => widget.onSubmit(_ctrl.text),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.green,
+                  ),
                   child: const Text('Guardar justificação'),
                 ),
               ),
@@ -476,7 +513,9 @@ class _JustifyFormState extends State<_JustifyForm> {
                 const SizedBox(width: 8),
                 OutlinedButton(
                   onPressed: widget.saving ? null : widget.onDelete,
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                  ),
                   child: const Text('Remover'),
                 ),
               ],

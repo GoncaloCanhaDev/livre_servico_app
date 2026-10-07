@@ -51,11 +51,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('OK')),
+            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -83,10 +85,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
           Align(
             alignment: Alignment.center,
             child: Container(
@@ -108,7 +107,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.black,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 12),
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
                 onPressed: _typeManually,
                 icon: const Icon(Icons.keyboard),

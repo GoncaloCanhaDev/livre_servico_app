@@ -57,7 +57,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   }
 
   Future<void> _loadPeople() async {
-    final all = await PersonService.instance.allRaw();
+    final all = await PersonService.instance.all();
     final managerUuids = widget.existing?.managerUuids ?? const <String>[];
     final managers = all
         .where((p) => managerUuids.contains(p.syncUuid))

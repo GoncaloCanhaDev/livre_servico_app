@@ -4,7 +4,6 @@ import 'package:isar_community/isar.dart';
 import '../models/opening_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class OpeningListService extends ChangeNotifier {
   OpeningListService._();
@@ -61,6 +60,7 @@ class OpeningListService extends ChangeNotifier {
     row.opls = opls;
     row.naoPereciveis = naoPereciveis;
     row.finalizedAt = DateTime.now();
+    row.backdated = true;
     SyncMeta.stamp(row);
     await _isar.writeTxn(() => _isar.openingLists.put(row));
     notifyListeners();
@@ -73,17 +73,15 @@ class OpeningListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.openingLists.put(list);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
-  Future<List<OpeningList>> entriesForServiceDay(DateTime day,
-      {bool includeDeleted = false}) {
+  Future<List<OpeningList>> entriesForServiceDay(
+    DateTime day, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
-      return _isar.openingLists
-          .filter()
-          .serviceDayEqualTo(day)
-          .findAll();
+      return _isar.openingLists.filter().serviceDayEqualTo(day).findAll();
     }
     return _isar.openingLists
         .filter()
@@ -104,7 +102,6 @@ class OpeningListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.openingLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -115,7 +112,6 @@ class OpeningListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.openingLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

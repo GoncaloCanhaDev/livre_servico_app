@@ -5,7 +5,6 @@ import '../models/opening_list.dart';
 import '../models/report_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class ReportListService extends ChangeNotifier {
   ReportListService._();
@@ -66,6 +65,7 @@ class ReportListService extends ChangeNotifier {
     row.massiva = massiva;
     row.repetidos = repetidos;
     row.finalizedAt = DateTime.now();
+    row.backdated = true;
     SyncMeta.stamp(row);
     await _isar.writeTxn(() => _isar.reportLists.put(row));
     notifyListeners();
@@ -78,17 +78,15 @@ class ReportListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.reportLists.put(list);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
-  Future<List<ReportList>> entriesForServiceDay(DateTime day,
-      {bool includeDeleted = false}) {
+  Future<List<ReportList>> entriesForServiceDay(
+    DateTime day, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
-      return _isar.reportLists
-          .filter()
-          .serviceDayEqualTo(day)
-          .findAll();
+      return _isar.reportLists.filter().serviceDayEqualTo(day).findAll();
     }
     return _isar.reportLists
         .filter()
@@ -98,8 +96,10 @@ class ReportListService extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.reportLists.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.reportLists
+        .filter()
+        .syncDeletedAtIsNull()
+        .findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);
@@ -107,7 +107,6 @@ class ReportListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.reportLists.putAll(rows);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
@@ -118,7 +117,6 @@ class ReportListService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.reportLists.put(row);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 

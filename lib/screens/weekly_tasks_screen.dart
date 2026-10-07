@@ -3,13 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'widgets/person_picker.dart';
-import 'widgets/task_timer_control.dart';
 
 import '../models/opening_list.dart';
-import '../models/task_timer.dart';
 import '../models/weekly_tasks.dart';
-import '../services/task_notification_service.dart';
-import '../services/task_timer_service.dart';
 import '../services/weekly_tasks_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -83,7 +79,7 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
 
   Future<void> _completeTask({
     required String taskName,
-    required String timerKey,
+    required String taskKey,
     required void Function(WeeklyTasks target, List<String> who) apply,
     required String Function(List<String> who) message,
     DateTime? initialDay,
@@ -108,26 +104,15 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
     if (targetWeek == tasks.serviceWeek) {
       setState(() => apply(tasks, who));
       await _saveTasks();
-      await TaskTimerService.instance.finishOrCreateFinished(
-        parentKind: TimerKind.weeklyTasks,
-        parentUuid: tasks.syncUuid,
-        taskKey: timerKey,
-      );
-      await TaskNotificationService.instance.rescheduleAll();
       _sendMsg(message(who));
       return;
     }
     final other = await WeeklyTasksService.instance.forWeek(targetWeek);
     apply(other, who);
-    if (!other.backdatedTaskKeys.contains(timerKey)) {
-      other.backdatedTaskKeys = [...other.backdatedTaskKeys, timerKey];
+    if (!other.backdatedTaskKeys.contains(taskKey)) {
+      other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
     await WeeklyTasksService.instance.save(other);
-    await TaskTimerService.instance.finishOrCreateFinished(
-      parentKind: TimerKind.weeklyTasks,
-      parentUuid: other.syncUuid,
-      taskKey: timerKey,
-    );
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(result.day);
     _sendMsg('${message(who)} — $dayFmt');
     if (!mounted) return;
@@ -164,8 +149,6 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
               checked: tasks.verificar1a,
               byNames: resolveNames(tasks.verificar1aByNames, tasks.verificar1aBy),
               backdated: tasks.backdatedTaskKeys.contains('verificar_1a'),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'verificar_1a',
               countController: _verificar1aCtrl,
               goalNote: 'Itens no Mural — mínimo 10, recomendado 20',
               late: mondayPassed && !tasks.verificar1a,
@@ -179,7 +162,7 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
                 final count = tasks.verificar1aCount;
                 await _completeTask(
                   taskName: 'Verificar 1ª',
-                  timerKey: 'verificar_1a',
+                  taskKey: 'verificar_1a',
                   apply: (t, who) {
                     t.verificar1a = true;
                     t.verificar1aByNames = who;
@@ -199,8 +182,6 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
               checked: tasks.verificar4a,
               byNames: resolveNames(tasks.verificar4aByNames, tasks.verificar4aBy),
               backdated: tasks.backdatedTaskKeys.contains('verificar_4a'),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'verificar_4a',
               countController: _verificar4aCtrl,
               goalNote: 'Itens por colocar preço',
               late: mondayPassed && !tasks.verificar4a,
@@ -214,7 +195,7 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
                 final count = tasks.verificar4aCount;
                 await _completeTask(
                   taskName: 'Verificar 4ª',
-                  timerKey: 'verificar_4a',
+                  taskKey: 'verificar_4a',
                   apply: (t, who) {
                     t.verificar4a = true;
                     t.verificar4aByNames = who;
@@ -236,8 +217,6 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
               backdated: tasks.backdatedTaskKeys.contains(
                 'limpeza_maquina_voltas',
               ),
-              parentUuid: tasks.syncUuid,
-              timerKey: 'limpeza_maquina_voltas',
               enabled: isSaturday,
               note: isSaturday ? null : 'Apenas ao sábado',
               onLongPress: tasks.limpezaMaquinaVoltas
@@ -252,7 +231,7 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
                 );
                 await _completeTask(
                   taskName: 'Limpeza da Máquina Voltas',
-                  timerKey: 'limpeza_maquina_voltas',
+                  taskKey: 'limpeza_maquina_voltas',
                   initialDay: lastSaturday,
                   selectableDayPredicate: (d) => d.weekday == DateTime.saturday,
                   apply: (t, who) {
@@ -301,8 +280,6 @@ class _WeeklyManualTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
-    this.parentUuid,
-    this.timerKey,
     this.enabled = true,
     this.note,
   });
@@ -313,8 +290,6 @@ class _WeeklyManualTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
-  final String? parentUuid;
-  final String? timerKey;
   final bool enabled;
   final String? note;
 
@@ -324,46 +299,28 @@ class _WeeklyManualTask extends StatelessWidget {
       onLongPress: onLongPress,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: Column(
-          children: [
-            CheckboxListTile(
-              value: checked,
-              onChanged: (v) {
-                if (checked) return;
-                onChanged(v ?? false);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.green,
-              title: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? null : Colors.black38,
-                  decoration: checked ? TextDecoration.lineThrough : null,
-                ),
-              ),
-              subtitle: (checked && backdated)
-                  ? const _BackdatedNote()
-                  : (note == null ? null : Text(note!)),
-              secondary: (checked && byNames.isNotEmpty)
-                  ? PersonInitialsRow(names: byNames, size: 30)
-                  : null,
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: (v) {
+            if (checked) return;
+            onChanged(v ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: enabled ? null : Colors.black38,
+              decoration: checked ? TextDecoration.lineThrough : null,
             ),
-            if (parentUuid != null && timerKey != null && enabled)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: TaskTimerControl(
-                    parentKind: TimerKind.weeklyTasks,
-                    parentUuid: parentUuid!,
-                    taskKey: timerKey!,
-                    enabled: !checked,
-                    compact: true,
-                  ),
-                ),
-              ),
-          ],
+          ),
+          subtitle: (checked && backdated)
+              ? const _BackdatedNote()
+              : (note == null ? null : Text(note!)),
+          secondary: (checked && byNames.isNotEmpty)
+              ? PersonInitialsRow(names: byNames, size: 30)
+              : null,
         ),
       ),
     );
@@ -380,8 +337,6 @@ class _WeeklyCountTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
-    this.parentUuid,
-    this.timerKey,
     this.goalNote,
     this.late = false,
   });
@@ -394,8 +349,6 @@ class _WeeklyCountTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
-  final String? parentUuid;
-  final String? timerKey;
   final String? goalNote;
   final bool late;
 
@@ -412,101 +365,83 @@ class _WeeklyCountTask extends StatelessWidget {
               )
             : null,
         margin: const EdgeInsets.only(bottom: 10),
-        child: Column(
-          children: [
-            CheckboxListTile(
-              value: checked,
-              onChanged: (v) {
-                if (checked) return;
-                onCheckedChanged(v ?? false);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.green,
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        decoration: checked ? TextDecoration.lineThrough : null,
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: (v) {
+            if (checked) return;
+            onCheckedChanged(v ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: AppColors.green,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    decoration: checked ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              if (checked && byNames.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                PersonInitialsRow(names: byNames, size: 30),
+              ],
+            ],
+          ),
+          subtitle: (checked && backdated)
+              ? const _BackdatedNote()
+              : late
+              ? Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 14,
+                      color: Colors.red.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Atrasada — devia ter sido concluída à 2ª feira',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  if (checked && byNames.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    PersonInitialsRow(names: byNames, size: 30),
                   ],
-                ],
-              ),
-              subtitle: (checked && backdated)
-                  ? const _BackdatedNote()
-                  : late
-                  ? Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 14,
-                          color: Colors.red.shade700,
+                )
+              : (goalNote == null
+                    ? null
+                    : Text(
+                        goalNote!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Atrasada — devia ter sido concluída à 2ª feira',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.red.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : (goalNote == null
-                        ? null
-                        : Text(
-                            goalNote!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
-                          )),
-              secondary: SizedBox(
-                width: 90,
-                child: TextField(
-                  controller: countController,
-                  enabled: !checked,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '0',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
-                ),
+                      )),
+          secondary: SizedBox(
+            width: 90,
+            child: TextField(
+              controller: countController,
+              enabled: !checked,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
+              decoration: const InputDecoration(
+                hintText: '0',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (s) => onCountChanged(int.tryParse(s) ?? 0),
             ),
-            if (parentUuid != null && timerKey != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: TaskTimerControl(
-                    parentKind: TimerKind.weeklyTasks,
-                    parentUuid: parentUuid!,
-                    taskKey: timerKey!,
-                    enabled: !checked,
-                    compact: true,
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

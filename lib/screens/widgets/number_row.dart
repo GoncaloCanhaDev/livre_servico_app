@@ -24,9 +24,13 @@ class NumberRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             SizedBox(
               width: 110,
@@ -37,7 +41,9 @@ class NumberRow extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: const InputDecoration(
                   hintText: '0',
                   border: OutlineInputBorder(),

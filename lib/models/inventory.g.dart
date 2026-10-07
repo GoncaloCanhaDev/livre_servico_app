@@ -17,78 +17,62 @@ const InventorySchema = CollectionSchema(
   name: r'Inventory',
   id: 9013770421438767579,
   properties: {
-    r'accumulatedSeconds': PropertySchema(
-      id: 0,
-      name: r'accumulatedSeconds',
-      type: IsarType.long,
-    ),
-    r'code': PropertySchema(id: 1, name: r'code', type: IsarType.string),
+    r'code': PropertySchema(id: 0, name: r'code', type: IsarType.string),
     r'createdAt': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'createdByInitials': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'createdByInitials',
       type: IsarType.string,
     ),
     r'createdByNames': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'createdByNames',
       type: IsarType.stringList,
     ),
     r'finalValueCents': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'finalValueCents',
       type: IsarType.long,
     ),
     r'finishedAt': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'finishedAt',
       type: IsarType.dateTime,
     ),
     r'isFinalized': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'isFinalized',
       type: IsarType.bool,
     ),
-    r'isLegacy': PropertySchema(id: 8, name: r'isLegacy', type: IsarType.bool),
-    r'isPaused': PropertySchema(id: 9, name: r'isPaused', type: IsarType.bool),
-    r'isRunning': PropertySchema(
-      id: 10,
-      name: r'isRunning',
-      type: IsarType.bool,
-    ),
-    r'name': PropertySchema(id: 11, name: r'name', type: IsarType.string),
-    r'runningSince': PropertySchema(
-      id: 12,
-      name: r'runningSince',
-      type: IsarType.dateTime,
-    ),
+    r'isLegacy': PropertySchema(id: 7, name: r'isLegacy', type: IsarType.bool),
+    r'name': PropertySchema(id: 8, name: r'name', type: IsarType.string),
     r'startedAt': PropertySchema(
-      id: 13,
+      id: 9,
       name: r'startedAt',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 14,
+      id: 10,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 15,
+      id: 11,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 16,
+      id: 12,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 17, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 13, name: r'synced', type: IsarType.bool),
     r'valueCents': PropertySchema(
-      id: 18,
+      id: 14,
       name: r'valueCents',
       type: IsarType.long,
     ),
@@ -159,25 +143,21 @@ void _inventorySerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.accumulatedSeconds);
-  writer.writeString(offsets[1], object.code);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.createdByInitials);
-  writer.writeStringList(offsets[4], object.createdByNames);
-  writer.writeLong(offsets[5], object.finalValueCents);
-  writer.writeDateTime(offsets[6], object.finishedAt);
-  writer.writeBool(offsets[7], object.isFinalized);
-  writer.writeBool(offsets[8], object.isLegacy);
-  writer.writeBool(offsets[9], object.isPaused);
-  writer.writeBool(offsets[10], object.isRunning);
-  writer.writeString(offsets[11], object.name);
-  writer.writeDateTime(offsets[12], object.runningSince);
-  writer.writeDateTime(offsets[13], object.startedAt);
-  writer.writeDateTime(offsets[14], object.syncDeletedAt);
-  writer.writeDateTime(offsets[15], object.syncUpdatedAt);
-  writer.writeString(offsets[16], object.syncUuid);
-  writer.writeBool(offsets[17], object.synced);
-  writer.writeLong(offsets[18], object.valueCents);
+  writer.writeString(offsets[0], object.code);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeString(offsets[2], object.createdByInitials);
+  writer.writeStringList(offsets[3], object.createdByNames);
+  writer.writeLong(offsets[4], object.finalValueCents);
+  writer.writeDateTime(offsets[5], object.finishedAt);
+  writer.writeBool(offsets[6], object.isFinalized);
+  writer.writeBool(offsets[7], object.isLegacy);
+  writer.writeString(offsets[8], object.name);
+  writer.writeDateTime(offsets[9], object.startedAt);
+  writer.writeDateTime(offsets[10], object.syncDeletedAt);
+  writer.writeDateTime(offsets[11], object.syncUpdatedAt);
+  writer.writeString(offsets[12], object.syncUuid);
+  writer.writeBool(offsets[13], object.synced);
+  writer.writeLong(offsets[14], object.valueCents);
 }
 
 Inventory _inventoryDeserialize(
@@ -187,22 +167,20 @@ Inventory _inventoryDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Inventory();
-  object.accumulatedSeconds = reader.readLong(offsets[0]);
-  object.code = reader.readStringOrNull(offsets[1]);
-  object.createdAt = reader.readDateTime(offsets[2]);
-  object.createdByInitials = reader.readStringOrNull(offsets[3]);
-  object.createdByNames = reader.readStringList(offsets[4]) ?? [];
-  object.finalValueCents = reader.readLongOrNull(offsets[5]);
-  object.finishedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.code = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.createdByInitials = reader.readStringOrNull(offsets[2]);
+  object.createdByNames = reader.readStringList(offsets[3]) ?? [];
+  object.finalValueCents = reader.readLongOrNull(offsets[4]);
+  object.finishedAt = reader.readDateTimeOrNull(offsets[5]);
   object.id = id;
-  object.name = reader.readString(offsets[11]);
-  object.runningSince = reader.readDateTimeOrNull(offsets[12]);
-  object.startedAt = reader.readDateTimeOrNull(offsets[13]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[14]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[15]);
-  object.syncUuid = reader.readString(offsets[16]);
-  object.synced = reader.readBool(offsets[17]);
-  object.valueCents = reader.readLong(offsets[18]);
+  object.name = reader.readString(offsets[8]);
+  object.startedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[11]);
+  object.syncUuid = reader.readString(offsets[12]);
+  object.synced = reader.readBool(offsets[13]);
+  object.valueCents = reader.readLong(offsets[14]);
   return object;
 }
 
@@ -214,42 +192,34 @@ P _inventoryDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    case 2:
       return (reader.readDateTime(offset)) as P;
-    case 3:
+    case 2:
       return (reader.readStringOrNull(offset)) as P;
-    case 4:
+    case 3:
       return (reader.readStringList(offset) ?? []) as P;
-    case 5:
+    case 4:
       return (reader.readLongOrNull(offset)) as P;
-    case 6:
+    case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
-    case 12:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 14:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 15:
       return (reader.readDateTime(offset)) as P;
-    case 16:
+    case 12:
       return (reader.readString(offset)) as P;
-    case 17:
+    case 13:
       return (reader.readBool(offset)) as P;
-    case 18:
+    case 14:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -404,61 +374,6 @@ extension InventoryQueryWhere
 
 extension InventoryQueryFilter
     on QueryBuilder<Inventory, Inventory, QFilterCondition> {
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  accumulatedSecondsEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'accumulatedSeconds', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  accumulatedSecondsGreaterThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'accumulatedSeconds',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  accumulatedSecondsLessThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'accumulatedSeconds',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  accumulatedSecondsBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'accumulatedSeconds',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterFilterCondition> codeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1257,26 +1172,6 @@ extension InventoryQueryFilter
     });
   }
 
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition> isPausedEqualTo(
-    bool value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'isPaused', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition> isRunningEqualTo(
-    bool value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'isRunning', value: value),
-      );
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1419,79 +1314,6 @@ extension InventoryQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'name', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  runningSinceIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'runningSince'),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  runningSinceIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'runningSince'),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition> runningSinceEqualTo(
-    DateTime? value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'runningSince', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  runningSinceGreaterThan(DateTime? value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'runningSince',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition>
-  runningSinceLessThan(DateTime? value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'runningSince',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterFilterCondition> runningSinceBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'runningSince',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
       );
     });
   }
@@ -1920,19 +1742,6 @@ extension InventoryQueryLinks
     on QueryBuilder<Inventory, Inventory, QFilterCondition> {}
 
 extension InventoryQuerySortBy on QueryBuilder<Inventory, Inventory, QSortBy> {
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByAccumulatedSeconds() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accumulatedSeconds', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy>
-  sortByAccumulatedSecondsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accumulatedSeconds', Sort.desc);
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'code', Sort.asc);
@@ -2018,30 +1827,6 @@ extension InventoryQuerySortBy on QueryBuilder<Inventory, Inventory, QSortBy> {
     });
   }
 
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByIsPaused() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isPaused', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByIsPausedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isPaused', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByIsRunning() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isRunning', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByIsRunningDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isRunning', Sort.desc);
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2051,18 +1836,6 @@ extension InventoryQuerySortBy on QueryBuilder<Inventory, Inventory, QSortBy> {
   QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByRunningSince() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'runningSince', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> sortByRunningSinceDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'runningSince', Sort.desc);
     });
   }
 
@@ -2141,19 +1914,6 @@ extension InventoryQuerySortBy on QueryBuilder<Inventory, Inventory, QSortBy> {
 
 extension InventoryQuerySortThenBy
     on QueryBuilder<Inventory, Inventory, QSortThenBy> {
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByAccumulatedSeconds() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accumulatedSeconds', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy>
-  thenByAccumulatedSecondsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accumulatedSeconds', Sort.desc);
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'code', Sort.asc);
@@ -2251,30 +2011,6 @@ extension InventoryQuerySortThenBy
     });
   }
 
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByIsPaused() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isPaused', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByIsPausedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isPaused', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByIsRunning() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isRunning', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByIsRunningDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isRunning', Sort.desc);
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2284,18 +2020,6 @@ extension InventoryQuerySortThenBy
   QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByRunningSince() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'runningSince', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QAfterSortBy> thenByRunningSinceDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'runningSince', Sort.desc);
     });
   }
 
@@ -2374,12 +2098,6 @@ extension InventoryQuerySortThenBy
 
 extension InventoryQueryWhereDistinct
     on QueryBuilder<Inventory, Inventory, QDistinct> {
-  QueryBuilder<Inventory, Inventory, QDistinct> distinctByAccumulatedSeconds() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'accumulatedSeconds');
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QDistinct> distinctByCode({
     bool caseSensitive = true,
   }) {
@@ -2435,29 +2153,11 @@ extension InventoryQueryWhereDistinct
     });
   }
 
-  QueryBuilder<Inventory, Inventory, QDistinct> distinctByIsPaused() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'isPaused');
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QDistinct> distinctByIsRunning() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'isRunning');
-    });
-  }
-
   QueryBuilder<Inventory, Inventory, QDistinct> distinctByName({
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<Inventory, Inventory, QDistinct> distinctByRunningSince() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'runningSince');
     });
   }
 
@@ -2505,12 +2205,6 @@ extension InventoryQueryProperty
   QueryBuilder<Inventory, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
-    });
-  }
-
-  QueryBuilder<Inventory, int, QQueryOperations> accumulatedSecondsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'accumulatedSeconds');
     });
   }
 
@@ -2564,27 +2258,9 @@ extension InventoryQueryProperty
     });
   }
 
-  QueryBuilder<Inventory, bool, QQueryOperations> isPausedProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'isPaused');
-    });
-  }
-
-  QueryBuilder<Inventory, bool, QQueryOperations> isRunningProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'isRunning');
-    });
-  }
-
   QueryBuilder<Inventory, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
-    });
-  }
-
-  QueryBuilder<Inventory, DateTime?, QQueryOperations> runningSinceProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'runningSince');
     });
   }
 

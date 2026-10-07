@@ -4,15 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/opening_list.dart';
-import '../../models/task_timer.dart';
 import '../../models/visual_list.dart';
-import '../../services/task_notification_service.dart';
-import '../../services/task_timer_service.dart';
 import '../../services/visual_list_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/person_picker.dart';
-import '../widgets/task_timer_control.dart';
 
 class VisualTab extends StatefulWidget {
   const VisualTab({super.key});
@@ -82,11 +78,6 @@ class _VisualTabState extends State<VisualTab> {
       result.day.day,
       5,
     );
-    await TaskTimerService.instance.finishOrCreateFinished(
-      parentKind: TimerKind.visual,
-      parentUuid: _draftUuid,
-      taskKey: 'main',
-    );
     if (targetDay == today) {
       await VisualListService.instance.add(
         syncUuid: _draftUuid,
@@ -95,8 +86,6 @@ class _VisualTabState extends State<VisualTab> {
         beneficioCents: b,
         by: names,
       );
-      await TaskNotificationService.instance.rescheduleAll();
-      await TaskNotificationService.instance.checkVisualGoal(_todayItens + i);
     } else {
       await VisualListService.instance.addForDay(
         serviceDay: targetDay,
@@ -139,21 +128,9 @@ class _VisualTabState extends State<VisualTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Nova lista visual',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              TaskTimerControl(
-                key: ValueKey(_draftUuid),
-                parentKind: TimerKind.visual,
-                parentUuid: _draftUuid,
-                taskKey: 'main',
-              ),
-            ],
+          const Text(
+            'Nova lista visual',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _IntRow(

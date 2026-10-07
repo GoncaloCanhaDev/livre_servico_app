@@ -5,7 +5,6 @@ import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
-import 'task_notification_service.dart';
 
 class DailyTasksService extends ChangeNotifier {
   DailyTasksService._();
@@ -71,13 +70,14 @@ class DailyTasksService extends ChangeNotifier {
     await _isar.writeTxn(() async {
       await _isar.dailyTasks.put(t);
     });
-    await TaskNotificationService.instance.rescheduleAll();
     notifyListeners();
   }
 
   Future<void> deleteAll() async {
-    final rows =
-        await _isar.dailyTasks.filter().syncDeletedAtIsNull().findAll();
+    final rows = await _isar.dailyTasks
+        .filter()
+        .syncDeletedAtIsNull()
+        .findAll();
     if (rows.isEmpty) return;
     for (final r in rows) {
       SyncMeta.softDelete(r);

@@ -58,7 +58,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
 
     final now = DateTime.now();
-    final p = widget.existing ?? (Product()..createdAt = now..updatedAt = now);
+    final p =
+        widget.existing ??
+        (Product()
+          ..createdAt = now
+          ..updatedAt = now);
     p
       ..ean = ean
       ..sapCode = _sap.text.trim()
@@ -75,7 +79,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existing == null ? 'Novo Produto' : 'Editar Produto'),
+        title: Text(
+          widget.existing == null ? 'Novo Produto' : 'Editar Produto',
+        ),
       ),
       body: SafeArea(
         child: Form(
@@ -130,10 +136,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: PalletCategory.values
-                    .map((c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(c.label),
-                        ))
+                    .map(
+                      (c) => DropdownMenuItem(value: c, child: Text(c.label)),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() {
                   if (v != null) _department = v;

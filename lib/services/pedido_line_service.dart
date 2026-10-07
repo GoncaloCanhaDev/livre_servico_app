@@ -12,8 +12,10 @@ class PedidoLineService extends ChangeNotifier {
 
   Isar get _isar => ShiftService.instance.isar;
 
-  Future<List<PedidoLine>> linesFor(String parentUuid,
-      {bool includeDeleted = false}) {
+  Future<List<PedidoLine>> linesFor(
+    String parentUuid, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
       return _isar.pedidoLines
           .filter()
@@ -50,7 +52,8 @@ class PedidoLineService extends ChangeNotifier {
       final p = await ProductService.instance.findByEan(ean);
       productName = p?.name;
     }
-    final line = existing ??
+    final line =
+        existing ??
         (PedidoLine()
           ..parentUuid = parentUuid
           ..ean = ean

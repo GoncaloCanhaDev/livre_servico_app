@@ -12,10 +12,7 @@ class JustificationService extends ChangeNotifier {
   Isar get _isar => ShiftService.instance.isar;
 
   Future<List<Justification>> all() {
-    return _isar.justifications
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
+    return _isar.justifications.filter().syncDeletedAtIsNull().findAll();
   }
 
   Future<Justification?> find(DateTime serviceDay, String kind) {

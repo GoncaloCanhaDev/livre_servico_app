@@ -47,20 +47,19 @@ class ProductService extends ChangeNotifier {
   }
 
   Future<List<Product>> all({String query = ''}) async {
-    final base = _isar.products
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByName();
+    final base = _isar.products.filter().syncDeletedAtIsNull().sortByName();
     if (query.isEmpty) {
       return base.findAll();
     }
     final q = query.trim().toLowerCase();
     final all = await base.findAll();
     return all
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.ean.contains(q) ||
-            p.sapCode.contains(q))
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.ean.contains(q) ||
+              p.sapCode.contains(q),
+        )
         .toList();
   }
 }

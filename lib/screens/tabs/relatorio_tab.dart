@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/report_list.dart';
-import '../../models/task_timer.dart';
 import '../../services/report_list_service.dart';
-import '../../services/task_notification_service.dart';
-import '../../services/task_timer_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../widgets/person_picker.dart';
-import '../widgets/task_timer_control.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
@@ -101,17 +97,10 @@ class _RelatorioTabState extends State<RelatorioTab> {
     final mas = list.massiva;
     final rep = list.repetidos;
 
-    await TaskTimerService.instance.finishOrCreateFinished(
-      parentKind: TimerKind.report,
-      parentUuid: list.syncUuid,
-      taskKey: 'main',
-    );
-
     if (targetDay == list.serviceDay) {
       list.createdByNames = names;
       await _persistField();
       await ReportListService.instance.finalize(list);
-      await TaskNotificationService.instance.rescheduleAll();
     } else {
       await ReportListService.instance.backfillFinalized(
         serviceDay: targetDay,
@@ -163,24 +152,12 @@ class _RelatorioTabState extends State<RelatorioTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  dayFmt.format(list.serviceDay),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              TaskTimerControl(
-                parentKind: TimerKind.report,
-                parentUuid: list.syncUuid,
-                taskKey: 'main',
-                enabled: !locked,
-              ),
-            ],
+          Text(
+            dayFmt.format(list.serviceDay),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (locked)
             Card(

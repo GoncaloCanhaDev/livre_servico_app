@@ -13,8 +13,10 @@ class InventoryLineService extends ChangeNotifier {
 
   Isar get _isar => ShiftService.instance.isar;
 
-  Future<List<InventoryLine>> linesFor(String parentUuid,
-      {bool includeDeleted = false}) {
+  Future<List<InventoryLine>> linesFor(
+    String parentUuid, {
+    bool includeDeleted = false,
+  }) {
     if (includeDeleted) {
       return _isar.inventoryLines
           .filter()
@@ -53,7 +55,8 @@ class InventoryLineService extends ChangeNotifier {
     if (existing == null || existing.productName == null) {
       product = await ProductService.instance.findByEan(ean);
     }
-    final line = existing ??
+    final line =
+        existing ??
         (InventoryLine()
           ..parentUuid = parentUuid
           ..ean = ean
