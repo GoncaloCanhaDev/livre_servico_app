@@ -106,13 +106,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: SettingsService.instance.visualGoal,
               onSave: SettingsService.instance.setVisualGoal,
             ),
-            _goalTile(
-              title: 'Lista Automática',
-              subtitle: 'Listas automáticas necessárias por dia.',
-              unitLabel: 'Listas por dia',
-              value: SettingsService.instance.autoGoal,
-              onSave: SettingsService.instance.setAutoGoal,
-            ),
             const Divider(),
             _sectionHeader('Dados'),
             ListTile(

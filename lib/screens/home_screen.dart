@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../services/backup_service.dart';
 import 'custom_tasks_screen.dart';
 import 'daily_tasks_screen.dart';
-import 'dashboard_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -146,15 +145,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const CustomTasksScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.insights,
-                    label: 'Estatísticas',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DashboardScreen(),
                       ),
                     ),
                   ),

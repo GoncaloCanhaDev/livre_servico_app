@@ -6,7 +6,6 @@ import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
-import '../models/justification.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/person.dart';
@@ -39,7 +38,6 @@ class ShiftService {
         WeeklyTasksSchema,
         InventorySchema,
         InfoEntrySchema,
-        JustificationSchema,
         PedidoSchema,
         PersonSchema,
         CustomTaskSchema,
@@ -69,7 +67,6 @@ class ShiftService {
     await backfill(_isar.weeklyTasks);
     await backfill(_isar.inventorys);
     await backfill(_isar.infoEntrys);
-    await backfill(_isar.justifications);
     await backfill(_isar.pedidos);
     await backfill(_isar.persons);
   }

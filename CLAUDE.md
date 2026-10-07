@@ -43,8 +43,6 @@ multi-tenant product.
   `ShiftService._backfillSync()` fills in missing UUIDs on legacy rows at startup.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
   pick a file) and a "clear all data" wipe, independent of the sync fields above.
-- `Justification` rows are keyed by `(serviceDay, kind)` and hold a free-text reason for a
-  missed checklist/task on a given day (see `lib/screens/widgets/missed_day_sheet.dart`).
 
 ### Services layer
 
