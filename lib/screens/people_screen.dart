@@ -90,9 +90,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Remover pessoa'),
-        content: Text(
-          'Queres remover "${p.fullName}"? Quem lhe reportava deixa de o ter como responsável; quem ficar sem responsáveis passa para o topo da hierarquia.',
-        ),
+        content: Text('Queres remover "${p.fullName}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -216,7 +214,7 @@ class _SearchField extends StatelessWidget {
         controller: controller,
         onChanged: (_) => onChanged(),
         decoration: InputDecoration(
-          hintText: 'Procurar por nome, cargo ou nº',
+          hintText: 'Procurar por nome, equipa ou nº',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: controller.text.isEmpty
               ? null
@@ -237,7 +235,7 @@ class _SearchField extends StatelessWidget {
 }
 
 /// The list view: [sections] from [buildPeopleSections], each under a
-/// "Cargo (count)" header, with dividers between people.
+/// "Team (count)" header, with dividers between people.
 class _PeopleList extends StatelessWidget {
   const _PeopleList({
     required this.sections,
