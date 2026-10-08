@@ -41,11 +41,9 @@ class _PedidosScreenState extends State<PedidosScreen> {
   }
 
   Future<void> _newPedido() async {
-    final p = await PedidoService.instance.startSession();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PedidoSessionScreen(pedidoId: p.id)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PedidoFormScreen()));
   }
 
   Future<void> _open(Pedido p) async {
@@ -53,7 +51,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
       MaterialPageRoute(
         builder: (_) => p.isFinalized
             ? PedidoHistoryScreen(pedidoId: p.id)
-            : PedidoSessionScreen(pedidoId: p.id),
+            : PedidoFormScreen(pedidoId: p.id),
       ),
     );
   }
@@ -171,10 +169,11 @@ class _PedidoCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(statusIcon, color: statusColor),
-        title: Text(
-          finalized ? 'Pedido ${pedido.numero ?? '—'}' : 'Pedido (em curso)',
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: Text(switch ((finalized, pedido.numero)) {
+          (true, final n) => 'Pedido ${n ?? '—'}',
+          (false, null) => 'Pedido (em curso)',
+          (false, final n?) => 'Pedido $n (em curso)',
+        }, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           subtitleParts.join(' · '),
           style: TextStyle(
@@ -191,66 +190,117 @@ class _PedidoCard extends StatelessWidget {
 }
 
 // ============================================================================
-// Session screen
+// Form screen (new and in-progress pedidos)
 // ============================================================================
 
-class PedidoSessionScreen extends StatefulWidget {
-  const PedidoSessionScreen({super.key, required this.pedidoId});
-  final int pedidoId;
+/// The pedido as a form: Número (required), Fornecedor and Data prevista.
+/// Without [pedidoId] it is the Novo form and "Criar pedido" saves it; an
+/// in-progress pedido saves each change as it is made and is closed with
+/// Finalizar.
+class PedidoFormScreen extends StatefulWidget {
+  const PedidoFormScreen({super.key, this.pedidoId});
+  final int? pedidoId;
 
   @override
-  State<PedidoSessionScreen> createState() => _PedidoSessionScreenState();
+  State<PedidoFormScreen> createState() => _PedidoFormScreenState();
 }
 
-class _PedidoSessionScreenState extends State<PedidoSessionScreen> {
+class _PedidoFormScreenState extends State<PedidoFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _numeroCtrl = TextEditingController();
+  final _supplierCtrl = TextEditingController();
+  DateTime? _expectedDate;
+
+  /// Null until the pedido exists (the Novo form before "Criar pedido").
   Pedido? _pedido;
+  bool _loading = false;
+  bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
-    PedidoService.instance.addListener(_load);
+    if (widget.pedidoId case final id?) {
+      _loading = true;
+      _load(id);
+    }
   }
 
   @override
   void dispose() {
-    PedidoService.instance.removeListener(_load);
+    _numeroCtrl.dispose();
+    _supplierCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    final p = await PedidoService.instance.getById(widget.pedidoId);
+  Future<void> _load(int id) async {
+    final p = await PedidoService.instance.getById(id);
     if (p == null || !mounted) return;
-    setState(() => _pedido = p);
+    setState(() {
+      _pedido = p;
+      _numeroCtrl.text = p.numero ?? '';
+      _supplierCtrl.text = p.supplier ?? '';
+      _expectedDate = p.expectedDate;
+      _loading = false;
+    });
   }
 
-  Future<void> _editDetails() async {
+  /// Saves the fields on an existing pedido; the Novo form waits for
+  /// "Criar pedido".
+  Future<void> _saveDetails() async {
     final p = _pedido;
-    if (p == null || p.isFinalized) return;
-    final result = await showDialog<_PedidoDetailsResult>(
-      context: context,
-      builder: (_) => _PedidoDetailsDialog(
-        initialSupplier: p.supplier,
-        initialExpectedDate: p.expectedDate,
-      ),
-    );
-    if (result == null || !mounted) return;
+    if (p == null) return;
     await PedidoService.instance.updateDetails(
       p,
-      supplier: result.supplier,
-      expectedDate: result.expectedDate,
-      clearExpectedDate: result.clearDate,
+      numero: _numeroCtrl.text,
+      supplier: _supplierCtrl.text,
+      expectedDate: _expectedDate,
     );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _expectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      locale: const Locale('pt', 'PT'),
+      helpText: 'Data prevista de chegada',
+    );
+    if (date == null) return;
+    setState(() => _expectedDate = date);
+    await _saveDetails();
+  }
+
+  Future<void> _clearDate() async {
+    setState(() => _expectedDate = null);
+    await _saveDetails();
+  }
+
+  Future<void> _create() async {
+    if (!_formKey.currentState!.validate() || _busy) return;
+    setState(() => _busy = true);
+    final p = await PedidoService.instance.create(
+      numero: _numeroCtrl.text.trim(),
+      supplier: _supplierCtrl.text,
+      expectedDate: _expectedDate,
+    );
+    if (!mounted) return;
+    setState(() {
+      _pedido = p;
+      _busy = false;
+    });
   }
 
   Future<void> _finalize() async {
     final p = _pedido;
-    if (p == null || p.isFinalized) return;
-    final numero = await _askNumero();
-    if (numero == null || !mounted) return;
-    await PedidoService.instance.finalize(p, numero: numero);
+    if (p == null || p.isFinalized || _busy) return;
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _busy = true);
+    await _saveDetails();
+    await PedidoService.instance.finalize(p);
     if (!mounted) return;
-    final msg = StringBuffer()..writeln('📝 Pedido nº $numero');
+    final msg = StringBuffer()..writeln('📝 Pedido nº ${p.numero}');
     if (p.supplier != null) msg.writeln('Fornecedor: ${p.supplier}');
     if (p.expectedDate != null) {
       msg.writeln(
@@ -261,37 +311,6 @@ class _PedidoSessionScreenState extends State<PedidoSessionScreen> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => PedidoHistoryScreen(pedidoId: p.id)),
-    );
-  }
-
-  Future<String?> _askNumero() async {
-    final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Número do pedido'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.green),
-            onPressed: () {
-              final v = ctrl.text.trim();
-              if (v.isEmpty) return;
-              Navigator.pop(context, v);
-            },
-            child: const Text('Finalizar'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -324,202 +343,128 @@ class _PedidoSessionScreenState extends State<PedidoSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = _pedido;
-    if (p == null) {
+    if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final p = _pedido;
+    final numero = _numeroCtrl.text.trim();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pedido (em curso)'),
+        title: Text(
+          p == null
+              ? 'Novo pedido'
+              : numero.isEmpty
+              ? 'Pedido (em curso)'
+              : 'Pedido $numero (em curso)',
+        ),
         backgroundColor: AppColors.green,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Cancelar pedido',
-            onPressed: _cancel,
-          ),
+          if (p != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Cancelar pedido',
+              onPressed: _cancel,
+            ),
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  onPressed: _finalize,
-                  icon: const Icon(Icons.check),
-                  label: const Text(
-                    'Finalizar',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: ListTile(
-                  dense: true,
-                  leading: Icon(
-                    p.isOverdue
-                        ? Icons.warning_amber_rounded
-                        : Icons.info_outline,
-                    color: p.isOverdue
-                        ? Colors.orange.shade800
-                        : AppColors.green,
-                  ),
-                  title: Text(
-                    p.supplier ?? 'Fornecedor (opcional)',
-                    style: TextStyle(
-                      color: p.supplier == null
-                          ? Colors.black45
-                          : Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(
-                    p.expectedDate == null
-                        ? 'Sem data prevista'
-                        : '${p.isOverdue ? 'Atrasado desde' : 'Previsto para'} ${DateFormat("d 'de' MMMM", 'pt_PT').format(p.expectedDate!)}',
-                    style: TextStyle(
-                      color: p.isOverdue
-                          ? Colors.orange.shade800
-                          : Colors.black54,
-                      fontWeight: p.isOverdue
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.edit, size: 18),
-                  onTap: _editDetails,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PedidoDetailsResult {
-  const _PedidoDetailsResult({
-    this.supplier,
-    this.expectedDate,
-    this.clearDate = false,
-  });
-  final String? supplier;
-  final DateTime? expectedDate;
-  final bool clearDate;
-}
-
-class _PedidoDetailsDialog extends StatefulWidget {
-  const _PedidoDetailsDialog({this.initialSupplier, this.initialExpectedDate});
-  final String? initialSupplier;
-  final DateTime? initialExpectedDate;
-
-  @override
-  State<_PedidoDetailsDialog> createState() => _PedidoDetailsDialogState();
-}
-
-class _PedidoDetailsDialogState extends State<_PedidoDetailsDialog> {
-  late final TextEditingController _supplierCtrl;
-  DateTime? _expectedDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _supplierCtrl = TextEditingController(text: widget.initialSupplier ?? '');
-    _expectedDate = widget.initialExpectedDate;
-  }
-
-  @override
-  void dispose() {
-    _supplierCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _expectedDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      locale: const Locale('pt', 'PT'),
-    );
-    if (date == null) return;
-    setState(() => _expectedDate = date);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Detalhes do pedido'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _supplierCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Fornecedor (opcional)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Data prevista de chegada (opcional)',
-            style: TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-          const SizedBox(height: 6),
-          Row(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _expectedDate == null
-                        ? 'Escolher data'
-                        : DateFormat("d/M/y", 'pt_PT').format(_expectedDate!),
-                  ),
+              TextFormField(
+                controller: _numeroCtrl,
+                autofocus: p == null,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Número do pedido',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                onChanged: (_) => _saveDetails(),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _supplierCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Fornecedor (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => _saveDetails(),
+              ),
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Data prevista de chegada (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickDate,
+                        icon: const Icon(Icons.calendar_today, size: 16),
+                        label: Text(
+                          _expectedDate == null
+                              ? 'Escolher data'
+                              : DateFormat(
+                                  "d 'de' MMMM 'de' y",
+                                  'pt_PT',
+                                ).format(_expectedDate!),
+                        ),
+                      ),
+                    ),
+                    if (_expectedDate != null)
+                      IconButton(
+                        tooltip: 'Limpar data',
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearDate,
+                      ),
+                  ],
                 ),
               ),
-              if (_expectedDate != null)
-                IconButton(
-                  tooltip: 'Limpar data',
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => setState(() => _expectedDate = null),
+              if (p != null && p.isOverdue)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange.shade800,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Atrasado',
+                        style: TextStyle(
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: _busy ? null : (p == null ? _create : _finalize),
+                icon: Icon(p == null ? Icons.add : Icons.check),
+                label: Text(
+                  p == null ? 'Criar pedido' : 'Finalizar',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
             ],
           ),
-        ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.green),
-          onPressed: () => Navigator.pop(
-            context,
-            _PedidoDetailsResult(
-              supplier: _supplierCtrl.text,
-              expectedDate: _expectedDate,
-              clearDate: _expectedDate == null,
-            ),
-          ),
-          child: const Text('Guardar'),
-        ),
-      ],
     );
   }
 }

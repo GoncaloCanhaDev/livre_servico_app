@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.46.2] — 2026-10-08
+
+### Changed
+- A pedido is a form: Novo asks for the número (required), fornecedor and data prevista, and
+  "Criar pedido" saves it. An open pedido shows the same form, saving each change as it is made,
+  and Finalizar closes it without asking for the número again. Cancelling Novo no longer leaves
+  an empty pedido behind. The número shows on open pedidos in the list.
+
 ## [0.46.1] — 2026-10-08
 
 ### Changed

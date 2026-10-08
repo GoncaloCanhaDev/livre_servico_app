@@ -17,7 +17,7 @@ class Pedido {
 
   DateTime? finishedAt;
 
-  /// Set at finalize time.
+  /// Entered when the pedido is created (older ones got it at finalize time).
   String? numero;
 
   /// Optional — set only if the user chooses to fill it in.

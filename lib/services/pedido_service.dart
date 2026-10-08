@@ -11,8 +11,17 @@ class PedidoService extends ChangeNotifier {
 
   Isar get _isar => ShiftService.instance.isar;
 
-  Future<Pedido> startSession() async {
-    final p = Pedido()..createdAt = DateTime.now();
+  /// Creates an in-progress pedido from the Novo form.
+  Future<Pedido> create({
+    required String numero,
+    String? supplier,
+    DateTime? expectedDate,
+  }) async {
+    final p = Pedido()
+      ..createdAt = DateTime.now()
+      ..numero = numero
+      ..supplier = _blankToNull(supplier)
+      ..expectedDate = expectedDate;
     SyncMeta.stamp(p);
     await _isar.writeTxn(() async {
       p.id = await _isar.pedidos.put(p);
@@ -23,35 +32,33 @@ class PedidoService extends ChangeNotifier {
 
   Future<Pedido?> getById(int id) => _isar.pedidos.get(id);
 
-  /// Both fields are optional — a supervisor can leave either unset.
+  /// Saves the form's current values on an in-progress pedido; blank text
+  /// clears a field.
   Future<void> updateDetails(
     Pedido p, {
+    String? numero,
     String? supplier,
     DateTime? expectedDate,
-    bool clearExpectedDate = false,
   }) async {
     if (p.isFinalized) return;
-    p.supplier = (supplier == null || supplier.trim().isEmpty)
-        ? null
-        : supplier.trim();
-    if (clearExpectedDate) {
-      p.expectedDate = null;
-    } else if (expectedDate != null) {
-      p.expectedDate = expectedDate;
-    }
+    p.numero = _blankToNull(numero);
+    p.supplier = _blankToNull(supplier);
+    p.expectedDate = expectedDate;
     SyncMeta.stamp(p);
     await _isar.writeTxn(() => _isar.pedidos.put(p));
     notifyListeners();
   }
 
-  Future<void> finalize(Pedido p, {required String numero}) async {
+  Future<void> finalize(Pedido p) async {
     if (p.isFinalized) return;
-    p.numero = numero;
     p.finishedAt = DateTime.now();
     SyncMeta.stamp(p);
     await _isar.writeTxn(() => _isar.pedidos.put(p));
     notifyListeners();
   }
+
+  static String? _blankToNull(String? s) =>
+      (s == null || s.trim().isEmpty) ? null : s.trim();
 
   Future<void> deleteAll() async {
     final rows = await _isar.pedidos.filter().syncDeletedAtIsNull().findAll();
