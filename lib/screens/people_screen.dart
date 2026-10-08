@@ -333,6 +333,7 @@ class _PersonTile extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
+          if (p.genero case final g?) GeneroIcon(g),
           for (final tag in roleTagsOf(p)) RoleBadge(tag),
           if (tenureTagOf(p, today) case final tenure?)
             RoleBadge(tenure, tenure: true),

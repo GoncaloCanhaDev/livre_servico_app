@@ -421,8 +421,20 @@ class _DetailsTab extends StatelessWidget {
               : PersonInitialsBadge(name: p.fullName, size: 88),
         ),
         const SizedBox(height: 12),
-        Text(
-          p.fullName,
+        Text.rich(
+          TextSpan(
+            text: p.fullName,
+            children: [
+              if (p.genero case final g?)
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: GeneroIcon(g, size: 22),
+                  ),
+                ),
+            ],
+          ),
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),

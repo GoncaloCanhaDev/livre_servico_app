@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/person.dart';
 import '../../theme.dart';
 
 /// Small pill for one of a person's roles (see `roleTagsOf`): filled for
@@ -41,6 +42,24 @@ class RoleBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+/// ♂ / ♀ shown after a person's name when their [Genero] is set.
+class GeneroIcon extends StatelessWidget {
+  const GeneroIcon(this.genero, {super.key, this.size = 16});
+
+  final Genero genero;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      genero == Genero.feminino ? Icons.female : Icons.male,
+      size: size,
+      color: Colors.black45,
+      semanticLabel: genero.label,
     );
   }
 }
