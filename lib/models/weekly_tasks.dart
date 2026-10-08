@@ -23,14 +23,14 @@ class WeeklyTasks {
   String? limpezaMaquinaVoltasBy;
   List<String> limpezaMaquinaVoltasByNames = [];
 
-  /// Itens no Mural — mínimo 10, recomendado 20. Due Monday.
+  /// Itens no Mural — mínimo 10, recomendado 20. Due Tuesday.
   bool verificar1a = false;
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificar1aBy;
   List<String> verificar1aByNames = [];
   int verificar1aCount = 0;
 
-  /// Itens por colocar preço. Due Monday.
+  /// Itens por colocar preço. Due Tuesday.
   bool verificar4a = false;
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificar4aBy;

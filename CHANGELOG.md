@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.44.1] — 2026-10-08
+
+### Changed
+- Verificar 1ª and Verificar 4ª are due on Tuesday (terça-feira) instead of Monday; they only
+  turn red as late from Wednesday.
+
 ## [0.44.0] — 2026-10-08
 
 ### Added

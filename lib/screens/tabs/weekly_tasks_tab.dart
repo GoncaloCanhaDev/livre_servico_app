@@ -135,7 +135,10 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     final monday = tasks.serviceWeek;
     final sunday = monday.add(const Duration(days: 6));
     final rangeFmt = DateFormat("d 'de' MMMM", 'pt_PT');
-    final mondayPassed = currentServiceDay().isAfter(monday);
+    // The Verificar tasks are due on Tuesday.
+    final tuesdayPassed = currentServiceDay().isAfter(
+      monday.add(const Duration(days: 1)),
+    );
     final isSaturday = currentServiceDay().weekday == DateTime.saturday;
 
     return SafeArea(
@@ -154,7 +157,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
             backdated: tasks.backdatedTaskKeys.contains('verificar_1a'),
             countController: _verificar1aCtrl,
             goalNote: 'Itens no Mural — mínimo 10, recomendado 20',
-            late: mondayPassed && !tasks.verificar1a,
+            late: tuesdayPassed && !tasks.verificar1a,
             onLongPress: tasks.verificar1a
                 ? () => _sendMsg(
                     '✅ Tarefa concluída: Verificar 1ª (${tasks.verificar1aCount})',
@@ -187,7 +190,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
             backdated: tasks.backdatedTaskKeys.contains('verificar_4a'),
             countController: _verificar4aCtrl,
             goalNote: 'Itens por colocar preço',
-            late: mondayPassed && !tasks.verificar4a,
+            late: tuesdayPassed && !tasks.verificar4a,
             onLongPress: tasks.verificar4a
                 ? () => _sendMsg(
                     '✅ Tarefa concluída: Verificar 4ª (${tasks.verificar4aCount})',
@@ -402,7 +405,7 @@ class _WeeklyCountTask extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'Atrasada — devia ter sido concluída à 2ª feira',
+                        'Atrasada — devia ter sido concluída à 3ª feira',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.red.shade700,
