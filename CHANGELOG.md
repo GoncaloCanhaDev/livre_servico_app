@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.8] — 2026-10-08
+
+### Fixed
+- The entrada and saída set on a person (e.g. a horário de amamentação) now win over their
+  horário code: someone on J74 (09:00–18:00) who leaves at 16:00 shows 09:00–16:00 in Pessoas,
+  on their page, in the Hoje card, in Horários (Hoje, the tapped cell and the month's hours) and
+  in the task picker. The pausa is kept while it still fits inside.
+
 ## [0.56.7] — 2026-10-08
 
 ### Changed

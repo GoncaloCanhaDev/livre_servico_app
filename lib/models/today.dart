@@ -10,12 +10,12 @@ typedef OnShift = ({Person person, HorarioCodigo shift});
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// The shift [p] has on [day]'s date in [index], or null (no line, an
-/// absence code, or an ausência entered in the app).
+/// The shift [p] has on [day]'s date in [index], with their own entrada and
+/// saída when set, or null (no line, an absence code, or an ausência entered
+/// in the app).
 HorarioCodigo? _shiftOn(HorarioIndex index, Person p, DateTime day) {
   if (ausenciaOn(p, day) != null) return null;
-  final code = index.codeOn(p, day);
-  return code == null ? null : index.horarios.codigos[code];
+  return index.shiftOn(p, day);
 }
 
 /// Who of [people] is inside their shift at [now] (a night shift from the day

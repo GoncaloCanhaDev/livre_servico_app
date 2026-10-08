@@ -53,6 +53,24 @@ void main() {
       expect(u1.noturno, isTrue);
     });
 
+    test("a person's own entrada and saída replace the code's", () {
+      final j74 = HorarioCodigo.fromJson('J74', {
+        'entrada': '09:00',
+        'pausa': '13:00-14:00',
+        'saida': '18:00',
+      });
+      final maria = _p(3, 'Maria Costa')..shiftEnd = 16 * 60;
+      expect(j74.forPerson(maria).timesText, '09:00–16:00 (pausa 13:00–14:00)');
+      expect(j74.forPerson(maria).workedMinutes, 6 * 60);
+      expect(j74.forPerson(_p(4, 'Rui Sousa')), same(j74));
+      expect(j74.forPerson(null), same(j74));
+      // A pausa outside the shorter shift goes.
+      expect(
+        j74.forPerson(_p(5, 'Eva Lopes')..shiftEnd = 13 * 60 + 30).timesText,
+        '09:00–13:30',
+      );
+    });
+
     test('a bad time names the code', () {
       expect(
         () => HorarioCodigo.fromJson('X1', {'entrada': '7h', 'saida': '16:00'}),
@@ -329,6 +347,16 @@ void main() {
         expect(horarioTextOn(ana, DateTime(2026, 10, 4), index), isNull);
         expect(horarioTextOn(rui, DateTime(2026, 10, 6), index), isNull);
       });
+
+      test("the person's own saída wins over the code's", () {
+        final ana2 = _p(1, 'Ana Silva')..shiftEnd = 14 * 60;
+        final index2 = HorarioIndex(h, [ana2]);
+        expect(
+          horarioTextOn(ana2, DateTime(2026, 10, 6), index2),
+          '07:00–14:00',
+        );
+        expect(index2.shiftOn(ana2, DateTime(2026, 10, 4)), isNull);
+      });
     });
   });
 
@@ -364,6 +392,14 @@ void main() {
       expect(s.minutes, 20 * 60);
       expect(s.shifts, 3);
       expect(s.ausencias, {'FO': 2, 'F': 2});
+    });
+
+    test("a line's hours follow the person's own entrada and saída", () {
+      final p = _p(1, 'Ana Silva')..shiftStart = 8 * 60;
+      expect(
+        summarizeLine(h, ['H73', 'H73', 'FO'], person: p).minutes,
+        14 * 60,
+      );
     });
 
     test('hoursText', () {

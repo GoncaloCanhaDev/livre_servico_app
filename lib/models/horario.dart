@@ -86,6 +86,23 @@ class HorarioCodigo {
     };
   }
 
+  /// This shift with [p]'s own entrada and saída from the person's page
+  /// ([Person.shiftStart], [Person.shiftEnd]; each optional) in place of the
+  /// code's, e.g. a shorter horário de amamentação. The pausa stays while it
+  /// still fits inside.
+  HorarioCodigo forPerson(Person? p) {
+    final e = p?.shiftStart ?? entrada;
+    final s = p?.shiftEnd ?? saida;
+    if (e == entrada && s == saida) return this;
+    int length(int from, int to) => (to - from) % (24 * 60);
+    final total = s == e ? 24 * 60 : length(e, s);
+    final fits = switch (pausa) {
+      (final a, final b) => length(e, a) + length(a, b) <= total,
+      null => false,
+    };
+    return HorarioCodigo(entrada: e, saida: s, pausa: fits ? pausa : null);
+  }
+
   /// When this shift runs if it is on [day]'s date: from the entrada that
   /// day to the saída, the next day for a night shift.
   ({DateTime start, DateTime end}) spanOn(DateTime day) => (
@@ -360,6 +377,13 @@ class HorarioIndex {
   String? codeOn(Person p, DateTime day) =>
       _byMonth[monthKey(day)]?[p.id]?[day.day - 1];
 
+  /// [p]'s shift on [day] with their own entrada and saída when set
+  /// ([HorarioCodigo.forPerson]), or null (no line, or an absence code).
+  HorarioCodigo? shiftOn(Person p, DateTime day) {
+    final code = codeOn(p, day);
+    return code == null ? null : horarios.codigos[code]?.forPerson(p);
+  }
+
   /// Whether [p] has a line for [day]'s month.
   bool hasLine(Person p, DateTime day) =>
       _byMonth[monthKey(day)]?.containsKey(p.id) ?? false;
@@ -381,17 +405,19 @@ class HorarioIndex {
 }
 
 /// A month line in numbers: hours at work, shifts, and how many days of
-/// each absence code (FO, F…).
+/// each absence code (FO, F…). The hours follow [person]'s own entrada and
+/// saída when set ([HorarioCodigo.forPerson]).
 ({int minutes, int shifts, Map<String, int> ausencias}) summarizeLine(
   Horarios h,
-  List<String> codes,
-) {
+  List<String> codes, {
+  Person? person,
+}) {
   var minutes = 0;
   var shifts = 0;
   final ausencias = <String, int>{};
   for (final code in codes) {
     if (h.codigos[code] case final c?) {
-      minutes += c.workedMinutes;
+      minutes += c.forPerson(person).workedMinutes;
       shifts++;
     } else {
       ausencias[code] = (ausencias[code] ?? 0) + 1;

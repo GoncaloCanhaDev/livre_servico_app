@@ -96,7 +96,10 @@ multi-tenant product.
   linking lines to Livre Serviço people by name (`personForRow`). An import replaces only the
   months it has. Pass `HorarioService.instance.index` as `horario:` to `offLabelOn` /
   `awayTagOn` / `offNoteOn` / `buildPeopleSections`: an app ausência wins, then the horário,
-  then the fixed folgas. "Today" for horários is `currentServiceDay()`.
+  then the fixed folgas. "Today" for horários is `currentServiceDay()`. A person's own
+  `shiftStart`/`shiftEnd` (each optional, e.g. a horário de amamentação) replace the code's
+  entrada/saída: read a person's shift through `HorarioIndex.shiftOn` or
+  `HorarioCodigo.forPerson`, never `horarios.codigos[code]` directly.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in

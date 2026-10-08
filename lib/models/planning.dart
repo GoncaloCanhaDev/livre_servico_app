@@ -63,12 +63,10 @@ String? awayTagOn(Person p, DateTime day, {HorarioIndex? horario}) =>
 String? offNoteOn(Person p, DateTime day, {HorarioIndex? horario}) =>
     _offOn(p, day, horario)?.note;
 
-/// "07:00–16:00" when [horario] has [p] on a shift on [day], else null.
-String? horarioTextOn(Person p, DateTime day, HorarioIndex? horario) {
-  final code = horario?.codeOn(p, day);
-  if (code == null) return null;
-  return horario!.horarios.codigos[code]?.shortText;
-}
+/// "07:00–16:00" when [horario] has [p] on a shift on [day], else null. [p]'s
+/// own entrada and saída, when set, replace the code's.
+String? horarioTextOn(Person p, DateTime day, HorarioIndex? horario) =>
+    horario?.shiftOn(p, day)?.shortText;
 
 /// [p]'s ausências that have not ended before [today], by start date.
 List<Ausencia> upcomingAusencias(Person p, DateTime today) {

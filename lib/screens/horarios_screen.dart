@@ -133,7 +133,7 @@ class _HorariosScreenState extends State<HorariosScreen> {
                       month: next,
                       onImport: _busy ? null : _import,
                     ),
-                  _TodayCard(horarios: h, today: today),
+                  _TodayCard(horarios: h, today: today, index: _service.index),
                   if (_service.index.unmatched(month) case final names
                       when names.isNotEmpty)
                     _UnmatchedCard(month: month, names: names),
@@ -156,6 +156,7 @@ class _HorariosScreenState extends State<HorariosScreen> {
                     horarios: h,
                     month: month,
                     today: today,
+                    index: _service.index,
                   ),
                   const SizedBox(height: 12),
                   _MonthTotals(
@@ -219,12 +220,17 @@ class _Empty extends StatelessWidget {
 }
 
 /// Today's lines: who is on a shift (Dia, then Noite, by entrada) and who
-/// is off and why.
+/// is off and why. A person's own entrada and saída replace the code's.
 class _TodayCard extends StatelessWidget {
-  const _TodayCard({required this.horarios, required this.today});
+  const _TodayCard({
+    required this.horarios,
+    required this.today,
+    required this.index,
+  });
 
   final Horarios horarios;
   final DateTime today;
+  final HorarioIndex index;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +241,8 @@ class _TodayCard extends StatelessWidget {
     for (final e in (rows ?? const <String, List<String>>{}).entries) {
       final code = e.value[today.day - 1];
       if (horarios.codigos[code] case final c?) {
-        shifts.add((e.key, code, c));
+        final person = index.personOf(monthKey(today), e.key);
+        shifts.add((e.key, code, c.forPerson(person)));
       } else {
         off.add((e.key, horarios.ausencias[code] ?? code));
       }
@@ -445,11 +452,13 @@ class _MonthGrid extends StatefulWidget {
     required this.horarios,
     required this.month,
     required this.today,
+    required this.index,
   });
 
   final Horarios horarios;
   final String month;
   final DateTime today;
+  final HorarioIndex index;
 
   @override
   State<_MonthGrid> createState() => _MonthGridState();
@@ -482,8 +491,11 @@ class _MonthGridState extends State<_MonthGrid> {
 
   void _explain(String name, DateTime day, String code) {
     final h = widget.horarios;
+    final person = widget.index.personOf(widget.month, name);
     final meaning =
-        h.codigos[code]?.timesText ?? h.ausencias[code] ?? 'Código sem horário';
+        h.codigos[code]?.forPerson(person).timesText ??
+        h.ausencias[code] ??
+        'Código sem horário';
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -694,7 +706,11 @@ class _MonthTotals extends StatelessWidget {
             _totalRow(
               context,
               e.key,
-              summarizeLine(horarios, e.value),
+              summarizeLine(
+                horarios,
+                e.value,
+                person: index.personOf(month, e.key),
+              ),
               index.personOf(month, e.key)?.weeklyHours,
             ),
         ],

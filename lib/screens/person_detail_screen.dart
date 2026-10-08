@@ -568,7 +568,7 @@ class _DetailsTab extends StatelessWidget {
 String? _scheduleText(Person p, DateTime day, HorarioIndex schedule) {
   final code = schedule.codeOn(p, day);
   if (code == null) return null;
-  if (schedule.horarios.codigos[code] case final shift?) {
+  if (schedule.shiftOn(p, day) case final shift?) {
     return '$code · ${shift.timesText}';
   }
   return schedule.horarios.ausencias[code] ?? code;
