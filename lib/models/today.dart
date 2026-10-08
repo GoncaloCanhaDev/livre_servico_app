@@ -2,6 +2,7 @@ import 'daily_tasks.dart';
 import 'horario.dart';
 import 'person.dart';
 import 'planning.dart';
+import 'teams.dart';
 import 'validades.dart';
 
 /// A person inside their horário shift, and that shift.
@@ -95,6 +96,11 @@ List<String> pendingDailyTasks(
     if (!(t?.kiwiFecho ?? false)) 'Kiwi Fecho',
   ];
 }
+
+/// The Livre Serviço turno at work at [now]: Noite from 19:00 until the
+/// service day ends at 05:00, Dia otherwise.
+Turno turnoAt(DateTime now) =>
+    now.hour >= 19 || now.hour < 5 ? Turno.noite : Turno.dia;
 
 /// "Ana Silva" for "Ana Maria Silva": the first and last names.
 String shortName(String fullName) {

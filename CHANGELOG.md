@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.51.0] — 2026-10-08
+
+### Added
+- The "Quem concluiu?" picker starts with an open "A trabalhar agora" section: the Livre Serviço
+  people inside their horário shift right now (when the date is today's service day).
+- From 19:00 to 05:00 the picker opens Livre Serviço · Noite instead of · Dia.
+- People working on the chosen day show their shift ("22:00–07:00") instead of the nº de
+  colaborador.
+
 ## [0.50.0] — 2026-10-08
 
 ### Added

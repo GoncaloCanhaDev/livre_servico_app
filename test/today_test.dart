@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
 import 'package:livre_servico_app/models/horario.dart';
 import 'package:livre_servico_app/models/person.dart';
+import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/models/today.dart';
 
 Person _p(int id, String name) => Person()
@@ -213,6 +214,15 @@ void main() {
     test('first and last name', () {
       expect(shortName('Ana Maria  Silva '), 'Ana Silva');
       expect(shortName('Rui'), 'Rui');
+    });
+  });
+
+  group('turnoAt', () {
+    test('Noite from 19:00 to 05:00, Dia otherwise', () {
+      expect(turnoAt(DateTime(2026, 10, 8, 18, 59)), Turno.dia);
+      expect(turnoAt(DateTime(2026, 10, 8, 19)), Turno.noite);
+      expect(turnoAt(DateTime(2026, 10, 9, 4, 59)), Turno.noite);
+      expect(turnoAt(DateTime(2026, 10, 9, 5)), Turno.dia);
     });
   });
 }
