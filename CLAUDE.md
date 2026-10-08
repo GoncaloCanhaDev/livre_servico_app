@@ -134,7 +134,8 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
 - The "Enviar Vasilhame" picker in `truck_form_screen.dart` reads its items from
   `SettingsService.vasilhame` (`lib/models/vasilhame.dart`). The list is maintained by hand in
   the backup file's top-level `"vasilhame"` array of `{"name", "code"?, "ean"?}`: export, edit,
-  import. `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
+  import. Until a non-empty list is imported, it is `defaultVasilhame` (the Jerónimo Martins
+  "Acessórios Transporte" sheet: SAP code as `code`, EAN as `ean`). `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
 - `image_picker` (person photos, Informações photos) is the only camera use; Android declares
   no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
   intent works). Photos are copied into the app's documents folder (`people_photos/`,

@@ -15,9 +15,11 @@ class SettingsService extends ChangeNotifier {
   int get visualGoal => _visualGoal;
 
   /// The vasilhame list offered on a camião, edited through the backup
-  /// file's `"vasilhame"` section.
+  /// file's `"vasilhame"` section; [defaultVasilhame] until a non-empty list
+  /// is imported.
   List<VasilhameItem> _vasilhame = const [];
-  List<VasilhameItem> get vasilhame => _vasilhame;
+  List<VasilhameItem> get vasilhame =>
+      _vasilhame.isEmpty ? defaultVasilhame : _vasilhame;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();

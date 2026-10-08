@@ -49,3 +49,100 @@ List<VasilhameItem>? vasilhameFromBackup(Map<String, dynamic> payload) =>
     payload.containsKey('vasilhame')
     ? vasilhameFromJson(payload['vasilhame'])
     : null;
+
+/// The Jerónimo Martins "Acessórios Transporte" sheet (SAP code as [code],
+/// EAN as [ean]), offered while no list of the user's own has been
+/// imported.
+const defaultVasilhame = [
+  VasilhameItem(
+    name: 'Palete CHEP (Azul)',
+    code: '748438',
+    ean: '2000002521334',
+  ),
+  VasilhameItem(
+    name: 'Palete LPR (Vermelha)',
+    code: '748439',
+    ean: '2000002521341',
+  ),
+  VasilhameItem(
+    name: 'Palete Normal (Branca)',
+    code: '230497',
+    ean: '2100000169528',
+  ),
+  VasilhameItem(
+    name: 'Meia Palete CHEP (Azul)',
+    code: '748441',
+    ean: '2000002521365',
+  ),
+  VasilhameItem(
+    name: 'Meia Palete LPR (Vermelha)',
+    code: '748442',
+    ean: '2000002521372',
+  ),
+  VasilhameItem(
+    name: 'Meia Palete Normal (Branca)',
+    code: '659569',
+    ean: '2000001912621',
+  ),
+  VasilhameItem(
+    name: 'Palete Industrial',
+    code: '748440',
+    ean: '2000002521358',
+  ),
+  VasilhameItem(name: 'Palete Plástico', code: '264155', ean: '2000000006178'),
+  VasilhameItem(
+    name: 'Roll Congelados YATN',
+    code: '745036',
+    ean: '2000002491538',
+  ),
+  VasilhameItem(name: 'Skate Encaixe', code: '634499', ean: '2000001866214'),
+  VasilhameItem(name: 'Grelha', code: '634500', ean: '2000001867235'),
+  VasilhameItem(name: 'Carro Pendurados', code: '578262', ean: '2000001800638'),
+  VasilhameItem(
+    name: 'Carro Pendurados Pequeno',
+    code: '597154',
+    ean: '2000001819821',
+  ),
+  VasilhameItem(
+    name: 'Caixa Pool Pequena Fruta',
+    code: '374888',
+    ean: '2000000142128',
+  ),
+  VasilhameItem(name: 'Caixa Pool Fruta', code: '45439', ean: '2000001073728'),
+  VasilhameItem(name: 'Caixa Pool C01', code: '496964', ean: '2000001065525'),
+  VasilhameItem(name: 'Caixa Pool C02', code: '374953', ean: '2000000142449'),
+  VasilhameItem(name: 'Caixa Pool C03', code: '496965', ean: '2000001065532'),
+  VasilhameItem(name: 'Caixa Pool C04', code: '496966', ean: '2000001065549'),
+  VasilhameItem(
+    name: 'Caixa Pool Nº10 Peixe Pequena',
+    code: '498390',
+    ean: '2000001073247',
+  ),
+  VasilhameItem(
+    name: 'Caixa Pool Nº11 Peixe Média',
+    code: '498394',
+    ean: '2000001073254',
+  ),
+  VasilhameItem(name: 'Caixa Pool JMR', code: '620675', ean: '2000001850541'),
+  VasilhameItem(
+    name: 'Caixa Plástica Sapateira',
+    code: '551560',
+    ean: '2000001634042',
+  ),
+  VasilhameItem(
+    name: 'Caixa Artigos de Risco',
+    code: '588250',
+    ean: '2000001805039',
+  ),
+  VasilhameItem(name: 'Caixa Panrico', code: '526227', ean: '2000001346686'),
+  VasilhameItem(
+    name: 'Tabuleiro Massa Fresca',
+    code: '623069',
+    ean: '2000001853634',
+  ),
+  VasilhameItem(
+    name: 'Skate Massa Fresca',
+    code: '623070',
+    ean: '2000001853641',
+  ),
+];

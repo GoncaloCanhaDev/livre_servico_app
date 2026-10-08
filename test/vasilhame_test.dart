@@ -73,4 +73,18 @@ void main() {
       );
     });
   });
+
+  test('the built-in list has the 27 items with valid EAN-13s', () {
+    expect(defaultVasilhame, hasLength(27));
+    expect(defaultVasilhame.map((i) => i.name).toSet(), hasLength(27));
+    for (final item in defaultVasilhame) {
+      final d = item.ean!.split('').map(int.parse).toList();
+      var sum = 0;
+      for (var i = 0; i < 12; i++) {
+        sum += d[i] * (i.isEven ? 1 : 3);
+      }
+      expect(d, hasLength(13), reason: item.name);
+      expect((10 - sum % 10) % 10, d[12], reason: item.name);
+    }
+  });
 }
