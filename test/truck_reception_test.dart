@@ -8,6 +8,7 @@ void main() {
       'Mercearia',
       'Bebidas',
       'Bazar',
+      'Congelados',
       'Charcutaria',
       'Iogurtes',
       'Meal Solutions',
@@ -18,7 +19,7 @@ void main() {
       'Fruta',
       'Prodout',
     ]);
-    expect(truckDepartments.map((d) => d.id).toSet(), hasLength(13));
+    expect(truckDepartments.map((d) => d.id).toSet(), hasLength(14));
   });
 
   group('palete label', () {

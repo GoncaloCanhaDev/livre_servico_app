@@ -69,6 +69,7 @@ const truckDepartments = [
   TruckDepartment('mercearia', 'Mercearia'),
   TruckDepartment('bebidas', 'Bebidas'),
   TruckDepartment('bazar', 'Bazar'),
+  TruckDepartment('congelados', 'Congelados'),
   TruckDepartment('charcutaria', 'Charcutaria'),
   TruckDepartment('iogurtes', 'Iogurtes'),
   TruckDepartment('meal_solutions', 'Meal Solutions'),
