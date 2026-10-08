@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.46.0] — 2026-10-08
+
+### Changed
+- Abertura and Automáticas are sent one section at a time (Congelados, OPLS, Não Perecíveis),
+  each with its own "Quem fez?" and WhatsApp message; the Finalizar buttons are gone.
+- The Lista de Abertura finalizes itself once all three sections are sent (ticking it in
+  Tarefas → Diárias); the last message adds the total. Each section shows who sent it, here and
+  in Histórico.
+- Each Automáticas send saves a list with just that section; Lista Automática in Diárias is done
+  as soon as any section was sent that day.
+
 ## [0.45.0] — 2026-10-08
 
 ### Added

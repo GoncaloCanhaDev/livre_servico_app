@@ -44,11 +44,30 @@ class OpeningListService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> backfillFinalized({
+  /// Marks [section] of [list] (today's, with its current values) done by
+  /// [names]; the list finalizes itself once all three sections are done.
+  Future<void> finishSection(
+    OpeningList list,
+    ListSection section,
+    List<String> names,
+  ) async {
+    if (list.isSectionDone(section)) return;
+    list.markSectionDone(section, names, DateTime.now());
+    SyncMeta.stamp(list);
+    await _isar.writeTxn(() async {
+      await _isar.openingLists.put(list);
+    });
+    notifyListeners();
+  }
+
+  /// Records [section] as [value], done by [names], on the list of an earlier
+  /// [serviceDay] (created if missing) and flags it backdated. Returns that
+  /// list, or null when the section was already done there.
+  Future<OpeningList?> finishSectionOnDay({
     required DateTime serviceDay,
-    required int congelados,
-    required int opls,
-    required int naoPereciveis,
+    required ListSection section,
+    required int value,
+    required List<String> names,
   }) async {
     final existing = await _isar.openingLists
         .filter()
@@ -56,24 +75,14 @@ class OpeningListService extends ChangeNotifier {
         .serviceDayEqualTo(serviceDay)
         .findFirst();
     final row = existing ?? (OpeningList()..serviceDay = serviceDay);
-    row.congelados = congelados;
-    row.opls = opls;
-    row.naoPereciveis = naoPereciveis;
-    row.finalizedAt = DateTime.now();
+    if (row.isSectionDone(section)) return null;
+    row.setValue(section, value);
+    row.markSectionDone(section, names, DateTime.now());
     row.backdated = true;
     SyncMeta.stamp(row);
     await _isar.writeTxn(() => _isar.openingLists.put(row));
     notifyListeners();
-  }
-
-  Future<void> finalize(OpeningList list) async {
-    if (list.isFinalized) return;
-    list.finalizedAt = DateTime.now();
-    SyncMeta.stamp(list);
-    await _isar.writeTxn(() async {
-      await _isar.openingLists.put(list);
-    });
-    notifyListeners();
+    return row;
   }
 
   Future<List<OpeningList>> entriesForServiceDay(

@@ -8,12 +8,20 @@ class NumberRow extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     this.enabled = true,
+    this.trailing,
+    this.subtitle,
   });
 
   final String label;
   final TextEditingController controller;
   final bool enabled;
   final VoidCallback onChanged;
+
+  /// Shown after the number, e.g. a section's send button.
+  final Widget? trailing;
+
+  /// Small text under [label], e.g. who sent the section.
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +32,25 @@ class NumberRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle case final subtitle?)
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                ],
               ),
             ),
             SizedBox(
@@ -52,6 +73,10 @@ class NumberRow extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
+            if (trailing case final trailing?) ...[
+              const SizedBox(width: 4),
+              trailing,
+            ],
           ],
         ),
       ),

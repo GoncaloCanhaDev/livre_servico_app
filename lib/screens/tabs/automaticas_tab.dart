@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../models/opening_list.dart';
 import '../../services/auto_list_service.dart';
@@ -9,6 +8,8 @@ import '../../theme.dart';
 import '../widgets/number_row.dart';
 import '../widgets/person_picker.dart';
 
+/// A new automatic list, sent one section at a time: each send saves an
+/// automatic list holding just that section and clears its field.
 class AutomaticasTab extends StatefulWidget {
   const AutomaticasTab({super.key});
 
@@ -17,38 +18,30 @@ class AutomaticasTab extends StatefulWidget {
 }
 
 class _AutomaticasTabState extends State<AutomaticasTab> {
-  final _congelados = TextEditingController();
-  final _opls = TextEditingController();
-  final _naoPereciveis = TextEditingController();
-  String _draftUuid = const Uuid().v4();
+  final _ctrls = {
+    for (final s in ListSection.values) s: TextEditingController(),
+  };
 
   @override
   void dispose() {
-    _congelados.dispose();
-    _opls.dispose();
-    _naoPereciveis.dispose();
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  int get _total =>
-      (int.tryParse(_congelados.text) ?? 0) +
-      (int.tryParse(_opls.text) ?? 0) +
-      (int.tryParse(_naoPereciveis.text) ?? 0);
+  int _valueOf(ListSection s) => int.tryParse(_ctrls[s]!.text) ?? 0;
 
-  Future<void> _finalize() async {
-    final c = int.tryParse(_congelados.text) ?? 0;
-    final o = int.tryParse(_opls.text) ?? 0;
-    final n = int.tryParse(_naoPereciveis.text) ?? 0;
-    if (c == 0 && o == 0 && n == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indique pelo menos um valor.')),
-      );
-      return;
-    }
+  int get _total => ListSection.values.fold(0, (sum, s) => sum + _valueOf(s));
+
+  Future<void> _sendSection(ListSection section) async {
+    final value = _valueOf(section);
+    if (value == 0) return;
     final today = currentServiceDay();
     final result = await pickPeopleAndDay(
       context,
-      title: 'Quem fez esta lista?',
+      title: 'Quem fez ${section.label}?',
+      subtitle: 'Lista Automática · ${section.label}: $value',
       initialDay: DateTime(today.year, today.month, today.day),
     );
     if (result == null || !mounted) return;
@@ -59,48 +52,37 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
       result.day.day,
       5,
     );
+    int only(ListSection s) => s == section ? value : 0;
     if (targetDay == today) {
       await AutoListService.instance.add(
-        syncUuid: _draftUuid,
-        congelados: c,
-        opls: o,
-        naoPereciveis: n,
+        congelados: only(ListSection.congelados),
+        opls: only(ListSection.opls),
+        naoPereciveis: only(ListSection.naoPereciveis),
         by: names,
       );
     } else {
       await AutoListService.instance.addForDay(
         serviceDay: targetDay,
-        congelados: c,
-        opls: o,
-        naoPereciveis: n,
+        congelados: only(ListSection.congelados),
+        opls: only(ListSection.opls),
+        naoPereciveis: only(ListSection.naoPereciveis),
         by: names,
       );
     }
     if (!mounted) return;
 
-    final total = c + o + n;
     final dayNote = targetDay == today
         ? ''
         : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
-    final msg =
-        '📦 Lista Automática$dayNote\n'
-        'Congelados: $c\n'
-        'OPLS: $o\n'
-        'Não Perecíveis: $n\n'
-        'Total: $total\n'
-        'Por: ${joinNames(names)}';
-    await WhatsAppService.sendWithConfirm(context, msg);
-    if (!mounted) return;
-
-    setState(() {
-      _congelados.clear();
-      _opls.clear();
-      _naoPereciveis.clear();
-      _draftUuid = const Uuid().v4();
-    });
-    ScaffoldMessenger.of(
+    await WhatsAppService.sendWithConfirm(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Lista guardada.')));
+      '📦 Lista Automática$dayNote · ${section.label}: $value\n'
+      'Por: ${joinNames(names)}',
+    );
+    if (!mounted) return;
+    setState(() => _ctrls[section]!.clear());
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('${section.label} guardado.')));
   }
 
   @override
@@ -113,22 +95,26 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
             'Nova lista automática',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Envia cada secção quando estiver feita.',
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ),
           const SizedBox(height: 8),
-          NumberRow(
-            label: 'Congelados',
-            controller: _congelados,
-            onChanged: () => setState(() {}),
-          ),
-          NumberRow(
-            label: 'OPLS',
-            controller: _opls,
-            onChanged: () => setState(() {}),
-          ),
-          NumberRow(
-            label: 'Não Perecíveis',
-            controller: _naoPereciveis,
-            onChanged: () => setState(() {}),
-          ),
+          for (final s in ListSection.values)
+            NumberRow(
+              label: s.label,
+              controller: _ctrls[s]!,
+              onChanged: () => setState(() {}),
+              trailing: IconButton(
+                tooltip: 'Enviar ${s.label}',
+                icon: const Icon(Icons.send),
+                color: AppColors.green,
+                onPressed: _valueOf(s) == 0 ? null : () => _sendSection(s),
+              ),
+            ),
           const SizedBox(height: 16),
           Card(
             color: AppColors.black,
@@ -156,12 +142,6 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.check_circle),
-            label: const Text('Finalizar'),
-            onPressed: _finalize,
           ),
         ],
       ),

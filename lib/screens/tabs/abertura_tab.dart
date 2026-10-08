@@ -8,6 +8,8 @@ import '../widgets/person_picker.dart';
 import '../../theme.dart';
 import '../widgets/number_row.dart';
 
+/// Today's opening list. Each section is sent on its own (who did it, plus a
+/// WhatsApp message); the list finalizes itself once all three are sent.
 class AberturaTab extends StatefulWidget {
   const AberturaTab({super.key});
 
@@ -17,24 +19,21 @@ class AberturaTab extends StatefulWidget {
 
 class _AberturaTabState extends State<AberturaTab> {
   OpeningList? _list;
-  late final TextEditingController _congelados;
-  late final TextEditingController _opls;
-  late final TextEditingController _naoPereciveis;
+  final _ctrls = {
+    for (final s in ListSection.values) s: TextEditingController(),
+  };
 
   @override
   void initState() {
     super.initState();
-    _congelados = TextEditingController();
-    _opls = TextEditingController();
-    _naoPereciveis = TextEditingController();
     _load();
   }
 
   @override
   void dispose() {
-    _congelados.dispose();
-    _opls.dispose();
-    _naoPereciveis.dispose();
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -43,20 +42,21 @@ class _AberturaTabState extends State<AberturaTab> {
     if (!mounted) return;
     setState(() {
       _list = list;
-      _congelados.text = list.congelados == 0 ? '' : '${list.congelados}';
-      _opls.text = list.opls == 0 ? '' : '${list.opls}';
-      _naoPereciveis.text = list.naoPereciveis == 0
-          ? ''
-          : '${list.naoPereciveis}';
+      for (final s in ListSection.values) {
+        final v = list.valueOf(s);
+        _ctrls[s]!.text = v == 0 ? '' : '$v';
+      }
     });
   }
 
   Future<void> _persistField() async {
     final list = _list;
     if (list == null || list.isFinalized) return;
-    list.congelados = int.tryParse(_congelados.text) ?? 0;
-    list.opls = int.tryParse(_opls.text) ?? 0;
-    list.naoPereciveis = int.tryParse(_naoPereciveis.text) ?? 0;
+    for (final s in ListSection.values) {
+      if (!list.isSectionDone(s)) {
+        list.setValue(s, int.tryParse(_ctrls[s]!.text) ?? 0);
+      }
+    }
     setState(() {});
     await OpeningListService.instance.updateValues(
       list,
@@ -66,9 +66,12 @@ class _AberturaTabState extends State<AberturaTab> {
     );
   }
 
-  Future<void> _finalize() async {
+  Future<void> _sendSection(ListSection section) async {
     final list = _list;
-    if (list == null || list.isFinalized) return;
+    if (list == null || list.isSectionDone(section)) return;
+    await _persistField();
+    if (!mounted) return;
+    final value = list.valueOf(section);
     final today = DateTime(
       list.serviceDay.year,
       list.serviceDay.month,
@@ -76,11 +79,11 @@ class _AberturaTabState extends State<AberturaTab> {
     );
     final result = await pickPeopleAndDay(
       context,
-      title: 'Finalizar por quem?',
-      subtitle: 'A lista ficará bloqueada. Será criada uma nova às 5h.',
+      title: 'Quem fez ${section.label}?',
+      subtitle: 'Lista de Abertura · ${section.label}: $value',
       initialDay: today,
     );
-    if (result == null) return;
+    if (result == null || !mounted) return;
     final names = result.people.map((p) => p.fullName).toList();
     final targetDay = DateTime(
       result.day.year,
@@ -88,46 +91,61 @@ class _AberturaTabState extends State<AberturaTab> {
       result.day.day,
       5,
     );
-    final c = list.congelados;
-    final o = list.opls;
-    final n = list.naoPereciveis;
 
+    final OpeningList target;
     if (targetDay == list.serviceDay) {
-      list.createdByNames = names;
-      await _persistField();
-      await OpeningListService.instance.finalize(list);
+      await OpeningListService.instance.finishSection(list, section, names);
+      target = list;
     } else {
-      await OpeningListService.instance.backfillFinalized(
+      final other = await OpeningListService.instance.finishSectionOnDay(
         serviceDay: targetDay,
-        congelados: c,
-        opls: o,
-        naoPereciveis: n,
+        section: section,
+        value: value,
+        names: names,
       );
-      await OpeningListService.instance.updateValues(
-        list,
-        congelados: 0,
-        opls: 0,
-        naoPereciveis: 0,
-      );
-      _congelados.clear();
-      _opls.clear();
-      _naoPereciveis.clear();
+      if (!mounted) return;
+      if (other == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${section.label} já estava registado nesse dia.'),
+          ),
+        );
+        return;
+      }
+      target = other;
+      _ctrls[section]!.clear();
+      await _persistField();
     }
+    if (!mounted) return;
 
-    if (mounted) {
-      final dayNote = targetDay == list.serviceDay
-          ? ''
-          : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
-      final msg =
-          '📋 Lista de Abertura$dayNote\n'
-          'Congelados: $c\n'
-          'OPLS: $o\n'
-          'Não Perecíveis: $n\n'
-          'Total: ${c + o + n}\n'
-          'Por: ${joinNames(names)}';
-      await WhatsAppService.sendWithConfirm(context, msg);
+    final dayNote = targetDay == list.serviceDay
+        ? ''
+        : ' (${DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay)})';
+    final msg = StringBuffer(
+      '📋 Lista de Abertura$dayNote · ${section.label}: $value\n'
+      'Por: ${joinNames(names)}',
+    );
+    // The section wasn't done there before, so a finalized list means this
+    // send completed it.
+    if (target.isFinalized) {
+      msg.write('\n✅ Lista de Abertura completa · Total: ${target.total}');
     }
+    await WhatsAppService.sendWithConfirm(context, msg.toString());
     if (mounted) _load();
+  }
+
+  Widget _sectionAction(OpeningList list, ListSection s) {
+    if (list.isSectionDone(s)) {
+      return const SizedBox(
+        width: 48,
+        child: Icon(Icons.check_circle, color: AppColors.green),
+      );
+    }
+    return IconButton(
+      tooltip: 'Enviar ${s.label}',
+      icon: const Icon(Icons.send, color: AppColors.green),
+      onPressed: () => _sendSection(s),
+    );
   }
 
   @override
@@ -145,10 +163,7 @@ class _AberturaTabState extends State<AberturaTab> {
         children: [
           Text(
             dayFmt.format(list.serviceDay),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           if (locked)
             Card(
@@ -167,26 +182,29 @@ class _AberturaTabState extends State<AberturaTab> {
                   ],
                 ),
               ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                'Envia cada secção quando estiver feita. A lista fica '
+                'concluída quando as três estiverem enviadas.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
             ),
           const SizedBox(height: 8),
-          NumberRow(
-            label: 'Congelados',
-            controller: _congelados,
-            enabled: !locked,
-            onChanged: _persistField,
-          ),
-          NumberRow(
-            label: 'OPLS',
-            controller: _opls,
-            enabled: !locked,
-            onChanged: _persistField,
-          ),
-          NumberRow(
-            label: 'Não Perecíveis',
-            controller: _naoPereciveis,
-            enabled: !locked,
-            onChanged: _persistField,
-          ),
+          for (final s in ListSection.values)
+            NumberRow(
+              label: s.label,
+              subtitle: switch (list.namesOf(s)) {
+                [] => null,
+                final names => 'Por ${joinNames(names)}',
+              },
+              controller: _ctrls[s]!,
+              enabled: !list.isSectionDone(s),
+              onChanged: _persistField,
+              trailing: _sectionAction(list, s),
+            ),
           const SizedBox(height: 16),
           Card(
             color: AppColors.black,
@@ -214,12 +232,6 @@ class _AberturaTabState extends State<AberturaTab> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.check_circle),
-            label: const Text('Finalizar'),
-            onPressed: locked ? null : _finalize,
           ),
         ],
       ),

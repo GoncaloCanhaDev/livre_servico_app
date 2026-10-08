@@ -76,6 +76,10 @@ multi-tenant product.
   Validades is split into two windows inside that day, `ValidadesTurno` in
   `lib/models/validades.dart`: Manhã (05–14, the original `verificacaoValidades*` fields) and
   Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open.
+- The Abertura and Automáticas lists are sent per `ListSection` (Congelados, OPLS, Não
+  Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
+  finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
+  Automáticas send saves an `AutoList` holding only that section.
 
 ### Services layer
 

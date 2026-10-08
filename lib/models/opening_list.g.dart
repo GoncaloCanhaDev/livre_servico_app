@@ -27,54 +27,84 @@ const OpeningListSchema = CollectionSchema(
       name: r'congelados',
       type: IsarType.long,
     ),
-    r'createdByInitials': PropertySchema(
+    r'congeladosByNames': PropertySchema(
       id: 2,
+      name: r'congeladosByNames',
+      type: IsarType.stringList,
+    ),
+    r'congeladosDoneAt': PropertySchema(
+      id: 3,
+      name: r'congeladosDoneAt',
+      type: IsarType.dateTime,
+    ),
+    r'createdByInitials': PropertySchema(
+      id: 4,
       name: r'createdByInitials',
       type: IsarType.string,
     ),
     r'createdByNames': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'createdByNames',
       type: IsarType.stringList,
     ),
     r'finalizedAt': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'finalizedAt',
       type: IsarType.dateTime,
     ),
     r'isFinalized': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'isFinalized',
       type: IsarType.bool,
     ),
     r'naoPereciveis': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'naoPereciveis',
       type: IsarType.long,
     ),
-    r'opls': PropertySchema(id: 7, name: r'opls', type: IsarType.long),
+    r'naoPereciveisByNames': PropertySchema(
+      id: 9,
+      name: r'naoPereciveisByNames',
+      type: IsarType.stringList,
+    ),
+    r'naoPereciveisDoneAt': PropertySchema(
+      id: 10,
+      name: r'naoPereciveisDoneAt',
+      type: IsarType.dateTime,
+    ),
+    r'opls': PropertySchema(id: 11, name: r'opls', type: IsarType.long),
+    r'oplsByNames': PropertySchema(
+      id: 12,
+      name: r'oplsByNames',
+      type: IsarType.stringList,
+    ),
+    r'oplsDoneAt': PropertySchema(
+      id: 13,
+      name: r'oplsDoneAt',
+      type: IsarType.dateTime,
+    ),
     r'serviceDay': PropertySchema(
-      id: 8,
+      id: 14,
       name: r'serviceDay',
       type: IsarType.dateTime,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 9,
+      id: 15,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 10,
+      id: 16,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 11,
+      id: 17,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 12, name: r'synced', type: IsarType.bool),
-    r'total': PropertySchema(id: 13, name: r'total', type: IsarType.long),
+    r'synced': PropertySchema(id: 18, name: r'synced', type: IsarType.bool),
+    r'total': PropertySchema(id: 19, name: r'total', type: IsarType.long),
   },
 
   estimateSize: _openingListEstimateSize,
@@ -125,6 +155,13 @@ int _openingListEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.congeladosByNames.length * 3;
+  {
+    for (var i = 0; i < object.congeladosByNames.length; i++) {
+      final value = object.congeladosByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.createdByInitials;
     if (value != null) {
@@ -135,6 +172,20 @@ int _openingListEstimateSize(
   {
     for (var i = 0; i < object.createdByNames.length; i++) {
       final value = object.createdByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.naoPereciveisByNames.length * 3;
+  {
+    for (var i = 0; i < object.naoPereciveisByNames.length; i++) {
+      final value = object.naoPereciveisByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.oplsByNames.length * 3;
+  {
+    for (var i = 0; i < object.oplsByNames.length; i++) {
+      final value = object.oplsByNames[i];
       bytesCount += value.length * 3;
     }
   }
@@ -150,18 +201,24 @@ void _openingListSerialize(
 ) {
   writer.writeBool(offsets[0], object.backdated);
   writer.writeLong(offsets[1], object.congelados);
-  writer.writeString(offsets[2], object.createdByInitials);
-  writer.writeStringList(offsets[3], object.createdByNames);
-  writer.writeDateTime(offsets[4], object.finalizedAt);
-  writer.writeBool(offsets[5], object.isFinalized);
-  writer.writeLong(offsets[6], object.naoPereciveis);
-  writer.writeLong(offsets[7], object.opls);
-  writer.writeDateTime(offsets[8], object.serviceDay);
-  writer.writeDateTime(offsets[9], object.syncDeletedAt);
-  writer.writeDateTime(offsets[10], object.syncUpdatedAt);
-  writer.writeString(offsets[11], object.syncUuid);
-  writer.writeBool(offsets[12], object.synced);
-  writer.writeLong(offsets[13], object.total);
+  writer.writeStringList(offsets[2], object.congeladosByNames);
+  writer.writeDateTime(offsets[3], object.congeladosDoneAt);
+  writer.writeString(offsets[4], object.createdByInitials);
+  writer.writeStringList(offsets[5], object.createdByNames);
+  writer.writeDateTime(offsets[6], object.finalizedAt);
+  writer.writeBool(offsets[7], object.isFinalized);
+  writer.writeLong(offsets[8], object.naoPereciveis);
+  writer.writeStringList(offsets[9], object.naoPereciveisByNames);
+  writer.writeDateTime(offsets[10], object.naoPereciveisDoneAt);
+  writer.writeLong(offsets[11], object.opls);
+  writer.writeStringList(offsets[12], object.oplsByNames);
+  writer.writeDateTime(offsets[13], object.oplsDoneAt);
+  writer.writeDateTime(offsets[14], object.serviceDay);
+  writer.writeDateTime(offsets[15], object.syncDeletedAt);
+  writer.writeDateTime(offsets[16], object.syncUpdatedAt);
+  writer.writeString(offsets[17], object.syncUuid);
+  writer.writeBool(offsets[18], object.synced);
+  writer.writeLong(offsets[19], object.total);
 }
 
 OpeningList _openingListDeserialize(
@@ -173,17 +230,23 @@ OpeningList _openingListDeserialize(
   final object = OpeningList();
   object.backdated = reader.readBool(offsets[0]);
   object.congelados = reader.readLong(offsets[1]);
-  object.createdByInitials = reader.readStringOrNull(offsets[2]);
-  object.createdByNames = reader.readStringList(offsets[3]) ?? [];
-  object.finalizedAt = reader.readDateTimeOrNull(offsets[4]);
+  object.congeladosByNames = reader.readStringList(offsets[2]) ?? [];
+  object.congeladosDoneAt = reader.readDateTimeOrNull(offsets[3]);
+  object.createdByInitials = reader.readStringOrNull(offsets[4]);
+  object.createdByNames = reader.readStringList(offsets[5]) ?? [];
+  object.finalizedAt = reader.readDateTimeOrNull(offsets[6]);
   object.id = id;
-  object.naoPereciveis = reader.readLong(offsets[6]);
-  object.opls = reader.readLong(offsets[7]);
-  object.serviceDay = reader.readDateTime(offsets[8]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[9]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[10]);
-  object.syncUuid = reader.readString(offsets[11]);
-  object.synced = reader.readBool(offsets[12]);
+  object.naoPereciveis = reader.readLong(offsets[8]);
+  object.naoPereciveisByNames = reader.readStringList(offsets[9]) ?? [];
+  object.naoPereciveisDoneAt = reader.readDateTimeOrNull(offsets[10]);
+  object.opls = reader.readLong(offsets[11]);
+  object.oplsByNames = reader.readStringList(offsets[12]) ?? [];
+  object.oplsDoneAt = reader.readDateTimeOrNull(offsets[13]);
+  object.serviceDay = reader.readDateTime(offsets[14]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[15]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[16]);
+  object.syncUuid = reader.readString(offsets[17]);
+  object.synced = reader.readBool(offsets[18]);
   return object;
 }
 
@@ -199,28 +262,40 @@ P _openingListDeserializeProp<P>(
     case 1:
       return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
       return (reader.readStringList(offset) ?? []) as P;
+    case 3:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
-    case 7:
-      return (reader.readLong(offset)) as P;
-    case 8:
-      return (reader.readDateTime(offset)) as P;
-    case 9:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 10:
-      return (reader.readDateTime(offset)) as P;
-    case 11:
-      return (reader.readString(offset)) as P;
-    case 12:
+    case 7:
       return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 11:
+      return (reader.readLong(offset)) as P;
+    case 12:
+      return (reader.readStringList(offset) ?? []) as P;
     case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 14:
+      return (reader.readDateTime(offset)) as P;
+    case 15:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 16:
+      return (reader.readDateTime(offset)) as P;
+    case 17:
+      return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readBool(offset)) as P;
+    case 19:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -605,6 +680,282 @@ extension OpeningListQueryFilter
       return query.addFilterCondition(
         FilterCondition.between(
           property: r'congelados',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'congeladosByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'congeladosByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'congeladosByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'congeladosByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'congeladosByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'congeladosByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'congeladosByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'congeladosByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'congeladosByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'congeladosByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'congeladosByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'congeladosDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'congeladosDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'congeladosDoneAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'congeladosDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'congeladosDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  congeladosDoneAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'congeladosDoneAt',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -1163,6 +1514,309 @@ extension OpeningListQueryFilter
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'naoPereciveisByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'naoPereciveisByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'naoPereciveisByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'naoPereciveisByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'naoPereciveisByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'naoPereciveisByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'naoPereciveisByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'naoPereciveisByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'naoPereciveisByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'naoPereciveisByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'naoPereciveisByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'naoPereciveisDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'naoPereciveisDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'naoPereciveisDoneAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'naoPereciveisDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'naoPereciveisDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  naoPereciveisDoneAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'naoPereciveisDoneAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition> oplsEqualTo(
     int value,
   ) {
@@ -1213,6 +1867,273 @@ extension OpeningListQueryFilter
       return query.addFilterCondition(
         FilterCondition.between(
           property: r'opls',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'oplsByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'oplsByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'oplsByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'oplsByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'oplsByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'oplsByNames', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'oplsByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'oplsByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'oplsByNames', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'oplsByNames', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'oplsByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'oplsDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'oplsDoneAt'),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'oplsDoneAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'oplsDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'oplsDoneAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterFilterCondition>
+  oplsDoneAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'oplsDoneAt',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -1650,6 +2571,20 @@ extension OpeningListQuerySortBy
   }
 
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortByCongeladosDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'congeladosDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortByCongeladosDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'congeladosDoneAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
   sortByCreatedByInitials() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdByInitials', Sort.asc);
@@ -1700,6 +2635,20 @@ extension OpeningListQuerySortBy
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortByNaoPereciveisDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'naoPereciveisDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  sortByNaoPereciveisDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'naoPereciveisDoneAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByOpls() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'opls', Sort.asc);
@@ -1709,6 +2658,18 @@ extension OpeningListQuerySortBy
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByOplsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'opls', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByOplsDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'oplsDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> sortByOplsDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'oplsDoneAt', Sort.desc);
     });
   }
 
@@ -1814,6 +2775,20 @@ extension OpeningListQuerySortThenBy
   }
 
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenByCongeladosDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'congeladosDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenByCongeladosDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'congeladosDoneAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
   thenByCreatedByInitials() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdByInitials', Sort.asc);
@@ -1876,6 +2851,20 @@ extension OpeningListQuerySortThenBy
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenByNaoPereciveisDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'naoPereciveisDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy>
+  thenByNaoPereciveisDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'naoPereciveisDoneAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByOpls() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'opls', Sort.asc);
@@ -1885,6 +2874,18 @@ extension OpeningListQuerySortThenBy
   QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByOplsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'opls', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByOplsDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'oplsDoneAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QAfterSortBy> thenByOplsDoneAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'oplsDoneAt', Sort.desc);
     });
   }
 
@@ -1978,6 +2979,20 @@ extension OpeningListQueryWhereDistinct
   }
 
   QueryBuilder<OpeningList, OpeningList, QDistinct>
+  distinctByCongeladosByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'congeladosByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct>
+  distinctByCongeladosDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'congeladosDoneAt');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct>
   distinctByCreatedByInitials({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -2011,9 +3026,35 @@ extension OpeningListQueryWhereDistinct
     });
   }
 
+  QueryBuilder<OpeningList, OpeningList, QDistinct>
+  distinctByNaoPereciveisByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'naoPereciveisByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct>
+  distinctByNaoPereciveisDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'naoPereciveisDoneAt');
+    });
+  }
+
   QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByOpls() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'opls');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByOplsByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'oplsByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, OpeningList, QDistinct> distinctByOplsDoneAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'oplsDoneAt');
     });
   }
 
@@ -2076,6 +3117,20 @@ extension OpeningListQueryProperty
     });
   }
 
+  QueryBuilder<OpeningList, List<String>, QQueryOperations>
+  congeladosByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'congeladosByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, DateTime?, QQueryOperations>
+  congeladosDoneAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'congeladosDoneAt');
+    });
+  }
+
   QueryBuilder<OpeningList, String?, QQueryOperations>
   createdByInitialsProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2108,9 +3163,36 @@ extension OpeningListQueryProperty
     });
   }
 
+  QueryBuilder<OpeningList, List<String>, QQueryOperations>
+  naoPereciveisByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'naoPereciveisByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, DateTime?, QQueryOperations>
+  naoPereciveisDoneAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'naoPereciveisDoneAt');
+    });
+  }
+
   QueryBuilder<OpeningList, int, QQueryOperations> oplsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'opls');
+    });
+  }
+
+  QueryBuilder<OpeningList, List<String>, QQueryOperations>
+  oplsByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'oplsByNames');
+    });
+  }
+
+  QueryBuilder<OpeningList, DateTime?, QQueryOperations> oplsDoneAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'oplsDoneAt');
     });
   }
 

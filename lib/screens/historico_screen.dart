@@ -929,6 +929,15 @@ class _OpeningTabState extends State<_OpeningTab>
                       Text(
                         'Cong: ${l.congelados} · OPLS: ${l.opls} · NP: ${l.naoPereciveis}',
                       ),
+                      for (final s in ListSection.values)
+                        if (l.namesOf(s) case final names when names.isNotEmpty)
+                          Text(
+                            '${s.label}: ${joinNames(names)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
                       if (l.backdated) const _BackdatedRow(),
                     ],
                   ),
