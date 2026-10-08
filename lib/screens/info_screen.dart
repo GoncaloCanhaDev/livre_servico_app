@@ -1,11 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:isar_community/isar.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
-import '../services/shift_service.dart';
-import '../services/sync_meta.dart';
+import '../services/info_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'info_entry_form_screen.dart';
+import 'widgets/phone_linked_text.dart';
+import 'widgets/photo_viewer.dart';
 
+/// One of the store's single-value fields (Horário, Morada, Contactos).
+class _StoreField {
+  const _StoreField(this.label, this.bucket);
+  final String label;
+  final String bucket;
+}
+
+const _storeFields = [
+  _StoreField('Horário', 'loja_horario'),
+  _StoreField('Morada', 'loja_morada'),
+  _StoreField('Contactos', 'loja_contactos'),
+];
+
+/// A list of entries added with "Adicionar" (Protocolos, Avarias…).
+class _Bucket {
+  const _Bucket(this.label, this.key);
+  final String label;
+  final String key;
+}
+
+/// Informações: pinned entries first (Afixadas), then the store's details,
+/// Protocolos, Ações de Suporte and Contactos Úteis by group. Tapping an
+/// entry offers Editar, Afixar, Partilhar and Apagar.
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
 
@@ -14,484 +42,48 @@ class InfoScreen extends StatefulWidget {
 }
 
 class _InfoScreenState extends State<InfoScreen> {
+  List<InfoEntry>? _entries;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
   Future<void> _reload() async {
-    if (mounted) setState(() {});
+    final entries = await InfoService.instance.all();
+    if (mounted) setState(() => _entries = entries);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Informações')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _SingleValueSection(
-              title: 'Informações da Loja',
-              icon: Icons.store,
-              fields: const [
-                _SingleField(label: 'Horário', bucket: 'loja_horario'),
-                _SingleField(label: 'Morada', bucket: 'loja_morada'),
-                _SingleField(label: 'Contactos', bucket: 'loja_contactos'),
-              ],
-              onChanged: _reload,
-            ),
-            const SizedBox(height: 12),
-            _BucketSection(
-              title: 'Protocolos',
-              icon: Icons.rule,
-              buckets: const [_Bucket(label: 'Protocolos', key: 'protocolos')],
-              onChanged: _reload,
-            ),
-            const SizedBox(height: 12),
-            _BucketSection(
-              title: 'Ações de Suporte',
-              icon: Icons.support_agent,
-              buckets: const [
-                _Bucket(label: 'Avarias', key: 'suporte_avarias'),
-                _Bucket(label: 'Reclamações', key: 'suporte_reclamacoes'),
-              ],
-              onChanged: _reload,
-            ),
-            const SizedBox(height: 12),
-            _BucketSection(
-              title: 'Contactos Úteis',
-              icon: Icons.contact_phone,
-              buckets: const [
-                _Bucket(
-                  label: 'Responsável de Loja',
-                  key: 'contactos_responsavel',
-                  showContactField: true,
-                ),
-                _Bucket(
-                  label: 'Suporte Técnico',
-                  key: 'contactos_suporte',
-                  showContactField: true,
-                ),
-              ],
-              onChanged: _reload,
-            ),
-          ],
+  List<String> get _groups => {
+    for (final e in _entries ?? const <InfoEntry>[])
+      if (isContact(e)) contactGroupOf(e),
+  }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  Future<void> _openForm({
+    InfoEntry? existing,
+    String? bucket,
+    bool contact = false,
+  }) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => InfoEntryFormScreen(
+          existing: existing,
+          bucket: bucket,
+          contact: contact,
+          groups: _groups,
         ),
       ),
     );
-  }
-}
-
-class _Bucket {
-  const _Bucket({
-    required this.label,
-    required this.key,
-    this.showContactField = false,
-  });
-  final String label;
-  final String key;
-  final bool showContactField;
-}
-
-class _BucketSection extends StatelessWidget {
-  const _BucketSection({
-    required this.title,
-    required this.icon,
-    required this.buckets,
-    required this.onChanged,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<_Bucket> buckets;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        leading: Icon(icon, color: AppColors.green),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final b in buckets) ...[
-            const Divider(height: 1),
-            _BucketBody(bucket: b, onChanged: onChanged),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _BucketBody extends StatefulWidget {
-  const _BucketBody({required this.bucket, required this.onChanged});
-  final _Bucket bucket;
-  final VoidCallback onChanged;
-
-  @override
-  State<_BucketBody> createState() => _BucketBodyState();
-}
-
-class _BucketBodyState extends State<_BucketBody> {
-  late Future<List<InfoEntry>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
+    if (saved == true) _reload();
   }
 
-  Future<List<InfoEntry>> _load() async {
-    final list = await ShiftService.instance.isar.infoEntrys
-        .filter()
-        .bucketEqualTo(widget.bucket.key)
-        .findAll();
-    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    return list;
-  }
-
-  void _refresh() {
-    setState(() => _future = _load());
-    widget.onChanged();
-  }
-
-  Future<void> _add() async {
-    final result = await showDialog<_EntryDraft>(
-      context: context,
-      builder: (_) =>
-          _EntryDialog(showContactField: widget.bucket.showContactField),
-    );
-    if (result == null) return;
-    final isar = ShiftService.instance.isar;
-    final entry = InfoEntry()
-      ..bucket = widget.bucket.key
-      ..title = result.title
-      ..description = result.description
-      ..contact = result.contact
-      ..createdAt = DateTime.now();
-    SyncMeta.stamp(entry);
-    await isar.writeTxn(() => isar.infoEntrys.put(entry));
-    if (mounted) _refresh();
-  }
-
-  Future<void> _delete(InfoEntry entry) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Apagar entrada'),
-        content: Text('Apagar "${entry.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    final isar = ShiftService.instance.isar;
-    SyncMeta.softDelete(entry);
-    await isar.writeTxn(() => isar.infoEntrys.put(entry));
-    if (mounted) _refresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.bucket.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _add,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Adicionar'),
-              ),
-            ],
-          ),
-          FutureBuilder<List<InfoEntry>>(
-            future: _future,
-            builder: (ctx, snap) {
-              if (!snap.hasData) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              }
-              final items = snap.data!;
-              if (items.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.only(top: 4, bottom: 4),
-                  child: Text(
-                    'Sem entradas.',
-                    style: TextStyle(color: Colors.black54, fontSize: 13),
-                  ),
-                );
-              }
-              return Column(
-                children: [
-                  for (final e in items)
-                    Opacity(
-                      opacity: e.syncDeletedAt != null ? 0.4 : 1.0,
-                      child: IgnorePointer(
-                        ignoring: e.syncDeletedAt != null,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: InkWell(
-                            onLongPress: () => _delete(e),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  e.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                if (e.description.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    e.description,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ],
-                                if ((e.contact ?? '').trim().isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.phone,
-                                        size: 14,
-                                        color: Colors.black54,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          e.contact!,
-                                          style: const TextStyle(
-                                            color: Colors.black87,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EntryDraft {
-  const _EntryDraft({
-    required this.title,
-    required this.description,
-    this.contact,
-  });
-  final String title;
-  final String description;
-  final String? contact;
-}
-
-class _EntryDialog extends StatefulWidget {
-  const _EntryDialog({required this.showContactField});
-  final bool showContactField;
-
-  @override
-  State<_EntryDialog> createState() => _EntryDialogState();
-}
-
-class _EntryDialogState extends State<_EntryDialog> {
-  final _title = TextEditingController();
-  final _desc = TextEditingController();
-  final _contact = TextEditingController();
-
-  @override
-  void dispose() {
-    _title.dispose();
-    _desc.dispose();
-    _contact.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Nova entrada'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _title,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Título',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _desc,
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Descrição',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-            ),
-            if (widget.showContactField) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _contact,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Contacto (telefone/email)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        TextButton(
-          onPressed: () {
-            final title = _title.text.trim();
-            if (title.isEmpty) return;
-            final contact = _contact.text.trim();
-            Navigator.pop(
-              context,
-              _EntryDraft(
-                title: title,
-                description: _desc.text.trim(),
-                contact: contact.isEmpty ? null : contact,
-              ),
-            );
-          },
-          child: const Text('Guardar'),
-        ),
-      ],
-    );
-  }
-}
-
-class _SingleField {
-  const _SingleField({required this.label, required this.bucket});
-  final String label;
-  final String bucket;
-}
-
-class _SingleValueSection extends StatelessWidget {
-  const _SingleValueSection({
-    required this.title,
-    required this.icon,
-    required this.fields,
-    required this.onChanged,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<_SingleField> fields;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        leading: Icon(icon, color: AppColors.green),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final f in fields) ...[
-            const Divider(height: 1),
-            _SingleFieldRow(field: f, onChanged: onChanged),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SingleFieldRow extends StatefulWidget {
-  const _SingleFieldRow({required this.field, required this.onChanged});
-  final _SingleField field;
-  final VoidCallback onChanged;
-
-  @override
-  State<_SingleFieldRow> createState() => _SingleFieldRowState();
-}
-
-class _SingleFieldRowState extends State<_SingleFieldRow> {
-  late Future<InfoEntry?> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
-  }
-
-  Future<InfoEntry?> _load() {
-    return ShiftService.instance.isar.infoEntrys
-        .filter()
-        .syncDeletedAtIsNull()
-        .bucketEqualTo(widget.field.bucket)
-        .findFirst();
-  }
-
-  Future<void> _edit(InfoEntry? existing) async {
+  Future<void> _editStoreField(_StoreField field, InfoEntry? existing) async {
     final ctrl = TextEditingController(text: existing?.description ?? '');
     final saved = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(widget.field.label),
+        title: Text(field.label),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -514,62 +106,555 @@ class _SingleFieldRowState extends State<_SingleFieldRow> {
         ],
       ),
     );
+    ctrl.dispose();
     if (saved == null) return;
-    final isar = ShiftService.instance.isar;
-    final entry = existing ?? InfoEntry()
-      ..bucket = widget.field.bucket
-      ..title = widget.field.label
-      ..createdAt = existing?.createdAt ?? DateTime.now();
+    final entry =
+        existing ??
+        (InfoEntry()
+          ..bucket = field.bucket
+          ..title = field.label
+          ..createdAt = DateTime.now());
     entry.description = saved;
-    SyncMeta.stamp(entry);
-    await isar.writeTxn(() => isar.infoEntrys.put(entry));
+    await InfoService.instance.save(entry);
+    _reload();
+  }
+
+  Future<void> _togglePin(InfoEntry e) async {
+    e.pinned = !e.pinned;
+    await InfoService.instance.save(e);
+    _reload();
+  }
+
+  Future<void> _share(InfoEntry e) async {
+    final text = infoShareText(e);
+    if (e.photoPaths.isEmpty) {
+      await WhatsAppService.sendWithConfirm(context, text);
+      return;
+    }
+    await Share.shareXFiles([
+      for (final p in e.photoPaths) XFile(p),
+    ], text: text);
+  }
+
+  Future<void> _delete(InfoEntry e) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apagar'),
+        content: Text('Apagar "${e.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Apagar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await InfoService.instance.delete(e);
+    _reload();
+  }
+
+  Future<void> _renameGroup(String group) async {
+    final ctrl = TextEditingController(text: group);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mudar o nome do grupo'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || name.isEmpty || name == group) return;
+    await InfoService.instance.renameGroup(group, name);
+    _reload();
+  }
+
+  /// Editar / Afixar / Partilhar / Apagar for [e]; a store field can't be
+  /// deleted, only emptied.
+  Future<void> _showActions(InfoEntry e) async {
+    final storeField = _storeFields
+        .where((f) => f.bucket == e.bucket)
+        .firstOrNull;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                e.title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+            ListTile(
+              leading: Icon(
+                e.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+              ),
+              title: Text(e.pinned ? 'Desafixar' : 'Afixar'),
+              onTap: () => Navigator.pop(ctx, 'pin'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Partilhar'),
+              onTap: () => Navigator.pop(ctx, 'share'),
+            ),
+            if (storeField == null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text(
+                  'Apagar',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () => Navigator.pop(ctx, 'delete'),
+              ),
+          ],
+        ),
+      ),
+    );
     if (!mounted) return;
-    setState(() => _future = _load());
-    widget.onChanged();
+    switch (action) {
+      case 'edit':
+        if (storeField != null) {
+          await _editStoreField(storeField, e);
+        } else {
+          await _openForm(existing: e, contact: isContact(e));
+        }
+      case 'pin':
+        await _togglePin(e);
+      case 'share':
+        await _share(e);
+      case 'delete':
+        await _delete(e);
+    }
+  }
+
+  Widget _tileFor(InfoEntry e) => isContact(e)
+      ? _ContactTile(entry: e, onTap: () => _showActions(e))
+      : _EntryTile(entry: e, onTap: () => _showActions(e));
+
+  Widget _storeFieldTile(_StoreField field, InfoEntry? entry) {
+    final body = (entry?.description ?? '').trim();
+    if (entry == null || body.isEmpty) {
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          field.label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: const Text('Por preencher.'),
+        trailing: const Icon(Icons.edit, size: 18, color: Colors.black45),
+        onTap: () => _editStoreField(field, entry),
+      );
+    }
+    return _EntryTile(entry: entry, onTap: () => _showActions(entry));
+  }
+
+  Widget _bucketBlock(_Bucket bucket, List<InfoEntry> entries) {
+    final items = [
+      for (final e in entries)
+        if (e.bucket == bucket.key) e,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _BlockHeader(
+          label: bucket.label,
+          actionLabel: 'Adicionar',
+          onAction: () => _openForm(bucket: bucket.key),
+        ),
+        if (items.isEmpty)
+          const _EmptyNote()
+        else
+          for (final e in items) _tileFor(e),
+      ],
+    );
+  }
+
+  List<Widget> _contactGroups(List<InfoEntry> entries) {
+    final contacts = [
+      for (final e in entries)
+        if (isContact(e)) e,
+    ];
+    return [
+      _BlockHeader(
+        label: 'Contactos',
+        actionLabel: 'Adicionar',
+        onAction: () => _openForm(contact: true),
+      ),
+      if (contacts.isEmpty) const _EmptyNote(),
+      for (final g in _groups) ...[
+        InkWell(
+          onTap: () => _renameGroup(g),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    g,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.edit, size: 16, color: Colors.black38),
+              ],
+            ),
+          ),
+        ),
+        for (final e
+            in contacts.where((c) => contactGroupOf(c) == g).toList()..sort(
+              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+            ))
+          _tileFor(e),
+      ],
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<InfoEntry?>(
-      future: _future,
-      builder: (ctx, snap) {
-        final entry = snap.data;
-        final body = (entry?.description ?? '').trim();
-        return InkWell(
-          onTap: () => _edit(entry),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
+    final entries = _entries;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Informações')),
+      body: SafeArea(
+        child: entries == null
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (entries.where((e) => e.pinned).toList() case final pinned
+                      when pinned.isNotEmpty) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.push_pin, color: AppColors.green),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Afixadas',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            for (final e in pinned) ...[
+                              const Divider(height: 16),
+                              _tileFor(e),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  _Section(
+                    title: 'Informações da Loja',
+                    icon: Icons.store,
+                    children: [
+                      for (final f in _storeFields) ...[
+                        const Divider(height: 1),
+                        _storeFieldTile(
+                          f,
+                          entries
+                              .where((e) => e.bucket == f.bucket)
+                              .firstOrNull,
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _Section(
+                    title: 'Protocolos',
+                    icon: Icons.rule,
+                    children: [
+                      _bucketBlock(
+                        const _Bucket('Protocolos', 'protocolos'),
+                        entries,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _Section(
+                    title: 'Ações de Suporte',
+                    icon: Icons.support_agent,
+                    children: [
+                      _bucketBlock(
+                        const _Bucket('Avarias', 'suporte_avarias'),
+                        entries,
+                      ),
+                      const Divider(height: 1),
+                      _bucketBlock(
+                        const _Bucket('Reclamações', 'suporte_reclamacoes'),
+                        entries,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _Section(
+                    title: 'Contactos Úteis',
+                    icon: Icons.contact_phone,
+                    children: _contactGroups(entries),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: Icon(icon, color: AppColors.green),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _BlockHeader extends StatelessWidget {
+  const _BlockHeader({
+    required this.label,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final String label;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyNote extends StatelessWidget {
+  const _EmptyNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        'Sem entradas.',
+        style: TextStyle(color: Colors.black54, fontSize: 13),
+      ),
+    );
+  }
+}
+
+/// An entry's title, text (phone numbers tappable) and photos.
+class _EntryTile extends StatelessWidget {
+  const _EntryTile({required this.entry, required this.onTap});
+
+  final InfoEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = entry;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TitleRow(title: e.title, pinned: e.pinned),
+            if (e.description.trim().isNotEmpty) ...[
+              const SizedBox(height: 2),
+              PhoneLinkedText(
+                e.description,
+                style: const TextStyle(color: Colors.black87, height: 1.35),
+              ),
+            ],
+            if (e.photoPaths.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              PhotoStrip(paths: e.photoPaths),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A contact: name, note, phone and email, with call, WhatsApp and email
+/// buttons.
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({required this.entry, required this.onTap});
+
+  final InfoEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = entry;
+    final phone = contactPhoneOf(e);
+    final email = contactEmailOf(e);
+    final note = contactNoteOf(e);
+    final wa = phone == null ? null : whatsAppNumber(phone);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.field.label,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                      _TitleRow(title: e.title, pinned: e.pinned),
+                      if (phone != null)
+                        Text(
+                          phone,
+                          style: const TextStyle(color: Colors.black87),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        body.isEmpty ? 'Por preencher.' : body,
-                        style: TextStyle(
-                          color: body.isEmpty ? Colors.black54 : Colors.black87,
-                          height: 1.35,
+                      if (email != null)
+                        Text(
+                          email,
+                          style: const TextStyle(color: Colors.black87),
                         ),
-                      ),
                     ],
                   ),
                 ),
-                const Icon(Icons.edit, size: 18, color: Colors.black45),
+                if (phone != null)
+                  IconButton(
+                    tooltip: 'Ligar',
+                    icon: const Icon(Icons.phone, color: AppColors.green),
+                    onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+                  ),
+                if (wa != null)
+                  IconButton(
+                    tooltip: 'WhatsApp',
+                    icon: const Icon(Icons.chat, color: AppColors.green),
+                    onPressed: () => launchUrl(
+                      Uri.parse('https://wa.me/$wa'),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                if (email != null)
+                  IconButton(
+                    tooltip: 'Email',
+                    icon: const Icon(Icons.email, color: AppColors.green),
+                    onPressed: () =>
+                        launchUrl(Uri(scheme: 'mailto', path: email)),
+                  ),
               ],
             ),
+            if (note.isNotEmpty)
+              PhoneLinkedText(
+                note,
+                style: const TextStyle(color: Colors.black54, height: 1.35),
+              ),
+            if (e.photoPaths.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              PhotoStrip(paths: e.photoPaths),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TitleRow extends StatelessWidget {
+  const _TitleRow({required this.title, required this.pinned});
+
+  final String title;
+  final bool pinned;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-        );
-      },
+        ),
+        if (pinned) const Icon(Icons.push_pin, size: 14, color: Colors.black38),
+      ],
     );
   }
 }

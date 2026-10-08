@@ -22,8 +22,8 @@ multi-tenant product.
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
-  `lib/screens/people_sections.dart`, `lib/models/planning.dart` and `lib/models/validades.dart`,
-  no widget tests).
+  `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
+  `lib/models/info_contacts.dart`, no widget tests).
 
 ## Architecture
 
@@ -80,6 +80,10 @@ multi-tenant product.
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
+- Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
+  entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
+  `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in
+  `lib/models/info_contacts.dart` and moved to the new fields when edited.
 
 ### Services layer
 
@@ -118,8 +122,10 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
 - The "Enviar Vasilhame" picker in `truck_form_screen.dart` reads its items from the bundled
   `assets/vasilhame.json` (a JSON array of `{"name", "code"?, "ean"?}`), maintained by hand.
   `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
-- `image_picker` (person photos) is the only camera use; Android declares no CAMERA permission
-  on purpose (declaring it would require a runtime grant before the camera intent works).
+- `image_picker` (person photos, Informações photos) is the only camera use; Android declares
+  no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
+  intent works). Photos are copied into the app's documents folder (`people_photos/`,
+  `info_photos/`); backups only carry their paths, not the files.
 - `.env.example` still references `SUPABASE_URL`/`SUPABASE_ANON_KEY` from the removed backend
   integration; nothing in `lib/` reads env vars or calls Supabase today, so treat that file as
   stale rather than as a sign of an active integration.

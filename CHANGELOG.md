@@ -7,6 +7,20 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.47.0] — 2026-10-08
+
+### Added
+- Informações entries can be edited, pinned to a new Afixadas card at the top, shared (WhatsApp
+  text, or the share menu when they have photos) and carry photos from the camera or gallery,
+  shown as thumbnails that open full screen. Tapping an entry offers these actions.
+- Contactos Úteis has groups you create (e.g. Fornecedores); each contact has name, phone,
+  email and note, with call, WhatsApp and email buttons. Tapping a group renames it. The old
+  Responsável de Loja and Suporte Técnico contacts become groups of those names.
+- Phone numbers inside any Informações text are tappable to call.
+
+### Fixed
+- Deleted Informações entries no longer stay on the page greyed out.
+
 ## [0.46.2] — 2026-10-08
 
 ### Changed
