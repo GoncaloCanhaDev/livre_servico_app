@@ -11,6 +11,7 @@ import '../models/teams.dart';
 import '../services/person_service.dart';
 import '../services/sync_meta.dart';
 import '../theme.dart';
+import 'widgets/person_avatar.dart';
 
 /// Full-screen add/edit form for a [Person]: identity fields, team and
 /// roles, planning (horário, folgas, ausências), dates, notes and a profile
@@ -337,6 +338,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
         } catch (_) {}
       }
       photoPath = dest;
+      PersonAvatar.forget();
     } else if (_removePhoto && photoPath != null) {
       try {
         File(photoPath).deleteSync();

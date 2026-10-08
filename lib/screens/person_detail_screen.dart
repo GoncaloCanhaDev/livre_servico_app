@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +22,7 @@ import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
+import 'widgets/person_avatar.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
 
@@ -402,7 +401,6 @@ class _DetailsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = person;
     final dateFmt = DateFormat("d 'de' MMMM y", 'pt_PT');
-    final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
     final schedule = HorarioService.instance.index;
@@ -422,12 +420,11 @@ class _DetailsTab extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         Center(
-          child: hasPhoto
-              ? CircleAvatar(
-                  radius: 44,
-                  backgroundImage: FileImage(File(p.photoPath!)),
-                )
-              : PersonInitialsBadge(name: p.fullName, size: 88),
+          child: PersonAvatar(
+            name: p.fullName,
+            photoPath: p.photoPath,
+            size: 88,
+          ),
         ),
         const SizedBox(height: 12),
         Text.rich(

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../models/opening_list.dart';
@@ -13,7 +11,7 @@ import '../theme.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
-import 'widgets/person_picker.dart';
+import 'widgets/person_avatar.dart';
 import 'widgets/role_badge.dart';
 import 'widgets/section_header.dart';
 
@@ -348,14 +346,11 @@ class _PersonTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = person;
-    final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
     final horario = HorarioService.instance.index;
     return ListTile(
-      leading: hasPhoto
-          ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
-          : PersonInitialsBadge(name: p.fullName),
+      leading: PersonAvatar(name: p.fullName, photoPath: p.photoPath),
       title: Wrap(
         spacing: 6,
         runSpacing: 2,

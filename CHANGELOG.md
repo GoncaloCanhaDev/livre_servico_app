@@ -7,6 +7,16 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.7] — 2026-10-08
+
+### Changed
+- Smoother Pessoas: photos are decoded at the size they're shown (not up to 1024 px for a small
+  circle), and whether a photo file exists is checked once instead of on every redraw.
+
+### Fixed
+- After changing a person's photo, the old one no longer shows until the app restarts (the new
+  photo is saved under the same file name, and the decoded old one is now forgotten).
+
 ## [0.56.6] — 2026-10-08
 
 ### Changed
