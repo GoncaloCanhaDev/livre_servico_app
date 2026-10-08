@@ -322,6 +322,7 @@ class _PersonTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = person;
     final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
+    final today = DateTime.now();
     return ListTile(
       leading: hasPhoto
           ? CircleAvatar(backgroundImage: FileImage(File(p.photoPath!)))
@@ -333,12 +334,13 @@ class _PersonTile extends StatelessWidget {
         children: [
           Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
           for (final tag in roleTagsOf(p)) RoleBadge(tag),
+          if (awayTagOn(p, today) case final away?) RoleBadge(away, away: true),
         ],
       ),
       subtitle: Text.rich(
         TextSpan(
           children: [
-            if (offLabelOn(p, DateTime.now()) case final off?)
+            if (offNoteOn(p, today) case final off?)
               TextSpan(
                 text: '$off  ',
                 style: TextStyle(

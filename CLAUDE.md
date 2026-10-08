@@ -62,7 +62,8 @@ multi-tenant product.
   minutes after midnight, embedded `Ausencia` list) is read through the pure helpers in
   `lib/models/planning.dart`: `offLabelOn(p, day)` says why someone isn't working that day (an
   ausência beats a folga), used by Pessoas, the person page and the task picker
-  (`buildPeopleSections(offDay:)` lists them last). `hireDate` is the company (Pingo Doce)
+  (`buildPeopleSections(offDay:)` lists them last). During an ausência, `awayTagOn` gives
+  the orange tag shown next to the role tags and `offNoteOn` the "até 14/10" text beside it. `hireDate` is the company (Pingo Doce)
   start; `storeStartDate` is the start at this store.
 
 ### Services layer

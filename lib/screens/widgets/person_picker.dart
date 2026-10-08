@@ -7,6 +7,7 @@ import '../../models/teams.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
 import '../people_sections.dart';
+import 'role_badge.dart';
 import 'section_header.dart';
 
 /// Prompts the user to pick one or more people. Returns the chosen people
@@ -204,15 +205,24 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
           ),
           if (_isOpen(section))
             for (final p in section.people)
-              if (offLabelOn(p, _selectedDay) case final off?)
+              if (offNoteOn(p, _selectedDay) case final off?)
                 CheckboxListTile(
                   secondary: PersonInitialsBadge(
                     name: p.fullName,
                     background: Colors.black26,
                   ),
-                  title: Text(
-                    p.fullName,
-                    style: const TextStyle(color: Colors.black54),
+                  title: Wrap(
+                    spacing: 6,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        p.fullName,
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                      if (awayTagOn(p, _selectedDay) case final away?)
+                        RoleBadge(away, away: true),
+                    ],
                   ),
                   subtitle: Text(
                     off,

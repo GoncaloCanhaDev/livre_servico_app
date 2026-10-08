@@ -56,6 +56,31 @@ void main() {
     });
   });
 
+  group('away tag and note', () {
+    final baixa = _a(
+      AusenciaTipo.baixa,
+      DateTime(2026, 10, 2),
+      DateTime(2026, 11, 3),
+    );
+
+    test('an ausência gives its type as the tag and the end as the note', () {
+      final p = _p(folgas: [DateTime.monday], ausencias: [baixa]);
+      expect(awayTagOn(p, monday), 'Baixa');
+      expect(offNoteOn(p, monday), 'até 3/11');
+    });
+
+    test('a folga has no tag, only the note', () {
+      final p = _p(folgas: [DateTime.monday]);
+      expect(awayTagOn(p, monday), isNull);
+      expect(offNoteOn(p, monday), 'Folga');
+    });
+
+    test('working that day', () {
+      expect(awayTagOn(_p(), monday), isNull);
+      expect(offNoteOn(_p(), monday), isNull);
+    });
+  });
+
   group('tenureText', () {
     final today = DateTime(2026, 10, 7);
 

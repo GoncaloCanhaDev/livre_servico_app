@@ -23,6 +23,20 @@ String? offLabelOn(Person p, DateTime day) {
   return null;
 }
 
+/// The tag shown on [p] while an ausência covers [day] ("Férias", "Baixa"…),
+/// or null. A folga gets no tag.
+String? awayTagOn(Person p, DateTime day) => ausenciaOn(p, day)?.tipo.label;
+
+/// [offLabelOn] without the part the tag already says: "até 14/10" during an
+/// ausência, "Folga", or null when they are working.
+String? offNoteOn(Person p, DateTime day) {
+  if (ausenciaOn(p, day) case final a?) {
+    return 'até ${a.end.day}/${a.end.month}';
+  }
+  if (p.folgas.contains(day.weekday)) return 'Folga';
+  return null;
+}
+
 /// [p]'s ausências that have not ended before [today], by start date.
 List<Ausencia> upcomingAusencias(Person p, DateTime today) {
   final d = _dateOnly(today);
