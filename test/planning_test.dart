@@ -200,4 +200,44 @@ void main() {
       later,
     ]);
   });
+
+  group('birthdays', () {
+    Person born(String name, DateTime dob) => Person()
+      ..fullName = name
+      ..createdAt = DateTime(2026)
+      ..dateOfBirth = dob;
+
+    test('on the day of the month, any year', () {
+      final ana = born('Ana', DateTime(1990, 10, 8));
+      expect(isBirthdayOn(ana, DateTime(2026, 10, 8, 23)), isTrue);
+      expect(isBirthdayOn(ana, DateTime(2026, 10, 9)), isFalse);
+      expect(isBirthdayOn(_p(), DateTime(2026, 10, 8)), isFalse);
+    });
+
+    test('29 February falls on the 28th outside leap years', () {
+      final rui = born('Rui', DateTime(2000, 2, 29));
+      expect(isBirthdayOn(rui, DateTime(2027, 2, 28)), isTrue);
+      expect(isBirthdayOn(rui, DateTime(2028, 2, 28)), isFalse);
+      expect(isBirthdayOn(rui, DateTime(2028, 2, 29)), isTrue);
+    });
+
+    test('the next ones, today first, within the days asked', () {
+      final people = [
+        born('Eva', DateTime(1985, 10, 14)),
+        born('Ana', DateTime(1990, 10, 8)),
+        born('Ivo', DateTime(1995, 10, 16)),
+        born('Rui', DateTime(1980, 1, 2)),
+        _p(),
+      ];
+      final next = upcomingBirthdays(people, DateTime(2026, 10, 8), days: 7);
+      expect(next.map((b) => (b.person.fullName, b.date)), [
+        ('Ana', DateTime(2026, 10, 8)),
+        ('Eva', DateTime(2026, 10, 14)),
+      ]);
+      expect(
+        upcomingBirthdays(people, DateTime(2026, 12, 30)).map((b) => b.date),
+        [DateTime(2027, 1, 2)],
+      );
+    });
+  });
 }

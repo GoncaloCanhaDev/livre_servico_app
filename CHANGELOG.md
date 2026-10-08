@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.54.0] — 2026-10-08
+
+### Added
+- Birthdays, from the date of birth already on the person page: a pink "🎂 Faz anos" tag in
+  Pessoas and on the person page on the day, and an "Aniversários" line on the "Hoje" card with
+  today's and the next 7 days' birthdays (everyone in Pessoas). A 29 February birthday shows on
+  the 28th outside leap years.
+
 ## [0.53.1] — 2026-10-08
 
 ### Changed

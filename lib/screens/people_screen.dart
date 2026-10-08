@@ -346,6 +346,8 @@ class _PersonTile extends StatelessWidget {
             RoleBadge(tenure, tenure: true),
           if (awayTagOn(p, today, horario: horario) case final away?)
             RoleBadge(away, away: true),
+          if (isBirthdayOn(p, today))
+            const RoleBadge(birthdayTag, birthday: true),
         ],
       ),
       subtitle: Text.rich(

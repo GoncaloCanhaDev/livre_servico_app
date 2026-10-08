@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/horario.dart';
+import '../../models/person.dart';
+import '../../models/planning.dart';
 import '../../models/opening_list.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
@@ -21,6 +23,7 @@ import '../../theme.dart';
 import '../historico_screen.dart';
 import '../horarios_screen.dart';
 import '../pedidos_screen.dart';
+import '../people_screen.dart';
 import '../tasks_screen.dart';
 
 /// What the "Hoje" card shows, read at one moment.
@@ -35,6 +38,7 @@ class _TodayData {
     required this.trucks,
     required this.pallets,
     required this.missingMonth,
+    required this.birthdays,
   });
 
   final DateTime serviceDay;
@@ -50,11 +54,14 @@ class _TodayData {
 
   /// Next month's key when its horário is due and not imported.
   final String? missingMonth;
+
+  /// Today's birthdays and those in the next 7 days, everyone in Pessoas.
+  final List<({Person person, DateTime date})> birthdays;
 }
 
 /// The home screen's summary of the service day: who is working now, the
-/// daily tasks still to do, a missing next month's horário, late pedidos and
-/// today's camiões. Each line
+/// daily tasks still to do, a missing next month's horário, birthdays, late
+/// pedidos and today's camiões. Each line
 /// opens its page.
 class TodayCard extends StatefulWidget {
   const TodayCard({super.key});
@@ -105,8 +112,9 @@ class _TodayCardState extends State<TodayCard> {
     final dayEnd = day.add(const Duration(hours: 24));
     bool inDay(DateTime t) => !t.isBefore(day) && t.isBefore(dayEnd);
 
+    final everyone = await PersonService.instance.all();
     final people = [
-      for (final p in await PersonService.instance.all())
+      for (final p in everyone)
         if (p.team == livreServicoId) p,
     ];
     final index = HorarioService.instance.index;
@@ -142,6 +150,7 @@ class _TodayCardState extends State<TodayCard> {
       trucks: trucks.length,
       pallets: trucks.fold(0, (s, t) => s + t.totalPallets),
       missingMonth: missingNextMonth(HorarioService.instance.horarios, day),
+      birthdays: upcomingBirthdays(everyone, day),
     );
     if (mounted) setState(() => _data = data);
   }
@@ -199,6 +208,17 @@ class _TodayCardState extends State<TodayCard> {
               title: 'Falta o horário de ${monthName(month)}',
               onTap: () => _open(const HorariosScreen()),
             ),
+          if (d.birthdays.isNotEmpty)
+            _Line(
+              icon: Icons.cake,
+              color: Colors.pink.shade400,
+              title: 'Aniversários',
+              text: [
+                for (final b in d.birthdays)
+                  '${shortName(b.person.fullName)} · ${_whenText(b.date, d.serviceDay)}',
+              ].join('\n'),
+              onTap: () => _open(const PeopleScreen()),
+            ),
           if (d.overduePedidos > 0)
             _Line(
               icon: Icons.receipt_long,
@@ -222,6 +242,18 @@ class _TodayCardState extends State<TodayCard> {
       ),
     );
   }
+}
+
+/// "hoje", "amanhã" or the weekday and date ("sábado, 10/10") of [date].
+String _whenText(DateTime date, DateTime today) {
+  final days = DateTime(
+    date.year,
+    date.month,
+    date.day,
+  ).difference(DateTime(today.year, today.month, today.day)).inDays;
+  if (days == 0) return 'hoje 🎂';
+  if (days == 1) return 'amanhã';
+  return DateFormat("EEEE, d/M", 'pt_PT').format(date);
 }
 
 /// One line of the card: an icon, a bold [title], optional [text] below.

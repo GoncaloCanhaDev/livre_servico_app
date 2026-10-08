@@ -77,6 +77,38 @@ List<Ausencia> upcomingAusencias(Person p, DateTime today) {
     ..sort((a, b) => a.start.compareTo(b.start));
 }
 
+/// The tag shown on a person's birthday.
+const birthdayTag = '🎂 Faz anos';
+
+/// Whether [day] is [p]'s birthday ([Person.dateOfBirth]); a 29 February
+/// birthday falls on the 28th outside leap years.
+bool isBirthdayOn(Person p, DateTime day) {
+  final dob = p.dateOfBirth;
+  if (dob == null || dob.month != day.month) return false;
+  if (dob.month == 2 && dob.day == 29 && DateTime(day.year, 2, 29).month == 3) {
+    return day.day == 28;
+  }
+  return dob.day == day.day;
+}
+
+/// The birthdays in [people] from [today] through the next [days] days,
+/// soonest first (then by name), each with its date.
+List<({Person person, DateTime date})> upcomingBirthdays(
+  List<Person> people,
+  DateTime today, {
+  int days = 7,
+}) {
+  final start = _dateOnly(today);
+  final found = <({Person person, DateTime date})>[];
+  for (var i = 0; i <= days; i++) {
+    final day = DateTime(start.year, start.month, start.day + i);
+    final born = people.where((p) => isBirthdayOn(p, day)).toList()
+      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+    found.addAll([for (final p in born) (person: p, date: day)]);
+  }
+  return found;
+}
+
 /// Time since [from] in whole months: "4 anos e 7 meses", "1 ano", "5 meses",
 /// or "menos de 1 mês".
 String tenureText(DateTime from, DateTime today) {
