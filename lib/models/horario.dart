@@ -73,6 +73,17 @@ class HorarioCodigo {
   /// "07:00–16:00", without the pausa.
   String get shortText => '${_hhmm(entrada)}–${_hhmm(saida)}';
 
+  /// Time at work: entrada to saída (across midnight for a night shift)
+  /// without the pausa.
+  int get workedMinutes {
+    int length(int from, int to) => (to - from) % (24 * 60);
+    final total = saida == entrada ? 24 * 60 : length(entrada, saida);
+    return switch (pausa) {
+      (final a, final b) => total - length(a, b),
+      null => total,
+    };
+  }
+
   /// When this shift runs if it is on [day]'s date: from the entrada that
   /// day to the saída, the next day for a night shift.
   ({DateTime start, DateTime end}) spanOn(DateTime day) => (
@@ -90,6 +101,12 @@ class HorarioCodigo {
 String _hhmm(int minutes) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(minutes ~/ 60)}:${two(minutes % 60)}';
+}
+
+/// "168h", or "167h30" with minutes.
+String hoursText(int minutes) {
+  final m = minutes % 60;
+  return '${minutes ~/ 60}h${m == 0 ? '' : m.toString().padLeft(2, '0')}';
 }
 
 /// The absence code for a folga: no tag, no "até".
@@ -296,15 +313,18 @@ class HorarioIndex {
   HorarioIndex(this.horarios, List<Person> people) {
     for (final e in horarios.meses.entries) {
       final byPerson = <int, List<String>>{};
+      final byRow = <String, Person>{};
       final unmatched = <String>[];
       for (final row in e.value.entries) {
         if (personForRow(row.key, people) case final p?) {
           byPerson[p.id] = row.value;
+          byRow[row.key] = p;
         } else {
           unmatched.add(row.key);
         }
       }
       _byMonth[e.key] = byPerson;
+      _rowPeople[e.key] = byRow;
       _unmatched[e.key] = unmatched;
     }
   }
@@ -312,6 +332,10 @@ class HorarioIndex {
   final Horarios horarios;
   final _byMonth = <String, Map<int, List<String>>>{};
   final _unmatched = <String, List<String>>{};
+  final _rowPeople = <String, Map<String, Person>>{};
+
+  /// The person the line named [name] in [month] is for, or null.
+  Person? personOf(String month, String name) => _rowPeople[month]?[name];
 
   /// [p]'s code on [day] (its date), or null without a line that month.
   String? codeOn(Person p, DateTime day) =>
@@ -335,4 +359,44 @@ class HorarioIndex {
       end = next;
     }
   }
+}
+
+/// A month line in numbers: hours at work, shifts, and how many days of
+/// each absence code (FO, F…).
+({int minutes, int shifts, Map<String, int> ausencias}) summarizeLine(
+  Horarios h,
+  List<String> codes,
+) {
+  var minutes = 0;
+  var shifts = 0;
+  final ausencias = <String, int>{};
+  for (final code in codes) {
+    if (h.codigos[code] case final c?) {
+      minutes += c.workedMinutes;
+      shifts++;
+    } else {
+      ausencias[code] = (ausencias[code] ?? 0) + 1;
+    }
+  }
+  return (minutes: minutes, shifts: shifts, ausencias: ausencias);
+}
+
+/// How many of [rows] have a day and a night shift on [day] (1 = the 1st).
+({int dia, int noite}) dayCounts(
+  Horarios h,
+  Map<String, List<String>> rows,
+  int day,
+) {
+  var dia = 0;
+  var noite = 0;
+  for (final codes in rows.values) {
+    final c = h.codigos[codes[day - 1]];
+    if (c == null) continue;
+    if (c.noturno) {
+      noite++;
+    } else {
+      dia++;
+    }
+  }
+  return (dia: dia, noite: noite);
 }

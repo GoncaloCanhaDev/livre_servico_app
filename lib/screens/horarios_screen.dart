@@ -153,6 +153,12 @@ class _HorariosScreenState extends State<HorariosScreen> {
                     today: today,
                   ),
                   const SizedBox(height: 12),
+                  _MonthTotals(
+                    horarios: h,
+                    month: month,
+                    index: _service.index,
+                  ),
+                  const SizedBox(height: 12),
                   _Legend(horarios: h, month: month),
                 ],
               ),
@@ -398,8 +404,9 @@ class _MonthHeader extends StatelessWidget {
 }
 
 /// The month as on paper: names down the side (fixed), days across
-/// (scrolling, starting near today), one code per cell. Tapping a cell says
-/// what the code means.
+/// (scrolling, starting near today), one code per cell, and at the bottom how
+/// many work each day de dia and de noite. Tapping a cell says what the code
+/// means.
 class _MonthGrid extends StatefulWidget {
   const _MonthGrid({
     super.key,
@@ -420,6 +427,7 @@ class _MonthGridState extends State<_MonthGrid> {
   static const _cellWidth = 46.0;
   static const _rowHeight = 32.0;
   static const _nameWidth = 116.0;
+  static final _countColor = Colors.green.shade50;
 
   late final ScrollController _scroll;
 
@@ -465,6 +473,7 @@ class _MonthGridState extends State<_MonthGrid> {
     final year = int.parse(parts[0]);
     final mon = int.parse(parts[1]);
     final days = DateTime(year, mon + 1, 0).day;
+    final counts = [for (var d = 1; d <= days; d++) dayCounts(h, rows, d)];
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -488,6 +497,24 @@ class _MonthGridState extends State<_MonthGrid> {
                     ),
                   ),
                   width: _nameWidth,
+                ),
+              for (final label in ['Dia', 'Noite'])
+                _cell(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Nº $label',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  width: _nameWidth,
+                  color: _countColor,
                 ),
             ],
           ),
@@ -527,6 +554,23 @@ class _MonthGridState extends State<_MonthGrid> {
                               DateTime(year, mon, d),
                               e.value[d - 1],
                             ),
+                          ),
+                      ],
+                    ),
+                  for (final noite in [false, true])
+                    Row(
+                      children: [
+                        for (var d = 1; d <= days; d++)
+                          _cell(
+                            Text(
+                              '${noite ? counts[d - 1].noite : counts[d - 1].dia}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            color: _countColor,
+                            today: _isCurrentMonth && d == widget.today.day,
                           ),
                       ],
                     ),
@@ -583,6 +627,83 @@ class _MonthGridState extends State<_MonthGrid> {
       ),
       color: weekend ? Colors.grey.shade100 : null,
       today: _isCurrentMonth && day.day == widget.today.day,
+    );
+  }
+}
+
+/// Per line of [month]: hours at work (without pausas), shifts and days of
+/// each absence, beside the person's contracted hours a week when known.
+class _MonthTotals extends StatelessWidget {
+  const _MonthTotals({
+    required this.horarios,
+    required this.month,
+    required this.index,
+  });
+
+  final Horarios horarios;
+  final String month;
+  final HorarioIndex index;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = horarios.meses[month]!;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: const Icon(Icons.functions, color: AppColors.green),
+        title: const Text(
+          'Totais do mês',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: const Text('Horas sem pausas · turnos · ausências'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        children: [
+          for (final e in rows.entries)
+            _totalRow(
+              e.key,
+              summarizeLine(horarios, e.value),
+              index.personOf(month, e.key)?.weeklyHours,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _totalRow(
+    String name,
+    ({int minutes, int shifts, Map<String, int> ausencias}) s,
+    int? weeklyHours,
+  ) {
+    final details = [
+      '${s.shifts} turno${s.shifts == 1 ? '' : 's'}',
+      for (final e in s.ausencias.entries)
+        '${horarios.ausencias[e.key] ?? e.key} ${e.value}',
+      if (weeklyHours != null) 'contrato ${weeklyHours}h/semana',
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name),
+                Text(
+                  details,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            hoursText(s.minutes),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 }

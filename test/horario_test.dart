@@ -260,6 +260,12 @@ void main() {
       expect(index.unmatched('2026-10'), ['Desconhecido']);
     });
 
+    test('the person a line is for', () {
+      expect(index.personOf('2026-10', 'Ana Silva'), same(ana));
+      expect(index.personOf('2026-10', 'Desconhecido'), isNull);
+      expect(index.personOf('2026-12', 'Ana Silva'), isNull);
+    });
+
     test('a run of the same code ends on its last day', () {
       expect(index.runEnd(ana, DateTime(2026, 10, 1)), DateTime(2026, 10, 3));
       expect(index.runEnd(ana, DateTime(2026, 10, 7)), DateTime(2026, 10, 7));
@@ -323,6 +329,57 @@ void main() {
         expect(horarioTextOn(ana, DateTime(2026, 10, 4), index), isNull);
         expect(horarioTextOn(rui, DateTime(2026, 10, 6), index), isNull);
       });
+    });
+  });
+
+  group('month totals', () {
+    final h = Horarios(
+      codigos: {
+        for (final e in _codigos.entries)
+          e.key: HorarioCodigo.fromJson(e.key, e.value),
+        'S204': HorarioCodigo.fromJson('S204', {
+          'entrada': '18:30',
+          'pausa': '23:30-01:30',
+          'saida': '05:30',
+        }),
+        'U1': HorarioCodigo.fromJson('U1', {
+          'entrada': '20:00',
+          'saida': '24:00',
+        }),
+      },
+      ausencias: const {'FO': 'Folga', 'F': 'Férias'},
+      meses: const {},
+    );
+
+    test('worked minutes leave out the pausa, across midnight too', () {
+      expect(h.codigos['H73']!.workedMinutes, 8 * 60);
+      expect(h.codigos['W82']!.workedMinutes, 8 * 60);
+      expect(h.codigos['L3']!.workedMinutes, 4 * 60);
+      expect(h.codigos['S204']!.workedMinutes, 9 * 60);
+      expect(h.codigos['U1']!.workedMinutes, 4 * 60);
+    });
+
+    test('a line sums its hours and counts shifts and absences', () {
+      final s = summarizeLine(h, ['H73', 'W82', 'FO', 'F', 'F', 'L3', 'FO']);
+      expect(s.minutes, 20 * 60);
+      expect(s.shifts, 3);
+      expect(s.ausencias, {'FO': 2, 'F': 2});
+    });
+
+    test('hoursText', () {
+      expect(hoursText(168 * 60), '168h');
+      expect(hoursText(167 * 60 + 30), '167h30');
+    });
+
+    test('a day counts day and night shifts', () {
+      final rows = {
+        'Ana': ['H73', 'FO'],
+        'Rui': ['W82', 'W82'],
+        'Eva': ['F', 'L3'],
+        'Ivo': ['U1', 'H73'],
+      };
+      expect(dayCounts(h, rows, 1), (dia: 1, noite: 2));
+      expect(dayCounts(h, rows, 2), (dia: 2, noite: 1));
     });
   });
 }
