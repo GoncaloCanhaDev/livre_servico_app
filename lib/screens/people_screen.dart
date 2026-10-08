@@ -17,11 +17,12 @@ import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
 import 'widgets/section_header.dart';
 
-/// The form sent by WhatsApp to someone new, who replies with their data
-/// for the supervisor to enter in Pessoas.
+/// The form sent by WhatsApp to someone new, who may reply with their data
+/// for the supervisor to enter in Pessoas. Every line is optional.
 const _personFormMessage =
-    'Olá! Para te registar na minha app da loja, responde a esta mensagem '
-    'com os teus dados à frente de cada linha:\n'
+    'Olá! Para te registar na minha app da loja (um projeto pessoal), podes '
+    'responder a esta mensagem com os teus dados à frente de cada linha. '
+    'É tudo opcional: preenche só o que quiseres, ou ignora esta mensagem.\n'
     '\n'
     'Primeiro e último nome:\n'
     'Nº de colaborador:\n'
