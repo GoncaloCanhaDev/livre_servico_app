@@ -7,6 +7,21 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.43.0] — 2026-10-08
+
+### Added
+- Receção de Camião starts by choosing the type of camião: Congelados, Perecíveis or Não
+  Perecíveis. It shows at the top of the form (tap to change), in Histórico, on the person page
+  and in the WhatsApp message.
+- Expositores: lines of Quantidade and Conteúdo / marca ("3 · Coca-Cola"), counted in the totals
+  card, listed in Histórico and in the WhatsApp message.
+
+### Changed
+- Paletes are counted per departamento: DPH, Mercearia, Bebidas, Bazar, Charcutaria, Iogurtes,
+  Meal Solutions, Talho, Peixaria, Bem Estar, Padaria, Fruta and Prodout. Camiões recorded
+  before keep their old categories.
+- A camião can be saved with only expositores.
+
 ## [0.42.1] — 2026-10-08
 
 ### Changed

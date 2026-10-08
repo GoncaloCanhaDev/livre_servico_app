@@ -32,57 +32,75 @@ const TruckReceptionSchema = CollectionSchema(
       name: r'createdByNames',
       type: IsarType.stringList,
     ),
-    r'issues': PropertySchema(id: 3, name: r'issues', type: IsarType.string),
+    r'expositores': PropertySchema(
+      id: 3,
+      name: r'expositores',
+      type: IsarType.objectList,
+
+      target: r'Expositor',
+    ),
+    r'issues': PropertySchema(id: 4, name: r'issues', type: IsarType.string),
     r'licensePlate': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'licensePlate',
       type: IsarType.string,
     ),
-    r'notes': PropertySchema(id: 5, name: r'notes', type: IsarType.string),
+    r'notes': PropertySchema(id: 6, name: r'notes', type: IsarType.string),
     r'pallets': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'pallets',
       type: IsarType.objectList,
 
       target: r'PalletCount',
     ),
     r'sentVasilhame': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'sentVasilhame',
       type: IsarType.objectList,
 
       target: r'SentVasilhameItem',
     ),
     r'supplier': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'supplier',
       type: IsarType.string,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 12, name: r'synced', type: IsarType.bool),
+    r'synced': PropertySchema(id: 13, name: r'synced', type: IsarType.bool),
+    r'totalExpositores': PropertySchema(
+      id: 14,
+      name: r'totalExpositores',
+      type: IsarType.long,
+    ),
     r'totalMistas': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'totalMistas',
       type: IsarType.long,
     ),
     r'totalPallets': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'totalPallets',
       type: IsarType.long,
+    ),
+    r'type': PropertySchema(
+      id: 17,
+      name: r'type',
+      type: IsarType.string,
+      enumMap: _TruckReceptiontypeEnumValueMap,
     ),
   },
 
@@ -123,6 +141,7 @@ const TruckReceptionSchema = CollectionSchema(
   embeddedSchemas: {
     r'PalletCount': PalletCountSchema,
     r'SentVasilhameItem': SentVasilhameItemSchema,
+    r'Expositor': ExpositorSchema,
   },
 
   getId: _truckReceptionGetId,
@@ -148,6 +167,14 @@ int _truckReceptionEstimateSize(
     for (var i = 0; i < object.createdByNames.length; i++) {
       final value = object.createdByNames[i];
       bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.expositores.length * 3;
+  {
+    final offsets = allOffsets[Expositor]!;
+    for (var i = 0; i < object.expositores.length; i++) {
+      final value = object.expositores[i];
+      bytesCount += ExpositorSchema.estimateSize(value, offsets, allOffsets);
     }
   }
   {
@@ -195,6 +222,12 @@ int _truckReceptionEstimateSize(
     }
   }
   bytesCount += 3 + object.syncUuid.length * 3;
+  {
+    final value = object.type;
+    if (value != null) {
+      bytesCount += 3 + value.name.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -207,28 +240,36 @@ void _truckReceptionSerialize(
   writer.writeDateTime(offsets[0], object.arrivalTime);
   writer.writeString(offsets[1], object.createdByInitials);
   writer.writeStringList(offsets[2], object.createdByNames);
-  writer.writeString(offsets[3], object.issues);
-  writer.writeString(offsets[4], object.licensePlate);
-  writer.writeString(offsets[5], object.notes);
+  writer.writeObjectList<Expositor>(
+    offsets[3],
+    allOffsets,
+    ExpositorSchema.serialize,
+    object.expositores,
+  );
+  writer.writeString(offsets[4], object.issues);
+  writer.writeString(offsets[5], object.licensePlate);
+  writer.writeString(offsets[6], object.notes);
   writer.writeObjectList<PalletCount>(
-    offsets[6],
+    offsets[7],
     allOffsets,
     PalletCountSchema.serialize,
     object.pallets,
   );
   writer.writeObjectList<SentVasilhameItem>(
-    offsets[7],
+    offsets[8],
     allOffsets,
     SentVasilhameItemSchema.serialize,
     object.sentVasilhame,
   );
-  writer.writeString(offsets[8], object.supplier);
-  writer.writeDateTime(offsets[9], object.syncDeletedAt);
-  writer.writeDateTime(offsets[10], object.syncUpdatedAt);
-  writer.writeString(offsets[11], object.syncUuid);
-  writer.writeBool(offsets[12], object.synced);
-  writer.writeLong(offsets[13], object.totalMistas);
-  writer.writeLong(offsets[14], object.totalPallets);
+  writer.writeString(offsets[9], object.supplier);
+  writer.writeDateTime(offsets[10], object.syncDeletedAt);
+  writer.writeDateTime(offsets[11], object.syncUpdatedAt);
+  writer.writeString(offsets[12], object.syncUuid);
+  writer.writeBool(offsets[13], object.synced);
+  writer.writeLong(offsets[14], object.totalExpositores);
+  writer.writeLong(offsets[15], object.totalMistas);
+  writer.writeLong(offsets[16], object.totalPallets);
+  writer.writeString(offsets[17], object.type?.name);
 }
 
 TruckReception _truckReceptionDeserialize(
@@ -241,13 +282,21 @@ TruckReception _truckReceptionDeserialize(
   object.arrivalTime = reader.readDateTime(offsets[0]);
   object.createdByInitials = reader.readStringOrNull(offsets[1]);
   object.createdByNames = reader.readStringList(offsets[2]) ?? [];
+  object.expositores =
+      reader.readObjectList<Expositor>(
+        offsets[3],
+        ExpositorSchema.deserialize,
+        allOffsets,
+        Expositor(),
+      ) ??
+      [];
   object.id = id;
-  object.issues = reader.readStringOrNull(offsets[3]);
-  object.licensePlate = reader.readStringOrNull(offsets[4]);
-  object.notes = reader.readStringOrNull(offsets[5]);
+  object.issues = reader.readStringOrNull(offsets[4]);
+  object.licensePlate = reader.readStringOrNull(offsets[5]);
+  object.notes = reader.readStringOrNull(offsets[6]);
   object.pallets =
       reader.readObjectList<PalletCount>(
-        offsets[6],
+        offsets[7],
         PalletCountSchema.deserialize,
         allOffsets,
         PalletCount(),
@@ -255,17 +304,19 @@ TruckReception _truckReceptionDeserialize(
       [];
   object.sentVasilhame =
       reader.readObjectList<SentVasilhameItem>(
-        offsets[7],
+        offsets[8],
         SentVasilhameItemSchema.deserialize,
         allOffsets,
         SentVasilhameItem(),
       ) ??
       [];
-  object.supplier = reader.readStringOrNull(offsets[8]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[9]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[10]);
-  object.syncUuid = reader.readString(offsets[11]);
-  object.synced = reader.readBool(offsets[12]);
+  object.supplier = reader.readStringOrNull(offsets[9]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[11]);
+  object.syncUuid = reader.readString(offsets[12]);
+  object.synced = reader.readBool(offsets[13]);
+  object.type =
+      _TruckReceptiontypeValueEnumMap[reader.readStringOrNull(offsets[17])];
   return object;
 }
 
@@ -283,12 +334,21 @@ P _truckReceptionDeserializeProp<P>(
     case 2:
       return (reader.readStringList(offset) ?? []) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readObjectList<Expositor>(
+                offset,
+                ExpositorSchema.deserialize,
+                allOffsets,
+                Expositor(),
+              ) ??
+              [])
+          as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
       return (reader.readObjectList<PalletCount>(
                 offset,
                 PalletCountSchema.deserialize,
@@ -297,7 +357,7 @@ P _truckReceptionDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 7:
+    case 8:
       return (reader.readObjectList<SentVasilhameItem>(
                 offset,
                 SentVasilhameItemSchema.deserialize,
@@ -306,24 +366,40 @@ P _truckReceptionDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 8:
-      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 12:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 14:
       return (reader.readLong(offset)) as P;
+    case 15:
+      return (reader.readLong(offset)) as P;
+    case 16:
+      return (reader.readLong(offset)) as P;
+    case 17:
+      return (_TruckReceptiontypeValueEnumMap[reader.readStringOrNull(offset)])
+          as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _TruckReceptiontypeEnumValueMap = {
+  r'congelados': r'congelados',
+  r'pereciveis': r'pereciveis',
+  r'naoPereciveis': r'naoPereciveis',
+};
+const _TruckReceptiontypeValueEnumMap = {
+  r'congelados': TruckType.congelados,
+  r'pereciveis': TruckType.pereciveis,
+  r'naoPereciveis': TruckType.naoPereciveis,
+};
 
 Id _truckReceptionGetId(TruckReception object) {
   return object.id;
@@ -990,6 +1066,59 @@ extension TruckReceptionQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'createdByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'expositores', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'expositores', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'expositores', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'expositores', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'expositores', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'expositores',
         lower,
         includeLower,
         upper,
@@ -2074,6 +2203,61 @@ extension TruckReceptionQueryFilter
   }
 
   QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  totalExpositoresEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'totalExpositores', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  totalExpositoresGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'totalExpositores',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  totalExpositoresLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'totalExpositores',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  totalExpositoresBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'totalExpositores',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
   totalMistasEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2182,10 +2366,176 @@ extension TruckReceptionQueryFilter
       );
     });
   }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'type'),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'type'),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeEqualTo(TruckType? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeGreaterThan(
+    TruckType? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeLessThan(
+    TruckType? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeBetween(
+    TruckType? lower,
+    TruckType? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'type',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'type',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'type',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'type', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  typeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'type', value: ''),
+      );
+    });
+  }
 }
 
 extension TruckReceptionQueryObject
     on QueryBuilder<TruckReception, TruckReception, QFilterCondition> {
+  QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
+  expositoresElement(FilterQuery<Expositor> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'expositores');
+    });
+  }
+
   QueryBuilder<TruckReception, TruckReception, QAfterFilterCondition>
   palletsElement(FilterQuery<PalletCount> q) {
     return QueryBuilder.apply(this, (query) {
@@ -2341,6 +2691,20 @@ extension TruckReceptionQuerySortBy
   }
 
   QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  sortByTotalExpositores() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalExpositores', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  sortByTotalExpositoresDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalExpositores', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
   sortByTotalMistas() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalMistas', Sort.asc);
@@ -2365,6 +2729,18 @@ extension TruckReceptionQuerySortBy
   sortByTotalPalletsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalPallets', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> sortByType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'type', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> sortByTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'type', Sort.desc);
     });
   }
 }
@@ -2518,6 +2894,20 @@ extension TruckReceptionQuerySortThenBy
   }
 
   QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  thenByTotalExpositores() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalExpositores', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
+  thenByTotalExpositoresDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalExpositores', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy>
   thenByTotalMistas() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalMistas', Sort.asc);
@@ -2542,6 +2932,18 @@ extension TruckReceptionQuerySortThenBy
   thenByTotalPalletsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalPallets', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> thenByType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'type', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QAfterSortBy> thenByTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'type', Sort.desc);
     });
   }
 }
@@ -2632,6 +3034,13 @@ extension TruckReceptionQueryWhereDistinct
   }
 
   QueryBuilder<TruckReception, TruckReception, QDistinct>
+  distinctByTotalExpositores() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'totalExpositores');
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QDistinct>
   distinctByTotalMistas() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'totalMistas');
@@ -2642,6 +3051,14 @@ extension TruckReceptionQueryWhereDistinct
   distinctByTotalPallets() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'totalPallets');
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckReception, QDistinct> distinctByType({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'type', caseSensitive: caseSensitive);
     });
   }
 }
@@ -2672,6 +3089,13 @@ extension TruckReceptionQueryProperty
   createdByNamesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdByNames');
+    });
+  }
+
+  QueryBuilder<TruckReception, List<Expositor>, QQueryOperations>
+  expositoresProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expositores');
     });
   }
 
@@ -2740,6 +3164,13 @@ extension TruckReceptionQueryProperty
     });
   }
 
+  QueryBuilder<TruckReception, int, QQueryOperations>
+  totalExpositoresProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'totalExpositores');
+    });
+  }
+
   QueryBuilder<TruckReception, int, QQueryOperations> totalMistasProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'totalMistas');
@@ -2749,6 +3180,12 @@ extension TruckReceptionQueryProperty
   QueryBuilder<TruckReception, int, QQueryOperations> totalPalletsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'totalPallets');
+    });
+  }
+
+  QueryBuilder<TruckReception, TruckType?, QQueryOperations> typeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'type');
     });
   }
 }
@@ -2770,8 +3207,13 @@ const PalletCountSchema = Schema(
       type: IsarType.byte,
       enumMap: _PalletCountcategoryEnumValueMap,
     ),
-    r'mistas': PropertySchema(id: 1, name: r'mistas', type: IsarType.long),
-    r'total': PropertySchema(id: 2, name: r'total', type: IsarType.long),
+    r'department': PropertySchema(
+      id: 1,
+      name: r'department',
+      type: IsarType.string,
+    ),
+    r'mistas': PropertySchema(id: 2, name: r'mistas', type: IsarType.long),
+    r'total': PropertySchema(id: 3, name: r'total', type: IsarType.long),
   },
 
   estimateSize: _palletCountEstimateSize,
@@ -2786,6 +3228,12 @@ int _palletCountEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.department;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -2796,8 +3244,9 @@ void _palletCountSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeByte(offsets[0], object.category.index);
-  writer.writeLong(offsets[1], object.mistas);
-  writer.writeLong(offsets[2], object.total);
+  writer.writeString(offsets[1], object.department);
+  writer.writeLong(offsets[2], object.mistas);
+  writer.writeLong(offsets[3], object.total);
 }
 
 PalletCount _palletCountDeserialize(
@@ -2810,8 +3259,9 @@ PalletCount _palletCountDeserialize(
   object.category =
       _PalletCountcategoryValueEnumMap[reader.readByteOrNull(offsets[0])] ??
       PalletCategory.frescosCharcutaria;
-  object.mistas = reader.readLong(offsets[1]);
-  object.total = reader.readLong(offsets[2]);
+  object.department = reader.readStringOrNull(offsets[1]);
+  object.mistas = reader.readLong(offsets[2]);
+  object.total = reader.readLong(offsets[3]);
   return object;
 }
 
@@ -2827,8 +3277,10 @@ P _palletCountDeserializeProp<P>(
               PalletCategory.frescosCharcutaria)
           as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
+      return (reader.readLong(offset)) as P;
+    case 3:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2913,6 +3365,165 @@ extension PalletCountQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'department'),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'department'),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'department',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'department',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'department',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'department', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<PalletCount, PalletCount, QAfterFilterCondition>
+  departmentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'department', value: ''),
       );
     });
   }
@@ -3034,6 +3645,283 @@ extension PalletCountQueryFilter
 
 extension PalletCountQueryObject
     on QueryBuilder<PalletCount, PalletCount, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const ExpositorSchema = Schema(
+  name: r'Expositor',
+  id: 3954848962512872560,
+  properties: {
+    r'amount': PropertySchema(id: 0, name: r'amount', type: IsarType.long),
+    r'content': PropertySchema(id: 1, name: r'content', type: IsarType.string),
+  },
+
+  estimateSize: _expositorEstimateSize,
+  serialize: _expositorSerialize,
+  deserialize: _expositorDeserialize,
+  deserializeProp: _expositorDeserializeProp,
+);
+
+int _expositorEstimateSize(
+  Expositor object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.content.length * 3;
+  return bytesCount;
+}
+
+void _expositorSerialize(
+  Expositor object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeLong(offsets[0], object.amount);
+  writer.writeString(offsets[1], object.content);
+}
+
+Expositor _expositorDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = Expositor();
+  object.amount = reader.readLong(offsets[0]);
+  object.content = reader.readString(offsets[1]);
+  return object;
+}
+
+P _expositorDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readLong(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension ExpositorQueryFilter
+    on QueryBuilder<Expositor, Expositor, QFilterCondition> {
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> amountEqualTo(
+    int value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'amount', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> amountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'amount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> amountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'amount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> amountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'amount',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'content',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'content',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'content',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition> contentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'content', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Expositor, Expositor, QAfterFilterCondition>
+  contentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'content', value: ''),
+      );
+    });
+  }
+}
+
+extension ExpositorQueryObject
+    on QueryBuilder<Expositor, Expositor, QFilterCondition> {}
 
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types

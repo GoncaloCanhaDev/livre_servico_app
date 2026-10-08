@@ -8,6 +8,7 @@ import '../models/daily_tasks.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
+import '../models/truck_reception.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
@@ -183,7 +184,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           time: t.arrivalTime,
           icon: Icons.local_shipping,
           iconColor: AppColors.green,
-          title: 'Camião',
+          title: truckTitle(t),
           subtitle:
               '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
         ),

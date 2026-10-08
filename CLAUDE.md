@@ -63,8 +63,12 @@ multi-tenant product.
   `lib/models/planning.dart`: `offLabelOn(p, day)` says why someone isn't working that day (an
   ausência beats a folga), used by Pessoas, the person page and the task picker
   (`buildPeopleSections(offDay:)` lists them last). During an ausência, `awayTagOn` gives
-  the orange tag shown next to the role tags and `offNoteOn` the "até 14/10" text beside it. `hireDate` is the company (Pingo Doce)
-  start; `storeStartDate` is the start at this store.
+  the orange tag shown next to the role tags and `offNoteOn` the "até 14/10" text beside it.
+  `hireDate` is the company (Pingo Doce) start; `storeStartDate` is the start at this store.
+- `TruckReception` (Receção de Camião) has a `TruckType`, paletes per departamento
+  (`PalletCount.department` holds a `truckDepartments` id; read the name through
+  `PalletCount.label`, which falls back to the legacy, index-stored `PalletCategory` on older
+  rows — never reorder that enum) and `Expositor` lines.
 
 ### Services layer
 

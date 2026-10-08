@@ -29,11 +29,17 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   DateTime _arrival = DateTime.now();
   bool _showDetails = false;
 
-  /// Categories the user has added to this reception, in order.
-  final List<PalletCategory> _selectedCategories = [];
+  /// Picked on the first screen; the form shows once it is set.
+  TruckType? _type;
 
-  /// Inputs for each selected category, created on demand.
-  final Map<PalletCategory, _Inputs> _inputs = {};
+  /// Departamentos the user has added to this reception, in order.
+  final List<TruckDepartment> _selectedDepartments = [];
+
+  /// Inputs for each selected departamento, by id, created on demand.
+  final Map<String, _Inputs> _inputs = {};
+
+  /// One line per kind of expositor, in the order they were added.
+  final List<_ExpositorInputs> _expositores = [];
 
   /// Selected vasilhame quantities, keyed by item name.
   final Map<String, int> _vasilhameQuantities = {};
@@ -48,20 +54,23 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     for (final i in _inputs.values) {
       i.dispose();
     }
+    for (final e in _expositores) {
+      e.dispose();
+    }
     super.dispose();
   }
 
   int get _totalPallets => _inputs.values.fold(0, (s, i) => s + i.totalValue);
   int get _totalMistas => _inputs.values.fold(0, (s, i) => s + i.mistasValue);
+  int get _totalExpositores =>
+      _expositores.fold(0, (s, e) => s + e.amountValue);
 
-  /// Categories available to pick (truck-eligible minus already selected).
-  List<PalletCategory> get _availableCategories => PalletCategory
-      .truckCategories
-      .where((c) => !_selectedCategories.contains(c))
-      .toList();
+  /// Departamentos available to pick (all minus already selected).
+  List<TruckDepartment> get _availableDepartments =>
+      truckDepartments.where((d) => !_selectedDepartments.contains(d)).toList();
 
-  void _addCategory() {
-    final available = _availableCategories;
+  void _addDepartment() {
+    final available = _availableDepartments;
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,7 +79,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
       );
       return;
     }
-    showModalBottomSheet<PalletCategory>(
+    showModalBottomSheet<TruckDepartment>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -92,13 +101,13 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                 shrinkWrap: true,
                 children: [
                   ...available.map(
-                    (c) => ListTile(
+                    (d) => ListTile(
                       leading: const Icon(
                         Icons.add_circle_outline,
                         color: AppColors.green,
                       ),
-                      title: Text(c.label),
-                      onTap: () => Navigator.pop(ctx, c),
+                      title: Text(d.label),
+                      onTap: () => Navigator.pop(ctx, d),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -111,17 +120,59 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     ).then((picked) {
       if (picked == null) return;
       setState(() {
-        _selectedCategories.add(picked);
-        _inputs[picked] = _Inputs();
+        _selectedDepartments.add(picked);
+        _inputs[picked.id] = _Inputs();
       });
     });
   }
 
-  void _removeCategory(PalletCategory c) {
+  void _removeDepartment(TruckDepartment d) {
     setState(() {
-      _selectedCategories.remove(c);
-      _inputs.remove(c)?.dispose();
+      _selectedDepartments.remove(d);
+      _inputs.remove(d.id)?.dispose();
     });
+  }
+
+  void _addExpositor() {
+    setState(() => _expositores.add(_ExpositorInputs()));
+  }
+
+  void _removeExpositor(_ExpositorInputs e) {
+    setState(() => _expositores.remove(e));
+    e.dispose();
+  }
+
+  Future<void> _changeType() async {
+    final picked = await showModalBottomSheet<TruckType>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Tipo de camião',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(height: 1),
+            for (final t in TruckType.values)
+              ListTile(
+                leading: Icon(_typeIcon(t), color: AppColors.green),
+                title: Text(t.label),
+                trailing: t == _type ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(ctx, t),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) setState(() => _type = picked);
   }
 
   Future<void> _pickArrival() async {
@@ -284,10 +335,12 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     final hasPallets = _totalPallets > 0;
     final hasVasilhame = _vasilhameQuantities.values.any((qty) => qty > 0);
-    if (!hasPallets && !hasVasilhame) {
+    if (!hasPallets && _totalExpositores == 0 && !hasVasilhame) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Indique pelo menos uma palete ou vasilhame.'),
+          content: Text(
+            'Indique pelo menos uma palete, expositor ou vasilhame.',
+          ),
         ),
       );
       return;
@@ -297,6 +350,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     final names = people.map((p) => p.fullName).toList();
     final truck = TruckReception()
       ..arrivalTime = _arrival
+      ..type = _type
       ..createdByNames = names
       ..licensePlate = _plateCtrl.text.trim().isEmpty
           ? null
@@ -308,18 +362,25 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
       ..issues = _issuesCtrl.text.trim().isEmpty
           ? null
           : _issuesCtrl.text.trim()
-      ..pallets = _selectedCategories
-          .where((c) {
-            final inp = _inputs[c];
+      ..pallets = _selectedDepartments
+          .where((d) {
+            final inp = _inputs[d.id];
             return inp != null && (inp.totalValue > 0 || inp.mistasValue > 0);
           })
           .map(
-            (c) => PalletCount()
-              ..category = c
-              ..total = _inputs[c]!.totalValue
-              ..mistas = _inputs[c]!.mistasValue,
+            (d) => PalletCount()
+              ..department = d.id
+              ..total = _inputs[d.id]!.totalValue
+              ..mistas = _inputs[d.id]!.mistasValue,
           )
           .toList()
+      ..expositores = [
+        for (final e in _expositores)
+          if (e.amountValue > 0)
+            Expositor()
+              ..amount = e.amountValue
+              ..content = e.content.text.trim(),
+      ]
       ..sentVasilhame = _vasilhameQuantities.entries
           .where((e) => e.value > 0)
           .map(
@@ -336,6 +397,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     final dateFmt = DateFormat("d/MM/y, HH:mm", 'pt_PT');
     final lines = StringBuffer();
     lines.writeln('🚛 Receção de Camião');
+    if (truck.type != null) lines.writeln('Tipo: ${truck.type!.label}');
     lines.writeln('Hora: ${dateFmt.format(_arrival)}');
     if (truck.licensePlate != null)
       lines.writeln('Matrícula: ${truck.licensePlate}');
@@ -344,12 +406,21 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
       final mista = p.mistas > 0
           ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
           : '';
-      lines.writeln('${p.category.label}: ${p.total}$mista');
+      lines.writeln('${p.label}: ${p.total}$mista');
     }
     lines.writeln(
       'Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas',
     );
     lines.writeln('Por: ${joinNames(names)}');
+
+    if (truck.expositores.isNotEmpty) {
+      lines.writeln('\nExpositores:');
+      for (final e in truck.expositores) {
+        lines.writeln(
+          e.content.isEmpty ? '- ${e.amount}' : '- ${e.amount} · ${e.content}',
+        );
+      }
+    }
 
     if (truck.sentVasilhame.isNotEmpty) {
       lines.writeln('\n📦 Vasilhame Enviado:');
@@ -371,6 +442,50 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'pt_PT');
+    final type = _type;
+    if (type == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Receção de Camião')),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(4, 8, 4, 16),
+                child: Text(
+                  'Que camião chegou?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ),
+              for (final t in TruckType.values)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    leading: Icon(
+                      _typeIcon(t),
+                      color: AppColors.green,
+                      size: 32,
+                    ),
+                    title: Text(
+                      t.label,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => setState(() => _type = t),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Receção de Camião')),
       body: SafeArea(
@@ -379,6 +494,16 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              Card(
+                child: ListTile(
+                  leading: Icon(_typeIcon(type), color: AppColors.green),
+                  title: const Text('Tipo de camião'),
+                  subtitle: Text(type.label),
+                  trailing: const Icon(Icons.edit),
+                  onTap: _changeType,
+                ),
+              ),
+
               // --- Hora de chegada (always visible) ---
               Card(
                 child: ListTile(
@@ -408,14 +533,14 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                       ),
                     ),
                     TextButton.icon(
-                      onPressed: _addCategory,
+                      onPressed: _addDepartment,
                       icon: const Icon(Icons.add),
                       label: const Text('Adicionar'),
                     ),
                   ],
                 ),
               ),
-              if (_selectedCategories.isEmpty)
+              if (_selectedDepartments.isEmpty)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -428,18 +553,62 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ),
                   ),
                 ),
-              ..._selectedCategories.map(
-                (c) => _CategoryRow(
-                  category: c,
-                  inputs: _inputs[c]!,
+              ..._selectedDepartments.map(
+                (d) => _DepartmentRow(
+                  department: d,
+                  inputs: _inputs[d.id]!,
                   onChanged: () => setState(() {}),
-                  onRemove: () => _removeCategory(c),
+                  onRemove: () => _removeDepartment(d),
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // --- Expositores ---
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Expositores',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _addExpositor,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Adicionar'),
+                    ),
+                  ],
+                ),
+              ),
+              if (_expositores.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Sem expositores neste camião.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black45, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ),
+              for (final e in _expositores)
+                _ExpositorRow(
+                  key: ObjectKey(e),
+                  inputs: e,
+                  onChanged: () => setState(() {}),
+                  onRemove: () => _removeExpositor(e),
+                ),
               const SizedBox(height: 16),
               _TotalsCard(
                 totalPallets: _totalPallets,
                 totalMistas: _totalMistas,
+                totalExpositores: _totalExpositores,
               ),
               const SizedBox(height: 16),
 
@@ -634,15 +803,15 @@ class _Inputs {
   }
 }
 
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({
-    required this.category,
+class _DepartmentRow extends StatelessWidget {
+  const _DepartmentRow({
+    required this.department,
     required this.inputs,
     required this.onChanged,
     required this.onRemove,
   });
 
-  final PalletCategory category;
+  final TruckDepartment department;
   final _Inputs inputs;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
@@ -660,7 +829,7 @@ class _CategoryRow extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    category.label,
+                    department.label,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -719,11 +888,91 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
+/// Quantidade and Conteúdo / marca for one line of expositores.
+class _ExpositorInputs {
+  final TextEditingController amount = TextEditingController();
+  final TextEditingController content = TextEditingController();
+
+  int get amountValue => int.tryParse(amount.text) ?? 0;
+
+  void dispose() {
+    amount.dispose();
+    content.dispose();
+  }
+}
+
+class _ExpositorRow extends StatelessWidget {
+  const _ExpositorRow({
+    super.key,
+    required this.inputs,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final _ExpositorInputs inputs;
+  final VoidCallback onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 96,
+              child: TextFormField(
+                controller: inputs.amount,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Quantidade',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) => onChanged(),
+                validator: (_) =>
+                    inputs.amountValue == 0 && inputs.content.text.trim() != ''
+                    ? 'Indique'
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: inputs.content,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Conteúdo / marca',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close, size: 20, color: Colors.black45),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TotalsCard extends StatelessWidget {
-  const _TotalsCard({required this.totalPallets, required this.totalMistas});
+  const _TotalsCard({
+    required this.totalPallets,
+    required this.totalMistas,
+    required this.totalExpositores,
+  });
 
   final int totalPallets;
   final int totalMistas;
+  final int totalExpositores;
 
   @override
   Widget build(BuildContext context) {
@@ -734,9 +983,11 @@ class _TotalsCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _TotalCell(label: 'Total de paletes', value: totalPallets),
+            _TotalCell(label: 'Paletes', value: totalPallets),
             Container(width: 1, height: 40, color: Colors.white24),
-            _TotalCell(label: 'Total de mistas', value: totalMistas),
+            _TotalCell(label: 'Mistas', value: totalMistas),
+            Container(width: 1, height: 40, color: Colors.white24),
+            _TotalCell(label: 'Expositores', value: totalExpositores),
           ],
         ),
       ),
@@ -802,3 +1053,9 @@ Future<List<_VasilhameItem>> _loadVasilhameItems() async {
         ),
   ];
 }
+
+IconData _typeIcon(TruckType t) => switch (t) {
+  TruckType.congelados => Icons.ac_unit,
+  TruckType.pereciveis => Icons.eco_outlined,
+  TruckType.naoPereciveis => Icons.inventory_2_outlined,
+};

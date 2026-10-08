@@ -345,7 +345,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         _DayItem(
           type: _ItemType.truck,
           time: t.arrivalTime,
-          title: '🚛 Camião',
+          title: '🚛 ${truckTitle(t)}',
           subtitle:
               '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
           icon: Icons.local_shipping,
@@ -704,6 +704,7 @@ class _TrucksTabState extends State<_TrucksTab>
           itemBuilder: (_, i) {
             final t = trucks[i];
             final parts = <String>[
+              if (t.type != null) t.type!.label,
               if (t.licensePlate != null) t.licensePlate!,
               if (t.supplier != null) t.supplier!,
             ];
@@ -719,6 +720,7 @@ class _TrucksTabState extends State<_TrucksTab>
                   final dateFmtWa = DateFormat("d/MM/y, HH:mm", 'pt_PT');
                   final lines = StringBuffer();
                   lines.writeln('🚛 Receção de Camião');
+                  if (t.type != null) lines.writeln('Tipo: ${t.type!.label}');
                   lines.writeln('Hora: ${dateFmtWa.format(t.arrivalTime)}');
                   if (t.licensePlate != null)
                     lines.writeln('Matrícula: ${t.licensePlate}');
@@ -728,11 +730,21 @@ class _TrucksTabState extends State<_TrucksTab>
                     final mista = p.mistas > 0
                         ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
                         : '';
-                    lines.writeln('${p.category.label}: ${p.total}$mista');
+                    lines.writeln('${p.label}: ${p.total}$mista');
                   }
                   lines.writeln(
                     'Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas',
                   );
+                  if (t.expositores.isNotEmpty) {
+                    lines.writeln('\nExpositores:');
+                    for (final e in t.expositores) {
+                      lines.writeln(
+                        e.content.isEmpty
+                            ? '- ${e.amount}'
+                            : '- ${e.amount} · ${e.content}',
+                      );
+                    }
+                  }
                   if (t.issues != null) {
                     lines.writeln('⚠️ Problemas: ${t.issues}');
                   }
@@ -752,7 +764,11 @@ class _TrucksTabState extends State<_TrucksTab>
                     subtitle: Text(
                       [
                         if (parts.isNotEmpty) parts.join(' · '),
-                        '${t.totalPallets} paletes · ${t.totalMistas} mistas',
+                        [
+                          '${t.totalPallets} paletes · ${t.totalMistas} mistas',
+                          if (t.totalExpositores > 0)
+                            '${t.totalExpositores} expositores',
+                        ].join(' · '),
                         if (t.issues != null) '⚠️ Problemas registados',
                       ].join('\n'),
                     ),
@@ -771,13 +787,26 @@ class _TrucksTabState extends State<_TrucksTab>
                       ...t.pallets.map(
                         (p) => ListTile(
                           dense: true,
-                          title: Text(p.category.label),
+                          title: Text(p.label),
                           trailing: Text(
                             '${p.total} (${p.mistas} mistas)',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
+                      for (final e in t.expositores)
+                        ListTile(
+                          dense: true,
+                          title: Text(
+                            e.content.isEmpty
+                                ? 'Expositores'
+                                : 'Expositores · ${e.content}',
+                          ),
+                          trailing: Text(
+                            '${e.amount}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       if (t.issues != null)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
