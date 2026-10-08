@@ -85,6 +85,52 @@ List<T> _searched<T>(String query, List<T> items, String Function(T) text) =>
 Widget _emptyOr(String query, String msg) =>
     _emptyMsg(query.trim().isEmpty ? msg : 'Sem resultados.');
 
+/// What a day's Diárias take from the other lists (Lista de Abertura,
+/// Relatório, Lista Visual, Automáticas), for every day at once: four
+/// queries, then grouped by service day.
+class _ListsByDay {
+  _ListsByDay._(this._openings, this._reports, this._visuals, this._autos);
+
+  static Future<_ListsByDay> load() async {
+    Map<DateTime, List<T>> byDay<T>(List<T> rows, DateTime Function(T) day) {
+      final map = <DateTime, List<T>>{};
+      for (final r in rows) {
+        (map[day(r)] ??= []).add(r);
+      }
+      return map;
+    }
+
+    return _ListsByDay._(
+      byDay(
+        await OpeningListService.instance.history(),
+        (OpeningList o) => o.serviceDay,
+      ),
+      byDay(
+        await ReportListService.instance.history(),
+        (ReportList r) => r.serviceDay,
+      ),
+      byDay(
+        await VisualListService.instance.all(),
+        (VisualList v) => v.serviceDay,
+      ),
+      byDay(
+        await AutoListService.instance.history(),
+        (AutoList a) => currentServiceDay(a.createdAt),
+      ),
+    );
+  }
+
+  final Map<DateTime, List<OpeningList>> _openings;
+  final Map<DateTime, List<ReportList>> _reports;
+  final Map<DateTime, List<VisualList>> _visuals;
+  final Map<DateTime, List<AutoList>> _autos;
+
+  List<OpeningList> openings(DateTime day) => _openings[day] ?? const [];
+  List<ReportList> reports(DateTime day) => _reports[day] ?? const [];
+  List<VisualList> visuals(DateTime day) => _visuals[day] ?? const [];
+  List<AutoList> autos(DateTime day) => _autos[day] ?? const [];
+}
+
 enum _ItemType { truck, opening, auto, report, visual, tasks, inventory }
 
 class _HistoryInitials extends StatelessWidget {

@@ -33,32 +33,28 @@ class _TasksTabState extends State<_TasksTab>
 
   Future<List<_TasksRow>> _load() async {
     final all = await DailyTasksService.instance.history(includeDeleted: true);
+    final lists = await _ListsByDay.load();
     final rows = <_TasksRow>[];
     for (final t in all) {
       final day = t.serviceDay;
-      final openingEntries = await OpeningListService.instance
-          .entriesForServiceDay(day);
+      final openingEntries = lists.openings(day);
       final aberturaDone = openingEntries.any((o) => o.isFinalized);
       final aberturaBackdated = openingEntries.any(
         (o) => o.isFinalized && o.backdated,
       );
-      final reportEntries = await ReportListService.instance
-          .entriesForServiceDay(day);
+      final reportEntries = lists.reports(day);
       final relatorioDone = reportEntries.any((r) => r.isFinalized);
       final relatorioBackdated = reportEntries.any(
         (r) => r.isFinalized && r.backdated,
       );
-      final visualEntries = await VisualListService.instance
-          .entriesForServiceDay(day);
+      final visualEntries = lists.visuals(day);
       final visualItens = visualEntries.fold<int>(
         0,
         (s, e) => s + e.itensPicados,
       );
       final visualDone = visualItens >= SettingsService.instance.visualGoal;
       final visualBackdated = visualEntries.any((e) => e.backdated);
-      final autoEntries = await AutoListService.instance.entriesForServiceDay(
-        day,
-      );
+      final autoEntries = lists.autos(day);
       final autoDone = autoEntries.isNotEmpty;
       final autoBackdated = autoEntries.any((e) => e.backdated);
       rows.add(

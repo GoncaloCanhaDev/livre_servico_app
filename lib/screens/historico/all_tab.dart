@@ -155,24 +155,20 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
     final tasks = await DailyTasksService.instance.history(
       includeDeleted: true,
     );
+    final lists = await _ListsByDay.load();
     for (final t in tasks) {
       final day = t.serviceDay;
-      final openingEntries = await OpeningListService.instance
-          .entriesForServiceDay(day);
+      final openingEntries = lists.openings(day);
       final aberturaDone = openingEntries.any((o) => o.isFinalized);
-      final reportEntries = await ReportListService.instance
-          .entriesForServiceDay(day);
+      final reportEntries = lists.reports(day);
       final relatorioDone = reportEntries.any((r) => r.isFinalized);
-      final visualEntries = await VisualListService.instance
-          .entriesForServiceDay(day);
+      final visualEntries = lists.visuals(day);
       final visualItens = visualEntries.fold<int>(
         0,
         (s, e) => s + e.itensPicados,
       );
       final visualDone = visualItens >= SettingsService.instance.visualGoal;
-      final autoEntries = await AutoListService.instance.entriesForServiceDay(
-        day,
-      );
+      final autoEntries = lists.autos(day);
       final autoDone = autoEntries.isNotEmpty;
 
       final flags = <bool>[
