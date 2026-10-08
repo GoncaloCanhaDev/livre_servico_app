@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/daily_tasks.dart';
+import '../models/horario.dart';
+import '../models/opening_list.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
@@ -13,6 +15,7 @@ import '../models/validades.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
+import '../services/horario_service.dart';
 import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/person_service.dart';
@@ -50,6 +53,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.addListener(_reload);
     TruckService.instance.addListener(_reload);
     PersonService.instance.addListener(_reload);
+    HorarioService.instance.addListener(_reload);
   }
 
   @override
@@ -62,6 +66,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.removeListener(_reload);
     TruckService.instance.removeListener(_reload);
     PersonService.instance.removeListener(_reload);
+    HorarioService.instance.removeListener(_reload);
     super.dispose();
   }
 
@@ -403,8 +408,16 @@ class _DetailsTab extends StatelessWidget {
     final p = person;
     final dateFmt = DateFormat("d 'de' MMMM y", 'pt_PT');
     final hasPhoto = p.photoPath != null && File(p.photoPath!).existsSync();
-    final today = DateTime.now();
+    // The service day, so a night shift still counts as today after midnight.
+    final today = currentServiceDay();
+    final schedule = HorarioService.instance.index;
     final away = ausenciaOn(p, today);
+    final awayTag = awayTagOn(p, today, horario: schedule);
+    final offToday = offLabelOn(p, today, horario: schedule);
+    final scheduleDays = [
+      for (var i = 0; i < 7; i++)
+        DateTime(today.year, today.month, today.day + i),
+    ].where((d) => schedule.hasLine(p, d)).toList();
     final tags = roleTagsOf(p);
     final tenure = tenureTagOf(p, today);
     final upcoming = upcomingAusencias(p, today);
@@ -438,7 +451,7 @@ class _DetailsTab extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        if (tags.isNotEmpty || tenure != null || away != null)
+        if (tags.isNotEmpty || tenure != null || awayTag != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Wrap(
@@ -448,7 +461,7 @@ class _DetailsTab extends StatelessWidget {
               children: [
                 for (final t in tags) RoleBadge(t),
                 if (tenure != null) RoleBadge(tenure, tenure: true),
-                if (away != null) RoleBadge(away.tipo.label, away: true),
+                if (awayTag != null) RoleBadge(awayTag, away: true),
               ],
             ),
           ),
@@ -461,13 +474,15 @@ class _DetailsTab extends StatelessWidget {
             value: '${away.tipo.label} até ${dateFmt.format(away.end)}',
             highlight: true,
           )
-        else if (p.folgas.contains(today.weekday))
-          const _InfoRow(
+        else if (offToday != null)
+          _InfoRow(
             icon: Icons.event_busy,
             label: 'Hoje',
-            value: 'Folga',
+            value: offToday,
             highlight: true,
-          ),
+          )
+        else if (_scheduleText(p, today, schedule) case final shift?)
+          _InfoRow(icon: Icons.work_outline, label: 'Hoje', value: shift),
         _InfoRow(
           icon: Icons.groups_outlined,
           label: 'Equipa',
@@ -492,6 +507,16 @@ class _DetailsTab extends StatelessWidget {
             label: 'Data de nascimento',
             value: dateFmt.format(dob),
           ),
+        if (scheduleDays.isNotEmpty) ...[
+          const _DetailHeading('Horário'),
+          for (final d in scheduleDays)
+            _InfoRow(
+              icon: Icons.calendar_today_outlined,
+              label: _dayName(d, today),
+              value: _scheduleText(p, d, schedule) ?? '—',
+              highlight: offLabelOn(p, d, horario: schedule) != null,
+            ),
+        ],
         const _DetailHeading('Planeamento'),
         _InfoRow(
           icon: Icons.schedule,
@@ -542,6 +567,30 @@ class _DetailsTab extends StatelessWidget {
       ],
     );
   }
+}
+
+/// [p]'s horário on [day]: "H73 · 07:00–16:00 (pausa 12:00–13:00)", the
+/// absence's name ("Folga", "Férias"), or null without a line that month.
+String? _scheduleText(Person p, DateTime day, HorarioIndex schedule) {
+  final code = schedule.codeOn(p, day);
+  if (code == null) return null;
+  if (schedule.horarios.codigos[code] case final shift?) {
+    return '$code · ${shift.timesText}';
+  }
+  return schedule.horarios.ausencias[code] ?? code;
+}
+
+/// "Hoje", "Amanhã" or "Sexta, 9 out".
+String _dayName(DateTime day, DateTime today) {
+  final diff = DateTime(
+    day.year,
+    day.month,
+    day.day,
+  ).difference(DateTime(today.year, today.month, today.day)).inDays;
+  if (diff == 0) return 'Hoje';
+  if (diff == 1) return 'Amanhã';
+  final name = DateFormat("EEEE, d MMM", 'pt_PT').format(day);
+  return name[0].toUpperCase() + name.substring(1);
 }
 
 /// A group title on the Detalhes tab.

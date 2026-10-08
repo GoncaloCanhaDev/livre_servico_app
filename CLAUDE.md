@@ -23,7 +23,8 @@ multi-tenant product.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
-  `lib/models/info_contacts.dart` and `lib/models/vasilhame.dart`, no widget tests).
+  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart` and `lib/models/horario.dart`, no
+  widget tests).
 
 ## Architecture
 
@@ -82,6 +83,15 @@ multi-tenant product.
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
+- Horários (Livre Serviço only) come from Pingo Doce's monthly sheet of shift codes ("H73",
+  "W82") and absence codes ("FO", "F", "A", "LP"). They are edited as a JSON file (export, edit
+  by hand or with Claude, import): `codigos`, `ausencias` and `meses` ("2026-10" → name → one
+  space-separated code per day). `HorarioService` keeps months in Isar (`HorarioMes`), codes in
+  shared preferences (defaults in `lib/models/horario_codigos.dart`), and a `HorarioIndex`
+  linking lines to Livre Serviço people by name (`personForRow`). An import replaces only the
+  months it has. Pass `HorarioService.instance.index` as `horario:` to `offLabelOn` /
+  `awayTagOn` / `offNoteOn` / `buildPeopleSections`: an app ausência wins, then the horário,
+  then the fixed folgas. "Today" for horários is `currentServiceDay()`.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in
@@ -115,7 +125,7 @@ multi-tenant product.
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`ShiftService.init()`.
+`ShiftService.init()`, `HorarioService.instance.init()`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 

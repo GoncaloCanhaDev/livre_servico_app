@@ -56,10 +56,13 @@ class Team {
   final List<ChefeSlot> chefeSlots;
 }
 
+/// The Livre Serviço team's id; the horários are only for this team.
+const livreServicoId = 'livre_servico';
+
 /// Every team, in the order the Pessoas list shows them.
 const teams = [
   Team(
-    'livre_servico',
+    livreServicoId,
     'Livre Serviço',
     [ChefeSlot.dia, ChefeSlot.noite],
     hasTurnos: true,

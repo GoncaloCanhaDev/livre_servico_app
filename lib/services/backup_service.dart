@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auto_list.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
+import '../models/horario.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
@@ -20,6 +21,7 @@ import '../models/truck_reception.dart';
 import '../models/vasilhame.dart';
 import '../models/visual_list.dart';
 import '../models/weekly_tasks.dart';
+import 'horario_service.dart';
 import 'settings_service.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
@@ -136,6 +138,7 @@ class BackupService {
     await wipe(_isar.pedidos);
     await wipe(_isar.customTasks);
     await wipe(_isar.customTaskEntrys);
+    await HorarioService.instance.clearMonths();
   }
 
   Future<Map<String, dynamic>> _buildPayload() async {
@@ -146,6 +149,7 @@ class BackupService {
       // First, so it is easy to find and edit by hand.
       'vasilhame': [for (final v in settings.vasilhame) v.toJson()],
       'settings': {'visualGoal': settings.visualGoal},
+      'horarios': HorarioService.instance.horarios.toJson(),
       'collections': {
         'TruckReception': await _isar.truckReceptions.where().exportJson(),
         'OpeningList': await _isar.openingLists.where().exportJson(),
@@ -178,6 +182,13 @@ class BackupService {
 
     // Checked before anything is replaced, so a mistake changes nothing.
     final vasilhame = vasilhameFromBackup(payload);
+    final horarios = switch (payload['horarios']) {
+      final Map<String, dynamic> h => parseHorariosFile(
+        h,
+        current: HorarioService.instance.horarios,
+      ),
+      _ => null,
+    };
 
     /// Replaces [col] with the file's [key] rows; a collection the file
     /// doesn't have (older backups) is left as it is.
@@ -211,6 +222,9 @@ class BackupService {
 
     final settings = SettingsService.instance;
     if (vasilhame != null) await settings.setVasilhame(vasilhame);
+    if (horarios != null) {
+      await HorarioService.instance.apply(horarios, replaceAll: true);
+    }
     if (payload['settings'] case {'visualGoal': final int goal}) {
       await settings.setVisualGoal(goal);
     }

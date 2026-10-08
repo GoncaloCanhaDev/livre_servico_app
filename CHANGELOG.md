@@ -7,6 +7,27 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.49.0] — 2026-10-08
+
+### Added
+- Horários for Livre Serviço, kept as a JSON file you export, edit (by hand or with Claude) and
+  import: the shift codes with their times, the absence codes (FO, F, A, LP) and, per month, one
+  line of codes per person. Importing replaces only the months in the file, so months build up;
+  `null` deletes a month. Lines are checked (days in the month, known codes) before anything is
+  saved, and names are matched to Livre Serviço people (full name, first and last name, or a
+  unique first name); unmatched names are listed.
+- Horários page (home): who works today (Dia and Noite, with times) and who is off; the month as
+  a read-only grid like the paper sheet, starting at today; the codes used that month.
+- Pessoas shows "Hoje · H73 · 07:00–16:00" for people on a shift today; the person page gets
+  a Horário block with the next 7 days.
+- The codes table comes filled in from the store's sheet, plus W82 (22:00–07:00, pausa
+  03:00–04:00) and W3 (22:00–02:00). The horários travel in the full backup too.
+
+### Changed
+- Folga, Férias, Ausência and Parentalidade now come from the horário on days that have one (an
+  ausência entered in the app still wins; months without a horário use the fixed folgas), in
+  Pessoas, the person page and the task picker.
+
 ## [0.48.0] — 2026-10-08
 
 ### Added

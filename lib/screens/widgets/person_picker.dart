@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/person.dart';
 import '../../models/planning.dart';
 import '../../models/teams.dart';
+import '../../services/horario_service.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
 import '../people_sections.dart';
@@ -173,10 +174,12 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
   /// day are greyed out with the reason and listed last, but can still be
   /// ticked.
   Widget _sectionList(List<Person> people) {
+    final schedule = HorarioService.instance.index;
     final sections = buildPeopleSections(
       people,
       query: _searchCtrl.text,
       offDay: _selectedDay,
+      horario: schedule,
     );
     if (sections.isEmpty) {
       return const Padding(
@@ -205,7 +208,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
           ),
           if (_isOpen(section))
             for (final p in section.people)
-              if (offNoteOn(p, _selectedDay) case final off?)
+              if (offNoteOn(p, _selectedDay, horario: schedule) case final off?)
                 CheckboxListTile(
                   secondary: PersonInitialsBadge(
                     name: p.fullName,
@@ -222,7 +225,8 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
                       ),
                       if (tenureTagOf(p, _selectedDay) case final tenure?)
                         RoleBadge(tenure, tenure: true),
-                      if (awayTagOn(p, _selectedDay) case final away?)
+                      if (awayTagOn(p, _selectedDay, horario: schedule)
+                          case final away?)
                         RoleBadge(away, away: true),
                     ],
                   ),

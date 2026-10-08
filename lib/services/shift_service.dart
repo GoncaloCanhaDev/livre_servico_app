@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/auto_list.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
+import '../models/horario_mes.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
@@ -42,6 +43,7 @@ class ShiftService {
         PersonSchema,
         CustomTaskSchema,
         CustomTaskEntrySchema,
+        HorarioMesSchema,
       ],
       directory: dir.path,
       name: 'livre_servico',

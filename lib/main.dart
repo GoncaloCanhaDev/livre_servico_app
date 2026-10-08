@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
+import 'services/horario_service.dart';
 import 'services/settings_service.dart';
 import 'services/shift_service.dart';
 import 'theme.dart';
@@ -15,6 +16,7 @@ void main() async {
   try {
     await SettingsService.instance.init();
     await ShiftService.init();
+    await HorarioService.instance.init();
   } catch (e) {
     bootError = '$e';
   }

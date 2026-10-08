@@ -1,6 +1,10 @@
+import '../models/fold_text.dart';
+import '../models/horario.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
+
+export '../models/fold_text.dart' show foldText;
 
 /// A team's people in the Pessoas list view.
 class PeopleSection {
@@ -21,19 +25,6 @@ class PeopleSection {
   /// null.
   final Turno? turno;
 }
-
-const _accents = {
-  'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', //
-  'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', //
-  'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i', //
-  'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o', //
-  'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u', //
-  'ç': 'c', 'ñ': 'n',
-};
-
-/// Lowercases [s] and strips Portuguese accents, for search and grouping.
-String foldText(String s) =>
-    s.toLowerCase().split('').map((c) => _accents[c] ?? c).join();
 
 int _byName(Person a, Person b) =>
     foldText(a.fullName).compareTo(foldText(b.fullName));
@@ -78,12 +69,14 @@ bool _matches(Person p, String foldedQuery, DateTime today) =>
 /// people without a (known) team in a final "Sem equipa" section. Within a
 /// section, chefes come first in the team's slot order, then Supervisores,
 /// then Segunda Linha, then members, each A–Z. With [offDay], people not
-/// working that day (see [offLabelOn]) go last in their section, in the same
+/// working that day (see [offLabelOn], with [horario]) go last in their
+/// section, in the same
 /// order. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
   DateTime? offDay,
+  HorarioIndex? horario,
   DateTime? today,
 }) {
   final q = foldText(query.trim());
@@ -96,9 +89,9 @@ List<PeopleSection> buildPeopleSections(
 
   int byRank(Team? team, Person a, Person b) {
     if (offDay != null) {
-      final off = (offLabelOn(a, offDay) != null ? 1 : 0).compareTo(
-        offLabelOn(b, offDay) != null ? 1 : 0,
-      );
+      int isOff(Person p) =>
+          offLabelOn(p, offDay, horario: horario) != null ? 1 : 0;
+      final off = isOff(a).compareTo(isOff(b));
       if (off != 0) return off;
     }
 

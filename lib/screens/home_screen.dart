@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/backup_service.dart';
 import 'historico_screen.dart';
+import 'horarios_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
 import 'pedidos_screen.dart';
@@ -154,6 +155,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Pessoas',
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const PeopleScreen()),
+                    ),
+                  ),
+                  _NavButton(
+                    icon: Icons.calendar_month,
+                    label: 'Horários',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const HorariosScreen()),
                     ),
                   ),
                 ],
