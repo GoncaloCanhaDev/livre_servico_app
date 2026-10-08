@@ -66,6 +66,8 @@ multi-tenant product.
   (`buildPeopleSections(offDay:)` lists them last). During an ausência, `awayTagOn` gives
   the orange tag shown next to the role tags and `offNoteOn` the "até 14/10" text beside it.
   `hireDate` is the company (Pingo Doce) start; `storeStartDate` is the start at this store.
+  `tenureTagOf` derives the blue "Em formação" (first month at Pingo Doce) / "Novo" / "Nova"
+  (until six months; `Person.genero` picks the form) tag from `hireDate`.
 - `TruckReception` (Receção de Camião) has a `TruckType`, paletes per departamento
   (`PalletCount.department` holds a `truckDepartments` id; read the name through
   `PalletCount.label`, which falls back to the legacy, index-stored `PalletCategory` on older

@@ -220,6 +220,8 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
                         p.fullName,
                         style: const TextStyle(color: Colors.black54),
                       ),
+                      if (tenureTagOf(p, _selectedDay) case final tenure?)
+                        RoleBadge(tenure, tenure: true),
                       if (awayTagOn(p, _selectedDay) case final away?)
                         RoleBadge(away, away: true),
                     ],
@@ -234,7 +236,18 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
               else
                 CheckboxListTile(
                   secondary: PersonInitialsBadge(name: p.fullName),
-                  title: Text(p.fullName),
+                  title: switch (tenureTagOf(p, _selectedDay)) {
+                    null => Text(p.fullName),
+                    final tenure => Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(p.fullName),
+                        RoleBadge(tenure, tenure: true),
+                      ],
+                    ),
+                  },
                   subtitle: p.collaboratorNumber.isEmpty
                       ? null
                       : Text('Nº ${p.collaboratorNumber}'),

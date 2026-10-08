@@ -60,17 +60,19 @@ final List<(String, Team?, Turno?)> _sectionOrder = [
   ('Sem equipa', null, null),
 ];
 
-bool _matches(Person p, String foldedQuery) =>
+bool _matches(Person p, String foldedQuery, DateTime today) =>
     foldText(p.fullName).contains(foldedQuery) ||
     foldText(_sectionTitle(p)).contains(foldedQuery) ||
     foldText(p.collaboratorNumber).contains(foldedQuery) ||
     (p.permanencia && 'permanencia'.contains(foldedQuery)) ||
     (p.partTime && 'tempo parcial'.contains(foldedQuery)) ||
     (isSupervisor(p) && 'supervisor'.contains(foldedQuery)) ||
-    (isSegundaLinha(p) && 'segunda linha'.contains(foldedQuery));
+    (isSegundaLinha(p) && 'segunda linha'.contains(foldedQuery)) ||
+    foldText(tenureTagOf(p, today) ?? '').contains(foldedQuery);
 
 /// Filters [people] by [query] (name, section title — team and turno —, nº
-/// de colaborador, a tag — Permanência, Supervisor, Segunda Linha — or
+/// de colaborador, a tag — Permanência, Supervisor, Segunda Linha, Em
+/// formação / Novo / Nova on [today] (default now) — or
 /// "tempo parcial", ignoring case and accents) and groups them into sections
 /// in [teams] order (Livre Serviço split into Dia, Noite and Sem turno), with
 /// people without a (known) team in a final "Sem equipa" section. Within a
@@ -82,11 +84,13 @@ List<PeopleSection> buildPeopleSections(
   List<Person> people, {
   String query = '',
   DateTime? offDay,
+  DateTime? today,
 }) {
   final q = foldText(query.trim());
+  final now = today ?? DateTime.now();
   final bySection = <String, List<Person>>{};
   for (final p in people) {
-    if (q.isNotEmpty && !_matches(p, q)) continue;
+    if (q.isNotEmpty && !_matches(p, q, now)) continue;
     (bySection[_sectionTitle(p)] ??= []).add(p);
   }
 
@@ -124,13 +128,18 @@ List<PeopleSection> buildPeopleSections(
 
 /// The Pessoas count line: "42 pessoas · 35 tempo inteiro · 7 tempo
 /// parcial", or "5 de 42 pessoas" while [query] (as in [buildPeopleSections])
-/// filters the list.
-String peopleCountText(List<Person> people, {String query = ''}) {
+/// filters the list ([today] as there too).
+String peopleCountText(
+  List<Person> people, {
+  String query = '',
+  DateTime? today,
+}) {
   final total = people.length;
   final noun = total == 1 ? 'pessoa' : 'pessoas';
   final q = foldText(query.trim());
   if (q.isNotEmpty) {
-    final shown = people.where((p) => _matches(p, q)).length;
+    final now = today ?? DateTime.now();
+    final shown = people.where((p) => _matches(p, q, now)).length;
     return '$shown de $total $noun';
   }
   final partTime = people.where((p) => p.partTime).length;

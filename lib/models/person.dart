@@ -70,6 +70,19 @@ class Person {
 
   /// Short free-text notes, one per entry.
   List<String> notes = [];
+
+  /// Only used to agree words with the person ("Novo" / "Nova"); null when
+  /// not set.
+  @Enumerated(EnumType.name)
+  Genero? genero;
+}
+
+enum Genero {
+  masculino('Masculino'),
+  feminino('Feminino');
+
+  const Genero(this.label);
+  final String label;
 }
 
 enum AusenciaTipo {

@@ -47,8 +47,7 @@ List<Ausencia> upcomingAusencias(Person p, DateTime today) {
 /// Time since [from] in whole months: "4 anos e 7 meses", "1 ano", "5 meses",
 /// or "menos de 1 mês".
 String tenureText(DateTime from, DateTime today) {
-  var months = (today.year - from.year) * 12 + today.month - from.month;
-  if (today.day < from.day) months--;
+  final months = _wholeMonths(from, today);
   if (months < 1) return 'menos de 1 mês';
   final years = months ~/ 12;
   final rest = months % 12;
@@ -57,6 +56,24 @@ String tenureText(DateTime from, DateTime today) {
   if (years == 0) return m;
   if (rest == 0) return y;
   return '$y e $m';
+}
+
+/// Whole months from [from] to [today]; a month counts once its day is
+/// reached.
+int _wholeMonths(DateTime from, DateTime today) {
+  final months = (today.year - from.year) * 12 + today.month - from.month;
+  return today.day < from.day ? months - 1 : months;
+}
+
+/// "Em formação" in [p]'s first month at Pingo Doce ([Person.hireDate]),
+/// "Novo" / "Nova" until six months, otherwise (or without a date) null.
+String? tenureTagOf(Person p, DateTime today) {
+  final hired = p.hireDate;
+  if (hired == null) return null;
+  final months = _wholeMonths(hired, today);
+  if (months < 1) return 'Em formação';
+  if (months < 6) return p.genero == Genero.feminino ? 'Nova' : 'Novo';
+  return null;
 }
 
 const weekdayShort = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];

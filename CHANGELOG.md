@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.45.0] — 2026-10-08
+
+### Added
+- Automatic blue tags from the Pingo Doce start date: "Em formação" in the first month, then
+  "Novo" or "Nova" until six months. Shown next to the role tags in Pessoas, on the person page
+  and in the task picker; searching Pessoas for "formação" or "novo" finds them.
+- Optional Género (Masculino / Feminino) on the person form, used to write "Nova" for women
+  ("Novo" when not set).
+
 ## [0.44.1] — 2026-10-08
 
 ### Changed

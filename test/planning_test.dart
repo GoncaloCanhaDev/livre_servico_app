@@ -108,6 +108,39 @@ void main() {
     });
   });
 
+  group('tenureTagOf', () {
+    final today = DateTime(2026, 10, 8);
+    Person hired(DateTime? d, [Genero? g]) => _p()
+      ..hireDate = d
+      ..genero = g;
+
+    test('Em formação in the first month', () {
+      expect(tenureTagOf(hired(DateTime(2026, 9, 9)), today), 'Em formação');
+      expect(tenureTagOf(hired(today), today), 'Em formação');
+    });
+
+    test('Novo from the first month until six months', () {
+      expect(tenureTagOf(hired(DateTime(2026, 9, 8)), today), 'Novo');
+      expect(tenureTagOf(hired(DateTime(2026, 4, 9)), today), 'Novo');
+    });
+
+    test('Nova for women', () {
+      expect(
+        tenureTagOf(hired(DateTime(2026, 8, 1), Genero.feminino), today),
+        'Nova',
+      );
+      expect(
+        tenureTagOf(hired(DateTime(2026, 8, 1), Genero.masculino), today),
+        'Novo',
+      );
+    });
+
+    test('nothing from six months, or without a date', () {
+      expect(tenureTagOf(hired(DateTime(2026, 4, 8)), today), isNull);
+      expect(tenureTagOf(hired(null), today), isNull);
+    });
+  });
+
   group('text helpers', () {
     test('folgasText lists days in week order', () {
       expect(

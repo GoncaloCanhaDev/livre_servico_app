@@ -46,69 +46,75 @@ const PersonSchema = CollectionSchema(
       name: r'fullName',
       type: IsarType.string,
     ),
-    r'hireDate': PropertySchema(
+    r'genero': PropertySchema(
       id: 7,
+      name: r'genero',
+      type: IsarType.string,
+      enumMap: _PersongeneroEnumValueMap,
+    ),
+    r'hireDate': PropertySchema(
+      id: 8,
       name: r'hireDate',
       type: IsarType.dateTime,
     ),
-    r'notes': PropertySchema(id: 8, name: r'notes', type: IsarType.stringList),
-    r'partTime': PropertySchema(id: 9, name: r'partTime', type: IsarType.bool),
+    r'notes': PropertySchema(id: 9, name: r'notes', type: IsarType.stringList),
+    r'partTime': PropertySchema(id: 10, name: r'partTime', type: IsarType.bool),
     r'permanencia': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'permanencia',
       type: IsarType.bool,
     ),
     r'phoneNumber': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'phoneNumber',
       type: IsarType.string,
     ),
     r'photoPath': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'photoPath',
       type: IsarType.string,
     ),
     r'segundaLinha': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'segundaLinha',
       type: IsarType.bool,
     ),
-    r'shiftEnd': PropertySchema(id: 14, name: r'shiftEnd', type: IsarType.long),
+    r'shiftEnd': PropertySchema(id: 15, name: r'shiftEnd', type: IsarType.long),
     r'shiftStart': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'shiftStart',
       type: IsarType.long,
     ),
     r'storeStartDate': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'storeStartDate',
       type: IsarType.dateTime,
     ),
     r'supervisor': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'supervisor',
       type: IsarType.bool,
     ),
     r'syncDeletedAt': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'syncDeletedAt',
       type: IsarType.dateTime,
     ),
     r'syncUpdatedAt': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'syncUpdatedAt',
       type: IsarType.dateTime,
     ),
     r'syncUuid': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'syncUuid',
       type: IsarType.string,
     ),
-    r'synced': PropertySchema(id: 21, name: r'synced', type: IsarType.bool),
-    r'team': PropertySchema(id: 22, name: r'team', type: IsarType.string),
-    r'turno': PropertySchema(id: 23, name: r'turno', type: IsarType.string),
+    r'synced': PropertySchema(id: 22, name: r'synced', type: IsarType.bool),
+    r'team': PropertySchema(id: 23, name: r'team', type: IsarType.string),
+    r'turno': PropertySchema(id: 24, name: r'turno', type: IsarType.string),
     r'weeklyHours': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'weeklyHours',
       type: IsarType.long,
     ),
@@ -166,6 +172,12 @@ int _personEstimateSize(
   bytesCount += 3 + object.collaboratorNumber.length * 3;
   bytesCount += 3 + object.folgas.length * 8;
   bytesCount += 3 + object.fullName.length * 3;
+  {
+    final value = object.genero;
+    if (value != null) {
+      bytesCount += 3 + value.name.length * 3;
+    }
+  }
   bytesCount += 3 + object.notes.length * 3;
   {
     for (var i = 0; i < object.notes.length; i++) {
@@ -219,24 +231,25 @@ void _personSerialize(
   writer.writeDateTime(offsets[4], object.dateOfBirth);
   writer.writeLongList(offsets[5], object.folgas);
   writer.writeString(offsets[6], object.fullName);
-  writer.writeDateTime(offsets[7], object.hireDate);
-  writer.writeStringList(offsets[8], object.notes);
-  writer.writeBool(offsets[9], object.partTime);
-  writer.writeBool(offsets[10], object.permanencia);
-  writer.writeString(offsets[11], object.phoneNumber);
-  writer.writeString(offsets[12], object.photoPath);
-  writer.writeBool(offsets[13], object.segundaLinha);
-  writer.writeLong(offsets[14], object.shiftEnd);
-  writer.writeLong(offsets[15], object.shiftStart);
-  writer.writeDateTime(offsets[16], object.storeStartDate);
-  writer.writeBool(offsets[17], object.supervisor);
-  writer.writeDateTime(offsets[18], object.syncDeletedAt);
-  writer.writeDateTime(offsets[19], object.syncUpdatedAt);
-  writer.writeString(offsets[20], object.syncUuid);
-  writer.writeBool(offsets[21], object.synced);
-  writer.writeString(offsets[22], object.team);
-  writer.writeString(offsets[23], object.turno);
-  writer.writeLong(offsets[24], object.weeklyHours);
+  writer.writeString(offsets[7], object.genero?.name);
+  writer.writeDateTime(offsets[8], object.hireDate);
+  writer.writeStringList(offsets[9], object.notes);
+  writer.writeBool(offsets[10], object.partTime);
+  writer.writeBool(offsets[11], object.permanencia);
+  writer.writeString(offsets[12], object.phoneNumber);
+  writer.writeString(offsets[13], object.photoPath);
+  writer.writeBool(offsets[14], object.segundaLinha);
+  writer.writeLong(offsets[15], object.shiftEnd);
+  writer.writeLong(offsets[16], object.shiftStart);
+  writer.writeDateTime(offsets[17], object.storeStartDate);
+  writer.writeBool(offsets[18], object.supervisor);
+  writer.writeDateTime(offsets[19], object.syncDeletedAt);
+  writer.writeDateTime(offsets[20], object.syncUpdatedAt);
+  writer.writeString(offsets[21], object.syncUuid);
+  writer.writeBool(offsets[22], object.synced);
+  writer.writeString(offsets[23], object.team);
+  writer.writeString(offsets[24], object.turno);
+  writer.writeLong(offsets[25], object.weeklyHours);
 }
 
 Person _personDeserialize(
@@ -260,25 +273,27 @@ Person _personDeserialize(
   object.dateOfBirth = reader.readDateTimeOrNull(offsets[4]);
   object.folgas = reader.readLongList(offsets[5]) ?? [];
   object.fullName = reader.readString(offsets[6]);
-  object.hireDate = reader.readDateTimeOrNull(offsets[7]);
+  object.genero =
+      _PersongeneroValueEnumMap[reader.readStringOrNull(offsets[7])];
+  object.hireDate = reader.readDateTimeOrNull(offsets[8]);
   object.id = id;
-  object.notes = reader.readStringList(offsets[8]) ?? [];
-  object.partTime = reader.readBool(offsets[9]);
-  object.permanencia = reader.readBool(offsets[10]);
-  object.phoneNumber = reader.readStringOrNull(offsets[11]);
-  object.photoPath = reader.readStringOrNull(offsets[12]);
-  object.segundaLinha = reader.readBool(offsets[13]);
-  object.shiftEnd = reader.readLongOrNull(offsets[14]);
-  object.shiftStart = reader.readLongOrNull(offsets[15]);
-  object.storeStartDate = reader.readDateTimeOrNull(offsets[16]);
-  object.supervisor = reader.readBool(offsets[17]);
-  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[18]);
-  object.syncUpdatedAt = reader.readDateTime(offsets[19]);
-  object.syncUuid = reader.readString(offsets[20]);
-  object.synced = reader.readBool(offsets[21]);
-  object.team = reader.readStringOrNull(offsets[22]);
-  object.turno = reader.readStringOrNull(offsets[23]);
-  object.weeklyHours = reader.readLongOrNull(offsets[24]);
+  object.notes = reader.readStringList(offsets[9]) ?? [];
+  object.partTime = reader.readBool(offsets[10]);
+  object.permanencia = reader.readBool(offsets[11]);
+  object.phoneNumber = reader.readStringOrNull(offsets[12]);
+  object.photoPath = reader.readStringOrNull(offsets[13]);
+  object.segundaLinha = reader.readBool(offsets[14]);
+  object.shiftEnd = reader.readLongOrNull(offsets[15]);
+  object.shiftStart = reader.readLongOrNull(offsets[16]);
+  object.storeStartDate = reader.readDateTimeOrNull(offsets[17]);
+  object.supervisor = reader.readBool(offsets[18]);
+  object.syncDeletedAt = reader.readDateTimeOrNull(offsets[19]);
+  object.syncUpdatedAt = reader.readDateTime(offsets[20]);
+  object.syncUuid = reader.readString(offsets[21]);
+  object.synced = reader.readBool(offsets[22]);
+  object.team = reader.readStringOrNull(offsets[23]);
+  object.turno = reader.readStringOrNull(offsets[24]);
+  object.weeklyHours = reader.readLongOrNull(offsets[25]);
   return object;
 }
 
@@ -311,45 +326,56 @@ P _personDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (_PersongeneroValueEnumMap[reader.readStringOrNull(offset)]) as P;
     case 8:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
       return (reader.readLongOrNull(offset)) as P;
     case 16:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 17:
-      return (reader.readBool(offset)) as P;
-    case 18:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 19:
-      return (reader.readDateTime(offset)) as P;
-    case 20:
-      return (reader.readString(offset)) as P;
-    case 21:
+    case 18:
       return (reader.readBool(offset)) as P;
+    case 19:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 20:
+      return (reader.readDateTime(offset)) as P;
+    case 21:
+      return (reader.readString(offset)) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 23:
       return (reader.readStringOrNull(offset)) as P;
     case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _PersongeneroEnumValueMap = {
+  r'masculino': r'masculino',
+  r'feminino': r'feminino',
+};
+const _PersongeneroValueEnumMap = {
+  r'masculino': Genero.masculino,
+  r'feminino': Genero.feminino,
+};
 
 Id _personGetId(Person object) {
   return object.id;
@@ -1245,6 +1271,168 @@ extension PersonQueryFilter on QueryBuilder<Person, Person, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'fullName', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'genero'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'genero'),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoEqualTo(
+    Genero? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoGreaterThan(
+    Genero? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoLessThan(
+    Genero? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoBetween(
+    Genero? lower,
+    Genero? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'genero',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'genero',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'genero',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'genero', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterFilterCondition> generoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'genero', value: ''),
       );
     });
   }
@@ -2935,6 +3123,18 @@ extension PersonQuerySortBy on QueryBuilder<Person, Person, QSortBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> sortByGenero() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genero', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> sortByGeneroDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genero', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> sortByHireDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hireDate', Sort.asc);
@@ -3201,6 +3401,18 @@ extension PersonQuerySortThenBy on QueryBuilder<Person, Person, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Person, Person, QAfterSortBy> thenByGenero() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genero', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Person, Person, QAfterSortBy> thenByGeneroDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genero', Sort.desc);
+    });
+  }
+
   QueryBuilder<Person, Person, QAfterSortBy> thenByHireDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hireDate', Sort.asc);
@@ -3464,6 +3676,14 @@ extension PersonQueryWhereDistinct on QueryBuilder<Person, Person, QDistinct> {
     });
   }
 
+  QueryBuilder<Person, Person, QDistinct> distinctByGenero({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'genero', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Person, Person, QDistinct> distinctByHireDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'hireDate');
@@ -3629,6 +3849,12 @@ extension PersonQueryProperty on QueryBuilder<Person, Person, QQueryProperty> {
   QueryBuilder<Person, String, QQueryOperations> fullNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fullName');
+    });
+  }
+
+  QueryBuilder<Person, Genero?, QQueryOperations> generoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'genero');
     });
   }
 

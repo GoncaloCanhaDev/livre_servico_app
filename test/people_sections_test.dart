@@ -14,6 +14,8 @@ Person _p(
   bool supervisor = false,
   bool segundaLinha = false,
   List<int> folgas = const [],
+  DateTime? hireDate,
+  Genero? genero,
 }) => Person()
   ..fullName = name
   ..createdAt = DateTime(2026)
@@ -25,7 +27,9 @@ Person _p(
   ..partTime = partTime
   ..supervisor = supervisor
   ..segundaLinha = segundaLinha
-  ..folgas = [...folgas];
+  ..folgas = [...folgas]
+  ..hireDate = hireDate
+  ..genero = genero;
 
 List<String> _names(PeopleSection s) =>
     s.people.map((p) => p.fullName).toList();
@@ -306,6 +310,27 @@ void main() {
         buildPeopleSections(mixed, query: 'parcial').expand(_names).toList(),
         ['Paulo Dias'],
       );
+    });
+
+    test('matches Em formação and Novo / Nova', () {
+      final today = DateTime(2026, 10, 8);
+      final mixed = [
+        ...people,
+        _p('Rui Lopes', team: 'talho', hireDate: DateTime(2026, 10, 1)),
+        _p(
+          'Inês Costa',
+          team: 'talho',
+          hireDate: DateTime(2026, 7, 1),
+          genero: Genero.feminino,
+        ),
+      ];
+      List<String> find(String q) => buildPeopleSections(
+        mixed,
+        query: q,
+        today: today,
+      ).expand(_names).toList();
+      expect(find('formacao'), ['Rui Lopes']);
+      expect(find('nova'), ['Inês Costa']);
     });
 
     test('blank query keeps everyone', () {

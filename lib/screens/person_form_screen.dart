@@ -33,6 +33,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   late final TextEditingController _weeklyHoursCtrl;
 
   DateTime? _dob;
+  Genero? _genero;
   DateTime? _hireDate;
   DateTime? _storeStart;
 
@@ -83,6 +84,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
       text: e?.weeklyHours?.toString() ?? '',
     );
     _dob = e?.dateOfBirth;
+    _genero = e?.genero;
     _hireDate = e?.hireDate;
     _storeStart = e?.storeStartDate;
     _shiftStart = e?.shiftStart;
@@ -297,6 +299,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
         ? null
         : _phoneCtrl.text.trim();
     person.dateOfBirth = _dob;
+    person.genero = _genero;
     person.hireDate = _hireDate;
     person.storeStartDate = _storeStart;
     person.weeklyHours = int.tryParse(_weeklyHoursCtrl.text.trim());
@@ -611,6 +614,28 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 onTap: () =>
                     _pickDate('Data de nascimento', _dob, (d) => _dob = d),
                 onClear: () => setState(() => _dob = null),
+              ),
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Género (opcional)',
+                  helperText: 'Para escrever "Novo" ou "Nova"',
+                  border: OutlineInputBorder(),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<Genero>(
+                    showSelectedIcon: false,
+                    emptySelectionAllowed: true,
+                    segments: [
+                      for (final g in Genero.values)
+                        ButtonSegment(value: g, label: Text(g.label)),
+                    ],
+                    selected: {?_genero},
+                    onSelectionChanged: (v) =>
+                        setState(() => _genero = v.firstOrNull),
+                  ),
+                ),
               ),
               const _FormHeading('Equipa'),
               DropdownButtonFormField<String?>(

@@ -334,6 +334,8 @@ class _PersonTile extends StatelessWidget {
         children: [
           Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
           for (final tag in roleTagsOf(p)) RoleBadge(tag),
+          if (tenureTagOf(p, today) case final tenure?)
+            RoleBadge(tenure, tenure: true),
           if (awayTagOn(p, today) case final away?) RoleBadge(away, away: true),
         ],
       ),

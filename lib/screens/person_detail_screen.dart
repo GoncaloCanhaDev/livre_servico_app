@@ -406,6 +406,7 @@ class _DetailsTab extends StatelessWidget {
     final today = DateTime.now();
     final away = ausenciaOn(p, today);
     final tags = roleTagsOf(p);
+    final tenure = tenureTagOf(p, today);
     final upcoming = upcomingAusencias(p, today);
     final horario = horarioText(p);
     return ListView(
@@ -425,7 +426,7 @@ class _DetailsTab extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        if (tags.isNotEmpty || away != null)
+        if (tags.isNotEmpty || tenure != null || away != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Wrap(
@@ -434,6 +435,7 @@ class _DetailsTab extends StatelessWidget {
               runSpacing: 4,
               children: [
                 for (final t in tags) RoleBadge(t),
+                if (tenure != null) RoleBadge(tenure, tenure: true),
                 if (away != null) RoleBadge(away.tipo.label, away: true),
               ],
             ),
