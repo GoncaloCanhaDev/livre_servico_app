@@ -115,7 +115,10 @@ multi-tenant product.
 - `lib/screens/*.dart` are mostly `StatefulWidget`s that read/write through the services above;
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
   auto/report/visual lists (`ReplenishmentListsScreen`) and the daily/weekly/custom tasks
-  (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets.
+  (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The two largest
+  screens are split with `part` files, so their private widgets stay private:
+  `historico_screen.dart` (one part per tab in `lib/screens/historico/`) and
+  `truck_form_screen.dart` (`lib/screens/truck_form/`).
 - `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
   `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`.
 - `lib/theme.dart` defines `buildAppTheme()`, the single `ThemeData` used by `MaterialApp`.
