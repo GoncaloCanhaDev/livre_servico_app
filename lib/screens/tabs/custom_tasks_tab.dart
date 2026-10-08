@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../models/custom_task.dart';
-import '../models/opening_list.dart';
-import '../models/weekly_tasks.dart';
-import '../services/custom_task_service.dart';
-import '../services/whatsapp_service.dart';
-import '../theme.dart';
-import 'widgets/person_picker.dart';
+import '../../models/custom_task.dart';
+import '../../models/opening_list.dart';
+import '../../models/weekly_tasks.dart';
+import '../../services/custom_task_service.dart';
+import '../../services/whatsapp_service.dart';
+import '../../theme.dart';
+import '../widgets/person_picker.dart';
 
 DateTime _periodKeyFor(CustomTaskFrequency frequency) {
   switch (frequency) {
@@ -30,14 +30,18 @@ class _TaskRow {
   bool get done => entry?.done ?? false;
 }
 
-class CustomTasksScreen extends StatefulWidget {
-  const CustomTasksScreen({super.key});
+class CustomTasksTab extends StatefulWidget {
+  const CustomTasksTab({super.key});
 
   @override
-  State<CustomTasksScreen> createState() => _CustomTasksScreenState();
+  State<CustomTasksTab> createState() => _CustomTasksTabState();
 }
 
-class _CustomTasksScreenState extends State<CustomTasksScreen> {
+class _CustomTasksTabState extends State<CustomTasksTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late Future<List<_TaskRow>> _future;
 
   @override
@@ -167,12 +171,12 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tarefas Personalizadas'),
-        actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _openAddDialog),
-        ],
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Nova tarefa',
+        onPressed: _openAddDialog,
+        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: FutureBuilder<List<_TaskRow>>(
@@ -203,8 +207,9 @@ class _CustomTasksScreenState extends State<CustomTasksScreen> {
             final oneOff = rows
                 .where((r) => r.task.frequency == CustomTaskFrequency.oneOff)
                 .toList();
+            // Bottom room so the + never covers the last task.
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
               children: [
                 ..._section('Diárias', daily),
                 ..._section('Semanais', weekly),

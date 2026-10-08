@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/backup_service.dart';
-import 'custom_tasks_screen.dart';
-import 'daily_tasks_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -10,8 +8,8 @@ import 'pedidos_screen.dart';
 import 'people_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
+import 'tasks_screen.dart';
 import 'truck_form_screen.dart';
-import 'weekly_tasks_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -123,29 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _NavButton(
                     icon: Icons.task_alt,
-                    label: 'Tarefas Diárias',
+                    label: 'Tarefas',
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DailyTasksScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.event_repeat,
-                    label: 'Tarefas Semanais',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const WeeklyTasksScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.playlist_add_check,
-                    label: 'Tarefas Personalizadas',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CustomTasksScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const TasksScreen()),
                     ),
                   ),
                   _NavButton(

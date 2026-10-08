@@ -2,22 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import 'widgets/person_picker.dart';
+import '../widgets/person_picker.dart';
 
-import '../models/opening_list.dart';
-import '../models/weekly_tasks.dart';
-import '../services/weekly_tasks_service.dart';
-import '../services/whatsapp_service.dart';
-import '../theme.dart';
+import '../../models/opening_list.dart';
+import '../../models/weekly_tasks.dart';
+import '../../services/weekly_tasks_service.dart';
+import '../../services/whatsapp_service.dart';
+import '../../theme.dart';
 
-class WeeklyTasksScreen extends StatefulWidget {
-  const WeeklyTasksScreen({super.key});
+class WeeklyTasksTab extends StatefulWidget {
+  const WeeklyTasksTab({super.key});
 
   @override
-  State<WeeklyTasksScreen> createState() => _WeeklyTasksScreenState();
+  State<WeeklyTasksTab> createState() => _WeeklyTasksTabState();
 }
 
-class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
+class _WeeklyTasksTabState extends State<WeeklyTasksTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   WeeklyTasks? _tasks;
 
   late final TextEditingController _verificar1aCtrl;
@@ -123,9 +127,10 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final tasks = _tasks;
     if (tasks == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
     final monday = tasks.serviceWeek;
     final sunday = monday.add(const Duration(days: 6));
@@ -133,118 +138,112 @@ class _WeeklyTasksScreenState extends State<WeeklyTasksScreen> {
     final mondayPassed = currentServiceDay().isAfter(monday);
     final isSaturday = currentServiceDay().weekday == DateTime.saturday;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tarefas Semanais')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              '${rangeFmt.format(monday)} — ${rangeFmt.format(sunday)}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            '${rangeFmt.format(monday)} — ${rangeFmt.format(sunday)}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          _WeeklyCountTask(
+            label: 'Verificar 1ª',
+            checked: tasks.verificar1a,
+            byNames: resolveNames(tasks.verificar1aByNames, tasks.verificar1aBy),
+            backdated: tasks.backdatedTaskKeys.contains('verificar_1a'),
+            countController: _verificar1aCtrl,
+            goalNote: 'Itens no Mural — mínimo 10, recomendado 20',
+            late: mondayPassed && !tasks.verificar1a,
+            onLongPress: tasks.verificar1a
+                ? () => _sendMsg(
+                    '✅ Tarefa concluída: Verificar 1ª (${tasks.verificar1aCount})',
+                  )
+                : null,
+            onCheckedChanged: (v) async {
+              if (!v) return;
+              final count = tasks.verificar1aCount;
+              await _completeTask(
+                taskName: 'Verificar 1ª',
+                taskKey: 'verificar_1a',
+                apply: (t, who) {
+                  t.verificar1a = true;
+                  t.verificar1aByNames = who;
+                  t.verificar1aCount = count;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Verificar 1ª ($count) (por ${joinNames(who)})',
+              );
+            },
+            onCountChanged: (n) {
+              tasks.verificar1aCount = n;
+              _saveTasks();
+            },
+          ),
+          _WeeklyCountTask(
+            label: 'Verificar 4ª',
+            checked: tasks.verificar4a,
+            byNames: resolveNames(tasks.verificar4aByNames, tasks.verificar4aBy),
+            backdated: tasks.backdatedTaskKeys.contains('verificar_4a'),
+            countController: _verificar4aCtrl,
+            goalNote: 'Itens por colocar preço',
+            late: mondayPassed && !tasks.verificar4a,
+            onLongPress: tasks.verificar4a
+                ? () => _sendMsg(
+                    '✅ Tarefa concluída: Verificar 4ª (${tasks.verificar4aCount})',
+                  )
+                : null,
+            onCheckedChanged: (v) async {
+              if (!v) return;
+              final count = tasks.verificar4aCount;
+              await _completeTask(
+                taskName: 'Verificar 4ª',
+                taskKey: 'verificar_4a',
+                apply: (t, who) {
+                  t.verificar4a = true;
+                  t.verificar4aByNames = who;
+                  t.verificar4aCount = count;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Verificar 4ª ($count) (por ${joinNames(who)})',
+              );
+            },
+            onCountChanged: (n) {
+              tasks.verificar4aCount = n;
+              _saveTasks();
+            },
+          ),
+          _WeeklyManualTask(
+            label: 'Limpeza da Máquina Voltas',
+            checked: tasks.limpezaMaquinaVoltas,
+            byNames: resolveNames(tasks.limpezaMaquinaVoltasByNames, tasks.limpezaMaquinaVoltasBy),
+            backdated: tasks.backdatedTaskKeys.contains(
+              'limpeza_maquina_voltas',
             ),
-            const SizedBox(height: 12),
-            _WeeklyCountTask(
-              label: 'Verificar 1ª',
-              checked: tasks.verificar1a,
-              byNames: resolveNames(tasks.verificar1aByNames, tasks.verificar1aBy),
-              backdated: tasks.backdatedTaskKeys.contains('verificar_1a'),
-              countController: _verificar1aCtrl,
-              goalNote: 'Itens no Mural — mínimo 10, recomendado 20',
-              late: mondayPassed && !tasks.verificar1a,
-              onLongPress: tasks.verificar1a
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Verificar 1ª (${tasks.verificar1aCount})',
-                    )
-                  : null,
-              onCheckedChanged: (v) async {
-                if (!v) return;
-                final count = tasks.verificar1aCount;
-                await _completeTask(
-                  taskName: 'Verificar 1ª',
-                  taskKey: 'verificar_1a',
-                  apply: (t, who) {
-                    t.verificar1a = true;
-                    t.verificar1aByNames = who;
-                    t.verificar1aCount = count;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Verificar 1ª ($count) (por ${joinNames(who)})',
-                );
-              },
-              onCountChanged: (n) {
-                tasks.verificar1aCount = n;
-                _saveTasks();
-              },
-            ),
-            _WeeklyCountTask(
-              label: 'Verificar 4ª',
-              checked: tasks.verificar4a,
-              byNames: resolveNames(tasks.verificar4aByNames, tasks.verificar4aBy),
-              backdated: tasks.backdatedTaskKeys.contains('verificar_4a'),
-              countController: _verificar4aCtrl,
-              goalNote: 'Itens por colocar preço',
-              late: mondayPassed && !tasks.verificar4a,
-              onLongPress: tasks.verificar4a
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Verificar 4ª (${tasks.verificar4aCount})',
-                    )
-                  : null,
-              onCheckedChanged: (v) async {
-                if (!v) return;
-                final count = tasks.verificar4aCount;
-                await _completeTask(
-                  taskName: 'Verificar 4ª',
-                  taskKey: 'verificar_4a',
-                  apply: (t, who) {
-                    t.verificar4a = true;
-                    t.verificar4aByNames = who;
-                    t.verificar4aCount = count;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Verificar 4ª ($count) (por ${joinNames(who)})',
-                );
-              },
-              onCountChanged: (n) {
-                tasks.verificar4aCount = n;
-                _saveTasks();
-              },
-            ),
-            _WeeklyManualTask(
-              label: 'Limpeza da Máquina Voltas',
-              checked: tasks.limpezaMaquinaVoltas,
-              byNames: resolveNames(tasks.limpezaMaquinaVoltasByNames, tasks.limpezaMaquinaVoltasBy),
-              backdated: tasks.backdatedTaskKeys.contains(
-                'limpeza_maquina_voltas',
-              ),
-              enabled: isSaturday,
-              note: isSaturday ? null : 'Apenas ao sábado',
-              onLongPress: tasks.limpezaMaquinaVoltas
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Limpeza da Máquina Voltas',
-                    )
-                  : null,
-              onChanged: (v) async {
-                if (!v) return;
-                final lastSaturday = _lastSaturdayOnOrBefore(
-                  currentServiceDay(),
-                );
-                await _completeTask(
-                  taskName: 'Limpeza da Máquina Voltas',
-                  taskKey: 'limpeza_maquina_voltas',
-                  initialDay: lastSaturday,
-                  selectableDayPredicate: (d) => d.weekday == DateTime.saturday,
-                  apply: (t, who) {
-                    t.limpezaMaquinaVoltas = true;
-                    t.limpezaMaquinaVoltasByNames = who;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Limpeza da Máquina Voltas (por ${joinNames(who)})',
-                );
-              },
-            ),
-          ],
-        ),
+            enabled: isSaturday,
+            note: isSaturday ? null : 'Apenas ao sábado',
+            onLongPress: tasks.limpezaMaquinaVoltas
+                ? () =>
+                      _sendMsg('✅ Tarefa concluída: Limpeza da Máquina Voltas')
+                : null,
+            onChanged: (v) async {
+              if (!v) return;
+              final lastSaturday = _lastSaturdayOnOrBefore(currentServiceDay());
+              await _completeTask(
+                taskName: 'Limpeza da Máquina Voltas',
+                taskKey: 'limpeza_maquina_voltas',
+                initialDay: lastSaturday,
+                selectableDayPredicate: (d) => d.weekday == DateTime.saturday,
+                apply: (t, who) {
+                  t.limpezaMaquinaVoltas = true;
+                  t.limpezaMaquinaVoltasByNames = who;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Limpeza da Máquina Voltas (por ${joinNames(who)})',
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -2,27 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import 'widgets/person_picker.dart';
+import '../widgets/person_picker.dart';
 
-import '../models/daily_tasks.dart';
-import '../models/opening_list.dart';
-import '../services/auto_list_service.dart';
-import '../services/daily_tasks_service.dart';
-import '../services/opening_list_service.dart';
-import '../services/report_list_service.dart';
-import '../services/settings_service.dart';
-import '../services/visual_list_service.dart';
-import '../services/whatsapp_service.dart';
-import '../theme.dart';
+import '../../models/daily_tasks.dart';
+import '../../models/opening_list.dart';
+import '../../services/auto_list_service.dart';
+import '../../services/daily_tasks_service.dart';
+import '../../services/opening_list_service.dart';
+import '../../services/report_list_service.dart';
+import '../../services/settings_service.dart';
+import '../../services/visual_list_service.dart';
+import '../../services/whatsapp_service.dart';
+import '../../theme.dart';
 
-class DailyTasksScreen extends StatefulWidget {
-  const DailyTasksScreen({super.key});
+class DailyTasksTab extends StatefulWidget {
+  const DailyTasksTab({super.key});
 
   @override
-  State<DailyTasksScreen> createState() => _DailyTasksScreenState();
+  State<DailyTasksTab> createState() => _DailyTasksTabState();
 }
 
-class _DailyTasksScreenState extends State<DailyTasksScreen> {
+class _DailyTasksTabState extends State<DailyTasksTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   DailyTasks? _tasks;
   bool _aberturaDone = false;
   bool _relatorioDone = false;
@@ -157,221 +161,216 @@ class _DailyTasksScreenState extends State<DailyTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final tasks = _tasks;
     if (tasks == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
     final day = tasks.serviceDay;
     final dayFmt = DateFormat("EEEE, d 'de' MMMM", 'pt_PT');
     final visualGoal = SettingsService.instance.visualGoal;
     final visualDone = _visualItens >= visualGoal;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tarefas Diárias')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              dayFmt.format(day),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            dayFmt.format(day),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          _ManualTask(
+            label: 'Kiwi Abertura',
+            checked: tasks.kiwiAbertura,
+            byNames: resolveNames(tasks.kiwiAberturaByNames, tasks.kiwiAberturaBy),
+            backdated: tasks.backdatedTaskKeys.contains('kiwi_abertura'),
+            onLongPress: tasks.kiwiAbertura
+                ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura')
+                : null,
+            onChanged: (v) async {
+              if (!v) return;
+              await _completeTask(
+                taskName: 'Kiwi Abertura',
+                taskKey: 'kiwi_abertura',
+                apply: (t, who) {
+                  t.kiwiAbertura = true;
+                  t.kiwiAberturaByNames = who;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Kiwi Abertura (por ${joinNames(who)})',
+              );
+            },
+          ),
+          _CountTask(
+            label: 'Alterações de Preço',
+            checked: tasks.alteracoesPreco,
+            byNames: resolveNames(tasks.alteracoesPrecoByNames, tasks.alteracoesPrecoBy),
+            backdated: tasks.backdatedTaskKeys.contains('alteracoes_preco'),
+            countController: _alteracoesCtrl,
+            onLongPress: tasks.alteracoesPreco
+                ? () => _sendMsg(
+                    '✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})',
+                  )
+                : null,
+            onCheckedChanged: (v) async {
+              if (!v) return;
+              final count = tasks.alteracoesPrecoCount;
+              await _completeTask(
+                taskName: 'Alterações de Preço',
+                taskKey: 'alteracoes_preco',
+                apply: (t, who) {
+                  t.alteracoesPreco = true;
+                  t.alteracoesPrecoByNames = who;
+                  t.alteracoesPrecoCount = count;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Alterações de Preço ($count) (por ${joinNames(who)})',
+              );
+            },
+            onCountChanged: (n) {
+              tasks.alteracoesPrecoCount = n;
+              _saveTasks();
+            },
+          ),
+          _ManualTask(
+            label: 'Verificação de Temperaturas',
+            checked: tasks.verificacaoTemperaturas,
+            byNames: resolveNames(tasks.verificacaoTemperaturasByNames, tasks.verificacaoTemperaturasBy),
+            backdated: tasks.backdatedTaskKeys.contains(
+              'verificacao_temperaturas',
             ),
-            const SizedBox(height: 12),
-            _ManualTask(
-              label: 'Kiwi Abertura',
-              checked: tasks.kiwiAbertura,
-              byNames: resolveNames(tasks.kiwiAberturaByNames, tasks.kiwiAberturaBy),
-              backdated: tasks.backdatedTaskKeys.contains('kiwi_abertura'),
-              onLongPress: tasks.kiwiAbertura
-                  ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura')
-                  : null,
-              onChanged: (v) async {
-                if (!v) return;
-                await _completeTask(
-                  taskName: 'Kiwi Abertura',
-                  taskKey: 'kiwi_abertura',
-                  apply: (t, who) {
-                    t.kiwiAbertura = true;
-                    t.kiwiAberturaByNames = who;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Kiwi Abertura (por ${joinNames(who)})',
-                );
-              },
+            onLongPress: tasks.verificacaoTemperaturas
+                ? () => _sendMsg(
+                    '✅ Tarefa concluída: Verificação de Temperaturas',
+                  )
+                : null,
+            onChanged: (v) async {
+              if (!v) return;
+              await _completeTask(
+                taskName: 'Verificação de Temperaturas',
+                taskKey: 'verificacao_temperaturas',
+                apply: (t, who) {
+                  t.verificacaoTemperaturas = true;
+                  t.verificacaoTemperaturasByNames = who;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Verificação de Temperaturas (por ${joinNames(who)})',
+              );
+            },
+          ),
+          _AutoTask(
+            label: 'Lista de Abertura',
+            checked: _aberturaDone,
+            note: _aberturaDone ? null : 'Finaliza no separador Abertura',
+            onLongPress: _aberturaDone
+                ? () => _sendMsg('✅ Tarefa concluída: Lista de Abertura')
+                : null,
+          ),
+          _AutoTask(
+            label: 'Relatório das Listas',
+            checked: _relatorioDone,
+            note: _relatorioDone ? null : 'Finaliza no separador Relatório',
+            onLongPress: _relatorioDone
+                ? () => _sendMsg('✅ Tarefa concluída: Relatório das Listas')
+                : null,
+          ),
+          _ManualTask(
+            label: 'Preenchimento do Quadro',
+            checked: tasks.preenchimentoQuadro,
+            byNames: resolveNames(tasks.preenchimentoQuadroByNames, tasks.preenchimentoQuadroBy),
+            backdated: tasks.backdatedTaskKeys.contains('preenchimento_quadro'),
+            onLongPress: tasks.preenchimentoQuadro
+                ? () => _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro')
+                : null,
+            onChanged: (v) async {
+              if (!v) return;
+              await _completeTask(
+                taskName: 'Preenchimento do Quadro',
+                taskKey: 'preenchimento_quadro',
+                apply: (t, who) {
+                  t.preenchimentoQuadro = true;
+                  t.preenchimentoQuadroByNames = who;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Preenchimento do Quadro (por ${joinNames(who)})',
+              );
+            },
+          ),
+          _AutoTask(
+            label: 'Lista Visual',
+            checked: visualDone,
+            note: '$_visualItens / $visualGoal itens picados hoje',
+            onLongPress: visualDone
+                ? () => _sendMsg('✅ Tarefa concluída: Lista Visual')
+                : null,
+          ),
+          _AutoTask(
+            label: 'Lista Automática',
+            checked: _autoCount > 0,
+            note: _autoCount == 0
+                ? 'Sem listas automáticas hoje'
+                : '$_autoCount lista${_autoCount == 1 ? '' : 's'} hoje',
+            onLongPress: _autoCount > 0
+                ? () => _sendMsg('✅ Tarefa concluída: Lista Automática')
+                : null,
+          ),
+          _CountTask(
+            label: 'Verificação de Validades',
+            checked: tasks.verificacaoValidades,
+            byNames: resolveNames(tasks.verificacaoValidadesByNames, tasks.verificacaoValidadesBy),
+            backdated: tasks.backdatedTaskKeys.contains(
+              'verificacao_validades',
             ),
-            _CountTask(
-              label: 'Alterações de Preço',
-              checked: tasks.alteracoesPreco,
-              byNames: resolveNames(tasks.alteracoesPrecoByNames, tasks.alteracoesPrecoBy),
-              backdated: tasks.backdatedTaskKeys.contains('alteracoes_preco'),
-              countController: _alteracoesCtrl,
-              onLongPress: tasks.alteracoesPreco
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})',
-                    )
-                  : null,
-              onCheckedChanged: (v) async {
-                if (!v) return;
-                final count = tasks.alteracoesPrecoCount;
-                await _completeTask(
-                  taskName: 'Alterações de Preço',
-                  taskKey: 'alteracoes_preco',
-                  apply: (t, who) {
-                    t.alteracoesPreco = true;
-                    t.alteracoesPrecoByNames = who;
-                    t.alteracoesPrecoCount = count;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Alterações de Preço ($count) (por ${joinNames(who)})',
-                );
-              },
-              onCountChanged: (n) {
-                tasks.alteracoesPrecoCount = n;
-                _saveTasks();
-              },
-            ),
-            _ManualTask(
-              label: 'Verificação de Temperaturas',
-              checked: tasks.verificacaoTemperaturas,
-              byNames: resolveNames(tasks.verificacaoTemperaturasByNames, tasks.verificacaoTemperaturasBy),
-              backdated: tasks.backdatedTaskKeys.contains(
-                'verificacao_temperaturas',
-              ),
-              onLongPress: tasks.verificacaoTemperaturas
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Verificação de Temperaturas',
-                    )
-                  : null,
-              onChanged: (v) async {
-                if (!v) return;
-                await _completeTask(
-                  taskName: 'Verificação de Temperaturas',
-                  taskKey: 'verificacao_temperaturas',
-                  apply: (t, who) {
-                    t.verificacaoTemperaturas = true;
-                    t.verificacaoTemperaturasByNames = who;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Verificação de Temperaturas (por ${joinNames(who)})',
-                );
-              },
-            ),
-            _AutoTask(
-              label: 'Lista de Abertura',
-              checked: _aberturaDone,
-              note: _aberturaDone ? null : 'Finaliza no separador Abertura',
-              onLongPress: _aberturaDone
-                  ? () => _sendMsg('✅ Tarefa concluída: Lista de Abertura')
-                  : null,
-            ),
-            _AutoTask(
-              label: 'Relatório das Listas',
-              checked: _relatorioDone,
-              note: _relatorioDone ? null : 'Finaliza no separador Relatório',
-              onLongPress: _relatorioDone
-                  ? () => _sendMsg('✅ Tarefa concluída: Relatório das Listas')
-                  : null,
-            ),
-            _ManualTask(
-              label: 'Preenchimento do Quadro',
-              checked: tasks.preenchimentoQuadro,
-              byNames: resolveNames(tasks.preenchimentoQuadroByNames, tasks.preenchimentoQuadroBy),
-              backdated: tasks.backdatedTaskKeys.contains(
-                'preenchimento_quadro',
-              ),
-              onLongPress: tasks.preenchimentoQuadro
-                  ? () =>
-                        _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro')
-                  : null,
-              onChanged: (v) async {
-                if (!v) return;
-                await _completeTask(
-                  taskName: 'Preenchimento do Quadro',
-                  taskKey: 'preenchimento_quadro',
-                  apply: (t, who) {
-                    t.preenchimentoQuadro = true;
-                    t.preenchimentoQuadroByNames = who;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Preenchimento do Quadro (por ${joinNames(who)})',
-                );
-              },
-            ),
-            _AutoTask(
-              label: 'Lista Visual',
-              checked: visualDone,
-              note: '$_visualItens / $visualGoal itens picados hoje',
-              onLongPress: visualDone
-                  ? () => _sendMsg('✅ Tarefa concluída: Lista Visual')
-                  : null,
-            ),
-            _AutoTask(
-              label: 'Lista Automática',
-              checked: _autoCount > 0,
-              note: _autoCount == 0
-                  ? 'Sem listas automáticas hoje'
-                  : '$_autoCount lista${_autoCount == 1 ? '' : 's'} hoje',
-              onLongPress: _autoCount > 0
-                  ? () => _sendMsg('✅ Tarefa concluída: Lista Automática')
-                  : null,
-            ),
-            _CountTask(
-              label: 'Verificação de Validades',
-              checked: tasks.verificacaoValidades,
-              byNames: resolveNames(tasks.verificacaoValidadesByNames, tasks.verificacaoValidadesBy),
-              backdated: tasks.backdatedTaskKeys.contains(
-                'verificacao_validades',
-              ),
-              countController: _validadesCtrl,
-              onLongPress: tasks.verificacaoValidades
-                  ? () => _sendMsg(
-                      '✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})',
-                    )
-                  : null,
-              onCheckedChanged: (v) async {
-                if (!v) return;
-                final count = tasks.verificacaoValidadesCount;
-                await _completeTask(
-                  taskName: 'Verificação de Validades',
-                  taskKey: 'verificacao_validades',
-                  apply: (t, who) {
-                    t.verificacaoValidades = true;
-                    t.verificacaoValidadesByNames = who;
-                    t.verificacaoValidadesCount = count;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Verificação de Validades ($count) (por ${joinNames(who)})',
-                );
-              },
-              onCountChanged: (n) {
-                tasks.verificacaoValidadesCount = n;
-                _saveTasks();
-              },
-            ),
-            _ManualTask(
-              label: 'Kiwi Fecho',
-              checked: tasks.kiwiFecho,
-              byNames: resolveNames(tasks.kiwiFechoByNames, tasks.kiwiFechoBy),
-              backdated: tasks.backdatedTaskKeys.contains('kiwi_fecho'),
-              onLongPress: tasks.kiwiFecho
-                  ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho')
-                  : null,
-              onChanged: (v) async {
-                if (!v) return;
-                await _completeTask(
-                  taskName: 'Kiwi Fecho',
-                  taskKey: 'kiwi_fecho',
-                  apply: (t, who) {
-                    t.kiwiFecho = true;
-                    t.kiwiFechoByNames = who;
-                  },
-                  message: (who) =>
-                      '✅ Tarefa concluída: Kiwi Fecho (por ${joinNames(who)})',
-                );
-              },
-            ),
-          ],
-        ),
+            countController: _validadesCtrl,
+            onLongPress: tasks.verificacaoValidades
+                ? () => _sendMsg(
+                    '✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})',
+                  )
+                : null,
+            onCheckedChanged: (v) async {
+              if (!v) return;
+              final count = tasks.verificacaoValidadesCount;
+              await _completeTask(
+                taskName: 'Verificação de Validades',
+                taskKey: 'verificacao_validades',
+                apply: (t, who) {
+                  t.verificacaoValidades = true;
+                  t.verificacaoValidadesByNames = who;
+                  t.verificacaoValidadesCount = count;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Verificação de Validades ($count) (por ${joinNames(who)})',
+              );
+            },
+            onCountChanged: (n) {
+              tasks.verificacaoValidadesCount = n;
+              _saveTasks();
+            },
+          ),
+          _ManualTask(
+            label: 'Kiwi Fecho',
+            checked: tasks.kiwiFecho,
+            byNames: resolveNames(tasks.kiwiFechoByNames, tasks.kiwiFechoBy),
+            backdated: tasks.backdatedTaskKeys.contains('kiwi_fecho'),
+            onLongPress: tasks.kiwiFecho
+                ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho')
+                : null,
+            onChanged: (v) async {
+              if (!v) return;
+              await _completeTask(
+                taskName: 'Kiwi Fecho',
+                taskKey: 'kiwi_fecho',
+                apply: (t, who) {
+                  t.kiwiFecho = true;
+                  t.kiwiFechoByNames = who;
+                },
+                message: (who) =>
+                    '✅ Tarefa concluída: Kiwi Fecho (por ${joinNames(who)})',
+              );
+            },
+          ),
+        ],
       ),
     );
   }
