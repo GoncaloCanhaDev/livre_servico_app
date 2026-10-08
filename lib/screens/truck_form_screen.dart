@@ -1055,7 +1055,6 @@ Future<List<_VasilhameItem>> _loadVasilhameItems() async {
 }
 
 IconData _typeIcon(TruckType t) => switch (t) {
-  TruckType.congelados => Icons.ac_unit,
   TruckType.pereciveis => Icons.eco_outlined,
   TruckType.naoPereciveis => Icons.inventory_2_outlined,
 };

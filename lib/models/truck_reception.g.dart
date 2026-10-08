@@ -391,12 +391,10 @@ P _truckReceptionDeserializeProp<P>(
 }
 
 const _TruckReceptiontypeEnumValueMap = {
-  r'congelados': r'congelados',
   r'pereciveis': r'pereciveis',
   r'naoPereciveis': r'naoPereciveis',
 };
 const _TruckReceptiontypeValueEnumMap = {
-  r'congelados': TruckType.congelados,
   r'pereciveis': TruckType.pereciveis,
   r'naoPereciveis': TruckType.naoPereciveis,
 };

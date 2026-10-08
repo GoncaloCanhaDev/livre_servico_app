@@ -47,7 +47,6 @@ extension PalletCategoryLabel on PalletCategory {
 /// What kind of camião a reception was. Stored on [TruckReception.type] by
 /// name.
 enum TruckType {
-  congelados('Congelados'),
   pereciveis('Perecíveis'),
   naoPereciveis('Não Perecíveis');
 
