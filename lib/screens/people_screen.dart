@@ -367,13 +367,7 @@ class _PersonTile extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            TextSpan(
-              text: [
-                if (p.partTime) 'Tempo parcial',
-                if (p.collaboratorNumber.isNotEmpty)
-                  'Nº ${p.collaboratorNumber}',
-              ].join(' · '),
-            ),
+            if (p.partTime) const TextSpan(text: 'Tempo parcial'),
           ],
         ),
       ),

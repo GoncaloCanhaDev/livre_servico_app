@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.49.1] — 2026-10-08
+
+### Changed
+- Pessoas no longer shows the nº de colaborador under each name; it stays on the person page
+  (and searching by it still works).
+
 ## [0.49.0] — 2026-10-08
 
 ### Added
