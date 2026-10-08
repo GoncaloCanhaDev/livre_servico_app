@@ -78,6 +78,14 @@ class PedidoService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The pedidos not finalized yet that have an expected date.
+  Future<List<Pedido>> openWithDate() => _isar.pedidos
+      .filter()
+      .syncDeletedAtIsNull()
+      .finishedAtIsNull()
+      .expectedDateIsNotNull()
+      .findAll();
+
   Future<List<Pedido>> history({bool includeDeleted = false}) {
     if (includeDeleted) {
       return _isar.pedidos.where().sortByCreatedAtDesc().findAll();

@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.5] — 2026-10-08
+
+### Changed
+- The "Hoje" card reads only today's automáticas and camiões and the open pedidos (not every
+  one ever saved), and its every-minute refresh recounts shifts and Validades from what it
+  already read; it only goes back to the database on a change or when a new service day starts.
+- Diárias reads only today's automáticas.
+
 ## [0.56.4] — 2026-10-08
 
 ### Changed

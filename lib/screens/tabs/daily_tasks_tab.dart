@@ -87,15 +87,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     final visualEntries = await VisualListService.instance.entriesForServiceDay(
       day,
     );
-    final allAuto = await AutoListService.instance.history();
-    final dayStart = day;
-    final dayEnd = day.add(const Duration(hours: 24));
-    final autoToday = allAuto
-        .where(
-          (a) =>
-              !a.createdAt.isBefore(dayStart) && a.createdAt.isBefore(dayEnd),
-        )
-        .toList();
+    final autoToday = await AutoListService.instance.entriesForServiceDay(day);
 
     if (!mounted) return;
     setState(() {

@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/daily_tasks.dart';
 import '../../models/horario.dart';
+import '../../models/pedido.dart';
 import '../../models/person.dart';
 import '../../models/planning.dart';
 import '../../models/opening_list.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
+import '../../models/truck_reception.dart';
 import '../../services/auto_list_service.dart';
 import '../../services/daily_tasks_service.dart';
 import '../../services/horario_service.dart';
@@ -70,8 +73,34 @@ class TodayCard extends StatefulWidget {
   State<TodayCard> createState() => _TodayCardState();
 }
 
+/// The rows the card reads from the database for one service day.
+class _DayRows {
+  const _DayRows({
+    required this.day,
+    required this.everyone,
+    required this.tasks,
+    required this.aberturaDone,
+    required this.relatorioDone,
+    required this.visualDone,
+    required this.autoDone,
+    required this.pedidos,
+    required this.trucks,
+  });
+
+  final DateTime day;
+  final List<Person> everyone;
+  final DailyTasks? tasks;
+  final bool aberturaDone;
+  final bool relatorioDone;
+  final bool visualDone;
+  final bool autoDone;
+  final List<Pedido> pedidos;
+  final List<TruckReception> trucks;
+}
+
 class _TodayCardState extends State<TodayCard> {
   _TodayData? _data;
+  _DayRows? _rows;
   Timer? _clock;
 
   List<Listenable> get _sources => [
@@ -92,8 +121,15 @@ class _TodayCardState extends State<TodayCard> {
     for (final s in _sources) {
       s.addListener(_reload);
     }
-    // Shifts start and end and validades windows open while the card shows.
-    _clock = Timer.periodic(const Duration(minutes: 1), (_) => _reload());
+    // Shifts start and end and validades windows open while the card shows:
+    // recount from the rows already read, unless a new service day began.
+    _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (_rows?.day == currentServiceDay()) {
+        _recount();
+      } else {
+        _reload();
+      }
+    });
     _reload();
   }
 
@@ -106,53 +142,67 @@ class _TodayCardState extends State<TodayCard> {
     super.dispose();
   }
 
+  /// Reads today's rows, then [_recount]s.
   Future<void> _reload() async {
-    final now = DateTime.now();
-    final day = currentServiceDay(now);
-    final dayEnd = day.add(const Duration(hours: 24));
-    bool inDay(DateTime t) => !t.isBefore(day) && t.isBefore(dayEnd);
+    final day = currentServiceDay();
+    final visual = await VisualListService.instance.entriesForServiceDay(day);
+    final rows = _DayRows(
+      day: day,
+      everyone: await PersonService.instance.all(),
+      tasks: await DailyTasksService.instance.find(day),
+      aberturaDone: (await OpeningListService.instance.entriesForServiceDay(
+        day,
+      )).any((o) => o.isFinalized),
+      relatorioDone: (await ReportListService.instance.entriesForServiceDay(
+        day,
+      )).any((r) => r.isFinalized),
+      visualDone:
+          visual.fold(0, (s, e) => s + e.itensPicados) >=
+          SettingsService.instance.visualGoal,
+      autoDone: (await AutoListService.instance.entriesForServiceDay(
+        day,
+      )).isNotEmpty,
+      pedidos: await PedidoService.instance.openWithDate(),
+      trucks: await TruckService.instance.forServiceDay(day),
+    );
+    if (!mounted) return;
+    _rows = rows;
+    _recount();
+  }
 
-    final everyone = await PersonService.instance.all();
+  /// Works out the card from [_rows] and the time now, without reading
+  /// the database.
+  void _recount() {
+    final rows = _rows;
+    if (rows == null || !mounted) return;
+    final now = DateTime.now();
+    final day = rows.day;
+    final index = HorarioService.instance.index;
     final people = [
-      for (final p in everyone)
+      for (final p in rows.everyone)
         if (p.team == livreServicoId) p,
     ];
-    final index = HorarioService.instance.index;
-    final tasks = await DailyTasksService.instance.find(day);
-    final openings = await OpeningListService.instance.entriesForServiceDay(
-      day,
-    );
-    final reports = await ReportListService.instance.entriesForServiceDay(day);
-    final visual = await VisualListService.instance.entriesForServiceDay(day);
-    final autos = await AutoListService.instance.history();
-    final pedidos = await PedidoService.instance.history();
-    final trucks = [
-      for (final t in await TruckService.instance.all())
-        if (inDay(t.arrivalTime)) t,
-    ];
-
-    final data = _TodayData(
-      serviceDay: day,
-      hasHorario: index.horarios.meses.containsKey(monthKey(day)),
-      onShift: onShiftAt(index, people, now),
-      counts: shiftCountsOn(index, people, day),
-      pending: pendingDailyTasks(
-        tasks,
-        aberturaDone: openings.any((o) => o.isFinalized),
-        relatorioDone: reports.any((r) => r.isFinalized),
-        visualDone:
-            visual.fold(0, (s, e) => s + e.itensPicados) >=
-            SettingsService.instance.visualGoal,
-        autoDone: autos.any((a) => inDay(a.createdAt)),
-        now: now,
-      ),
-      overduePedidos: pedidos.where((p) => p.isOverdue).length,
-      trucks: trucks.length,
-      pallets: trucks.fold(0, (s, t) => s + t.totalPallets),
-      missingMonth: missingNextMonth(HorarioService.instance.horarios, day),
-      birthdays: upcomingBirthdays(everyone, day),
-    );
-    if (mounted) setState(() => _data = data);
+    setState(() {
+      _data = _TodayData(
+        serviceDay: day,
+        hasHorario: index.horarios.meses.containsKey(monthKey(day)),
+        onShift: onShiftAt(index, people, now),
+        counts: shiftCountsOn(index, people, day),
+        pending: pendingDailyTasks(
+          rows.tasks,
+          aberturaDone: rows.aberturaDone,
+          relatorioDone: rows.relatorioDone,
+          visualDone: rows.visualDone,
+          autoDone: rows.autoDone,
+          now: now,
+        ),
+        overduePedidos: rows.pedidos.where((p) => p.isOverdue).length,
+        trucks: rows.trucks.length,
+        pallets: rows.trucks.fold(0, (s, t) => s + t.totalPallets),
+        missingMonth: missingNextMonth(HorarioService.instance.horarios, day),
+        birthdays: upcomingBirthdays(rows.everyone, day),
+      );
+    });
   }
 
   void _open(Widget screen) =>

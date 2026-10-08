@@ -46,6 +46,20 @@ class TruckService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The camiões that arrived during the service day starting at [day]
+  /// (05:00 to 05:00).
+  Future<List<TruckReception>> forServiceDay(DateTime day) => _isar
+      .truckReceptions
+      .where()
+      .arrivalTimeBetween(
+        day,
+        day.add(const Duration(days: 1)),
+        includeUpper: false,
+      )
+      .filter()
+      .syncDeletedAtIsNull()
+      .findAll();
+
   Future<List<TruckReception>> all({bool includeDeleted = false}) {
     if (includeDeleted) {
       return _isar.truckReceptions.where().sortByArrivalTimeDesc().findAll();
