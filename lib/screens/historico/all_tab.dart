@@ -10,7 +10,11 @@ class _AllTab extends StatefulWidget {
   State<_AllTab> createState() => _AllTabState();
 }
 
-class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
+class _AllTabState extends State<_AllTab>
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 0;
+
   @override
   bool get wantKeepAlive => true;
   late Future<Map<DateTime, List<_DayItem>>> _future;
@@ -19,27 +23,28 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
     _future = _load();
-    TruckService.instance.addListener(_reload);
-    OpeningListService.instance.addListener(_reload);
-    AutoListService.instance.addListener(_reload);
-    ReportListService.instance.addListener(_reload);
-    VisualListService.instance.addListener(_reload);
-    DailyTasksService.instance.addListener(_reload);
-    InventoryService.instance.addListener(_reload);
+    TruckService.instance.addListener(_changed);
+    OpeningListService.instance.addListener(_changed);
+    AutoListService.instance.addListener(_changed);
+    ReportListService.instance.addListener(_changed);
+    VisualListService.instance.addListener(_changed);
+    DailyTasksService.instance.addListener(_changed);
+    InventoryService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    TruckService.instance.removeListener(_reload);
-    OpeningListService.instance.removeListener(_reload);
-    AutoListService.instance.removeListener(_reload);
-    ReportListService.instance.removeListener(_reload);
-    VisualListService.instance.removeListener(_reload);
-    DailyTasksService.instance.removeListener(_reload);
-    InventoryService.instance.removeListener(_reload);
+    TruckService.instance.removeListener(_changed);
+    OpeningListService.instance.removeListener(_changed);
+    AutoListService.instance.removeListener(_changed);
+    ReportListService.instance.removeListener(_changed);
+    VisualListService.instance.removeListener(_changed);
+    DailyTasksService.instance.removeListener(_changed);
+    InventoryService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = _load();

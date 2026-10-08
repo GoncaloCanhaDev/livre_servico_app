@@ -85,6 +85,52 @@ List<T> _searched<T>(String query, List<T> items, String Function(T) text) =>
 Widget _emptyOr(String query, String msg) =>
     _emptyMsg(query.trim().isEmpty ? msg : 'Sem resultados.');
 
+/// For a Histórico tab: a change in its data reloads it only while it is the
+/// open tab; otherwise the change is remembered and the tab reloads when it
+/// is opened. Services call [_changed]; the tab implements [_reload].
+mixin _ReloadWhenOpen<T extends StatefulWidget> on State<T> {
+  /// This tab's position in the Histórico tabs.
+  int get tabIndex;
+
+  void _reload();
+
+  TabController? _tabs;
+  bool _stale = false;
+
+  bool get _isOpen => _tabs == null || _tabs!.index == tabIndex;
+
+  void _changed() {
+    if (_isOpen) {
+      _reload();
+    } else {
+      _stale = true;
+    }
+  }
+
+  void _tabChanged() {
+    if (_stale && _isOpen) {
+      _stale = false;
+      _reload();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tabs = DefaultTabController.maybeOf(context);
+    if (tabs != _tabs) {
+      _tabs?.removeListener(_tabChanged);
+      _tabs = tabs?..addListener(_tabChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabs?.removeListener(_tabChanged);
+    super.dispose();
+  }
+}
+
 /// What a day's Diárias take from the other lists (Lista de Abertura,
 /// Relatório, Lista Visual, Automáticas), for every day at once: four
 /// queries, then grouped by service day.

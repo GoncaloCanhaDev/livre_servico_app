@@ -7,7 +7,10 @@ class _VisualTab extends StatefulWidget {
 }
 
 class _VisualTabState extends State<_VisualTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 5;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<VisualList>> _future;
@@ -16,15 +19,16 @@ class _VisualTabState extends State<_VisualTab>
   void initState() {
     super.initState();
     _future = VisualListService.instance.all(includeDeleted: true);
-    VisualListService.instance.addListener(_reload);
+    VisualListService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    VisualListService.instance.removeListener(_reload);
+    VisualListService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = VisualListService.instance.all(includeDeleted: true);

@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.4] — 2026-10-08
+
+### Changed
+- Histórico: a change (a list sent, a task ticked) reloads only the open tab; the other tabs
+  reload when you open them. The Tarefas tab now also updates when an Abertura, Relatório,
+  Visual or Automática changes, not only the Diárias.
+
 ## [0.56.3] — 2026-10-08
 
 ### Changed

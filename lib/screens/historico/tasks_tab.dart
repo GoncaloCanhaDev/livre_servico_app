@@ -7,24 +7,41 @@ class _TasksTab extends StatefulWidget {
 }
 
 class _TasksTabState extends State<_TasksTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 6;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<_TasksRow>> _future;
+
+  /// The Diárias and the lists that tick some of them.
+  List<Listenable> get _sources => [
+    DailyTasksService.instance,
+    OpeningListService.instance,
+    ReportListService.instance,
+    VisualListService.instance,
+    AutoListService.instance,
+  ];
 
   @override
   void initState() {
     super.initState();
     _future = _load();
-    DailyTasksService.instance.addListener(_reload);
+    for (final s in _sources) {
+      s.addListener(_changed);
+    }
   }
 
   @override
   void dispose() {
-    DailyTasksService.instance.removeListener(_reload);
+    for (final s in _sources) {
+      s.removeListener(_changed);
+    }
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = _load();

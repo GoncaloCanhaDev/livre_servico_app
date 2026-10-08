@@ -7,7 +7,10 @@ class _InventoryTab extends StatefulWidget {
 }
 
 class _InventoryTabState extends State<_InventoryTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 7;
+
   late Future<List<Inventory>> _future;
 
   @override
@@ -17,15 +20,16 @@ class _InventoryTabState extends State<_InventoryTab>
   void initState() {
     super.initState();
     _reload();
-    InventoryService.instance.addListener(_reload);
+    InventoryService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    InventoryService.instance.removeListener(_reload);
+    InventoryService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = InventoryService.instance.history(includeDeleted: true);

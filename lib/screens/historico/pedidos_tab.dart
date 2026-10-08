@@ -7,7 +7,10 @@ class _PedidosTab extends StatefulWidget {
 }
 
 class _PedidosTabState extends State<_PedidosTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 8;
+
   late Future<List<Pedido>> _future;
 
   @override
@@ -17,15 +20,16 @@ class _PedidosTabState extends State<_PedidosTab>
   void initState() {
     super.initState();
     _reload();
-    PedidoService.instance.addListener(_reload);
+    PedidoService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    PedidoService.instance.removeListener(_reload);
+    PedidoService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = PedidoService.instance.history(includeDeleted: true);

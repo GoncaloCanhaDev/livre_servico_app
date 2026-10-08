@@ -7,7 +7,10 @@ class _TrucksTab extends StatefulWidget {
 }
 
 class _TrucksTabState extends State<_TrucksTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 1;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<TruckReception>> _future;
@@ -16,15 +19,16 @@ class _TrucksTabState extends State<_TrucksTab>
   void initState() {
     super.initState();
     _future = TruckService.instance.all(includeDeleted: true);
-    TruckService.instance.addListener(_reload);
+    TruckService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    TruckService.instance.removeListener(_reload);
+    TruckService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = TruckService.instance.all(includeDeleted: true);

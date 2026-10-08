@@ -7,7 +7,10 @@ class _OpeningTab extends StatefulWidget {
 }
 
 class _OpeningTabState extends State<_OpeningTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 2;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<OpeningList>> _future;
@@ -16,15 +19,16 @@ class _OpeningTabState extends State<_OpeningTab>
   void initState() {
     super.initState();
     _future = OpeningListService.instance.history(includeDeleted: true);
-    OpeningListService.instance.addListener(_reload);
+    OpeningListService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    OpeningListService.instance.removeListener(_reload);
+    OpeningListService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = OpeningListService.instance.history(includeDeleted: true);

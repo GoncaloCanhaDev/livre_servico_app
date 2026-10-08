@@ -6,7 +6,11 @@ class _AutoTab extends StatefulWidget {
   State<_AutoTab> createState() => _AutoTabState();
 }
 
-class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
+class _AutoTabState extends State<_AutoTab>
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 3;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<AutoList>> _future;
@@ -15,15 +19,16 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
     _future = AutoListService.instance.history(includeDeleted: true);
-    AutoListService.instance.addListener(_reload);
+    AutoListService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    AutoListService.instance.removeListener(_reload);
+    AutoListService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = AutoListService.instance.history(includeDeleted: true);

@@ -7,7 +7,10 @@ class _ReportTab extends StatefulWidget {
 }
 
 class _ReportTabState extends State<_ReportTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
+  @override
+  int get tabIndex => 4;
+
   @override
   bool get wantKeepAlive => true;
   late Future<List<ReportList>> _future;
@@ -16,15 +19,16 @@ class _ReportTabState extends State<_ReportTab>
   void initState() {
     super.initState();
     _future = ReportListService.instance.history(includeDeleted: true);
-    ReportListService.instance.addListener(_reload);
+    ReportListService.instance.addListener(_changed);
   }
 
   @override
   void dispose() {
-    ReportListService.instance.removeListener(_reload);
+    ReportListService.instance.removeListener(_changed);
     super.dispose();
   }
 
+  @override
   void _reload() {
     setState(() {
       _future = ReportListService.instance.history(includeDeleted: true);
