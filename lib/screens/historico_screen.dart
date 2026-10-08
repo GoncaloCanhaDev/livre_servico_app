@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
+import '../models/historico_search.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
@@ -34,10 +35,33 @@ part 'historico/tasks_tab.dart';
 part 'historico/inventory_tab.dart';
 part 'historico/pedidos_tab.dart';
 
-class HistoricoScreen extends StatelessWidget {
+class HistoricoScreen extends StatefulWidget {
   const HistoricoScreen({super.key, this.initialTab = 0});
 
   final int initialTab;
+
+  @override
+  State<HistoricoScreen> createState() => _HistoricoScreenState();
+}
+
+class _HistoricoScreenState extends State<HistoricoScreen> {
+  /// The search text, shared with the tabs through [_HistoricoQuery].
+  final _query = ValueNotifier('');
+  final _searchCtrl = TextEditingController();
+  bool _searching = false;
+
+  @override
+  void dispose() {
+    _query.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _closeSearch() {
+    setState(() => _searching = false);
+    _searchCtrl.clear();
+    _query.value = '';
+  }
 
   static const _tabNames = [
     'Tudo',
@@ -99,12 +123,37 @@ class HistoricoScreen extends StatelessWidget {
     final tabs = _tabNames.map((n) => Tab(text: n)).toList();
     return DefaultTabController(
       length: tabs.length,
-      initialIndex: initialTab.clamp(0, tabs.length - 1),
+      initialIndex: widget.initialTab.clamp(0, tabs.length - 1),
       child: Builder(
         builder: (ctx) => Scaffold(
           appBar: AppBar(
-            title: const Text('Histórico'),
+            title: _searching
+                ? TextField(
+                    controller: _searchCtrl,
+                    autofocus: true,
+                    onChanged: (v) => _query.value = v,
+                    style: const TextStyle(color: Colors.white),
+                    cursorColor: Colors.white,
+                    decoration: const InputDecoration(
+                      hintText: 'Procurar nome, matrícula, nº, data…',
+                      hintStyle: TextStyle(color: Colors.white70),
+                      border: InputBorder.none,
+                    ),
+                  )
+                : const Text('Histórico'),
             actions: [
+              if (_searching)
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Fechar pesquisa',
+                  onPressed: _closeSearch,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: 'Procurar',
+                  onPressed: () => setState(() => _searching = true),
+                ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 onSelected: (v) async {
@@ -149,19 +198,22 @@ class HistoricoScreen extends StatelessWidget {
               tabs: tabs,
             ),
           ),
-          body: const SafeArea(
-            child: TabBarView(
-              children: [
-                _AllTab(),
-                _TrucksTab(),
-                _OpeningTab(),
-                _AutoTab(),
-                _ReportTab(),
-                _VisualTab(),
-                _TasksTab(),
-                _InventoryTab(),
-                _PedidosTab(),
-              ],
+          body: SafeArea(
+            child: _HistoricoQuery(
+              query: _query,
+              child: const TabBarView(
+                children: [
+                  _AllTab(),
+                  _TrucksTab(),
+                  _OpeningTab(),
+                  _AutoTab(),
+                  _ReportTab(),
+                  _VisualTab(),
+                  _TasksTab(),
+                  _InventoryTab(),
+                  _PedidosTab(),
+                ],
+              ),
             ),
           ),
         ),

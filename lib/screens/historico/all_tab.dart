@@ -1,5 +1,9 @@
 part of '../historico_screen.dart';
 
+/// What a Tudo line is searched by: its date, texts and who.
+String _dayItemText(_DayItem i) =>
+    [dateWords(i.time), i.title, i.subtitle, ...i.names].join(' ');
+
 class _AllTab extends StatefulWidget {
   const _AllTab();
   @override
@@ -238,6 +242,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dayFmt = DateFormat("EEEE, d 'de' MMMM y", 'pt_PT');
     return FutureBuilder<Map<DateTime, List<_DayItem>>>(
       future: _future,
@@ -245,8 +250,13 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final grouped = snap.data!;
-        if (grouped.isEmpty) return _emptyMsg('Sem histórico.');
+        final grouped = {
+          for (final e in snap.data!.entries)
+            if (_searched(query, e.value, _dayItemText) case final items
+                when items.isNotEmpty)
+              e.key: items,
+        };
+        if (grouped.isEmpty) return _emptyOr(query, 'Sem histórico.');
         final days = grouped.keys.toList();
         return ListView.builder(
           padding: const EdgeInsets.all(16),

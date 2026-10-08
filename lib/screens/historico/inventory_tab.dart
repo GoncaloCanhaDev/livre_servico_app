@@ -35,6 +35,7 @@ class _InventoryTabState extends State<_InventoryTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dateFmt = DateFormat("d 'de' MMMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<Inventory>>(
       future: _future,
@@ -42,9 +43,9 @@ class _InventoryTabState extends State<_InventoryTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data!;
+        final items = _searched(query, snap.data!, inventorySearchText);
         if (items.isEmpty) {
-          return const Center(child: Text('Sem inventários registados.'));
+          return _emptyOr(query, 'Sem inventários registados.');
         }
         return ListView.builder(
           padding: const EdgeInsets.all(12),

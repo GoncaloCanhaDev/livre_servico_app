@@ -55,6 +55,34 @@ Widget _emptyMsg(String msg) => Center(
   ),
 );
 
+/// The Histórico search text, read by every tab below it.
+class _HistoricoQuery extends InheritedNotifier<ValueNotifier<String>> {
+  const _HistoricoQuery({
+    required ValueNotifier<String> query,
+    required super.child,
+  }) : super(notifier: query);
+
+  static String of(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_HistoricoQuery>()
+          ?.notifier
+          ?.value ??
+      '';
+}
+
+/// [items] whose [text] matches [query] (see [matchesQuery]).
+List<T> _searched<T>(String query, List<T> items, String Function(T) text) =>
+    query.trim().isEmpty
+    ? items
+    : [
+        for (final e in items)
+          if (matchesQuery(text(e), query)) e,
+      ];
+
+/// [msg] when nothing is saved, "Sem resultados." while searching.
+Widget _emptyOr(String query, String msg) =>
+    _emptyMsg(query.trim().isEmpty ? msg : 'Sem resultados.');
+
 enum _ItemType { truck, opening, auto, report, visual, tasks, inventory }
 
 class _HistoryInitials extends StatelessWidget {

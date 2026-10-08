@@ -35,6 +35,7 @@ class _PedidosTabState extends State<_PedidosTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dateFmt = DateFormat("d 'de' MMMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<Pedido>>(
       future: _future,
@@ -42,10 +43,8 @@ class _PedidosTabState extends State<_PedidosTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data!;
-        if (items.isEmpty) {
-          return const Center(child: Text('Sem pedidos registados.'));
-        }
+        final items = _searched(query, snap.data!, pedidoSearchText);
+        if (items.isEmpty) return _emptyOr(query, 'Sem pedidos registados.');
         return ListView.builder(
           padding: const EdgeInsets.all(12),
           itemCount: items.length,

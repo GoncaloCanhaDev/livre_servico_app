@@ -83,6 +83,7 @@ class _TasksTabState extends State<_TasksTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dayFmt = DateFormat("EEEE, d 'de' MMM y", 'pt_PT');
     return FutureBuilder<List<_TasksRow>>(
       future: _future,
@@ -90,8 +91,12 @@ class _TasksTabState extends State<_TasksTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data!;
-        if (items.isEmpty) return _emptyMsg('Sem registos de tarefas.');
+        final items = _searched(
+          query,
+          snap.data!,
+          (r) => dailyTasksSearchText(r.tasks),
+        );
+        if (items.isEmpty) return _emptyOr(query, 'Sem registos de tarefas.');
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: items.length,

@@ -34,6 +34,7 @@ class _VisualTabState extends State<_VisualTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dayFmt = DateFormat("EEE, d 'de' MMM y", 'pt_PT');
     final timeFmt = DateFormat('HH:mm');
     return FutureBuilder<List<VisualList>>(
@@ -42,8 +43,8 @@ class _VisualTabState extends State<_VisualTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final all = snap.data!;
-        if (all.isEmpty) return _emptyMsg('Sem listas visuais.');
+        final all = _searched(query, snap.data!, visualSearchText);
+        if (all.isEmpty) return _emptyOr(query, 'Sem listas visuais.');
         final byDay = <DateTime, List<VisualList>>{};
         for (final e in all) {
           byDay.putIfAbsent(e.serviceDay, () => []).add(e);

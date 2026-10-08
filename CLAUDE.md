@@ -23,8 +23,8 @@ multi-tenant product.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
-  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart` and
-  `lib/models/today.dart`, no
+  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart`,
+  `lib/models/today.dart` and `lib/models/historico_search.dart`, no
   widget tests).
 
 ## Architecture
@@ -118,7 +118,9 @@ multi-tenant product.
   auto/report/visual lists (`ReplenishmentListsScreen`) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The two largest
   screens are split with `part` files, so their private widgets stay private:
-  `historico_screen.dart` (one part per tab in `lib/screens/historico/`) and
+  `historico_screen.dart` (one part per tab in `lib/screens/historico/`; each tab filters its
+  rows by the search box through `_searched` and a `*SearchText` function from
+  `lib/models/historico_search.dart`) and
   `truck_form_screen.dart` (`lib/screens/truck_form/`).
 - `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
   `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`. Its

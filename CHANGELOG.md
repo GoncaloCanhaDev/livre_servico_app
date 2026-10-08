@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.52.0] — 2026-10-08
+
+### Added
+- Search in Histórico: the 🔍 button opens a search field that filters the open tab, ignoring
+  accents and capitals. Every word must match: names, matrícula, fornecedor, pedido nº,
+  inventory name and code, expositores, the numbers shown and the date ("8/10/2026", "8 de
+  outubro", "quinta").
+
 ## [0.51.0] — 2026-10-08
 
 ### Added

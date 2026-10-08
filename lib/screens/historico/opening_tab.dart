@@ -34,6 +34,7 @@ class _OpeningTabState extends State<_OpeningTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dayFmt = DateFormat("d 'de' MMM y", 'pt_PT');
     return FutureBuilder<List<OpeningList>>(
       future: _future,
@@ -41,8 +42,8 @@ class _OpeningTabState extends State<_OpeningTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data!;
-        if (items.isEmpty) return _emptyMsg('Sem listas de abertura.');
+        final items = _searched(query, snap.data!, openingSearchText);
+        if (items.isEmpty) return _emptyOr(query, 'Sem listas de abertura.');
         return ListView.separated(
           itemCount: items.length,
           separatorBuilder: (_, _) => const Divider(height: 1),

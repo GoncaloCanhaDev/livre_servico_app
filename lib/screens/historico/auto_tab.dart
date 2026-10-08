@@ -33,6 +33,7 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final fmt = DateFormat("d 'de' MMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<AutoList>>(
       future: _future,
@@ -40,8 +41,8 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data!;
-        if (items.isEmpty) return _emptyMsg('Sem listas automáticas.');
+        final items = _searched(query, snap.data!, autoSearchText);
+        if (items.isEmpty) return _emptyOr(query, 'Sem listas automáticas.');
         return ListView.separated(
           itemCount: items.length,
           separatorBuilder: (_, _) => const Divider(height: 1),

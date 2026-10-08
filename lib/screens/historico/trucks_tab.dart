@@ -34,6 +34,7 @@ class _TrucksTabState extends State<_TrucksTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final query = _HistoricoQuery.of(context);
     final dateFmt = DateFormat("d 'de' MMM, HH:mm", 'pt_PT');
     return FutureBuilder<List<TruckReception>>(
       future: _future,
@@ -41,8 +42,8 @@ class _TrucksTabState extends State<_TrucksTab>
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final trucks = snap.data!;
-        if (trucks.isEmpty) return _emptyMsg('Sem camiões registados.');
+        final trucks = _searched(query, snap.data!, truckSearchText);
+        if (trucks.isEmpty) return _emptyOr(query, 'Sem camiões registados.');
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: trucks.length,
