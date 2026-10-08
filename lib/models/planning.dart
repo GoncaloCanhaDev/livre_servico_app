@@ -63,13 +63,11 @@ String? awayTagOn(Person p, DateTime day, {HorarioIndex? horario}) =>
 String? offNoteOn(Person p, DateTime day, {HorarioIndex? horario}) =>
     _offOn(p, day, horario)?.note;
 
-/// "H73 · 07:00–16:00" when [horario] has [p] on a shift on [day], else
-/// null.
+/// "07:00–16:00" when [horario] has [p] on a shift on [day], else null.
 String? horarioTextOn(Person p, DateTime day, HorarioIndex? horario) {
   final code = horario?.codeOn(p, day);
   if (code == null) return null;
-  final shift = horario!.horarios.codigos[code];
-  return shift == null ? null : '$code · ${shift.shortText}';
+  return horario!.horarios.codigos[code]?.shortText;
 }
 
 /// [p]'s ausências that have not ended before [today], by start date.

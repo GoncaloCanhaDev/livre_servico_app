@@ -319,10 +319,7 @@ void main() {
       });
 
       test('the shift text of a working day', () {
-        expect(
-          horarioTextOn(ana, DateTime(2026, 10, 6), index),
-          'H73 · 07:00–16:00',
-        );
+        expect(horarioTextOn(ana, DateTime(2026, 10, 6), index), '07:00–16:00');
         expect(horarioTextOn(ana, DateTime(2026, 10, 4), index), isNull);
         expect(horarioTextOn(rui, DateTime(2026, 10, 6), index), isNull);
       });
