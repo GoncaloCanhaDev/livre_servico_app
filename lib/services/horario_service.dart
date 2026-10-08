@@ -121,7 +121,7 @@ class HorarioService extends ChangeNotifier {
               ],
           );
         } else {
-          await _isar.horarioMes.filter().mesEqualTo(e.key).deleteAll();
+          await _isar.horarioMes.where().mesEqualTo(e.key).deleteAll();
         }
       }
     });

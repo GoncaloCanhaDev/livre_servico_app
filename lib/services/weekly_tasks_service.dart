@@ -14,9 +14,10 @@ class WeeklyTasksService extends ChangeNotifier {
   Future<WeeklyTasks> currentOrCreate() async {
     final week = currentServiceWeek();
     final existing = await _isar.weeklyTasks
+        .where()
+        .serviceWeekEqualTo(week)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceWeekEqualTo(week)
         .findFirst();
     if (existing != null) {
       if (_sanitize(existing)) {
@@ -50,9 +51,10 @@ class WeeklyTasksService extends ChangeNotifier {
 
   Future<WeeklyTasks> forWeek(DateTime serviceWeek) async {
     final existing = await _isar.weeklyTasks
+        .where()
+        .serviceWeekEqualTo(serviceWeek)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceWeekEqualTo(serviceWeek)
         .findFirst();
     if (existing != null) return existing;
     final created = WeeklyTasks()..serviceWeek = serviceWeek;

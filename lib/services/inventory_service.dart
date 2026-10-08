@@ -32,7 +32,7 @@ class InventoryService extends ChangeNotifier {
   }
 
   Future<Inventory?> getByUuid(String uuid) =>
-      _isar.inventorys.filter().syncUuidEqualTo(uuid).findFirst();
+      _isar.inventorys.where().syncUuidEqualTo(uuid).findFirst();
 
   Future<Inventory?> getById(int id) => _isar.inventorys.get(id);
 

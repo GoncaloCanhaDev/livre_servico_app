@@ -35,7 +35,7 @@ class CustomTaskService extends ChangeNotifier {
 
   Future<void> deleteTask(String taskUuid) async {
     final task = await _isar.customTasks
-        .filter()
+        .where()
         .syncUuidEqualTo(taskUuid)
         .findFirst();
     if (task == null || task.syncDeletedAt != null) return;
@@ -46,8 +46,9 @@ class CustomTaskService extends ChangeNotifier {
 
   Future<CustomTaskEntry?> entryFor(String taskUuid, DateTime periodKey) {
     return _isar.customTaskEntrys
-        .filter()
+        .where()
         .taskUuidEqualTo(taskUuid)
+        .filter()
         .periodKeyEqualTo(periodKey)
         .syncDeletedAtIsNull()
         .findFirst();

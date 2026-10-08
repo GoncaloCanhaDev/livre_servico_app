@@ -15,9 +15,10 @@ class ReportListService extends ChangeNotifier {
   Future<ReportList> currentOrCreate() async {
     final day = currentServiceDay();
     final existing = await _isar.reportLists
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .findFirst();
     if (existing != null) return existing;
     final created = ReportList()..serviceDay = day;
@@ -55,9 +56,10 @@ class ReportListService extends ChangeNotifier {
     required int repetidos,
   }) async {
     final existing = await _isar.reportLists
+        .where()
+        .serviceDayEqualTo(serviceDay)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(serviceDay)
         .findFirst();
     final row = existing ?? (ReportList()..serviceDay = serviceDay);
     row.diasSemVendas = diasSemVendas;
@@ -86,12 +88,13 @@ class ReportListService extends ChangeNotifier {
     bool includeDeleted = false,
   }) {
     if (includeDeleted) {
-      return _isar.reportLists.filter().serviceDayEqualTo(day).findAll();
+      return _isar.reportLists.where().serviceDayEqualTo(day).findAll();
     }
     return _isar.reportLists
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .findAll();
   }
 

@@ -14,9 +14,10 @@ class OpeningListService extends ChangeNotifier {
   Future<OpeningList> currentOrCreate() async {
     final day = currentServiceDay();
     final existing = await _isar.openingLists
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .findFirst();
     if (existing != null) return existing;
     final created = OpeningList()..serviceDay = day;
@@ -70,9 +71,10 @@ class OpeningListService extends ChangeNotifier {
     required List<String> names,
   }) async {
     final existing = await _isar.openingLists
+        .where()
+        .serviceDayEqualTo(serviceDay)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(serviceDay)
         .findFirst();
     final row = existing ?? (OpeningList()..serviceDay = serviceDay);
     if (row.isSectionDone(section)) return null;
@@ -90,12 +92,13 @@ class OpeningListService extends ChangeNotifier {
     bool includeDeleted = false,
   }) {
     if (includeDeleted) {
-      return _isar.openingLists.filter().serviceDayEqualTo(day).findAll();
+      return _isar.openingLists.where().serviceDayEqualTo(day).findAll();
     }
     return _isar.openingLists
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .findAll();
   }
 

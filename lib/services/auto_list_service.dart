@@ -64,18 +64,20 @@ class AutoListService extends ChangeNotifier {
     final end = start.add(const Duration(days: 1));
     if (includeDeleted) {
       return _isar.autoLists
-          .filter()
-          .createdAtGreaterThan(start)
-          .and()
-          .createdAtLessThan(end)
+          .where()
+          .createdAtBetween(
+            start,
+            end,
+            includeLower: false,
+            includeUpper: false,
+          )
           .findAll();
     }
     return _isar.autoLists
+        .where()
+        .createdAtBetween(start, end, includeLower: false, includeUpper: false)
         .filter()
         .syncDeletedAtIsNull()
-        .createdAtGreaterThan(start)
-        .and()
-        .createdAtLessThan(end)
         .findAll();
   }
 

@@ -15,9 +15,10 @@ class DailyTasksService extends ChangeNotifier {
   Future<DailyTasks> currentOrCreate() async {
     final day = currentServiceDay();
     final existing = await _isar.dailyTasks
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .findFirst();
     if (existing != null) {
       if (_sanitize(existing)) {
@@ -55,16 +56,18 @@ class DailyTasksService extends ChangeNotifier {
 
   /// The row for [serviceDay], without creating one; null when none.
   Future<DailyTasks?> find(DateTime serviceDay) => _isar.dailyTasks
+      .where()
+      .serviceDayEqualTo(serviceDay)
       .filter()
       .syncDeletedAtIsNull()
-      .serviceDayEqualTo(serviceDay)
       .findFirst();
 
   Future<DailyTasks> forDay(DateTime serviceDay) async {
     final existing = await _isar.dailyTasks
+        .where()
+        .serviceDayEqualTo(serviceDay)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(serviceDay)
         .findFirst();
     if (existing != null) return existing;
     final created = DailyTasks()..serviceDay = serviceDay;

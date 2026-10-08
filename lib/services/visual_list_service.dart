@@ -66,15 +66,16 @@ class VisualListService extends ChangeNotifier {
   }) {
     if (includeDeleted) {
       return _isar.visualLists
-          .filter()
+          .where()
           .serviceDayEqualTo(day)
           .sortByCreatedAtDesc()
           .findAll();
     }
     return _isar.visualLists
+        .where()
+        .serviceDayEqualTo(day)
         .filter()
         .syncDeletedAtIsNull()
-        .serviceDayEqualTo(day)
         .sortByCreatedAtDesc()
         .findAll();
   }
