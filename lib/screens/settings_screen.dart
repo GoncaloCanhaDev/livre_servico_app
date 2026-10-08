@@ -232,9 +232,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao importar: $e')));
+      // A FormatException says what is wrong in the file (a JSON typo with
+      // its line, or a vasilhame item without a name).
+      final detail = e is FormatException ? e.message : '$e';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao importar: $detail'),
+          duration: const Duration(seconds: 8),
+        ),
+      );
     }
   }
 }

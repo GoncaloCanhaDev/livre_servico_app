@@ -7,6 +7,21 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.48.0] — 2026-10-08
+
+### Added
+- The vasilhame list lives in the app and travels in the backup file: export, edit its
+  `"vasilhame"` section by hand (`{"name", "code"?, "ean"?}` per item), import. A file without
+  that section leaves the current list alone; an item without a name stops the import before
+  anything changes. The bundled `assets/vasilhame.json` is gone.
+- The backup now also carries Pedidos, Tarefas Personalizadas (and their completions) and the
+  Lista Visual goal; "Apagar tudo" clears Pedidos and Tarefas Personalizadas too.
+
+### Changed
+- The backup file is written indented, one value per line, so it can be edited by hand.
+- Import errors show what is wrong in the file (for a JSON typo, its line), for longer.
+- Importing an older backup keeps any collection the file doesn't have instead of emptying it.
+
 ## [0.47.0] — 2026-10-08
 
 ### Added

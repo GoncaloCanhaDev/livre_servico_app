@@ -23,7 +23,7 @@ multi-tenant product.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
-  `lib/models/info_contacts.dart`, no widget tests).
+  `lib/models/info_contacts.dart` and `lib/models/vasilhame.dart`, no widget tests).
 
 ## Architecture
 
@@ -44,7 +44,9 @@ multi-tenant product.
   every delete. Reads must filter with `.syncDeletedAtIsNull()` to exclude tombstoned rows;
   `ShiftService._backfillSync()` fills in missing UUIDs on legacy rows at startup.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
-  pick a file) and a "clear all data" wipe, independent of the sync fields above.
+  pick a file) and a "clear all data" wipe, independent of the sync fields above. The export is
+  indented JSON with `vasilhame` and `settings` before `collections` (every Isar collection);
+  import replaces only the collections and sections the file has. Add new collections there.
 - People belong to one of the fixed teams in `lib/models/teams.dart` (`Person.team` stores the
   `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
   through `chefeSlotOf`, which ignores slots the team doesn't have. `PersonService.save` keeps
@@ -119,9 +121,10 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
 
 ### Platform notes
 
-- The "Enviar Vasilhame" picker in `truck_form_screen.dart` reads its items from the bundled
-  `assets/vasilhame.json` (a JSON array of `{"name", "code"?, "ean"?}`), maintained by hand.
-  `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
+- The "Enviar Vasilhame" picker in `truck_form_screen.dart` reads its items from
+  `SettingsService.vasilhame` (`lib/models/vasilhame.dart`). The list is maintained by hand in
+  the backup file's top-level `"vasilhame"` array of `{"name", "code"?, "ean"?}`: export, edit,
+  import. `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
 - `image_picker` (person photos, Informações photos) is the only camera use; Android declares
   no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
   intent works). Photos are copied into the app's documents folder (`people_photos/`,

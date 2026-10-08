@@ -8,15 +8,19 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auto_list.dart';
+import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/opening_list.dart';
+import '../models/pedido.dart';
 import '../models/person.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
+import '../models/vasilhame.dart';
 import '../models/visual_list.dart';
 import '../models/weekly_tasks.dart';
+import 'settings_service.dart';
 import 'shift_service.dart';
 import 'sync_meta.dart';
 
@@ -42,7 +46,10 @@ class BackupService {
         .split('.')
         .first;
     final file = File('${dir.path}/livre_servico_backup_$timestamp.json');
-    await file.writeAsString(jsonEncode(payload));
+    // Indented so the file can be edited by hand (e.g. its "vasilhame").
+    await file.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(payload),
+    );
     final result = await Share.shareXFiles([
       XFile(file.path, mimeType: 'application/json'),
     ], subject: 'Cópia de segurança - Livre Serviço');
@@ -126,12 +133,19 @@ class BackupService {
     await wipe(_isar.inventorys);
     await wipe(_isar.infoEntrys);
     await wipe(_isar.persons);
+    await wipe(_isar.pedidos);
+    await wipe(_isar.customTasks);
+    await wipe(_isar.customTaskEntrys);
   }
 
   Future<Map<String, dynamic>> _buildPayload() async {
+    final settings = SettingsService.instance;
     return {
       'version': _formatVersion,
       'exportedAt': DateTime.now().toIso8601String(),
+      // First, so it is easy to find and edit by hand.
+      'vasilhame': [for (final v in settings.vasilhame) v.toJson()],
+      'settings': {'visualGoal': settings.visualGoal},
       'collections': {
         'TruckReception': await _isar.truckReceptions.where().exportJson(),
         'OpeningList': await _isar.openingLists.where().exportJson(),
@@ -143,6 +157,9 @@ class BackupService {
         'Inventory': await _isar.inventorys.where().exportJson(),
         'InfoEntry': await _isar.infoEntrys.where().exportJson(),
         'Person': await _isar.persons.where().exportJson(),
+        'Pedido': await _isar.pedidos.where().exportJson(),
+        'CustomTask': await _isar.customTasks.where().exportJson(),
+        'CustomTaskEntry': await _isar.customTaskEntrys.where().exportJson(),
       },
     };
   }
@@ -159,37 +176,44 @@ class BackupService {
       throw const FormatException('Cópia de segurança sem coleções.');
     }
 
-    List<Map<String, dynamic>> items(String key) {
+    // Checked before anything is replaced, so a mistake changes nothing.
+    final vasilhame = vasilhameFromBackup(payload);
+
+    /// Replaces [col] with the file's [key] rows; a collection the file
+    /// doesn't have (older backups) is left as it is.
+    Future<void> replace<T>(
+      IsarCollection<T> col,
+      String key, [
+      Map<String, dynamic> Function(Map<String, dynamic>)? adapt,
+    ]) async {
       final v = raw[key];
-      if (v is! List) return const [];
-      return v.cast<Map<String, dynamic>>();
+      if (v is! List) return;
+      final rows = v.cast<Map<String, dynamic>>();
+      await col.clear();
+      await col.importJson(adapt == null ? rows : rows.map(adapt).toList());
     }
 
     await _isar.writeTxn(() async {
-      await _isar.truckReceptions.clear();
-      await _isar.openingLists.clear();
-      await _isar.autoLists.clear();
-      await _isar.reportLists.clear();
-      await _isar.visualLists.clear();
-      await _isar.dailyTasks.clear();
-      await _isar.weeklyTasks.clear();
-      await _isar.inventorys.clear();
-      await _isar.infoEntrys.clear();
-      await _isar.persons.clear();
-
-      await _isar.truckReceptions.importJson(items('TruckReception'));
-      await _isar.openingLists.importJson(items('OpeningList'));
-      await _isar.autoLists.importJson(items('AutoList'));
-      await _isar.reportLists.importJson(items('ReportList'));
-      await _isar.visualLists.importJson(items('VisualList'));
-      await _isar.dailyTasks.importJson(items('DailyTasks'));
-      await _isar.weeklyTasks.importJson(items('WeeklyTasks'));
-      await _isar.inventorys.importJson(items('Inventory'));
-      await _isar.infoEntrys.importJson(items('InfoEntry'));
-      await _isar.persons.importJson(
-        items('Person').map(personJsonForImport).toList(),
-      );
+      await replace(_isar.truckReceptions, 'TruckReception');
+      await replace(_isar.openingLists, 'OpeningList');
+      await replace(_isar.autoLists, 'AutoList');
+      await replace(_isar.reportLists, 'ReportList');
+      await replace(_isar.visualLists, 'VisualList');
+      await replace(_isar.dailyTasks, 'DailyTasks');
+      await replace(_isar.weeklyTasks, 'WeeklyTasks');
+      await replace(_isar.inventorys, 'Inventory');
+      await replace(_isar.infoEntrys, 'InfoEntry');
+      await replace(_isar.persons, 'Person', personJsonForImport);
+      await replace(_isar.pedidos, 'Pedido');
+      await replace(_isar.customTasks, 'CustomTask');
+      await replace(_isar.customTaskEntrys, 'CustomTaskEntry');
     });
+
+    final settings = SettingsService.instance;
+    if (vasilhame != null) await settings.setVasilhame(vasilhame);
+    if (payload['settings'] case {'visualGoal': final int goal}) {
+      await settings.setVisualGoal(goal);
+    }
   }
 }
 

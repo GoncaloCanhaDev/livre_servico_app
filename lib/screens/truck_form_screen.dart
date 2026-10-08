@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:barcode_widget/barcode_widget.dart';
 
 import 'package:flutter/material.dart';
@@ -7,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/truck_reception.dart';
+import '../models/vasilhame.dart';
+import '../services/settings_service.dart';
 import '../services/truck_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -43,7 +43,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
 
   /// Selected vasilhame quantities, keyed by item name.
   final Map<String, int> _vasilhameQuantities = {};
-  final Map<String, _VasilhameItem> _vasilhameItems = {};
+  final Map<String, VasilhameItem> _vasilhameItems = {};
 
   @override
   void dispose() {
@@ -201,29 +201,22 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
   }
 
   Future<void> _showVasilhameModal() async {
-    final List<_VasilhameItem> products;
-    try {
-      products = await _loadVasilhameItems();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao ler a lista de vasilhame: $e')),
-      );
-      return;
-    }
-
+    final products = SettingsService.instance.vasilhame;
     for (final p in products) {
       _vasilhameItems[p.name] = p;
     }
 
-    if (products.isEmpty && mounted) {
+    if (products.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nenhum artigo de vasilhame encontrado.')),
+        const SnackBar(
+          content: Text(
+            'A lista de vasilhame está vazia. Exporta a cópia de segurança, '
+            'preenche a secção "vasilhame" e importa-a.',
+          ),
+        ),
       );
       return;
     }
-
-    if (!mounted) return;
 
     await showModalBottomSheet(
       context: context,
@@ -1019,39 +1012,6 @@ class _TotalCell extends StatelessWidget {
       ],
     );
   }
-}
-
-/// One entry of the bundled vasilhame list (`assets/vasilhame.json`).
-class _VasilhameItem {
-  const _VasilhameItem({required this.name, this.code, this.ean});
-  final String name;
-  final String? code;
-  final String? ean;
-}
-
-/// Reads `assets/vasilhame.json`: a JSON array of objects with a required
-/// `name` and optional `code` (shown under the name) and `ean` (shown as a
-/// barcode when the item is tapped).
-Future<List<_VasilhameItem>> _loadVasilhameItems() async {
-  final raw = await rootBundle.loadString('assets/vasilhame.json');
-  final decoded = jsonDecode(raw);
-  if (decoded is! List) {
-    throw const FormatException('esperada uma lista');
-  }
-  String? opt(Object? v) {
-    final s = v?.toString().trim();
-    return (s == null || s.isEmpty) ? null : s;
-  }
-
-  return [
-    for (final e in decoded)
-      if (e is Map && opt(e['name']) != null)
-        _VasilhameItem(
-          name: opt(e['name'])!,
-          code: opt(e['code']),
-          ean: opt(e['ean']),
-        ),
-  ];
 }
 
 IconData _typeIcon(TruckType t) => switch (t) {
