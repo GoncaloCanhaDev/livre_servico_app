@@ -77,7 +77,7 @@ class _VisualTabState extends State<_VisualTab>
                         text: '${formatCents(tTotal)} €',
                         style: TextStyle(
                           color: tTotal >= 0
-                              ? AppColors.green
+                              ? context.colors.primary
                               : Colors.redAccent,
                           fontWeight: FontWeight.w600,
                         ),
@@ -106,9 +106,9 @@ class _VisualTabState extends State<_VisualTab>
                       },
                       child: ListTile(
                         dense: true,
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.visibility,
-                          color: AppColors.green,
+                          color: context.colors.primary,
                         ),
                         title: Text(timeFmt.format(e.createdAt)),
                         trailing:
@@ -144,8 +144,8 @@ class _VisualTabState extends State<_VisualTab>
                                   const TextSpan(text: ' · Benefício: '),
                                   TextSpan(
                                     text: '${formatCents(e.beneficioCents)} €',
-                                    style: const TextStyle(
-                                      color: AppColors.green,
+                                    style: TextStyle(
+                                      color: context.colors.primary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -154,7 +154,7 @@ class _VisualTabState extends State<_VisualTab>
                                     text: '${formatCents(eTotal)} €',
                                     style: TextStyle(
                                       color: eTotal >= 0
-                                          ? AppColors.green
+                                          ? context.colors.primary
                                           : Colors.redAccent,
                                       fontWeight: FontWeight.w600,
                                     ),

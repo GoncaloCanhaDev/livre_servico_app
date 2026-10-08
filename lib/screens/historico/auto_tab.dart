@@ -66,7 +66,7 @@ class _AutoTabState extends State<_AutoTab> with AutomaticKeepAliveClientMixin {
                   await WhatsAppService.sendWithConfirm(ctx, msg);
                 },
                 child: ListTile(
-                  leading: const Icon(Icons.bolt, color: AppColors.green),
+                  leading: Icon(Icons.bolt, color: context.colors.primary),
                   title: Text(fmt.format(l.createdAt)),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

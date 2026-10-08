@@ -69,7 +69,9 @@ class _OpeningTabState extends State<_OpeningTab>
                 child: ListTile(
                   leading: Icon(
                     l.isFinalized ? Icons.check_circle : Icons.edit,
-                    color: l.isFinalized ? AppColors.green : Colors.black45,
+                    color: l.isFinalized
+                        ? context.colors.primary
+                        : context.faint,
                   ),
                   title: Text(dayFmt.format(l.serviceDay)),
                   subtitle: Column(
@@ -83,9 +85,9 @@ class _OpeningTabState extends State<_OpeningTab>
                         if (l.namesOf(s) case final names when names.isNotEmpty)
                           Text(
                             '${s.label}: ${joinNames(names)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.black54,
+                              color: context.muted,
                             ),
                           ),
                       if (l.backdated) const _BackdatedRow(),

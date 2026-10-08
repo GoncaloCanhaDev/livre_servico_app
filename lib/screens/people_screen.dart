@@ -177,13 +177,13 @@ class _PeopleScreenState extends State<PeopleScreen> {
             }
             final items = snap.data!;
             if (items.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Sem pessoas.\nUsa o + para adicionar.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.muted),
                   ),
                 ),
               );
@@ -200,7 +200,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       peopleCountText(items, query: _searchCtrl.text),
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: context.muted),
                     ),
                   ),
                 ),
@@ -210,10 +210,10 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 ),
                 Expanded(
                   child: sections.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'Sem resultados.',
-                            style: TextStyle(color: Colors.black54),
+                            style: TextStyle(color: context.muted),
                           ),
                         )
                       : _PeopleList(
@@ -364,8 +364,8 @@ class _PersonTile extends StatelessWidget {
             else if (horarioTextOn(p, today, horario) case final shift?)
               TextSpan(
                 text: 'Hoje · $shift  ',
-                style: const TextStyle(
-                  color: AppColors.greenDark,
+                style: TextStyle(
+                  color: context.colors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

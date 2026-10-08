@@ -47,10 +47,12 @@ Future<bool> _confirmDelete(BuildContext context, String what) async {
 Widget _emptyMsg(String msg) => Center(
   child: Padding(
     padding: const EdgeInsets.all(24),
-    child: Text(
-      msg,
-      textAlign: TextAlign.center,
-      style: const TextStyle(color: Colors.black54),
+    child: Builder(
+      builder: (context) => Text(
+        msg,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: context.muted),
+      ),
     ),
   ),
 );
@@ -108,12 +110,12 @@ class _BackdatedRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 2),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.history_toggle_off, size: 12, color: Colors.black45),
+        children: [
+          Icon(Icons.history_toggle_off, size: 12, color: context.faint),
           SizedBox(width: 4),
           Text(
             'Preenchido a posteriori',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.faint),
           ),
         ],
       ),
@@ -135,7 +137,7 @@ class _DayItem {
     required this.title,
     required this.subtitle,
     this.icon = Icons.circle,
-    this.iconColor = AppColors.green,
+    this.iconColor,
     this.names = const [],
     this.deleted = false,
   });
@@ -144,7 +146,9 @@ class _DayItem {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color iconColor;
+
+  /// The theme's primary colour when null.
+  final Color? iconColor;
   final List<String> names;
   final bool deleted;
 }
@@ -175,7 +179,7 @@ class _HistoryDismissible extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.send, color: AppColors.green),
+                  leading: Icon(Icons.send, color: context.colors.primary),
                   title: const Text('Enviar por WhatsApp'),
                   onTap: () async {
                     Navigator.pop(ctx);

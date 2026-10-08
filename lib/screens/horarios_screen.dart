@@ -175,13 +175,14 @@ class _HorariosScreenState extends State<HorariosScreen> {
 bool _isNight(Horarios h, String code) => h.codigos[code]?.noturno ?? false;
 
 /// The cell colour for [code]: absences tinted, night shifts darker.
-Color? _cellColor(Horarios h, String code) => switch (code) {
-  folgaCode => Colors.grey.shade300,
-  'F' => Colors.orange.shade100,
-  _ when h.ausencias.containsKey(code) => Colors.red.shade100,
-  _ when _isNight(h, code) => Colors.indigo.shade50,
-  _ => null,
-};
+Color? _cellColor(BuildContext context, Horarios h, String code) =>
+    switch (code) {
+      folgaCode => context.tint(Colors.grey, 300),
+      'F' => context.tint(Colors.orange, 100),
+      _ when h.ausencias.containsKey(code) => context.tint(Colors.red, 100),
+      _ when _isNight(h, code) => context.tint(Colors.indigo),
+      _ => null,
+    };
 
 class _Empty extends StatelessWidget {
   const _Empty({required this.onImport});
@@ -196,13 +197,13 @@ class _Empty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_month, size: 48, color: Colors.black26),
+            Icon(Icons.calendar_month, size: 48, color: context.greyedFill),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Sem horários guardados.\nImporta um ficheiro de horários '
               '(JSON) com os meses do Livre Serviço.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54),
+              style: TextStyle(color: context.muted),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -265,9 +266,9 @@ class _TodayCard extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10, bottom: 2),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w700,
-          color: AppColors.greenDark,
+          color: context.colors.secondary,
         ),
       ),
     );
@@ -283,11 +284,11 @@ class _TodayCard extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             if (rows == null)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
                   'Sem horário para este mês.',
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(color: context.muted),
                 ),
               )
             else ...[
@@ -307,7 +308,7 @@ class _TodayCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(color: Colors.black54),
+                            style: TextStyle(color: context.muted),
                           ),
                         ),
                         Text(
@@ -339,7 +340,7 @@ class _MissingMonthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.orange.shade50,
+      color: context.tint(Colors.orange),
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
@@ -351,7 +352,7 @@ class _MissingMonthCard extends StatelessWidget {
               child: Text(
                 'Falta o horário de ${monthName(month)}.',
                 style: TextStyle(
-                  color: Colors.orange.shade900,
+                  color: context.warningText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -373,7 +374,7 @@ class _UnmatchedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.orange.shade50,
+      color: context.tint(Colors.orange),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -386,7 +387,7 @@ class _UnmatchedCard extends StatelessWidget {
                 'Sem correspondência em Pessoas (Livre Serviço): '
                 '${names.join(', ')}. Confirma o nome e a equipa da pessoa, '
                 'ou corrige o nome no ficheiro.',
-                style: TextStyle(color: Colors.orange.shade900),
+                style: TextStyle(color: context.warningText),
               ),
             ),
           ],
@@ -458,7 +459,6 @@ class _MonthGridState extends State<_MonthGrid> {
   static const _cellWidth = 46.0;
   static const _rowHeight = 32.0;
   static const _nameWidth = 116.0;
-  static final _countColor = Colors.green.shade50;
 
   late final ScrollController _scroll;
 
@@ -545,7 +545,7 @@ class _MonthGridState extends State<_MonthGrid> {
                     ),
                   ),
                   width: _nameWidth,
-                  color: _countColor,
+                  color: context.tint(Colors.green),
                 ),
             ],
           ),
@@ -574,11 +574,11 @@ class _MonthGridState extends State<_MonthGrid> {
                                     ? FontWeight.normal
                                     : FontWeight.w600,
                                 color: e.value[d - 1] == folgaCode
-                                    ? Colors.black45
+                                    ? context.faint
                                     : null,
                               ),
                             ),
-                            color: _cellColor(h, e.value[d - 1]),
+                            color: _cellColor(context, h, e.value[d - 1]),
                             today: _isCurrentMonth && d == widget.today.day,
                             onTap: () => _explain(
                               e.key,
@@ -600,7 +600,7 @@ class _MonthGridState extends State<_MonthGrid> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            color: _countColor,
+                            color: context.tint(Colors.green),
                             today: _isCurrentMonth && d == widget.today.day,
                           ),
                       ],
@@ -621,7 +621,7 @@ class _MonthGridState extends State<_MonthGrid> {
     bool today = false,
     VoidCallback? onTap,
   }) {
-    const border = BorderSide(color: Colors.black12);
+    final border = BorderSide(color: context.hairline);
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -631,8 +631,8 @@ class _MonthGridState extends State<_MonthGrid> {
         decoration: BoxDecoration(
           color: color,
           border: today
-              ? Border.all(color: AppColors.green, width: 1.5)
-              : const Border(right: border, bottom: border),
+              ? Border.all(color: context.colors.primary, width: 1.5)
+              : Border(right: border, bottom: border),
         ),
         child: child,
       ),
@@ -656,7 +656,7 @@ class _MonthGridState extends State<_MonthGrid> {
           Text('${day.day}', style: style),
         ],
       ),
-      color: weekend ? Colors.grey.shade100 : null,
+      color: weekend ? context.tint(Colors.grey, 100) : null,
       today: _isCurrentMonth && day.day == widget.today.day,
     );
   }
@@ -682,7 +682,7 @@ class _MonthTotals extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
         initiallyExpanded: true,
-        leading: const Icon(Icons.functions, color: AppColors.green),
+        leading: Icon(Icons.functions, color: context.colors.primary),
         title: const Text(
           'Totais do mês',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -692,6 +692,7 @@ class _MonthTotals extends StatelessWidget {
         children: [
           for (final e in rows.entries)
             _totalRow(
+              context,
               e.key,
               summarizeLine(horarios, e.value),
               index.personOf(month, e.key)?.weeklyHours,
@@ -702,6 +703,7 @@ class _MonthTotals extends StatelessWidget {
   }
 
   Widget _totalRow(
+    BuildContext context,
     String name,
     ({int minutes, int shifts, Map<String, int> ausencias}) s,
     int? weeklyHours,
@@ -724,7 +726,7 @@ class _MonthTotals extends StatelessWidget {
                 Text(name),
                 Text(
                   details,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: context.muted),
                 ),
               ],
             ),
@@ -756,7 +758,7 @@ class _Legend extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        leading: const Icon(Icons.info_outline, color: AppColors.green),
+        leading: Icon(Icons.info_outline, color: context.colors.primary),
         title: const Text(
           'Códigos deste mês',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -767,14 +769,14 @@ class _Legend extends StatelessWidget {
             _LegendRow(
               code: e.key,
               text: e.value.timesText,
-              color: _cellColor(horarios, e.key),
+              color: _cellColor(context, horarios, e.key),
             ),
           const Divider(),
           for (final e in horarios.ausencias.entries)
             _LegendRow(
               code: e.key,
               text: e.value,
-              color: _cellColor(horarios, e.key),
+              color: _cellColor(context, horarios, e.key),
             ),
         ],
       ),
@@ -801,7 +803,7 @@ class _LegendRow extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: color,
-              border: Border.all(color: Colors.black12),
+              border: Border.all(color: context.hairline),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(

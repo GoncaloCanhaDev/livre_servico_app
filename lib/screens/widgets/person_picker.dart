@@ -267,14 +267,14 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
       return CheckboxListTile(
         secondary: PersonInitialsBadge(
           name: p.fullName,
-          background: Colors.black26,
+          background: context.greyedFill,
         ),
         title: Wrap(
           spacing: 6,
           runSpacing: 2,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(p.fullName, style: const TextStyle(color: Colors.black54)),
+            Text(p.fullName, style: TextStyle(color: context.muted)),
             if (tenureTagOf(p, _selectedDay) case final tenure?)
               RoleBadge(tenure, tenure: true),
             if (awayTagOn(p, _selectedDay, horario: schedule) case final away?)
@@ -343,7 +343,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     child: Text(
                       widget.subtitle!,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: context.muted),
                     ),
                   ),
                 if (widget.initialDay != null)
@@ -351,11 +351,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.event,
-                          size: 18,
-                          color: Colors.black54,
-                        ),
+                        Icon(Icons.event, size: 18, color: context.muted),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -426,13 +422,15 @@ class PersonInitialsBadge extends StatelessWidget {
     super.key,
     required this.name,
     this.size = 32,
-    this.background = AppColors.green,
+    this.background,
     this.foreground = Colors.white,
   });
 
   final String name;
   final double size;
-  final Color background;
+
+  /// The theme's primary colour when null.
+  final Color? background;
   final Color foreground;
 
   @override
@@ -441,7 +439,10 @@ class PersonInitialsBadge extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: background ?? context.colors.primary,
+        shape: BoxShape.circle,
+      ),
       child: Text(
         initialsOf(name),
         style: TextStyle(

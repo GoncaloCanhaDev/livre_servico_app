@@ -221,12 +221,13 @@ class _TasksTabState extends State<_TasksTab>
                           ? Icons.check_circle
                           : Icons.pending,
                       color: doneCount == totalTasks
-                          ? AppColors.green
-                          : Colors.black45,
+                          ? context.colors.primary
+                          : context.faint,
                     ),
                     children: allTasks
                         .map(
                           (e) => _taskTile(
+                            context,
                             e.label,
                             e.done,
                             byNames: e.byNames,
@@ -286,6 +287,7 @@ class _TasksRow {
 }
 
 Widget _taskTile(
+  BuildContext context,
   String label,
   bool done, {
   List<String> byNames = const [],
@@ -296,26 +298,26 @@ Widget _taskTile(
     leading: Icon(
       done ? Icons.check_circle : Icons.cancel,
       size: 20,
-      color: done ? AppColors.green : Colors.black26,
+      color: done ? context.colors.primary : context.greyedFill,
     ),
     title: Text(
       label,
       style: TextStyle(
         decoration: done ? TextDecoration.lineThrough : null,
-        color: done ? null : Colors.black45,
+        color: done ? null : context.faint,
       ),
     ),
     subtitle: (done && backdated)
-        ? const Text(
+        ? Text(
             'Preenchido a posteriori',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.faint),
           )
         : null,
     trailing: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (done && backdated) ...[
-          const Icon(Icons.history_toggle_off, size: 16, color: Colors.black45),
+          Icon(Icons.history_toggle_off, size: 16, color: context.faint),
           const SizedBox(width: 4),
         ],
         if (done && byNames.isNotEmpty) ...[

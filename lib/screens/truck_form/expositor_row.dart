@@ -65,7 +65,7 @@ class _ExpositorRow extends StatelessWidget {
             ),
             IconButton(
               onPressed: onRemove,
-              icon: const Icon(Icons.close, size: 20, color: Colors.black45),
+              icon: Icon(Icons.close, size: 20, color: context.faint),
             ),
           ],
         ),

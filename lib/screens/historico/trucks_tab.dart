@@ -126,7 +126,7 @@ class _TrucksTabState extends State<_TrucksTab>
                             : Icons.local_shipping,
                         color: t.issues != null
                             ? Colors.orange.shade800
-                            : AppColors.green,
+                            : context.colors.primary,
                       ),
                     ),
                     children: [

@@ -45,21 +45,29 @@ void main() async {
 class LivreServicoApp extends StatelessWidget {
   const LivreServicoApp({super.key});
 
+  static final _observer = _KeyboardDismissObserver();
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Livre Serviço Companion',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      locale: const Locale('pt', 'PT'),
-      supportedLocales: const [Locale('pt', 'PT')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      navigatorObservers: [_KeyboardDismissObserver()],
-      home: const HomeScreen(),
+    final settings = SettingsService.instance;
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (_, _) => MaterialApp(
+        title: 'Livre Serviço Companion',
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(Brightness.light),
+        darkTheme: buildAppTheme(Brightness.dark),
+        themeMode: settings.themeMode,
+        locale: const Locale('pt', 'PT'),
+        supportedLocales: const [Locale('pt', 'PT')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        navigatorObservers: [_observer],
+        home: const HomeScreen(),
+      ),
     );
   }
 }

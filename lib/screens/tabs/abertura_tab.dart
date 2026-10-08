@@ -136,14 +136,14 @@ class _AberturaTabState extends State<AberturaTab> {
 
   Widget _sectionAction(OpeningList list, ListSection s) {
     if (list.isSectionDone(s)) {
-      return const SizedBox(
+      return SizedBox(
         width: 48,
-        child: Icon(Icons.check_circle, color: AppColors.green),
+        child: Icon(Icons.check_circle, color: context.colors.primary),
       );
     }
     return IconButton(
       tooltip: 'Enviar ${s.label}',
-      icon: const Icon(Icons.send, color: AppColors.green),
+      icon: Icon(Icons.send, color: context.colors.primary),
       onPressed: () => _sendSection(s),
     );
   }
@@ -167,12 +167,12 @@ class _AberturaTabState extends State<AberturaTab> {
           ),
           if (locked)
             Card(
-              color: Colors.grey.shade200,
+              color: context.tint(Colors.grey, 200),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(Icons.lock, color: Colors.black54),
+                    Icon(Icons.lock, color: context.muted),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -184,12 +184,12 @@ class _AberturaTabState extends State<AberturaTab> {
               ),
             )
           else
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 4),
               child: Text(
                 'Envia cada secção quando estiver feita. A lista fica '
                 'concluída quando as três estiverem enviadas.',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(fontSize: 12, color: context.muted),
               ),
             ),
           const SizedBox(height: 8),

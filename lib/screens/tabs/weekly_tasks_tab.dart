@@ -153,7 +153,10 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           _WeeklyCountTask(
             label: 'Verificar 1ª',
             checked: tasks.verificar1a,
-            byNames: resolveNames(tasks.verificar1aByNames, tasks.verificar1aBy),
+            byNames: resolveNames(
+              tasks.verificar1aByNames,
+              tasks.verificar1aBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains('verificar_1a'),
             countController: _verificar1aCtrl,
             goalNote: 'Itens no Mural — mínimo 10, recomendado 20',
@@ -186,7 +189,10 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           _WeeklyCountTask(
             label: 'Verificar 4ª',
             checked: tasks.verificar4a,
-            byNames: resolveNames(tasks.verificar4aByNames, tasks.verificar4aBy),
+            byNames: resolveNames(
+              tasks.verificar4aByNames,
+              tasks.verificar4aBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains('verificar_4a'),
             countController: _verificar4aCtrl,
             goalNote: 'Itens por colocar preço',
@@ -219,7 +225,10 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           _WeeklyManualTask(
             label: 'Limpeza da Máquina Voltas',
             checked: tasks.limpezaMaquinaVoltas,
-            byNames: resolveNames(tasks.limpezaMaquinaVoltasByNames, tasks.limpezaMaquinaVoltasBy),
+            byNames: resolveNames(
+              tasks.limpezaMaquinaVoltasByNames,
+              tasks.limpezaMaquinaVoltasBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains(
               'limpeza_maquina_voltas',
             ),
@@ -261,12 +270,12 @@ class _BackdatedNote extends StatelessWidget {
       message: 'Preenchido a posteriori',
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.history_toggle_off, size: 14, color: Colors.black45),
+        children: [
+          Icon(Icons.history_toggle_off, size: 14, color: context.faint),
           SizedBox(width: 4),
           Text(
             'Preenchido a posteriori',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.faint),
           ),
         ],
       ),
@@ -308,12 +317,12 @@ class _WeeklyManualTask extends StatelessWidget {
             onChanged(v ?? false);
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Text(
             label,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: enabled ? null : Colors.black38,
+              color: enabled ? null : context.faintest,
               decoration: checked ? TextDecoration.lineThrough : null,
             ),
           ),
@@ -359,7 +368,7 @@ class _WeeklyCountTask extends StatelessWidget {
     return GestureDetector(
       onLongPress: onLongPress,
       child: Card(
-        color: late ? Colors.red.shade50 : null,
+        color: late ? context.tint(Colors.red) : null,
         shape: late
             ? RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -374,7 +383,7 @@ class _WeeklyCountTask extends StatelessWidget {
             onCheckedChanged(v ?? false);
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Row(
             children: [
               Expanded(
@@ -419,10 +428,7 @@ class _WeeklyCountTask extends StatelessWidget {
                     ? null
                     : Text(
                         goalNote!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
+                        style: TextStyle(fontSize: 12, color: context.muted),
                       )),
           secondary: SizedBox(
             width: 90,
@@ -432,10 +438,7 @@ class _WeeklyCountTask extends StatelessWidget {
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               decoration: const InputDecoration(
                 hintText: '0',
                 border: OutlineInputBorder(),

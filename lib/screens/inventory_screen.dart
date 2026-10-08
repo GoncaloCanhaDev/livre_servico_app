@@ -101,7 +101,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colors.primary,
+            ),
             onPressed: () {
               final v = double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
               if (v == null) return;
@@ -134,7 +136,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Inventários')),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.green,
+        backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         onPressed: _newInventory,
         icon: const Icon(Icons.add),
@@ -149,12 +151,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
             }
             final items = snap.data!;
             if (items.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Sem inventários registados.',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.muted),
                   ),
                 ),
               );
@@ -188,15 +190,15 @@ class _InventoryCard extends StatelessWidget {
     String statusText;
     IconData statusIcon;
     if (legacy) {
-      statusColor = Colors.black38;
+      statusColor = context.faintest;
       statusText = 'Legado';
       statusIcon = Icons.history;
     } else if (finalized) {
-      statusColor = AppColors.green;
+      statusColor = context.colors.primary;
       statusText = 'Concluído';
       statusIcon = Icons.check_circle;
     } else {
-      statusColor = AppColors.greenDark;
+      statusColor = context.colors.secondary;
       statusText = 'A decorrer';
       statusIcon = Icons.play_circle;
     }
@@ -240,7 +242,7 @@ class _InventoryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   dateFmt.format(inv.createdAt),
-                  style: const TextStyle(color: Colors.black45, fontSize: 12),
+                  style: TextStyle(color: context.faint, fontSize: 12),
                 ),
               ],
             ),
@@ -317,7 +319,9 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.colors.primary,
+          ),
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
             Navigator.pop(

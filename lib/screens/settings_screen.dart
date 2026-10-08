@@ -107,6 +107,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onSave: SettingsService.instance.setVisualGoal,
             ),
             const Divider(),
+            _sectionHeader('Aparência'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text('Automático'),
+                    icon: Icon(Icons.brightness_auto),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text('Claro'),
+                    icon: Icon(Icons.light_mode),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text('Escuro'),
+                    icon: Icon(Icons.dark_mode),
+                  ),
+                ],
+                selected: {SettingsService.instance.themeMode},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) async {
+                  await SettingsService.instance.setThemeMode(s.single);
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
+            const Divider(),
             _sectionHeader('Dados'),
             ListTile(
               title: const Text(
@@ -225,7 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final imported = await BackupService.instance.pickAndImport();
       if (!mounted) return;
       if (imported) {
-          if (!mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Dados importados com sucesso.')),
         );

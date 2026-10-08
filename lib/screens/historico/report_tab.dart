@@ -70,7 +70,9 @@ class _ReportTabState extends State<_ReportTab>
                 child: ListTile(
                   leading: Icon(
                     l.isFinalized ? Icons.check_circle : Icons.edit,
-                    color: l.isFinalized ? AppColors.green : Colors.black45,
+                    color: l.isFinalized
+                        ? context.colors.primary
+                        : context.faint,
                   ),
                   title: Text(dayFmt.format(l.serviceDay)),
                   subtitle: Column(

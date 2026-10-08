@@ -97,7 +97,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: o.finalizedAt ?? o.serviceDay,
           icon: Icons.check_circle,
-          iconColor: AppColors.green,
           title: 'Lista de Abertura',
           subtitle:
               'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
@@ -114,7 +113,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: a.createdAt,
           icon: Icons.bolt,
-          iconColor: AppColors.green,
           title: 'Lista Automática',
           subtitle:
               'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
@@ -132,7 +130,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: r.finalizedAt ?? r.serviceDay,
           icon: Icons.check_circle,
-          iconColor: AppColors.green,
           title: 'Relatório',
           subtitle:
               'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
@@ -150,7 +147,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: v.createdAt,
           icon: Icons.visibility,
-          iconColor: AppColors.green,
           title: 'Lista Visual',
           subtitle: '${v.itensPicados} itens · Total ${formatCents(total)} €',
         ),
@@ -169,7 +165,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: inv.createdAt,
           icon: Icons.assignment,
-          iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
+          iconColor: inv.valueCents >= 0 ? null : Colors.redAccent,
           title: 'Inventário: ${inv.name}',
           subtitle: '${formatCents(inv.valueCents)} €',
         ),
@@ -189,7 +185,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _ActivityItem(
           time: t.arrivalTime,
           icon: Icons.local_shipping,
-          iconColor: AppColors.green,
           title: truckTitle(t),
           subtitle:
               '${parts.isNotEmpty ? '${parts.join(' · ')} · ' : ''}${t.totalPallets} paletes',
@@ -205,7 +200,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           _ActivityItem(
             time: t.lastUpdatedAt ?? t.serviceDay,
             icon: Icons.task_alt,
-            iconColor: AppColors.green,
             title: 'Tarefa: ${entry.label}',
             subtitle: DateFormat(
               "EEE, d 'de' MMM y",
@@ -327,13 +321,13 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         }
         final grouped = snap.data!;
         if (grouped.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
                 'Sem atividade registada.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: context.muted),
               ),
             ),
           );
@@ -353,10 +347,10 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     dayFmt.format(day),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.greenDark,
+                      color: context.colors.secondary,
                     ),
                   ),
                 ),
@@ -364,7 +358,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   (item) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: Icon(item.icon, color: item.iconColor, size: 24),
+                      leading: Icon(
+                        item.icon,
+                        color: item.iconColor ?? context.colors.primary,
+                        size: 24,
+                      ),
                       title: Text(
                         item.title,
                         style: const TextStyle(
@@ -378,10 +376,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       ),
                       trailing: Text(
                         timeFmt.format(item.time),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black45,
-                        ),
+                        style: TextStyle(fontSize: 12, color: context.faint),
                       ),
                     ),
                   ),
@@ -563,7 +558,7 @@ class _DetailsTab extends StatelessWidget {
         if (p.notes.isNotEmpty) const _DetailHeading('Notas'),
         for (final note in p.notes)
           ListTile(
-            leading: const Icon(Icons.notes, color: AppColors.greenDark),
+            leading: Icon(Icons.notes, color: context.colors.secondary),
             title: Text(note),
           ),
       ],
@@ -607,9 +602,9 @@ class _DetailHeading extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w700,
-          color: AppColors.greenDark,
+          color: context.colors.secondary,
         ),
       ),
     );
@@ -637,7 +632,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? Colors.orange.shade800 : AppColors.greenDark;
+    final color = highlight ? Colors.orange.shade800 : context.colors.secondary;
     return ListTile(
       leading: Icon(icon, color: color),
       title: Text(
@@ -650,7 +645,7 @@ class _InfoRow extends StatelessWidget {
       subtitle: Text(label),
       trailing: onTap == null
           ? null
-          : const Icon(Icons.call, color: AppColors.greenDark),
+          : Icon(Icons.call, color: context.colors.secondary),
       onTap: onTap,
     );
   }
@@ -660,13 +655,15 @@ class _ActivityItem {
   _ActivityItem({
     required this.time,
     required this.icon,
-    required this.iconColor,
+    this.iconColor,
     required this.title,
     required this.subtitle,
   });
   final DateTime time;
   final IconData icon;
-  final Color iconColor;
+
+  /// The theme's primary colour when null.
+  final Color? iconColor;
   final String title;
   final String subtitle;
 }

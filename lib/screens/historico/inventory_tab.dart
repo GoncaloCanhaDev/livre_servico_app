@@ -53,7 +53,7 @@ class _InventoryTabState extends State<_InventoryTab>
           itemBuilder: (context, i) {
             final inv = items[i];
             final color = inv.valueCents >= 0
-                ? AppColors.green
+                ? context.colors.primary
                 : Colors.redAccent;
             return _dimmedIfDeleted(
               deleted: inv.syncDeletedAt != null,

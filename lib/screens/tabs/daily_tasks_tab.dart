@@ -268,7 +268,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           _ManualTask(
             label: 'Kiwi Abertura',
             checked: tasks.kiwiAbertura,
-            byNames: resolveNames(tasks.kiwiAberturaByNames, tasks.kiwiAberturaBy),
+            byNames: resolveNames(
+              tasks.kiwiAberturaByNames,
+              tasks.kiwiAberturaBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains('kiwi_abertura'),
             onLongPress: tasks.kiwiAbertura
                 ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura')
@@ -290,7 +293,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           _CountTask(
             label: 'Alterações de Preço',
             checked: tasks.alteracoesPreco,
-            byNames: resolveNames(tasks.alteracoesPrecoByNames, tasks.alteracoesPrecoBy),
+            byNames: resolveNames(
+              tasks.alteracoesPrecoByNames,
+              tasks.alteracoesPrecoBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains('alteracoes_preco'),
             countController: _alteracoesCtrl,
             onLongPress: tasks.alteracoesPreco
@@ -321,7 +327,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           _ManualTask(
             label: 'Verificação de Temperaturas',
             checked: tasks.verificacaoTemperaturas,
-            byNames: resolveNames(tasks.verificacaoTemperaturasByNames, tasks.verificacaoTemperaturasBy),
+            byNames: resolveNames(
+              tasks.verificacaoTemperaturasByNames,
+              tasks.verificacaoTemperaturasBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains(
               'verificacao_temperaturas',
             ),
@@ -363,7 +372,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           _ManualTask(
             label: 'Preenchimento do Quadro',
             checked: tasks.preenchimentoQuadro,
-            byNames: resolveNames(tasks.preenchimentoQuadroByNames, tasks.preenchimentoQuadroBy),
+            byNames: resolveNames(
+              tasks.preenchimentoQuadroByNames,
+              tasks.preenchimentoQuadroBy,
+            ),
             backdated: tasks.backdatedTaskKeys.contains('preenchimento_quadro'),
             onLongPress: tasks.preenchimentoQuadro
                 ? () => _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro')
@@ -439,12 +451,12 @@ class _BackdatedNote extends StatelessWidget {
       message: 'Preenchido a posteriori',
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.history_toggle_off, size: 14, color: Colors.black45),
+        children: [
+          Icon(Icons.history_toggle_off, size: 14, color: context.faint),
           SizedBox(width: 4),
           Text(
             'Preenchido a posteriori',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.faint),
           ),
         ],
       ),
@@ -482,7 +494,7 @@ class _ManualTask extends StatelessWidget {
             onChanged(v ?? false);
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Text(
             label,
             style: TextStyle(
@@ -523,7 +535,7 @@ class _AutoTask extends StatelessWidget {
           value: checked,
           onChanged: null,
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Text(
             label,
             style: TextStyle(
@@ -533,12 +545,12 @@ class _AutoTask extends StatelessWidget {
           ),
           subtitle: Row(
             children: [
-              const Icon(Icons.lock_outline, size: 12, color: Colors.black38),
+              Icon(Icons.lock_outline, size: 12, color: context.faintest),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   note ?? 'Automática',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: context.muted),
                 ),
               ),
             ],
@@ -595,7 +607,7 @@ class _CountTask extends StatelessWidget {
                   onCheckedChanged(v ?? false);
                 },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Row(
             children: [
               Expanded(
@@ -624,7 +636,7 @@ class _CountTask extends StatelessWidget {
                         size: 12,
                         color: noteWarn
                             ? Colors.orange.shade800
-                            : Colors.black38,
+                            : context.faintest,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -634,7 +646,7 @@ class _CountTask extends StatelessWidget {
                             fontSize: 12,
                             color: noteWarn
                                 ? Colors.orange.shade800
-                                : Colors.black54,
+                                : context.muted,
                             fontWeight: noteWarn ? FontWeight.w600 : null,
                           ),
                         ),
@@ -650,10 +662,7 @@ class _CountTask extends StatelessWidget {
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               decoration: const InputDecoration(
                 hintText: '0',
                 border: OutlineInputBorder(),

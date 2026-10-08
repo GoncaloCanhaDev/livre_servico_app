@@ -273,7 +273,7 @@ class _InfoScreenState extends State<InfoScreen> {
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
         subtitle: const Text('Por preencher.'),
-        trailing: const Icon(Icons.edit, size: 18, color: Colors.black45),
+        trailing: Icon(Icons.edit, size: 18, color: context.faint),
         onTap: () => _editStoreField(field, entry),
       );
     }
@@ -323,13 +323,13 @@ class _InfoScreenState extends State<InfoScreen> {
                 Expanded(
                   child: Text(
                     g,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.greenDark,
+                      color: context.colors.secondary,
                     ),
                   ),
                 ),
-                const Icon(Icons.edit, size: 16, color: Colors.black38),
+                Icon(Icons.edit, size: 16, color: context.faintest),
               ],
             ),
           ),
@@ -362,9 +362,12 @@ class _InfoScreenState extends State<InfoScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.push_pin, color: AppColors.green),
+                                Icon(
+                                  Icons.push_pin,
+                                  color: context.colors.primary,
+                                ),
                                 SizedBox(width: 12),
                                 Text(
                                   'Afixadas',
@@ -456,7 +459,7 @@ class _Section extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        leading: Icon(icon, color: AppColors.green),
+        leading: Icon(icon, color: context.colors.primary),
         title: Text(
           title,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -508,11 +511,11 @@ class _EmptyNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Text(
         'Sem entradas.',
-        style: TextStyle(color: Colors.black54, fontSize: 13),
+        style: TextStyle(color: context.muted, fontSize: 13),
       ),
     );
   }
@@ -540,7 +543,7 @@ class _EntryTile extends StatelessWidget {
               const SizedBox(height: 2),
               PhoneLinkedText(
                 e.description,
-                style: const TextStyle(color: Colors.black87, height: 1.35),
+                style: TextStyle(color: context.colors.onSurface, height: 1.35),
               ),
             ],
             if (e.photoPaths.isNotEmpty) ...[
@@ -587,12 +590,12 @@ class _ContactTile extends StatelessWidget {
                       if (phone != null)
                         Text(
                           phone,
-                          style: const TextStyle(color: Colors.black87),
+                          style: TextStyle(color: context.colors.onSurface),
                         ),
                       if (email != null)
                         Text(
                           email,
-                          style: const TextStyle(color: Colors.black87),
+                          style: TextStyle(color: context.colors.onSurface),
                         ),
                     ],
                   ),
@@ -600,13 +603,13 @@ class _ContactTile extends StatelessWidget {
                 if (phone != null)
                   IconButton(
                     tooltip: 'Ligar',
-                    icon: const Icon(Icons.phone, color: AppColors.green),
+                    icon: Icon(Icons.phone, color: context.colors.primary),
                     onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
                   ),
                 if (wa != null)
                   IconButton(
                     tooltip: 'WhatsApp',
-                    icon: const Icon(Icons.chat, color: AppColors.green),
+                    icon: Icon(Icons.chat, color: context.colors.primary),
                     onPressed: () => launchUrl(
                       Uri.parse('https://wa.me/$wa'),
                       mode: LaunchMode.externalApplication,
@@ -615,7 +618,7 @@ class _ContactTile extends StatelessWidget {
                 if (email != null)
                   IconButton(
                     tooltip: 'Email',
-                    icon: const Icon(Icons.email, color: AppColors.green),
+                    icon: Icon(Icons.email, color: context.colors.primary),
                     onPressed: () =>
                         launchUrl(Uri(scheme: 'mailto', path: email)),
                   ),
@@ -624,7 +627,7 @@ class _ContactTile extends StatelessWidget {
             if (note.isNotEmpty)
               PhoneLinkedText(
                 note,
-                style: const TextStyle(color: Colors.black54, height: 1.35),
+                style: TextStyle(color: context.muted, height: 1.35),
               ),
             if (e.photoPaths.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -653,7 +656,7 @@ class _TitleRow extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ),
-        if (pinned) const Icon(Icons.push_pin, size: 14, color: Colors.black38),
+        if (pinned) Icon(Icons.push_pin, size: 14, color: context.faintest),
       ],
     );
   }

@@ -61,7 +61,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Pedidos')),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.green,
+        backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         onPressed: _newPedido,
         icon: const Icon(Icons.add),
@@ -76,12 +76,12 @@ class _PedidosScreenState extends State<PedidosScreen> {
             }
             final items = snap.data!;
             if (items.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Sem pedidos registados.',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.muted),
                   ),
                 ),
               );
@@ -115,7 +115,7 @@ class _OverdueBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.orange.shade50,
+      color: context.tint(Colors.orange),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
@@ -128,7 +128,7 @@ class _OverdueBanner extends StatelessWidget {
                     ? '1 pedido está atrasado.'
                     : '$count pedidos estão atrasados.',
                 style: TextStyle(
-                  color: Colors.orange.shade900,
+                  color: context.warningText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -153,8 +153,8 @@ class _PedidoCard extends StatelessWidget {
     final statusColor = overdue
         ? Colors.orange.shade800
         : finalized
-        ? AppColors.green
-        : AppColors.greenDark;
+        ? context.colors.primary
+        : context.colors.secondary;
     final statusIcon = overdue
         ? Icons.warning_amber_rounded
         : finalized
@@ -178,7 +178,7 @@ class _PedidoCard extends StatelessWidget {
           subtitleParts.join(' · '),
           style: TextStyle(
             fontSize: 12,
-            color: overdue ? Colors.orange.shade800 : Colors.black54,
+            color: overdue ? Colors.orange.shade800 : context.muted,
             fontWeight: overdue ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -357,7 +357,7 @@ class _PedidoFormScreenState extends State<PedidoFormScreen> {
               ? 'Pedido (em curso)'
               : 'Pedido $numero (em curso)',
         ),
-        backgroundColor: AppColors.green,
+        backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         actions: [
           if (p != null)
@@ -451,7 +451,7 @@ class _PedidoFormScreenState extends State<PedidoFormScreen> {
               const SizedBox(height: 24),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.green,
+                  backgroundColor: context.colors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: _busy ? null : (p == null ? _create : _finalize),
@@ -510,7 +510,7 @@ class _PedidoHistoryScreenState extends State<PedidoHistoryScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: AppColors.green.withValues(alpha: 0.08),
+              color: context.colors.primary.withValues(alpha: 0.08),
               child: Wrap(
                 spacing: 16,
                 runSpacing: 4,
@@ -531,10 +531,7 @@ class _PedidoHistoryScreenState extends State<PedidoHistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.black54, fontSize: 11),
-        ),
+        Text(label, style: TextStyle(color: context.muted, fontSize: 11)),
         Text(
           value,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),

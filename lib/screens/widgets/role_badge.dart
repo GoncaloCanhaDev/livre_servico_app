@@ -31,7 +31,7 @@ class RoleBadge extends StatelessWidget {
         ? Colors.pink.shade400
         : tenure
         ? Colors.blue.shade700
-        : AppColors.green;
+        : context.colors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
@@ -63,7 +63,7 @@ class GeneroIcon extends StatelessWidget {
     return Icon(
       genero == Genero.feminino ? Icons.female : Icons.male,
       size: size,
-      color: Colors.black45,
+      color: context.faint,
       semanticLabel: genero.label,
     );
   }

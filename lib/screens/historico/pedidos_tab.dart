@@ -87,8 +87,8 @@ class _PedidosTabState extends State<_PedidosTab>
                       color: p.isOverdue
                           ? Colors.orange.shade800
                           : p.isFinalized
-                          ? AppColors.green
-                          : AppColors.greenDark,
+                          ? context.colors.primary
+                          : context.colors.secondary,
                     ),
                     title: Text(
                       title,
@@ -107,8 +107,8 @@ class _PedidosTabState extends State<_PedidosTab>
                         p.isFinalized ? 'Concluído' : 'A decorrer',
                         style: TextStyle(
                           color: p.isFinalized
-                              ? AppColors.green
-                              : Colors.black54,
+                              ? context.colors.primary
+                              : context.muted,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),

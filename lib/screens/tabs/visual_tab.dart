@@ -209,7 +209,7 @@ class _DayTotalsCard extends StatelessWidget {
             _totalLine(
               'Benefício',
               '${formatCents(beneficioCents)} €',
-              valueColor: AppColors.green,
+              valueColor: context.colors.primary,
             ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -219,7 +219,7 @@ class _DayTotalsCard extends StatelessWidget {
               'Total',
               '${formatCents(beneficioCents - quebraCents)} €',
               valueColor: (beneficioCents - quebraCents) >= 0
-                  ? AppColors.green
+                  ? context.colors.primary
                   : Colors.redAccent,
             ),
           ],

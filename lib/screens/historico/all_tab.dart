@@ -92,7 +92,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
           subtitle:
               'Cong: ${o.congelados} · OPLS: ${o.opls} · NP: ${o.naoPereciveis} · Total: ${o.total}',
           icon: Icons.check_circle,
-          iconColor: AppColors.green,
           names: resolveNames(o.createdByNames, o.createdByInitials),
           deleted: o.syncDeletedAt != null,
         ),
@@ -130,7 +129,6 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
           subtitle:
               'DSV: ${r.diasSemVendas} · Reg: ${r.regularizacoes} · Mas: ${r.massiva} · Rep: ${r.repetidos} · Total: ${r.total}',
           icon: Icons.check_circle,
-          iconColor: AppColors.green,
           names: resolveNames(r.createdByNames, r.createdByInitials),
           deleted: r.syncDeletedAt != null,
         ),
@@ -199,7 +197,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
           title: '✅ Tarefas Diárias',
           subtitle: '$doneCount/$total concluídas',
           icon: Icons.task_alt,
-          iconColor: doneCount == total ? AppColors.green : Colors.black54,
+          iconColor: doneCount == total ? null : Colors.grey,
           deleted: t.syncDeletedAt != null,
         ),
       );
@@ -215,7 +213,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
           title: '📦 Inventário: ${inv.name}',
           subtitle: '${formatCents(inv.valueCents)} €',
           icon: Icons.assignment,
-          iconColor: inv.valueCents >= 0 ? AppColors.green : Colors.redAccent,
+          iconColor: inv.valueCents >= 0 ? null : Colors.redAccent,
           names: resolveNames(inv.createdByNames, inv.createdByInitials),
           deleted: inv.syncDeletedAt != null,
         ),
@@ -272,10 +270,10 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     dayFmt.format(day),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.greenDark,
+                      color: context.colors.secondary,
                     ),
                   ),
                 ),
@@ -284,7 +282,11 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                   final card = Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: Icon(item.icon, color: item.iconColor, size: 24),
+                      leading: Icon(
+                        item.icon,
+                        color: item.iconColor ?? context.colors.primary,
+                        size: 24,
+                      ),
                       title: Text(
                         item.title,
                         style: TextStyle(
@@ -308,9 +310,9 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                           ],
                           Text(
                             timeFmt.format(item.time),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.black45,
+                              color: context.faint,
                             ),
                           ),
                         ],

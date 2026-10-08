@@ -81,8 +81,9 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
     );
     if (!mounted) return;
     setState(() => _ctrls[section]!.clear());
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${section.label} guardado.')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${section.label} guardado.')));
   }
 
   @override
@@ -95,11 +96,11 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
             'Nova lista automática',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 4),
             child: Text(
               'Envia cada secção quando estiver feita.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: context.muted),
             ),
           ),
           const SizedBox(height: 8),
@@ -111,7 +112,7 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
               trailing: IconButton(
                 tooltip: 'Enviar ${s.label}',
                 icon: const Icon(Icons.send),
-                color: AppColors.green,
+                color: context.colors.primary,
                 onPressed: _valueOf(s) == 0 ? null : () => _sendSection(s),
               ),
             ),

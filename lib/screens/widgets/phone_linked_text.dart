@@ -52,8 +52,8 @@ class _PhoneLinkedTextState extends State<PhoneLinkedText> {
             if (part.phone)
               TextSpan(
                 text: part.text,
-                style: const TextStyle(
-                  color: AppColors.greenDark,
+                style: TextStyle(
+                  color: context.colors.secondary,
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.underline,
                 ),

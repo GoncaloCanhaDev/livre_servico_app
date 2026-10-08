@@ -187,13 +187,13 @@ class _CustomTasksTabState extends State<CustomTasksTab>
             }
             final rows = snap.data!;
             if (rows.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Sem tarefas personalizadas.\nUsa o + para adicionar.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.muted),
                   ),
                 ),
               );
@@ -229,10 +229,10 @@ class _CustomTasksTabState extends State<CustomTasksTab>
         padding: const EdgeInsets.only(bottom: 8, top: 8),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: AppColors.greenDark,
+            color: context.colors.secondary,
           ),
         ),
       ),
@@ -283,12 +283,12 @@ class _BackdatedNote extends StatelessWidget {
       message: 'Preenchido a posteriori',
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.history_toggle_off, size: 14, color: Colors.black45),
+        children: [
+          Icon(Icons.history_toggle_off, size: 14, color: context.faint),
           SizedBox(width: 4),
           Text(
             'Preenchido a posteriori',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.faint),
           ),
         ],
       ),
@@ -328,7 +328,7 @@ class _CustomManualTile extends StatelessWidget {
             if (v == true) onComplete();
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Text(
             row.task.title,
             style: TextStyle(
@@ -416,7 +416,7 @@ class _CustomCountTileState extends State<_CustomCountTile> {
             widget.onComplete(count);
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.green,
+          activeColor: context.colors.primary,
           title: Row(
             children: [
               Expanded(

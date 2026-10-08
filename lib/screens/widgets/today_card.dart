@@ -194,7 +194,9 @@ class _TodayCardState extends State<TodayCard> {
             ),
           _Line(
             icon: d.pending.isEmpty ? Icons.task_alt : Icons.pending_actions,
-            color: d.pending.isEmpty ? AppColors.green : Colors.orange.shade800,
+            color: d.pending.isEmpty
+                ? context.colors.primary
+                : Colors.orange.shade800,
             title: d.pending.isEmpty
                 ? 'Tarefas diárias feitas'
                 : 'Por fazer (${d.pending.length})',
@@ -263,20 +265,22 @@ class _Line extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.text,
-    this.color = AppColors.green,
+    this.color,
   });
 
   final IconData icon;
   final String title;
   final String? text;
-  final Color color;
+
+  /// The theme's primary colour when null.
+  final Color? color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
-      leading: Icon(icon, color: color),
+      leading: Icon(icon, color: color ?? context.colors.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: text == null ? null : Text(text!),
       trailing: const Icon(Icons.chevron_right),

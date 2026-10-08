@@ -41,8 +41,8 @@ class SectionHeader extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4),
                 child: Text(
                   note!,
-                  style: const TextStyle(
-                    color: AppColors.green,
+                  style: TextStyle(
+                    color: context.colors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

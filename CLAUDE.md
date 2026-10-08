@@ -24,7 +24,7 @@ multi-tenant product.
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart`,
-  `lib/models/today.dart` and `lib/models/historico_search.dart`, no
+  `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, no
   widget tests).
 
 ## Architecture
@@ -128,7 +128,12 @@ multi-tenant product.
   `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
-- `lib/theme.dart` defines `buildAppTheme()`, the single `ThemeData` used by `MaterialApp`.
+- `lib/theme.dart` defines `buildAppTheme(brightness)`, the light and dark `ThemeData`;
+  `MaterialApp.themeMode` comes from `SettingsService.themeMode` (Definições → Aparência).
+  Don't hard-code greys or light tints in widgets: use the `BuildContext` helpers there
+  (`context.colors`, `muted`, `faint`, `faintest`, `hairline`, `greyedFill`, `tint(...)`,
+  `warningText`), which keep the light theme's original colours and adapt in the dark one.
+  White on the black app bar and on filled badges is fine.
 - The app forces `pt_PT` as its only locale (`main.dart`); date formatting is initialized via
   `initializeDateFormatting('pt_PT')` before `runApp`.
 

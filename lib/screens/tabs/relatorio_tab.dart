@@ -154,19 +154,16 @@ class _RelatorioTabState extends State<RelatorioTab> {
         children: [
           Text(
             dayFmt.format(list.serviceDay),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           if (locked)
             Card(
-              color: Colors.grey.shade200,
+              color: context.tint(Colors.grey, 200),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(Icons.lock, color: Colors.black54),
+                    Icon(Icons.lock, color: context.muted),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

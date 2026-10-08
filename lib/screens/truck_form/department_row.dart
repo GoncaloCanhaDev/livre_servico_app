@@ -46,9 +46,9 @@ class _DepartmentRow extends StatelessWidget {
                 InkWell(
                   onTap: onRemove,
                   borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(4),
-                    child: Icon(Icons.close, size: 20, color: Colors.black45),
+                    child: Icon(Icons.close, size: 20, color: context.faint),
                   ),
                 ),
               ],

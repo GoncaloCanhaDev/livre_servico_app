@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../theme.dart';
+
 class NumberRow extends StatelessWidget {
   const NumberRow({
     super.key,
@@ -45,10 +47,7 @@ class NumberRow extends StatelessWidget {
                   if (subtitle case final subtitle?)
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 12, color: context.muted),
                     ),
                 ],
               ),

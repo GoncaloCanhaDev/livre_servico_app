@@ -812,7 +812,7 @@ class _DateRow extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
-        side: const BorderSide(color: Colors.black26),
+        side: BorderSide(color: context.greyedFill),
       ),
       leading: const Icon(Icons.event_outlined),
       title: Text(label),
@@ -840,10 +840,10 @@ class _FormHeading extends StatelessWidget {
       padding: const EdgeInsets.only(top: 24, bottom: 12),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
-          color: AppColors.greenDark,
+          color: context.colors.secondary,
         ),
       ),
     );

@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.55.0] — 2026-10-08
+
+### Added
+- Dark mode. Definições → Aparência: Automático (follows the phone), Claro or Escuro. The dark
+  theme keeps the black app bar, uses lighter greens, and every grey text, line and tinted
+  cell (Horários table, warning cards, locked lists) follows the theme. The light theme looks
+  as before.
+
 ## [0.54.0] — 2026-10-08
 
 ### Added

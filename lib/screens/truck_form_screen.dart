@@ -107,9 +107,9 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                 children: [
                   ...available.map(
                     (d) => ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.add_circle_outline,
-                        color: AppColors.green,
+                        color: context.colors.primary,
                       ),
                       title: Text(d.label),
                       onTap: () => Navigator.pop(ctx, d),
@@ -167,7 +167,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
             const Divider(height: 1),
             for (final t in TruckType.values)
               ListTile(
-                leading: Icon(_typeIcon(t), color: AppColors.green),
+                leading: Icon(_typeIcon(t), color: context.colors.primary),
                 title: Text(t.label),
                 trailing: t == _type ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.pop(ctx, t),
@@ -367,7 +367,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ),
                     leading: Icon(
                       _typeIcon(t),
-                      color: AppColors.green,
+                      color: context.colors.primary,
                       size: 32,
                     ),
                     title: Text(
@@ -396,7 +396,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
             children: [
               Card(
                 child: ListTile(
-                  leading: Icon(_typeIcon(type), color: AppColors.green),
+                  leading: Icon(_typeIcon(type), color: context.colors.primary),
                   title: const Text('Tipo de camião'),
                   subtitle: Text(type.label),
                   trailing: const Icon(Icons.edit),
@@ -407,9 +407,9 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
               // --- Hora de chegada (always visible) ---
               Card(
                 child: ListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.access_time,
-                    color: AppColors.green,
+                    color: context.colors.primary,
                   ),
                   title: const Text('Hora de chegada'),
                   subtitle: Text(dateFmt.format(_arrival)),
@@ -448,7 +448,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                       child: Text(
                         'Toque em "Adicionar" para selecionar departamentos.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black45, fontSize: 14),
+                        style: TextStyle(color: context.faint, fontSize: 14),
                       ),
                     ),
                   ),
@@ -492,7 +492,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                       child: Text(
                         'Sem expositores neste camião.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black45, fontSize: 14),
+                        style: TextStyle(color: context.faint, fontSize: 14),
                       ),
                     ),
                   ),
@@ -541,7 +541,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                       child: Text(
                         'Nenhum vasilhame selecionado para envio.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black45, fontSize: 14),
+                        style: TextStyle(color: context.faint, fontSize: 14),
                       ),
                     ),
                   ),
@@ -564,7 +564,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
                     ListTile(
                       leading: Icon(
                         _showDetails ? Icons.expand_less : Icons.expand_more,
-                        color: AppColors.green,
+                        color: context.colors.primary,
                       ),
                       title: const Text(
                         'Detalhes adicionais',
