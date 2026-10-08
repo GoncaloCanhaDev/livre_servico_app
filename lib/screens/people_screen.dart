@@ -8,6 +8,7 @@ import '../models/planning.dart';
 import '../models/teams.dart';
 import '../services/horario_service.dart';
 import '../services/person_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
@@ -15,6 +16,20 @@ import 'person_form_screen.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
 import 'widgets/section_header.dart';
+
+/// The form sent by WhatsApp to someone new, who replies with their data
+/// for the supervisor to enter in Pessoas.
+const _personFormMessage =
+    'Olá! Para te registar na minha app da loja, responde a esta mensagem '
+    'com os teus dados à frente de cada linha:\n'
+    '\n'
+    'Primeiro e último nome:\n'
+    'Nº de colaborador:\n'
+    'Data de nascimento (dd/mm/aaaa):\n'
+    'Telefone:\n'
+    'Género (M/F):\n'
+    'Início no Pingo Doce (dd/mm/aaaa):\n'
+    'Início nesta loja (dd/mm/aaaa):';
 
 class PeopleScreen extends StatefulWidget {
   const PeopleScreen({super.key});
@@ -160,6 +175,12 @@ class _PeopleScreenState extends State<PeopleScreen> {
       appBar: AppBar(
         title: const Text('Pessoas'),
         actions: [
+          IconButton(
+            tooltip: 'Enviar formulário',
+            icon: const Icon(Icons.assignment_ind_outlined),
+            onPressed: () =>
+                WhatsAppService.sendWithConfirm(context, _personFormMessage),
+          ),
           IconButton(icon: const Icon(Icons.add), onPressed: () => _openForm()),
           IconButton(
             tooltip: 'Remover todas as pessoas',
