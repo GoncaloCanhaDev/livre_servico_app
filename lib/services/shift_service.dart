@@ -1,5 +1,6 @@
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auto_list.dart';
 import '../models/custom_task.dart';
@@ -26,6 +27,10 @@ class ShiftService {
   final Isar _isar;
   Isar get isar => _isar;
 
+  /// Set once [backfillSync] has run at startup: rows saved since are
+  /// stamped when written, so it isn't needed again.
+  static const _backfilledKey = 'syncBackfilled';
+
   static Future<void> init() async {
     final dir = await getApplicationDocumentsDirectory();
     final isar = await Isar.open(
@@ -49,10 +54,17 @@ class ShiftService {
       name: 'livre_servico',
     );
     instance = ShiftService._(isar);
-    await instance._backfillSync();
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_backfilledKey) != true) {
+      await instance.backfillSync();
+      await prefs.setBool(_backfilledKey, true);
+    }
   }
 
-  Future<void> _backfillSync() async {
+  /// Fills in missing sync fields (UUIDs) on rows from before they existed:
+  /// once at the first startup, and after importing a backup, which may be
+  /// that old.
+  Future<void> backfillSync() async {
     Future<void> backfill<T>(IsarCollection<T> col) async {
       final rows = await col.where().findAll();
       final needsFix = rows.where((r) => SyncMeta.backfillIfNeeded(r)).toList();

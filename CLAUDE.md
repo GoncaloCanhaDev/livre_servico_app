@@ -44,7 +44,8 @@ multi-tenant product.
   because on-device data already has them and the soft-delete pattern built on top of them is
   still how deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` on
   every delete. Reads must filter with `.syncDeletedAtIsNull()` to exclude tombstoned rows;
-  `ShiftService._backfillSync()` fills in missing UUIDs on legacy rows at startup. Look rows up
+  `ShiftService.backfillSync()` fills in missing UUIDs on legacy rows: once at the first startup
+  (then the `syncBackfilled` pref skips it) and after every backup import. Look rows up
   by an indexed field with `.where()` (then `.filter()` for the rest), not `.filter()` alone,
   which reads every row.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /

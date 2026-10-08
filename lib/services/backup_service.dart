@@ -219,6 +219,7 @@ class BackupService {
       await replace(_isar.customTasks, 'CustomTask');
       await replace(_isar.customTaskEntrys, 'CustomTaskEntry');
     });
+    await ShiftService.instance.backfillSync();
 
     final settings = SettingsService.instance;
     if (vasilhame != null) await settings.setVasilhame(vasilhame);
