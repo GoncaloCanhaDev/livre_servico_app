@@ -72,6 +72,19 @@ class HorarioCodigo {
 
   /// "07:00–16:00", without the pausa.
   String get shortText => '${_hhmm(entrada)}–${_hhmm(saida)}';
+
+  /// When this shift runs if it is on [day]'s date: from the entrada that
+  /// day to the saída, the next day for a night shift.
+  ({DateTime start, DateTime end}) spanOn(DateTime day) => (
+    start: DateTime(day.year, day.month, day.day, 0, entrada),
+    end: DateTime(
+      day.year,
+      day.month,
+      day.day,
+      0,
+      saida <= entrada ? saida + 24 * 60 : saida,
+    ),
+  );
 }
 
 String _hhmm(int minutes) {

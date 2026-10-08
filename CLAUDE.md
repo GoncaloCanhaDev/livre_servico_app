@@ -23,7 +23,8 @@ multi-tenant product.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
-  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart` and `lib/models/horario.dart`, no
+  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart` and
+  `lib/models/today.dart`, no
   widget tests).
 
 ## Architecture
@@ -120,7 +121,10 @@ multi-tenant product.
   `historico_screen.dart` (one part per tab in `lib/screens/historico/`) and
   `truck_form_screen.dart` (`lib/screens/truck_form/`).
 - `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
-  `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`.
+  `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`. Its
+  `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
+  `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
+  must be added to `pendingDailyTasks` too.
 - `lib/theme.dart` defines `buildAppTheme()`, the single `ThemeData` used by `MaterialApp`.
 - The app forces `pt_PT` as its only locale (`main.dart`); date formatting is initialized via
   `initializeDateFormatting('pt_PT')` before `runApp`.

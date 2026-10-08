@@ -53,6 +53,13 @@ class DailyTasksService extends ChangeNotifier {
     return changed;
   }
 
+  /// The row for [serviceDay], without creating one; null when none.
+  Future<DailyTasks?> find(DateTime serviceDay) => _isar.dailyTasks
+      .filter()
+      .syncDeletedAtIsNull()
+      .serviceDayEqualTo(serviceDay)
+      .findFirst();
+
   Future<DailyTasks> forDay(DateTime serviceDay) async {
     final existing = await _isar.dailyTasks
         .filter()

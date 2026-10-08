@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.50.0] — 2026-10-08
+
+### Added
+- A "Hoje" card at the top of the home screen for the service day: who of Livre Serviço is on
+  shift right now and how many work de dia / de noite today (from the horário), the daily tasks
+  still to do (Validades only while its window is open), late pedidos and today's camiões with
+  their paletes. Each line opens its page; the card updates as things change and every minute.
+
 ## [0.49.4] — 2026-10-08
 
 ### Changed
