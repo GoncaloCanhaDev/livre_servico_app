@@ -34,6 +34,7 @@ class _TodayData {
     required this.overduePedidos,
     required this.trucks,
     required this.pallets,
+    required this.missingMonth,
   });
 
   final DateTime serviceDay;
@@ -46,10 +47,14 @@ class _TodayData {
   final int overduePedidos;
   final int trucks;
   final int pallets;
+
+  /// Next month's key when its horário is due and not imported.
+  final String? missingMonth;
 }
 
 /// The home screen's summary of the service day: who is working now, the
-/// daily tasks still to do, late pedidos and today's camiões. Each line
+/// daily tasks still to do, a missing next month's horário, late pedidos and
+/// today's camiões. Each line
 /// opens its page.
 class TodayCard extends StatefulWidget {
   const TodayCard({super.key});
@@ -136,6 +141,7 @@ class _TodayCardState extends State<TodayCard> {
       overduePedidos: pedidos.where((p) => p.isOverdue).length,
       trucks: trucks.length,
       pallets: trucks.fold(0, (s, t) => s + t.totalPallets),
+      missingMonth: missingNextMonth(HorarioService.instance.horarios, day),
     );
     if (mounted) setState(() => _data = data);
   }
@@ -186,6 +192,13 @@ class _TodayCardState extends State<TodayCard> {
             text: d.pending.isEmpty ? null : d.pending.join(', '),
             onTap: () => _open(const TasksScreen()),
           ),
+          if (d.missingMonth case final month?)
+            _Line(
+              icon: Icons.event_busy,
+              color: Colors.orange.shade800,
+              title: 'Falta o horário de ${monthName(month)}',
+              onTap: () => _open(const HorariosScreen()),
+            ),
           if (d.overduePedidos > 0)
             _Line(
               icon: Icons.receipt_long,

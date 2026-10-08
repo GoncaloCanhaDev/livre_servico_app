@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import 'fold_text.dart';
 import 'person.dart';
 
@@ -115,6 +117,23 @@ const folgaCode = 'FO';
 /// "2026-10" for any day of October 2026.
 String monthKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}';
+
+/// "outubro de 2026" for "2026-10".
+String monthName(String month) {
+  final parts = month.split('-');
+  return DateFormat(
+    "MMMM 'de' y",
+    'pt_PT',
+  ).format(DateTime(int.parse(parts[0]), int.parse(parts[1])));
+}
+
+/// Next month's key once [today] is the 25th or later and [h] has months
+/// but not that one; otherwise null.
+String? missingNextMonth(Horarios h, DateTime today) {
+  if (today.day < 25 || h.meses.isEmpty) return null;
+  final next = monthKey(DateTime(today.year, today.month + 1));
+  return h.meses.containsKey(next) ? null : next;
+}
 
 final _monthPattern = RegExp(r'^(\d{4})-(0[1-9]|1[0-2])$');
 

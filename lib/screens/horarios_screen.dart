@@ -70,9 +70,9 @@ class _HorariosScreenState extends State<HorariosScreen> {
               if (result.meses.isEmpty)
                 'O ficheiro não tinha meses; os códigos foram atualizados.'
               else
-                'Meses: ${result.meses.map(_monthName).join(', ')}.',
+                'Meses: ${result.meses.map(monthName).join(', ')}.',
               for (final e in result.unmatched.entries)
-                '\n${_monthName(e.key)} — sem correspondência em Pessoas '
+                '\n${monthName(e.key)} — sem correspondência em Pessoas '
                     '(Livre Serviço): ${e.value.join(', ')}.',
             ].join('\n'),
           ),
@@ -128,6 +128,11 @@ class _HorariosScreenState extends State<HorariosScreen> {
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (missingNextMonth(h, today) case final next?)
+                    _MissingMonthCard(
+                      month: next,
+                      onImport: _busy ? null : _import,
+                    ),
                   _TodayCard(horarios: h, today: today),
                   if (_service.index.unmatched(month) case final names
                       when names.isNotEmpty)
@@ -165,15 +170,6 @@ class _HorariosScreenState extends State<HorariosScreen> {
       ),
     );
   }
-}
-
-/// "outubro de 2026" for "2026-10".
-String _monthName(String month) {
-  final parts = month.split('-');
-  return DateFormat(
-    "MMMM 'de' y",
-    'pt_PT',
-  ).format(DateTime(int.parse(parts[0]), int.parse(parts[1])));
 }
 
 bool _isNight(Horarios h, String code) => h.codigos[code]?.noturno ?? false;
@@ -333,6 +329,41 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
+/// "Falta o horário de novembro de 2026", with Importar.
+class _MissingMonthCard extends StatelessWidget {
+  const _MissingMonthCard({required this.month, required this.onImport});
+
+  final String month;
+  final VoidCallback? onImport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Colors.orange.shade50,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        child: Row(
+          children: [
+            Icon(Icons.event_busy, color: Colors.orange.shade800),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Falta o horário de ${monthName(month)}.',
+                style: TextStyle(
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onImport, child: const Text('Importar')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _UnmatchedCard extends StatelessWidget {
   const _UnmatchedCard({required this.month, required this.names});
 
@@ -378,7 +409,7 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = _monthName(month);
+    final name = monthName(month);
     return Row(
       children: [
         IconButton(

@@ -382,4 +382,27 @@ void main() {
       expect(dayCounts(h, rows, 2), (dia: 2, noite: 1));
     });
   });
+
+  group('missingNextMonth', () {
+    Horarios withMonths(List<String> months) => Horarios(
+      codigos: const {},
+      ausencias: const {},
+      meses: {for (final m in months) m: const {}},
+    );
+
+    test('from the 25th, names next month when it is not saved', () {
+      final h = withMonths(['2026-10']);
+      expect(missingNextMonth(h, DateTime(2026, 10, 24)), isNull);
+      expect(missingNextMonth(h, DateTime(2026, 10, 25)), '2026-11');
+      expect(missingNextMonth(h, DateTime(2026, 12, 31)), '2027-01');
+    });
+
+    test('nothing once it is saved, or without any horários', () {
+      expect(
+        missingNextMonth(withMonths(['2026-11']), DateTime(2026, 10, 28)),
+        isNull,
+      );
+      expect(missingNextMonth(withMonths([]), DateTime(2026, 10, 28)), isNull);
+    });
+  });
 }

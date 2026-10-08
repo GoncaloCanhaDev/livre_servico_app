@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.53.1] — 2026-10-08
+
+### Changed
+- From the 25th of the month, when next month's horário hasn't been imported yet (and there are
+  horários saved), Horários shows "Falta o horário de novembro de 2026" with an Importar button,
+  and the "Hoje" card shows the same line.
+
 ## [0.53.0] — 2026-10-08
 
 ### Added
