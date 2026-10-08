@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.44.0] — 2026-10-08
+
+### Added
+- Verificação de Validades is split in two daily tasks, each with its own count and people:
+  Validades · Manhã (05:00–14:00) and Validades · Noite (19:00–05:00). Each can only be ticked
+  while its window is open; under the name it says "Aberta até às 14h", "Abre às 19h", or "Não
+  feita" in orange once the Manhã closed undone. Histórico and the person page list both.
+  Verificações saved before show as Manhã.
+
 ## [0.43.3] — 2026-10-08
 
 ### Changed

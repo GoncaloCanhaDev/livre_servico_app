@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +8,7 @@ import '../widgets/person_picker.dart';
 
 import '../../models/daily_tasks.dart';
 import '../../models/opening_list.dart';
+import '../../models/validades.dart';
 import '../../services/auto_list_service.dart';
 import '../../services/daily_tasks_service.dart';
 import '../../services/opening_list_service.dart';
@@ -35,12 +38,24 @@ class _DailyTasksTabState extends State<DailyTasksTab>
 
   late final TextEditingController _alteracoesCtrl;
   late final TextEditingController _validadesCtrl;
+  late final TextEditingController _validadesNoiteCtrl;
+
+  /// Re-checks the Validades windows (and the service day) every minute.
+  late final Timer _clock;
 
   @override
   void initState() {
     super.initState();
     _alteracoesCtrl = TextEditingController();
     _validadesCtrl = TextEditingController();
+    _validadesNoiteCtrl = TextEditingController();
+    _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (currentServiceDay() != _tasks?.serviceDay) {
+        _reload();
+      } else {
+        setState(() {});
+      }
+    });
     OpeningListService.instance.addListener(_reload);
     ReportListService.instance.addListener(_reload);
     VisualListService.instance.addListener(_reload);
@@ -56,8 +71,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     VisualListService.instance.removeListener(_reload);
     AutoListService.instance.removeListener(_reload);
     DailyTasksService.instance.removeListener(_reload);
+    _clock.cancel();
     _alteracoesCtrl.dispose();
     _validadesCtrl.dispose();
+    _validadesNoiteCtrl.dispose();
     super.dispose();
   }
 
@@ -96,6 +113,11 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         _validadesCtrl.text = tasks.verificacaoValidadesCount == 0
             ? ''
             : '${tasks.verificacaoValidadesCount}';
+      }
+      if (_validadesNoiteCtrl.text != '${tasks.validadesNoiteCount}') {
+        _validadesNoiteCtrl.text = tasks.validadesNoiteCount == 0
+            ? ''
+            : '${tasks.validadesNoiteCount}';
       }
     });
   }
@@ -156,6 +178,69 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Tarefa marcada como concluída em $dayFmt.')),
+    );
+  }
+
+  /// One part of the Verificação de Validades: it can only be ticked while
+  /// its window is open (see [validadesStateAt]).
+  Widget _validadesTask(DailyTasks tasks, ValidadesTurno turno) {
+    final manha = turno == ValidadesTurno.manha;
+    final done = manha ? tasks.verificacaoValidades : tasks.validadesNoite;
+    final count = manha
+        ? tasks.verificacaoValidadesCount
+        : tasks.validadesNoiteCount;
+    final taskKey = manha ? 'verificacao_validades' : 'validades_noite';
+    final state = validadesStateAt(turno, DateTime.now());
+    return _CountTask(
+      label: turno.label,
+      checked: done,
+      locked: state != ValidadesState.open,
+      note: switch (state) {
+        _ when done => null,
+        ValidadesState.notYet => turno.notYetNote,
+        ValidadesState.open => turno.openNote,
+        ValidadesState.closed => 'Não feita',
+      },
+      noteWarn: !done && state == ValidadesState.closed,
+      byNames: manha
+          ? resolveNames(
+              tasks.verificacaoValidadesByNames,
+              tasks.verificacaoValidadesBy,
+            )
+          : tasks.validadesNoiteByNames,
+      backdated: tasks.backdatedTaskKeys.contains(taskKey),
+      countController: manha ? _validadesCtrl : _validadesNoiteCtrl,
+      onLongPress: done
+          ? () => _sendMsg('✅ Tarefa concluída: ${turno.label} ($count)')
+          : null,
+      onCheckedChanged: (v) async {
+        if (!v) return;
+        await _completeTask(
+          taskName: turno.label,
+          taskKey: taskKey,
+          apply: (t, who) {
+            if (manha) {
+              t.verificacaoValidades = true;
+              t.verificacaoValidadesByNames = who;
+              t.verificacaoValidadesCount = count;
+            } else {
+              t.validadesNoite = true;
+              t.validadesNoiteByNames = who;
+              t.validadesNoiteCount = count;
+            }
+          },
+          message: (who) =>
+              '✅ Tarefa concluída: ${turno.label} ($count) (por ${joinNames(who)})',
+        );
+      },
+      onCountChanged: (n) {
+        if (manha) {
+          tasks.verificacaoValidadesCount = n;
+        } else {
+          tasks.validadesNoiteCount = n;
+        }
+        _saveTasks();
+      },
     );
   }
 
@@ -315,39 +400,8 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                 ? () => _sendMsg('✅ Tarefa concluída: Lista Automática')
                 : null,
           ),
-          _CountTask(
-            label: 'Verificação de Validades',
-            checked: tasks.verificacaoValidades,
-            byNames: resolveNames(tasks.verificacaoValidadesByNames, tasks.verificacaoValidadesBy),
-            backdated: tasks.backdatedTaskKeys.contains(
-              'verificacao_validades',
-            ),
-            countController: _validadesCtrl,
-            onLongPress: tasks.verificacaoValidades
-                ? () => _sendMsg(
-                    '✅ Tarefa concluída: Verificação de Validades (${tasks.verificacaoValidadesCount})',
-                  )
-                : null,
-            onCheckedChanged: (v) async {
-              if (!v) return;
-              final count = tasks.verificacaoValidadesCount;
-              await _completeTask(
-                taskName: 'Verificação de Validades',
-                taskKey: 'verificacao_validades',
-                apply: (t, who) {
-                  t.verificacaoValidades = true;
-                  t.verificacaoValidadesByNames = who;
-                  t.verificacaoValidadesCount = count;
-                },
-                message: (who) =>
-                    '✅ Tarefa concluída: Verificação de Validades ($count) (por ${joinNames(who)})',
-              );
-            },
-            onCountChanged: (n) {
-              tasks.verificacaoValidadesCount = n;
-              _saveTasks();
-            },
-          ),
+          _validadesTask(tasks, ValidadesTurno.manha),
+          _validadesTask(tasks, ValidadesTurno.noite),
           _ManualTask(
             label: 'Kiwi Fecho',
             checked: tasks.kiwiFecho,
@@ -505,10 +559,20 @@ class _CountTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
+    this.locked = false,
+    this.note,
+    this.noteWarn = false,
   });
 
   final String label;
   final bool checked;
+
+  /// Outside its window: can't be ticked and the count can't change.
+  final bool locked;
+
+  /// Shown under the label ("Abre às 19h"), in orange when [noteWarn].
+  final String? note;
+  final bool noteWarn;
   final TextEditingController countController;
   final ValueChanged<bool> onCheckedChanged;
   final ValueChanged<int> onCountChanged;
@@ -524,10 +588,12 @@ class _CountTask extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         child: CheckboxListTile(
           value: checked,
-          onChanged: (v) {
-            if (checked) return;
-            onCheckedChanged(v ?? false);
-          },
+          onChanged: locked && !checked
+              ? null
+              : (v) {
+                  if (checked) return;
+                  onCheckedChanged(v ?? false);
+                },
           controlAffinity: ListTileControlAffinity.leading,
           activeColor: AppColors.green,
           title: Row(
@@ -547,12 +613,40 @@ class _CountTask extends StatelessWidget {
               ],
             ],
           ),
-          subtitle: (checked && backdated) ? const _BackdatedNote() : null,
+          subtitle: (checked && backdated)
+              ? const _BackdatedNote()
+              : switch (note) {
+                  null => null,
+                  final note => Row(
+                    children: [
+                      Icon(
+                        locked ? Icons.lock_outline : Icons.schedule,
+                        size: 12,
+                        color: noteWarn
+                            ? Colors.orange.shade800
+                            : Colors.black38,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          note,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: noteWarn
+                                ? Colors.orange.shade800
+                                : Colors.black54,
+                            fontWeight: noteWarn ? FontWeight.w600 : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                },
           secondary: SizedBox(
             width: 90,
             child: TextField(
               controller: countController,
-              enabled: !checked,
+              enabled: !checked && !locked,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],

@@ -113,38 +113,53 @@ const DailyTasksSchema = CollectionSchema(
       type: IsarType.string,
     ),
     r'synced': PropertySchema(id: 19, name: r'synced', type: IsarType.bool),
-    r'verificacaoTemperaturas': PropertySchema(
+    r'validadesNoite': PropertySchema(
       id: 20,
+      name: r'validadesNoite',
+      type: IsarType.bool,
+    ),
+    r'validadesNoiteByNames': PropertySchema(
+      id: 21,
+      name: r'validadesNoiteByNames',
+      type: IsarType.stringList,
+    ),
+    r'validadesNoiteCount': PropertySchema(
+      id: 22,
+      name: r'validadesNoiteCount',
+      type: IsarType.long,
+    ),
+    r'verificacaoTemperaturas': PropertySchema(
+      id: 23,
       name: r'verificacaoTemperaturas',
       type: IsarType.bool,
     ),
     r'verificacaoTemperaturasBy': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'verificacaoTemperaturasBy',
       type: IsarType.string,
     ),
     r'verificacaoTemperaturasByNames': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'verificacaoTemperaturasByNames',
       type: IsarType.stringList,
     ),
     r'verificacaoValidades': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'verificacaoValidades',
       type: IsarType.bool,
     ),
     r'verificacaoValidadesBy': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'verificacaoValidadesBy',
       type: IsarType.string,
     ),
     r'verificacaoValidadesByNames': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'verificacaoValidadesByNames',
       type: IsarType.stringList,
     ),
     r'verificacaoValidadesCount': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'verificacaoValidadesCount',
       type: IsarType.long,
     ),
@@ -258,6 +273,13 @@ int _dailyTasksEstimateSize(
     }
   }
   bytesCount += 3 + object.syncUuid.length * 3;
+  bytesCount += 3 + object.validadesNoiteByNames.length * 3;
+  {
+    for (var i = 0; i < object.validadesNoiteByNames.length; i++) {
+      final value = object.validadesNoiteByNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.verificacaoTemperaturasBy;
     if (value != null) {
@@ -313,13 +335,16 @@ void _dailyTasksSerialize(
   writer.writeDateTime(offsets[17], object.syncUpdatedAt);
   writer.writeString(offsets[18], object.syncUuid);
   writer.writeBool(offsets[19], object.synced);
-  writer.writeBool(offsets[20], object.verificacaoTemperaturas);
-  writer.writeString(offsets[21], object.verificacaoTemperaturasBy);
-  writer.writeStringList(offsets[22], object.verificacaoTemperaturasByNames);
-  writer.writeBool(offsets[23], object.verificacaoValidades);
-  writer.writeString(offsets[24], object.verificacaoValidadesBy);
-  writer.writeStringList(offsets[25], object.verificacaoValidadesByNames);
-  writer.writeLong(offsets[26], object.verificacaoValidadesCount);
+  writer.writeBool(offsets[20], object.validadesNoite);
+  writer.writeStringList(offsets[21], object.validadesNoiteByNames);
+  writer.writeLong(offsets[22], object.validadesNoiteCount);
+  writer.writeBool(offsets[23], object.verificacaoTemperaturas);
+  writer.writeString(offsets[24], object.verificacaoTemperaturasBy);
+  writer.writeStringList(offsets[25], object.verificacaoTemperaturasByNames);
+  writer.writeBool(offsets[26], object.verificacaoValidades);
+  writer.writeString(offsets[27], object.verificacaoValidadesBy);
+  writer.writeStringList(offsets[28], object.verificacaoValidadesByNames);
+  writer.writeLong(offsets[29], object.verificacaoValidadesCount);
 }
 
 DailyTasks _dailyTasksDeserialize(
@@ -350,14 +375,17 @@ DailyTasks _dailyTasksDeserialize(
   object.syncUpdatedAt = reader.readDateTime(offsets[17]);
   object.syncUuid = reader.readString(offsets[18]);
   object.synced = reader.readBool(offsets[19]);
-  object.verificacaoTemperaturas = reader.readBool(offsets[20]);
-  object.verificacaoTemperaturasBy = reader.readStringOrNull(offsets[21]);
+  object.validadesNoite = reader.readBool(offsets[20]);
+  object.validadesNoiteByNames = reader.readStringList(offsets[21]) ?? [];
+  object.validadesNoiteCount = reader.readLong(offsets[22]);
+  object.verificacaoTemperaturas = reader.readBool(offsets[23]);
+  object.verificacaoTemperaturasBy = reader.readStringOrNull(offsets[24]);
   object.verificacaoTemperaturasByNames =
-      reader.readStringList(offsets[22]) ?? [];
-  object.verificacaoValidades = reader.readBool(offsets[23]);
-  object.verificacaoValidadesBy = reader.readStringOrNull(offsets[24]);
-  object.verificacaoValidadesByNames = reader.readStringList(offsets[25]) ?? [];
-  object.verificacaoValidadesCount = reader.readLong(offsets[26]);
+      reader.readStringList(offsets[25]) ?? [];
+  object.verificacaoValidades = reader.readBool(offsets[26]);
+  object.verificacaoValidadesBy = reader.readStringOrNull(offsets[27]);
+  object.verificacaoValidadesByNames = reader.readStringList(offsets[28]) ?? [];
+  object.verificacaoValidadesCount = reader.readLong(offsets[29]);
   return object;
 }
 
@@ -411,9 +439,9 @@ P _dailyTasksDeserializeProp<P>(
     case 20:
       return (reader.readBool(offset)) as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
-    case 22:
       return (reader.readStringList(offset) ?? []) as P;
+    case 22:
+      return (reader.readLong(offset)) as P;
     case 23:
       return (reader.readBool(offset)) as P;
     case 24:
@@ -421,6 +449,12 @@ P _dailyTasksDeserializeProp<P>(
     case 25:
       return (reader.readStringList(offset) ?? []) as P;
     case 26:
+      return (reader.readBool(offset)) as P;
+    case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 29:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3056,6 +3090,300 @@ extension DailyTasksQueryFilter
   }
 
   QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'validadesNoite', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'validadesNoiteByNames',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'validadesNoiteByNames',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'validadesNoiteByNames',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'validadesNoiteByNames', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'validadesNoiteByNames',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'validadesNoiteByNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'validadesNoiteByNames', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'validadesNoiteByNames', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'validadesNoiteByNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'validadesNoiteByNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteByNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'validadesNoiteByNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'validadesNoiteCount', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteCountGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'validadesNoiteCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteCountLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'validadesNoiteCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
+  validadesNoiteCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'validadesNoiteCount',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterFilterCondition>
   verificacaoTemperaturasEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -4164,6 +4492,33 @@ extension DailyTasksQuerySortBy
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> sortByValidadesNoite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByValidadesNoiteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByValidadesNoiteCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoiteCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  sortByValidadesNoiteCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoiteCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   sortByVerificacaoTemperaturas() {
     return QueryBuilder.apply(this, (query) {
@@ -4438,6 +4793,33 @@ extension DailyTasksQuerySortThenBy
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy> thenByValidadesNoite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByValidadesNoiteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByValidadesNoiteCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoiteCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
+  thenByValidadesNoiteCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validadesNoiteCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QAfterSortBy>
   thenByVerificacaoTemperaturas() {
     return QueryBuilder.apply(this, (query) {
@@ -4655,6 +5037,26 @@ extension DailyTasksQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct> distinctByValidadesNoite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'validadesNoite');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByValidadesNoiteByNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'validadesNoiteByNames');
+    });
+  }
+
+  QueryBuilder<DailyTasks, DailyTasks, QDistinct>
+  distinctByValidadesNoiteCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'validadesNoiteCount');
+    });
+  }
+
   QueryBuilder<DailyTasks, DailyTasks, QDistinct>
   distinctByVerificacaoTemperaturas() {
     return QueryBuilder.apply(this, (query) {
@@ -4847,6 +5249,26 @@ extension DailyTasksQueryProperty
   QueryBuilder<DailyTasks, bool, QQueryOperations> syncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'synced');
+    });
+  }
+
+  QueryBuilder<DailyTasks, bool, QQueryOperations> validadesNoiteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'validadesNoite');
+    });
+  }
+
+  QueryBuilder<DailyTasks, List<String>, QQueryOperations>
+  validadesNoiteByNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'validadesNoiteByNames');
+    });
+  }
+
+  QueryBuilder<DailyTasks, int, QQueryOperations>
+  validadesNoiteCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'validadesNoiteCount');
     });
   }
 

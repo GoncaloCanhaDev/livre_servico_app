@@ -22,7 +22,8 @@ multi-tenant product.
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
-  `lib/screens/people_sections.dart` and `lib/models/planning.dart`, no widget tests).
+  `lib/screens/people_sections.dart`, `lib/models/planning.dart` and `lib/models/validades.dart`,
+  no widget tests).
 
 ## Architecture
 
@@ -69,6 +70,10 @@ multi-tenant product.
   (`PalletCount.department` holds a `truckDepartments` id; read the name through
   `PalletCount.label`, which falls back to the legacy, index-stored `PalletCategory` on older
   rows — never reorder that enum) and `Expositor` lines.
+- Daily tasks belong to a service day (05:00 to 05:00, `currentServiceDay`). The Verificação de
+  Validades is split into two windows inside that day, `ValidadesTurno` in
+  `lib/models/validades.dart`: Manhã (05–14, the original `verificacaoValidades*` fields) and
+  Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open.
 
 ### Services layer
 

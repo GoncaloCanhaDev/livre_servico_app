@@ -32,11 +32,17 @@ class DailyTasks {
   /// Legacy — kept for historical read fallback only, do not write.
   String? preenchimentoQuadroBy;
   List<String> preenchimentoQuadroByNames = [];
+  /// Validades · Manhã (05–14, see `ValidadesTurno`); before the split, the
+  /// single Verificação de Validades.
   bool verificacaoValidades = false;
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificacaoValidadesBy;
   List<String> verificacaoValidadesByNames = [];
   int verificacaoValidadesCount = 0;
+  /// Validades · Noite (19–05).
+  bool validadesNoite = false;
+  List<String> validadesNoiteByNames = [];
+  int validadesNoiteCount = 0;
   bool kiwiFecho = false;
   /// Legacy — kept for historical read fallback only, do not write.
   String? kiwiFechoBy;

@@ -8,6 +8,7 @@ import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
+import '../models/validades.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
@@ -464,6 +465,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
         visualDone,
         autoDone,
         t.verificacaoValidades,
+        t.validadesNoite,
         t.kiwiFecho,
       ];
       final total = flags.length;
@@ -1491,7 +1493,7 @@ class _TasksTabState extends State<_TasksTab>
                 backdated: r.autoBackdated,
               ),
               _TaskEntry(
-                'Verificação de Validades (${t.verificacaoValidadesCount})',
+                '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})',
                 t.verificacaoValidades,
                 byNames: resolveNames(
                   t.verificacaoValidadesByNames,
@@ -1500,6 +1502,12 @@ class _TasksTabState extends State<_TasksTab>
                 backdated: t.backdatedTaskKeys.contains(
                   'verificacao_validades',
                 ),
+              ),
+              _TaskEntry(
+                '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})',
+                t.validadesNoite,
+                byNames: t.validadesNoiteByNames,
+                backdated: t.backdatedTaskKeys.contains('validades_noite'),
               ),
               _TaskEntry(
                 'Kiwi Fecho',

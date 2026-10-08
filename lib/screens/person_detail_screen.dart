@@ -9,6 +9,7 @@ import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
 import '../models/truck_reception.dart';
+import '../models/validades.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
@@ -256,7 +257,10 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           t.verificacaoValidadesByNames,
           t.verificacaoValidadesBy,
         ).contains(name)) {
-      out.add((label: 'Verificação de Validades'));
+      out.add((label: ValidadesTurno.manha.label));
+    }
+    if (t.validadesNoite && t.validadesNoiteByNames.contains(name)) {
+      out.add((label: ValidadesTurno.noite.label));
     }
     if (t.kiwiFecho &&
         resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy).contains(name)) {

@@ -46,6 +46,10 @@ class DailyTasksService extends ChangeNotifier {
       t.verificacaoValidadesCount = 0;
       changed = true;
     }
+    if (t.validadesNoiteCount < 0) {
+      t.validadesNoiteCount = 0;
+      changed = true;
+    }
     return changed;
   }
 
