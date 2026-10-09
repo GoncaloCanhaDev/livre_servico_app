@@ -131,9 +131,9 @@ class _InfoScreenState extends State<InfoScreen> {
       await WhatsAppService.sendWithConfirm(context, text);
       return;
     }
-    await Share.shareXFiles([
-      for (final p in e.photoPaths) XFile(p),
-    ], text: text);
+    await SharePlus.instance.share(
+      ShareParams(files: [for (final p in e.photoPaths) XFile(p)], text: text),
+    );
   }
 
   Future<void> _delete(InfoEntry e) async {

@@ -156,26 +156,25 @@ class HorarioService extends ChangeNotifier {
     await file.writeAsString(
       const JsonEncoder.withIndent('  ').convert(_horarios.toJson()),
     );
-    await Share.shareXFiles([
-      XFile(file.path, mimeType: 'application/json'),
-    ], subject: 'Horários - Livre Serviço');
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+        subject: 'Horários - Livre Serviço',
+      ),
+    );
   }
 
   /// Picks a horários file and applies it; null when nothing was picked.
   /// Throws a [FormatException] saying what is wrong in the file, before
   /// anything is saved.
   Future<HorariosImport?> pickAndImport() async {
-    final result = await FilePicker.platform.pickFiles(
+    final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['json'],
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return null;
-    final picked = result.files.first;
-    final bytes =
-        picked.bytes ??
-        (picked.path != null ? await File(picked.path!).readAsBytes() : null);
-    if (bytes == null) {
+    if (picked == null) return null;
+    final bytes = await picked.readAsBytes();
+    if (bytes.isEmpty) {
       throw const FormatException('Ficheiro vazio ou inacessível.');
     }
     final decoded = jsonDecode(utf8.decode(bytes));

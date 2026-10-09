@@ -1,7 +1,7 @@
 name: livre_servico_app
 description: "Livre Serviço Companion - work tracking app."
 publish_to: 'none'
-version: 0.56.11+134
+version: 0.56.12+135
 
 environment:
   sdk: ^3.11.5
@@ -18,8 +18,8 @@ dependencies:
   barcode_widget: ^2.0.4
   url_launcher: ^6.3.1
   shared_preferences: ^2.5.5
-  share_plus: ^10.1.2
-  file_picker: ^8.1.4
+  share_plus: ^13.3.1
+  file_picker: ^13.1.0
   uuid: ^4.5.1
   image_picker: ^1.2.3
 

@@ -52,9 +52,12 @@ class BackupService {
     await file.writeAsString(
       const JsonEncoder.withIndent('  ').convert(payload),
     );
-    final result = await Share.shareXFiles([
-      XFile(file.path, mimeType: 'application/json'),
-    ], subject: 'Cópia de segurança - Livre Serviço');
+    final result = await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+        subject: 'Cópia de segurança - Livre Serviço',
+      ),
+    );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastBackupAtKey, DateTime.now().toIso8601String());
     return result;
@@ -94,17 +97,13 @@ class BackupService {
 
   /// Returns true if an import was performed.
   Future<bool> pickAndImport() async {
-    final result = await FilePicker.platform.pickFiles(
+    final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['json'],
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return false;
-    final picked = result.files.first;
-    final bytes =
-        picked.bytes ??
-        (picked.path != null ? await File(picked.path!).readAsBytes() : null);
-    if (bytes == null) {
+    if (picked == null) return false;
+    final bytes = await picked.readAsBytes();
+    if (bytes.isEmpty) {
       throw const FormatException('Ficheiro vazio ou inacessível.');
     }
     final decoded = jsonDecode(utf8.decode(bytes));
