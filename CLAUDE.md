@@ -25,8 +25,10 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, plus a
-  few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home, and
-  `test/person_form_screen_test.dart` fills in and saves the person form). Widget tests run
+  few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
+  `test/person_form_screen_test.dart` fills in and saves the person form,
+  `test/truck_form_screen_test.dart` saves a camião and `test/abertura_tab_test.dart` sends the
+  Abertura sections). Widget tests run
   against a real, empty Isar database in a temp folder: `openAppDb` / `closeAppDb` in
   `test/helpers/app_db.dart` start the services like `main()` does, loading the host
   `libisar.so` from the pub cache. A database call only completes inside `runAsync` and the

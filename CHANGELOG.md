@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.13] — 2026-10-09
+
+### Fixed
+- Receção de Camião: the "Expositores" and "Vasilhame a Enviar" titles no longer push their
+  buttons off the right edge on a narrow screen or with a large font size, and the Paletes /
+  Mistas / Expositores totals shrink to fit instead of overflowing.
+
+### Other
+- Screen tests for saving a camião (who received it, paletes, matrícula; nothing saved when
+  empty or with more mistas than paletes) and for sending the Abertura sections one by one
+  until the list is complete.
+
 ## [0.56.12] — 2026-10-09
 
 ### Other
