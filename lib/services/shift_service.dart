@@ -31,8 +31,10 @@ class ShiftService {
   /// stamped when written, so it isn't needed again.
   static const _backfilledKey = 'syncBackfilled';
 
-  static Future<void> init() async {
-    final dir = await getApplicationDocumentsDirectory();
+  /// Opens the database in the app's documents folder, or in [directory]
+  /// (tests).
+  static Future<void> init({String? directory}) async {
+    directory ??= (await getApplicationDocumentsDirectory()).path;
     final isar = await Isar.open(
       [
         TruckReceptionSchema,
@@ -50,7 +52,7 @@ class ShiftService {
         CustomTaskEntrySchema,
         HorarioMesSchema,
       ],
-      directory: dir.path,
+      directory: directory,
       name: 'livre_servico',
     );
     instance = ShiftService._(isar);

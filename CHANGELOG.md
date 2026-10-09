@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.11] — 2026-10-09
+
+### Other
+- First screen tests: every screen and tab opens from Home, and the Pessoa form saves what was
+  filled in. They run on a real, empty database in a temp folder.
+
 ## [0.56.10] — 2026-10-09
 
 ### Other

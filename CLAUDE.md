@@ -21,11 +21,17 @@ multi-tenant product.
 - Regenerate Isar model code (`*.g.dart`) after changing any `@collection` class:
   `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
-- Tests: `flutter test` (unit tests in `test/`; so far only pure logic such as
+- Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart`,
-  `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, no
-  widget tests).
+  `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, plus a
+  few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home, and
+  `test/person_form_screen_test.dart` fills in and saves the person form). Widget tests run
+  against a real, empty Isar database in a temp folder: `openAppDb` / `closeAppDb` in
+  `test/helpers/app_db.dart` start the services like `main()` does, loading the host
+  `libisar.so` from the pub cache. A database call only completes inside `runAsync` and the
+  code awaiting it only resumes on a pump, so use the helpers in `test/helpers/pump.dart`
+  (`pumpApp`, `settle`, `tapAndSettle`, `dbCall`), never `pumpAndSettle`.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 name: livre_servico_app
 description: "Livre Serviço Companion - work tracking app."
 publish_to: 'none'
-version: 0.56.10+133
+version: 0.56.11+134
 
 environment:
   sdk: ^3.11.5
