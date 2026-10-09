@@ -293,48 +293,7 @@ class _TruckFormScreenState extends State<TruckFormScreen> {
     await TruckService.instance.save(truck);
     if (!mounted) return;
 
-    // Format WhatsApp message
-    final dateFmt = DateFormat("d/MM/y, HH:mm", 'pt_PT');
-    final lines = StringBuffer();
-    lines.writeln('🚛 Receção de Camião');
-    if (truck.type != null) lines.writeln('Tipo: ${truck.type!.label}');
-    lines.writeln('Hora: ${dateFmt.format(_arrival)}');
-    if (truck.licensePlate != null)
-      lines.writeln('Matrícula: ${truck.licensePlate}');
-    if (truck.supplier != null) lines.writeln('Fornecedor: ${truck.supplier}');
-    for (final p in truck.pallets) {
-      final mista = p.mistas > 0
-          ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
-          : '';
-      lines.writeln('${p.label}: ${p.total}$mista');
-    }
-    lines.writeln(
-      'Total: ${truck.totalPallets} paletes, ${truck.totalMistas} mistas',
-    );
-    lines.writeln('Por: ${joinNames(names)}');
-
-    if (truck.expositores.isNotEmpty) {
-      lines.writeln('\nExpositores:');
-      for (final e in truck.expositores) {
-        lines.writeln(
-          e.content.isEmpty ? '- ${e.amount}' : '- ${e.amount} · ${e.content}',
-        );
-      }
-    }
-
-    if (truck.sentVasilhame.isNotEmpty) {
-      lines.writeln('\n📦 Vasilhame Enviado:');
-      for (final v in truck.sentVasilhame) {
-        lines.writeln('- ${v.productName}: ${v.amount}');
-      }
-    }
-
-    if (truck.issues != null) {
-      lines.writeln('\n⚠️ Problemas: ${truck.issues}');
-    }
-    if (truck.notes != null) lines.writeln('\nNotas: ${truck.notes}');
-
-    await WhatsAppService.sendWithConfirm(context, lines.toString().trim());
+    await WhatsAppService.sendWithConfirm(context, truckWhatsAppText(truck));
     if (!mounted) return;
     Navigator.of(context).pop(true);
   }

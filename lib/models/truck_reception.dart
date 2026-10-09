@@ -1,4 +1,7 @@
+import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';
+
+import 'names.dart';
 
 part 'truck_reception.g.dart';
 
@@ -125,6 +128,7 @@ class TruckReception {
   DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? syncDeletedAt;
   bool synced = true;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
@@ -156,3 +160,46 @@ class TruckReception {
 /// "Camião · Congelados", or just "Camião" for older receptions.
 String truckTitle(TruckReception t) =>
     t.type == null ? 'Camião' : 'Camião · ${t.type!.label}';
+
+/// The WhatsApp message for a reception, sent when it is saved and again
+/// from Histórico.
+String truckWhatsAppText(TruckReception t) {
+  final dateFmt = DateFormat("d/MM/y, HH:mm", 'pt_PT');
+  final lines = StringBuffer();
+  lines.writeln('🚛 Receção de Camião');
+  if (t.type != null) lines.writeln('Tipo: ${t.type!.label}');
+  lines.writeln('Hora: ${dateFmt.format(t.arrivalTime)}');
+  if (t.licensePlate != null) {
+    lines.writeln('Matrícula: ${t.licensePlate}');
+  }
+  if (t.supplier != null) lines.writeln('Fornecedor: ${t.supplier}');
+  for (final p in t.pallets) {
+    final mista = p.mistas > 0
+        ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
+        : '';
+    lines.writeln('${p.label}: ${p.total}$mista');
+  }
+  lines.writeln('Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas');
+  final names = resolveNames(t.createdByNames, t.createdByInitials);
+  if (names.isNotEmpty) lines.writeln('Por: ${joinNames(names)}');
+
+  if (t.expositores.isNotEmpty) {
+    lines.writeln('\nExpositores:');
+    for (final e in t.expositores) {
+      lines.writeln(
+        e.content.isEmpty ? '- ${e.amount}' : '- ${e.amount} · ${e.content}',
+      );
+    }
+  }
+
+  if (t.sentVasilhame.isNotEmpty) {
+    lines.writeln('\n📦 Vasilhame Enviado:');
+    for (final v in t.sentVasilhame) {
+      lines.writeln('- ${v.productName}: ${v.amount}');
+    }
+  }
+
+  if (t.issues != null) lines.writeln('\n⚠️ Problemas: ${t.issues}');
+  if (t.notes != null) lines.writeln('\nNotas: ${t.notes}');
+  return lines.toString().trim();
+}

@@ -67,41 +67,9 @@ class _TrucksTabState extends State<_TrucksTab>
                   await TruckService.instance.delete(t.id);
                 },
                 onSendWhatsApp: (ctx) async {
-                  final dateFmtWa = DateFormat("d/MM/y, HH:mm", 'pt_PT');
-                  final lines = StringBuffer();
-                  lines.writeln('🚛 Receção de Camião');
-                  if (t.type != null) lines.writeln('Tipo: ${t.type!.label}');
-                  lines.writeln('Hora: ${dateFmtWa.format(t.arrivalTime)}');
-                  if (t.licensePlate != null)
-                    lines.writeln('Matrícula: ${t.licensePlate}');
-                  if (t.supplier != null)
-                    lines.writeln('Fornecedor: ${t.supplier}');
-                  for (final p in t.pallets) {
-                    final mista = p.mistas > 0
-                        ? ' (${p.mistas} mista${p.mistas > 1 ? 's' : ''})'
-                        : '';
-                    lines.writeln('${p.label}: ${p.total}$mista');
-                  }
-                  lines.writeln(
-                    'Total: ${t.totalPallets} paletes, ${t.totalMistas} mistas',
-                  );
-                  if (t.expositores.isNotEmpty) {
-                    lines.writeln('\nExpositores:');
-                    for (final e in t.expositores) {
-                      lines.writeln(
-                        e.content.isEmpty
-                            ? '- ${e.amount}'
-                            : '- ${e.amount} · ${e.content}',
-                      );
-                    }
-                  }
-                  if (t.issues != null) {
-                    lines.writeln('⚠️ Problemas: ${t.issues}');
-                  }
-                  if (t.notes != null) lines.writeln('Notas: ${t.notes}');
                   await WhatsAppService.sendWithConfirm(
                     ctx,
-                    lines.toString().trim(),
+                    truckWhatsAppText(t),
                   );
                 },
                 child: Card(
