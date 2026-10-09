@@ -13,6 +13,9 @@ import '../services/sync_meta.dart';
 import '../theme.dart';
 import 'widgets/person_avatar.dart';
 
+part 'person_form/ausencia_dialog.dart';
+part 'person_form/fields.dart';
+
 /// Full-screen add/edit form for a [Person]: identity fields, team and
 /// roles, planning (horário, folgas, ausências), dates, notes and a profile
 /// picture. Used both from
@@ -351,185 +354,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     if (mounted) Navigator.of(context).pop(person);
   }
 
-  /// Tick-chips for the tags the chosen team allows (a chefe can only have
-  /// Permanência).
-  Widget _tagsField() {
-    final team = teamById(_team);
-    final canTag = !_isChefe;
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Tags',
-        helperText: 'Permanência: responsável quando não há chefia presente',
-        border: OutlineInputBorder(),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          if (canTag && team?.hasSupervisors == true)
-            FilterChip(
-              label: const Text('Supervisor'),
-              selected: _supervisor,
-              onSelected: (v) => setState(() => _supervisor = v),
-            ),
-          if (canTag && team?.hasSegundaLinha == true)
-            FilterChip(
-              label: const Text('Segunda Linha'),
-              selected: _segundaLinha,
-              onSelected: (v) => setState(() => _segundaLinha = v),
-            ),
-          FilterChip(
-            label: const Text('Permanência'),
-            selected: _permanencia,
-            onSelected: (v) => setState(() => _permanencia = v),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Entrada and saída times, each optional.
-  Widget _shiftField() {
-    Widget button(bool start) {
-      final value = start ? _shiftStart : _shiftEnd;
-      return Expanded(
-        child: OutlinedButton(
-          onPressed: () => _pickTime(start: start),
-          child: Text(
-            value == null ? (start ? 'Entrada' : 'Saída') : timeText(value),
-          ),
-        ),
-      );
-    }
-
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Entrada e saída (opcional)',
-        border: OutlineInputBorder(),
-      ),
-      child: Row(
-        children: [
-          button(true),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('–'),
-          ),
-          button(false),
-          if (_shiftStart != null || _shiftEnd != null)
-            IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              onPressed: () => setState(() {
-                _shiftStart = null;
-                _shiftEnd = null;
-              }),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// A chip per weekday; ticked days are the person's weekly folgas.
-  Widget _folgasField() {
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Folgas',
-        border: OutlineInputBorder(),
-      ),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 4,
-        children: [
-          for (var d = DateTime.monday; d <= DateTime.sunday; d++)
-            FilterChip(
-              label: Text(weekdayShort[d - 1]),
-              showCheckmark: false,
-              selected: _folgas.contains(d),
-              onSelected: (v) => setState(() {
-                if (v) {
-                  _folgas.add(d);
-                } else {
-                  _folgas.remove(d);
-                }
-              }),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// The person's ausências (tap to edit, ✕ to remove) and an add button.
-  Widget _ausenciasField() {
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Férias e ausências',
-        border: OutlineInputBorder(),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final a in _ausencias)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text(a.tipo.label),
-              subtitle: Text(ausenciaRangeText(a)),
-              trailing: IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => setState(() => _ausencias.remove(a)),
-              ),
-              onTap: () => _editAusencia(a),
-            ),
-          TextButton.icon(
-            onPressed: _editAusencia,
-            icon: const Icon(Icons.add),
-            label: const Text('Adicionar ausência'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// One editable field per note, then an empty field whose text becomes a
-  /// new note on enter or +.
-  Widget _notesField() {
-    return Column(
-      children: [
-        for (final c in _noteCtrls)
-          Padding(
-            key: ObjectKey(c),
-            padding: const EdgeInsets.only(bottom: 8),
-            child: TextField(
-              controller: c,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                isDense: true,
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => _removeNote(c),
-                ),
-              ),
-            ),
-          ),
-        TextField(
-          controller: _newNoteCtrl,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _addNote(),
-          decoration: InputDecoration(
-            isDense: true,
-            hintText: 'Nova nota',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _addNote,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
@@ -542,41 +366,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _pickPhoto,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 48,
-                        backgroundImage: _pendingPhoto != null
-                            ? FileImage(_pendingPhoto!)
-                            : (_hasPhotoPreview
-                                  ? FileImage(File(_photoPath!))
-                                  : null),
-                        child: _hasPhotoPreview
-                            ? null
-                            : const Icon(Icons.person, size: 48),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _PhotoButton(
+                photo:
+                    _pendingPhoto ??
+                    (_hasPhotoPreview ? File(_photoPath!) : null),
+                onTap: _pickPhoto,
               ),
               const SizedBox(height: 8),
               const _FormHeading('Pessoa'),
@@ -704,7 +498,16 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 ],
               ],
               const SizedBox(height: 12),
-              _tagsField(),
+              _TagsField(
+                team: teamById(_team),
+                isChefe: _isChefe,
+                supervisor: _supervisor,
+                segundaLinha: _segundaLinha,
+                permanencia: _permanencia,
+                onSupervisor: (v) => setState(() => _supervisor = v),
+                onSegundaLinha: (v) => setState(() => _segundaLinha = v),
+                onPermanencia: (v) => setState(() => _permanencia = v),
+              ),
               const _FormHeading('Planeamento'),
               InputDecorator(
                 decoration: const InputDecoration(
@@ -741,11 +544,32 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              _shiftField(),
+              _ShiftField(
+                start: _shiftStart,
+                end: _shiftEnd,
+                onPick: (start) => _pickTime(start: start),
+                onClear: () => setState(() {
+                  _shiftStart = null;
+                  _shiftEnd = null;
+                }),
+              ),
               const SizedBox(height: 12),
-              _folgasField(),
+              _FolgasField(
+                folgas: _folgas,
+                onToggle: (d, off) => setState(() {
+                  if (off) {
+                    _folgas.add(d);
+                  } else {
+                    _folgas.remove(d);
+                  }
+                }),
+              ),
               const SizedBox(height: 12),
-              _ausenciasField(),
+              _AusenciasField(
+                ausencias: _ausencias,
+                onEdit: _editAusencia,
+                onRemove: (a) => setState(() => _ausencias.remove(a)),
+              ),
               const _FormHeading('Datas'),
               _DateRow(
                 label: 'Início na loja',
@@ -775,7 +599,12 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                 onClear: () => setState(() => _hireDate = null),
               ),
               const _FormHeading('Notas'),
-              _notesField(),
+              _NotesField(
+                notes: _noteCtrls,
+                newNote: _newNoteCtrl,
+                onAdd: _addNote,
+                onRemove: _removeNote,
+              ),
             ],
           ),
         ),
@@ -789,154 +618,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DateRow extends StatelessWidget {
-  const _DateRow({
-    required this.label,
-    required this.value,
-    required this.formatted,
-    required this.onTap,
-    required this.onClear,
-  });
-
-  final String label;
-  final DateTime? value;
-  final String? formatted;
-  final VoidCallback onTap;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: BorderSide(color: context.greyedFill),
-      ),
-      leading: const Icon(Icons.event_outlined),
-      title: Text(label),
-      subtitle: Text(formatted ?? 'Não definida'),
-      trailing: value == null
-          ? const Icon(Icons.chevron_right)
-          : IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              onPressed: onClear,
-            ),
-      onTap: onTap,
-    );
-  }
-}
-
-/// A section title in the form.
-class _FormHeading extends StatelessWidget {
-  const _FormHeading(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 12),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: context.colors.secondary,
-        ),
-      ),
-    );
-  }
-}
-
-/// Picks an ausência's type and dates; pops the new [Ausencia], or null.
-class _AusenciaDialog extends StatefulWidget {
-  const _AusenciaDialog({this.existing});
-
-  final Ausencia? existing;
-
-  @override
-  State<_AusenciaDialog> createState() => _AusenciaDialogState();
-}
-
-class _AusenciaDialogState extends State<_AusenciaDialog> {
-  late AusenciaTipo _tipo = widget.existing?.tipo ?? AusenciaTipo.ferias;
-  late DateTimeRange? _range = switch (widget.existing) {
-    final a? => DateTimeRange(start: a.start, end: a.end),
-    null => null,
-  };
-
-  Future<void> _pickRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: _range,
-      firstDate: DateTime(now.year - 2),
-      lastDate: DateTime(now.year + 3),
-      locale: const Locale('pt', 'PT'),
-      helpText: _tipo.label,
-    );
-    if (picked != null) setState(() => _range = picked);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final range = _range;
-    return AlertDialog(
-      title: Text(widget.existing == null ? 'Nova ausência' : 'Ausência'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<AusenciaTipo>(
-            initialValue: _tipo,
-            decoration: const InputDecoration(
-              labelText: 'Tipo',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final t in AusenciaTipo.values)
-                DropdownMenuItem(value: t, child: Text(t.label)),
-            ],
-            onChanged: (v) => setState(() => _tipo = v ?? _tipo),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _pickRange,
-            icon: const Icon(Icons.date_range),
-            label: Text(
-              range == null
-                  ? 'Escolher datas'
-                  : ausenciaRangeText(
-                      Ausencia()
-                        ..start = range.start
-                        ..end = range.end,
-                    ),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: range == null
-              ? null
-              : () => Navigator.pop(
-                  context,
-                  Ausencia()
-                    ..tipo = _tipo
-                    ..start = range.start
-                    ..end = range.end,
-                ),
-          child: const Text('Guardar'),
-        ),
-      ],
     );
   }
 }

@@ -123,13 +123,16 @@ multi-tenant product.
 - `lib/screens/*.dart` are mostly `StatefulWidget`s that read/write through the services above;
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
   auto/report/visual lists (`ReplenishmentListsScreen`) and the daily/weekly/custom tasks
-  (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The two largest
+  (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest
   screens are split with `part` files, so their private widgets stay private:
   `historico_screen.dart` (one part per tab in `lib/screens/historico/`; each tab filters its
   rows by the search box through `_searched` and a `*SearchText` function from
   `lib/models/historico_search.dart`, and listens to its services through `_ReloadWhenOpen`,
-  passing `_changed`, so only the open tab reloads) and
-  `truck_form_screen.dart` (`lib/screens/truck_form/`).
+  passing `_changed`, so only the open tab reloads),
+  `truck_form_screen.dart` (`lib/screens/truck_form/`), `person_form_screen.dart`
+  (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
+  the ausência dialog) and `horarios_screen.dart` (`lib/screens/horarios/`: today's cards,
+  the month grid).
 - `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
   `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`. Its
   `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in

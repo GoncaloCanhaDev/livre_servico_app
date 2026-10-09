@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.10] — 2026-10-09
+
+### Other
+- The Pessoa form and Horários screens are split into smaller files
+  (`lib/screens/person_form/`, `lib/screens/horarios/`); no change in the app.
+
 ## [0.56.9] — 2026-10-09
 
 ### Fixed
