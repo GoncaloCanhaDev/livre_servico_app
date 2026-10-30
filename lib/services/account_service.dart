@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
 import '../models/store_access.dart';
+import 'local_db.dart';
 import 'photo_store.dart';
+import 'store_data.dart';
 import 'supabase_sync_remote.dart';
 import 'sync_engine.dart';
 import 'sync_service.dart';
@@ -182,6 +184,10 @@ class AccountService extends ChangeNotifier {
     }, onError: (_) {});
     email = _prefs.getString(_emailKey);
     store = storeInfoFromJson(_prefs.getString(_storeKey));
+    // Versions before 0.63.1 didn't say which store the data here is from.
+    if (store case final s? when _prefs.getString(localDataStoreKey) == null) {
+      await _prefs.setString(localDataStoreKey, s.id);
+    }
     SyncService.instance.addListener(_checkAccessNowAndThen);
     if (_prefs.getString(_sessionKey) != null) unawaited(_restore());
   }
@@ -456,17 +462,35 @@ class AccountService extends ChangeNotifier {
     ));
   }
 
-  /// Syncs this device with [s]: its rows and this device's are merged, the
-  /// copy of each row saved last winning. Completes after the first sync.
+  /// Whether choosing the store [storeId] removes this phone's data, which
+  /// belongs to another store (see [prepareLocalDataFor]).
+  bool replacesLocalData(String storeId) =>
+      replacesLocalDataOf(_prefs, storeId);
+
+  /// Syncs this device with [s]: data from before any store joins it (the
+  /// copy of each row saved last winning); another store's data leaves this
+  /// phone first, and [s]'s comes down. Throws [PendingChangesException]
+  /// while the other store's changes wait to be sent. Completes after the
+  /// first sync.
   Future<void> useStore(StoreInfo s) async {
+    await prepareLocalDataFor(LocalDb.instance, _prefs, s.id);
     await _saveStore(s);
     await _startSync(s);
     // The access the role alone doesn't say (chefe, Gerência, admin).
     unawaited(refreshStore().catchError((_) {}));
   }
 
-  /// Stops syncing with the store; the data stays on this device.
+  /// Stops syncing with the store, after one last try to send what it
+  /// hasn't got; the data stays on this device until another store is
+  /// chosen.
   Future<void> leaveStore() async {
+    if (store case final s? when syncsWith(s)) {
+      try {
+        await SyncService.instance.syncNow();
+      } catch (_) {
+        // Offline: what wasn't sent waits for this store to be chosen again.
+      }
+    }
     _stopSync();
     store = null;
     await _prefs.remove(_storeKey);

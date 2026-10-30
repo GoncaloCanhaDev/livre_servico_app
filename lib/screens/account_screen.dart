@@ -221,14 +221,20 @@ class _StorePickerState extends State<_StorePicker> {
   late Future<List<StoreInfo>> _stores = AccountService.instance.myStores();
   late final Future<bool> _isAdmin = AccountService.instance.isAppAdmin();
 
-  Future<bool> _confirmMerge(String storeName) async =>
+  /// Asks before syncing with [storeName] ([storeId]; null for a new
+  /// store): this phone's data joins it, or, when it is another store's,
+  /// leaves the phone.
+  Future<bool> _confirmMerge(String storeName, String? storeId) async =>
       await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text('Ligar a $storeName'),
-          content: const Text(
-            'Os dados deste aparelho são juntados aos da loja: de cada '
-            'registo fica a versão guardada por último.',
+          content: Text(
+            AccountService.instance.replacesLocalData(storeId ?? '')
+                ? 'Os dados de outra loja saem deste aparelho (continuam na '
+                      'loja) e os de $storeName são descarregados.'
+                : 'Os dados deste aparelho são juntados aos da loja: de cada '
+                      'registo fica a versão guardada por último.',
           ),
           actions: [
             TextButton(
@@ -245,7 +251,7 @@ class _StorePickerState extends State<_StorePicker> {
       true;
 
   Future<void> _use(StoreInfo s) async {
-    if (!await _confirmMerge(s.name)) return;
+    if (!await _confirmMerge(s.name, s.id)) return;
     try {
       await AccountService.instance.useStore(s);
     } catch (e) {
@@ -301,7 +307,7 @@ class _StorePickerState extends State<_StorePicker> {
         ),
       );
       if (choice == null || !mounted) return;
-      if (!await _confirmMerge(preview.storeName)) return;
+      if (!await _confirmMerge(preview.storeName, preview.storeId)) return;
       await account.joinStore(
         code,
         personId: choice.personId,
@@ -346,7 +352,7 @@ class _StorePickerState extends State<_StorePicker> {
     );
     ctrl.dispose();
     if (name == null || name.isEmpty || !mounted) return;
-    if (!await _confirmMerge(name)) return;
+    if (!await _confirmMerge(name, null)) return;
     try {
       await AccountService.instance.createStore(name);
     } catch (e) {

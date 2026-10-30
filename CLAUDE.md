@@ -72,6 +72,10 @@ multi-tenant product.
   `SyncMeta.stamp(row)` (it also marks the row pending a push, `synced` false) and every delete
   through `SyncMeta.softDelete(row)` (or a collection's `softDelete` / `softDeleteAll`): never
   remove rows for good (`clear`, `deleteWhere`), or the delete never reaches other devices.
+  The one exception is `prepareLocalDataFor` (`lib/services/store_data.dart`): choosing a
+  different store than the one this phone's data is from (`localDataStore` pref) clears it
+  from the phone only (refusing while changes wait to be sent), so nobody sees or copies a
+  store they didn't choose; data from before any store still joins the first one.
   Reads skip tombstoned rows unless they pass `includeDeleted: true`. `LocalDb.backfillSync()` fills in missing UUIDs:
   once at the first startup (then the `syncBackfilled` pref skips it) and after every backup
   import. Compare dates kept as keys (`serviceDay`, `serviceWeek`, `periodKey`) with
