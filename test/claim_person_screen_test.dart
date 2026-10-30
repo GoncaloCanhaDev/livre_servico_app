@@ -4,12 +4,12 @@ import 'package:livre_servico_app/screens/claim_person_screen.dart';
 
 void main() {
   /// Opens the picker from a button and returns what it popped with.
-  Future<({String? personId})?> pick(
+  Future<({String? personId, String? name})?> pick(
     WidgetTester tester, {
     required bool canAddNew,
     required Future<void> Function() choose,
   }) async {
-    ({String? personId})? result;
+    ({String? personId, String? name})? result;
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(
@@ -49,19 +49,29 @@ void main() {
         await tester.tap(find.text('Rui Costa'));
       },
     );
-    expect(r, (personId: 'p2'));
+    expect(r, (personId: 'p2', name: null));
   });
 
-  testWidgets('"Não estou na lista" pops with no person', (tester) async {
+  testWidgets('"Não estou na lista" asks for the name', (tester) async {
     final r = await pick(
       tester,
       canAddNew: true,
-      choose: () => tester.tap(find.text('Não estou na lista')),
+      choose: () async {
+        await tester.tap(find.text('Não estou na lista'));
+        await tester.pumpAndSettle();
+        expect(find.text('O seu nome'), findsOneWidget);
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
+        // An empty name keeps the dialog open.
+        expect(find.text('O seu nome'), findsOneWidget);
+        await tester.enterText(find.byType(TextField).last, ' Nova Pessoa ');
+        await tester.tap(find.text('Continuar'));
+      },
     );
-    expect(r, (personId: null));
+    expect(r, (personId: null, name: 'Nova Pessoa'));
   });
 
-  testWidgets('a viewer cannot add a new person', (tester) async {
+  testWidgets('without canAddNew there is no new person', (tester) async {
     await pick(
       tester,
       canAddNew: false,

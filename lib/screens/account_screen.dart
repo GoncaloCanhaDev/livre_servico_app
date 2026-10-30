@@ -53,6 +53,8 @@ class _AccountScreenState extends State<AccountScreen> {
       body = const _SignInForm();
     } else if (_account.store == null) {
       body = _StorePicker(email: _account.email!);
+    } else if (_account.store!.pending) {
+      body = _Pending(account: _account);
     } else {
       body = _Connected(account: _account, sync: _sync);
     }
@@ -250,8 +252,9 @@ class _StorePickerState extends State<_StorePicker> {
     }
   }
 
-  /// Joins a store with the code its owner shares: the person says who
-  /// they are in its list of people, then checks their details.
+  /// Asks to join a store with the code its owner shares: the person says
+  /// who they are in its list of people (or types their name), then waits
+  /// for a chefe, Gerência or the owner to approve.
   Future<void> _join() async {
     final ctrl = TextEditingController();
     final code = await showDialog<String>(
@@ -282,13 +285,13 @@ class _StorePickerState extends State<_StorePicker> {
     );
     ctrl.dispose();
     if (code == null || code.isEmpty || !mounted) return;
-    // Joining replaces this screen with the connected one, so keep these.
+    // Joining replaces this screen with the pending one, so keep these.
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final account = AccountService.instance;
     try {
       final preview = await account.previewJoin(code);
-      final choice = await nav.push<({String? personId})>(
+      final choice = await nav.push<({String? personId, String? name})>(
         MaterialPageRoute(
           builder: (_) => ClaimPersonScreen(
             storeName: preview.storeName,
@@ -298,8 +301,11 @@ class _StorePickerState extends State<_StorePicker> {
       );
       if (choice == null || !mounted) return;
       if (!await _confirmMerge(preview.storeName)) return;
-      await account.joinStore(code, personId: choice.personId);
-      await completeProfile(nav, messenger, personId: choice.personId);
+      await account.joinStore(
+        code,
+        personId: choice.personId,
+        name: choice.name,
+      );
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
@@ -391,7 +397,9 @@ class _StorePickerState extends State<_StorePicker> {
                 ListTile(
                   leading: const Icon(Icons.store),
                   title: Text(s.name),
-                  subtitle: Text(s.role.label),
+                  subtitle: Text(
+                    s.pending ? 'Pedido à espera de aprovação' : s.role.label,
+                  ),
                   onTap: () => _use(s),
                 ),
             ],
@@ -483,12 +491,6 @@ class _Connected extends StatelessWidget {
             color: sync.lastError == null ? null : context.warningText,
           ),
           title: Text(_status()),
-          subtitle: store.role == StoreRole.viewer
-              ? const Text(
-                  'Só leitura: o que guardar neste aparelho não é enviado '
-                  'para a loja.',
-                )
-              : null,
           trailing: IconButton(
             tooltip: 'Sincronizar agora',
             icon: const Icon(Icons.sync),
@@ -501,8 +503,8 @@ class _Connected extends StatelessWidget {
           leading: const Icon(Icons.group),
           title: const Text('Membros'),
           subtitle: Text(
-            store.role == StoreRole.owner
-                ? 'Quem pode abrir os dados da loja, e com que papel.'
+            store.access.canApprove
+                ? 'Quem pode abrir os dados da loja, e pedidos para entrar.'
                 : 'Quem pode abrir os dados da loja.',
           ),
           onTap: () => Navigator.push(
@@ -537,6 +539,96 @@ class _Connected extends StatelessWidget {
             action: 'Terminar sessão',
             onConfirm: account.signOut,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A request to join the store, waiting for approval: check again (and,
+/// once approved, open the profile) or withdraw it.
+class _Pending extends StatefulWidget {
+  const _Pending({required this.account});
+
+  final AccountService account;
+
+  @override
+  State<_Pending> createState() => _PendingState();
+}
+
+class _PendingState extends State<_Pending> {
+  bool _busy = false;
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) _showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _check() async {
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final account = widget.account;
+    await _run(account.refreshStore);
+    final store = account.store;
+    if (store == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('O pedido para entrar foi recusado.')),
+      );
+    } else if (!store.pending) {
+      // refreshStore ran the first sync: the profile is here to check.
+      if (store.personId case final id?) {
+        await completeProfile(nav, messenger, personId: id);
+      }
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Ainda à espera de aprovação.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = widget.account.store!;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Icon(Icons.hourglass_top, size: 48),
+        const SizedBox(height: 16),
+        Text(
+          'Pedido enviado a ${store.name}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Aguarde que um chefe de secção, a gerência ou o dono da loja '
+          'aprove o pedido. Até lá, nada da loja chega a este aparelho.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.muted),
+        ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: _busy ? null : _check,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Verificar'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: _busy
+              ? null
+              : () => _run(widget.account.cancelJoinRequest),
+          child: const Text('Cancelar pedido'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _busy ? null : widget.account.signOut,
+          child: const Text('Terminar sessão'),
         ),
       ],
     );

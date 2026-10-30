@@ -6,9 +6,10 @@ import '../services/person_service.dart';
 import '../theme.dart';
 
 /// Conta → Membros: who is in the store, and which person each account is.
-/// The owner shares the store's code (anyone with it can join), adds people
-/// by the email of their account, changes their role, unlinks them from a
-/// person and removes them.
+/// Chefes, Gerência and the owner approve or refuse requests to join. The
+/// owner shares the store's code (anyone with it can ask to join), adds
+/// people by the email of their account, unlinks them from a person and
+/// removes them.
 class StoreMembersScreen extends StatefulWidget {
   const StoreMembersScreen({super.key});
 
@@ -19,11 +20,15 @@ class StoreMembersScreen extends StatefulWidget {
 class _StoreMembersScreenState extends State<StoreMembersScreen> {
   final _account = AccountService.instance;
   late Future<List<StoreMember>> _members = _account.members();
+  late Future<List<JoinRequest>> _requests = _loadRequests();
+
+  Future<List<JoinRequest>> _loadRequests() =>
+      _account.access.canApprove ? _account.joinRequests() : Future.value([]);
 
   /// Person names by `syncUuid`, for the members linked to one.
   Map<String, String> _names = const {};
 
-  bool get _isOwner => _account.store?.role == StoreRole.owner;
+  bool get _isOwner => _account.access.owner || _account.access.admin;
 
   @override
   void initState() {
@@ -45,7 +50,10 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
     return '${m.role.label} · $person';
   }
 
-  void _reload() => setState(() => _members = _account.members());
+  void _reload() => setState(() {
+    _members = _account.members();
+    _requests = _loadRequests();
+  });
 
   Future<void> _run(Future<void> Function() action) async {
     try {
@@ -64,48 +72,34 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
 
   Future<void> _add() async {
     final ctrl = TextEditingController();
-    var role = StoreRole.editor;
     final email = await showDialog<String>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialog) => AlertDialog(
-          title: const Text('Adicionar pessoa'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email da conta',
-                  helperText: 'A pessoa tem de ter criado a conta.',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _RolePicker(
-                value: role,
-                onChanged: (r) => setDialog(() => role = r),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Adicionar pessoa'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Email da conta',
+            helperText: 'A pessoa tem de ter criado a conta.',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('Adicionar'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Adicionar'),
+          ),
+        ],
       ),
     );
-    ctrl.dispose();
     if (email == null || email.isEmpty) return;
-    await _run(() => _account.setMember(email, role));
+    await _run(() => _account.setMember(email, StoreRole.editor));
   }
 
   Future<void> _edit(StoreMember m) async {
@@ -131,16 +125,6 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
                 ),
                 onTap: () => Navigator.pop(ctx, 'unlink'),
               ),
-            for (final r in StoreRole.values)
-              ListTile(
-                leading: Icon(
-                  r == m.role
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                ),
-                title: Text(r.label),
-                onTap: () => Navigator.pop(ctx, r),
-              ),
             ListTile(
               leading: const Icon(Icons.person_remove, color: Colors.red),
               title: const Text(
@@ -153,9 +137,7 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
         ),
       ),
     );
-    if (choice is StoreRole && choice != m.role) {
-      await _run(() => _account.setMember(m.email, choice));
-    } else if (choice == 'unlink') {
+    if (choice == 'unlink') {
       await _run(() => _account.unlinkMember(m.userId));
     } else if (choice == 'remove' && mounted) {
       final ok = await showDialog<bool>(
@@ -215,17 +197,12 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
           return ListView(
             padding: const EdgeInsets.only(bottom: 88),
             children: [
-              if (_isOwner) ...[
-                const _JoinCodeCard(),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Edição: lê e altera os dados. Só leitura: só lê. Dono: '
-                    'também gere quem pertence à loja.',
-                    style: TextStyle(color: context.muted),
-                  ),
-                ),
-              ],
+              if (_isOwner) const _JoinCodeCard(),
+              _Requests(
+                requests: _requests,
+                onApprove: (r) => _run(() => _account.approveJoin(r.userId)),
+                onRefuse: (r) => _run(() => _account.refuseJoin(r.userId)),
+              ),
               for (final m in members)
                 ListTile(
                   leading: const Icon(Icons.person),
@@ -244,26 +221,74 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
   );
 }
 
-class _RolePicker extends StatelessWidget {
-  const _RolePicker({required this.value, required this.onChanged});
+/// "Pedidos para entrar": the requests waiting for approval, if any.
+class _Requests extends StatelessWidget {
+  const _Requests({
+    required this.requests,
+    required this.onApprove,
+    required this.onRefuse,
+  });
 
-  final StoreRole value;
-  final ValueChanged<StoreRole> onChanged;
+  final Future<List<JoinRequest>> requests;
+  final ValueChanged<JoinRequest> onApprove;
+  final ValueChanged<JoinRequest> onRefuse;
 
   @override
-  Widget build(BuildContext context) => SegmentedButton<StoreRole>(
-    segments: [
-      for (final r in StoreRole.values)
-        ButtonSegment(value: r, label: Text(r.label)),
-    ],
-    selected: {value},
-    showSelectedIcon: false,
-    onSelectionChanged: (s) => onChanged(s.single),
+  Widget build(BuildContext context) => FutureBuilder<List<JoinRequest>>(
+    future: requests,
+    builder: (context, snap) {
+      if (snap.hasError) {
+        return ListTile(
+          leading: const Icon(Icons.error_outline),
+          title: Text(accountErrorText(snap.error!)),
+        );
+      }
+      final list = snap.data ?? const [];
+      if (list.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              'Pedidos para entrar',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (final r in list)
+            ListTile(
+              leading: const Icon(Icons.person_add_alt),
+              title: Text(r.email),
+              subtitle: Text(
+                r.requestedName != null
+                    ? 'Novo: ${r.requestedName}'
+                    : 'É: ${r.personName ?? 'pessoa apagada'}',
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Recusar',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => onRefuse(r),
+                  ),
+                  IconButton(
+                    tooltip: 'Aprovar',
+                    icon: const Icon(Icons.check),
+                    onPressed: () => onApprove(r),
+                  ),
+                ],
+              ),
+            ),
+          const Divider(),
+        ],
+      );
+    },
   );
 }
 
 /// The store's join code, for the owner to share: with it, someone signed
-/// in picks who they are in the list of people and joins as Edição.
+/// in picks who they are in the list of people and asks to join.
 class _JoinCodeCard extends StatefulWidget {
   const _JoinCodeCard();
 
@@ -322,8 +347,9 @@ class _JoinCodeCardState extends State<_JoinCodeCard> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Quem tiver o código entra na loja (com Edição) e diz quem '
-                'é na lista de pessoas. Partilhe-o só com a equipa.',
+                'Quem tiver o código pede para entrar e diz quem é na lista '
+                'de pessoas; um chefe, a gerência ou o dono aprova. '
+                'Partilhe-o só com a equipa.',
                 style: TextStyle(color: context.muted),
               ),
               const SizedBox(height: 12),

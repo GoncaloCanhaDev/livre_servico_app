@@ -4,12 +4,12 @@ import '../models/person.dart';
 import '../services/account_service.dart';
 import '../services/local_db.dart';
 import '../theme.dart';
-import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
 
 /// "Quem é você?": the store's people with no account yet. Pops with
-/// `(personId: id)` for the one picked, `(personId: null)` for "Não estou na
-/// lista" (only when [canAddNew]), or nothing when cancelled.
+/// `(personId: id, name: null)` for the one picked, `(personId: null, name:
+/// typed)` for "Não estou na lista" (only when [canAddNew]), or nothing when
+/// cancelled.
 class ClaimPersonScreen extends StatefulWidget {
   const ClaimPersonScreen({
     super.key,
@@ -28,6 +28,16 @@ class ClaimPersonScreen extends StatefulWidget {
 
 class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
   String _query = '';
+
+  Future<void> _notListed() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => const _NameDialog(),
+    );
+    if (name != null && mounted) {
+      Navigator.pop(context, (personId: null, name: name));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +82,8 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
                 subtitle: Text(
                   p.number.isEmpty ? 'Sem número' : 'Nº ${p.number}',
                 ),
-                onTap: () => Navigator.pop(context, (personId: p.id)),
+                onTap: () =>
+                    Navigator.pop(context, (personId: p.id, name: null)),
               ),
             if (widget.people.isEmpty)
               Padding(
@@ -87,8 +98,10 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
               ListTile(
                 leading: const Icon(Icons.person_add_alt),
                 title: const Text('Não estou na lista'),
-                subtitle: const Text('Preencha os seus dados de raiz.'),
-                onTap: () => Navigator.pop(context, (personId: null)),
+                subtitle: const Text(
+                  'Quem aprovar o pedido acrescenta-o à lista.',
+                ),
+                onTap: _notListed,
               ),
             ],
           ],
@@ -98,29 +111,61 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
   }
 }
 
-/// After this account was linked to the person [personId] (or joined with
-/// none), opens that person's form to correct or complete it; with none,
-/// the form for a new person, which then becomes this account's profile.
+/// Asks someone not in the list for their name; pops with it, trimmed.
+class _NameDialog extends StatefulWidget {
+  const _NameDialog();
+
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('O seu nome'),
+    content: TextField(
+      controller: _ctrl,
+      autofocus: true,
+      textCapitalization: TextCapitalization.words,
+      decoration: const InputDecoration(
+        labelText: 'Nome completo',
+        border: OutlineInputBorder(),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancelar'),
+      ),
+      TextButton(
+        onPressed: () {
+          final name = _ctrl.text.trim();
+          if (name.isNotEmpty) Navigator.pop(context, name);
+        },
+        child: const Text('Continuar'),
+      ),
+    ],
+  );
+}
+
+/// After this account was linked to the person [personId], opens that
+/// person's form to correct or complete it.
 ///
 /// Takes the navigator and messenger rather than a context: joining a store
 /// replaces the screen that started it.
 Future<void> completeProfile(
   NavigatorState nav,
   ScaffoldMessengerState messenger, {
-  required String? personId,
+  required String personId,
 }) async {
-  if (personId == null) {
-    final created = await nav.push<Person>(
-      MaterialPageRoute(builder: (_) => const PersonFormScreen()),
-    );
-    if (created == null) return;
-    try {
-      await AccountService.instance.claimPerson(created.syncUuid);
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(accountErrorText(e))));
-    }
-    return;
-  }
   final person = await myPerson(personId);
   if (person == null) {
     messenger.showSnackBar(
@@ -133,13 +178,8 @@ Future<void> completeProfile(
     );
     return;
   }
-  final editable = AccountService.instance.store?.role != StoreRole.viewer;
   await nav.push(
-    MaterialPageRoute(
-      builder: (_) => editable
-          ? PersonFormScreen(existing: person)
-          : PersonDetailScreen(person: person),
-    ),
+    MaterialPageRoute(builder: (_) => PersonFormScreen(existing: person)),
   );
 }
 
@@ -148,7 +188,8 @@ Future<Person?> myPerson(String personId) =>
     LocalDb.instance.persons.firstWhere((p) => p.syncUuid == personId);
 
 /// Lets the signed-in member of the current store say which person they
-/// are, then opens their profile. For "O meu perfil" before it is linked.
+/// are, then opens their profile. For "O meu perfil" before it is linked;
+/// someone not in the list asks Gerência to add them.
 Future<void> pickMyPerson(BuildContext context) async {
   final nav = Navigator.of(context);
   final messenger = ScaffoldMessenger.of(context);
@@ -161,24 +202,22 @@ Future<void> pickMyPerson(BuildContext context) async {
     messenger.showSnackBar(SnackBar(content: Text(accountErrorText(e))));
     return;
   }
-  final choice = await nav.push<({String? personId})>(
+  final choice = await nav.push<({String? personId, String? name})>(
     MaterialPageRoute(
       builder: (_) => ClaimPersonScreen(
         storeName: store.name,
         people: people,
-        // A viewer's new person would never reach the store.
-        canAddNew: store.role != StoreRole.viewer,
+        canAddNew: false,
       ),
     ),
   );
-  if (choice == null) return;
-  if (choice.personId case final id?) {
-    try {
-      await account.claimPerson(id);
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(accountErrorText(e))));
-      return;
-    }
+  final id = choice?.personId;
+  if (id == null) return;
+  try {
+    await account.claimPerson(id);
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(accountErrorText(e))));
+    return;
   }
-  await completeProfile(nav, messenger, personId: choice.personId);
+  await completeProfile(nav, messenger, personId: id);
 }

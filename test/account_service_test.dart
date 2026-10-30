@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:livre_servico_app/models/store_access.dart';
 import 'package:livre_servico_app/services/account_service.dart';
 import 'package:supabase/supabase.dart';
 
@@ -43,5 +44,45 @@ void main() {
     expect(StoreRole.fromName('owner'), StoreRole.owner);
     expect(StoreRole.fromName('editor'), StoreRole.editor);
     expect(StoreRole.fromName('admin'), StoreRole.viewer);
+  });
+  test('a saved store keeps whether it is pending and its access', () {
+    const s = (
+      id: 's1',
+      name: 'Loja',
+      role: StoreRole.editor,
+      personId: 'p1',
+      pending: true,
+      access: StoreAccess(
+        admin: false,
+        owner: false,
+        gerencia: false,
+        chefeTeam: 'talho',
+        personId: 'p1',
+      ),
+    );
+    final back = storeInfoFromJson(storeInfoToJson(s));
+    expect(back, s);
+    expect(syncsWith(back!), isFalse);
+    expect(
+      syncsWith((
+        id: 's1',
+        name: 'Loja',
+        role: StoreRole.editor,
+        personId: 'p1',
+        pending: false,
+        access: s.access,
+      )),
+      isTrue,
+    );
+  });
+
+  test('a store saved by an older version is approved, owner by role', () {
+    final s = storeInfoFromJson(
+      '{"id":"s1","name":"Loja","role":"owner","personId":null}',
+    )!;
+    expect(s.pending, isFalse);
+    expect(s.access.owner, isTrue);
+    expect(s.access.canApprove, isTrue);
+    expect(storeInfoFromJson('nope'), isNull);
   });
 }

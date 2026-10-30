@@ -11,6 +11,7 @@ import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
 import 'tasks_screen.dart';
 import 'truck_form_screen.dart';
+import 'widgets/join_requests_card.dart';
 import 'widgets/today_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -86,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const JoinRequestsCard(),
               const TodayCard(),
               GridView.count(
                 crossAxisCount: 2,

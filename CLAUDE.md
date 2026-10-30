@@ -246,19 +246,30 @@ files, WhatsApp links, hosting).
   password on the `supabase` package (not `supabase_flutter`, so no extra plugins; the session
   is kept in shared preferences, implicit auth flow), the chosen store (`account_store` pref)
   and its members (`store_member_list`, `add_store_member`). Choosing a store starts
-  `SyncService`; a viewer (`StoreRole.viewer`, "Só leitura") only pulls. While syncing, only
-  the owner may "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every
-  device. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
+  `SyncService` (`my_stores` lists them). `StoreInfo.access` (`lib/models/store_access.dart`,
+  from the server's `my_access`; `AccountService.access` is `StoreAccess.full` with no store)
+  says whether this account is the admin, the owner, in Gerência or chefe of a team, all
+  derived from the Person it is linked to. While syncing, only the owner (or the admin) may
+  "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every device. The old
+  viewer role ("Só leitura") is gone: every approved member edits the everyday data. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
   `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
   already are.
 - Each store has a join code (`store_codes`, read only through `store_join_code` /
   `reset_store_join_code`, owners only). With it, `join_store_preview` shows a signed-in
-  stranger the store's name and its people with no account yet, and `join_store` makes them an
-  editor, linked to the person they picked: `store_members.person_id` holds that Person's
-  `syncUuid` (unique per store, so one account per person; `claim_person` links a member
-  later, and the owner unlinks by setting it to null). `StoreInfo.personId` is this account's
-  person; `claim_person_screen.dart` holds the picker and `completeProfile`, which opens the
-  person form after joining (or a new person's, then claims it).
+  stranger the store's name and its people with no account yet (name and collaborator number
+  only), and `join_store` records a *pending* request (`store_members.status`) for the person
+  they picked or the name they typed (`requested_name`). A pending member sees nothing of the
+  store and doesn't sync (`StoreInfo.pending`; Conta shows "Pedido enviado"). Chefes,
+  Gerência, the owner and the admin (`can_approve`) list requests (`store_join_requests`, in
+  Membros and a count on Home) and `approve_join` (a typed name becomes a new Person) or
+  `refuse_join`. `store_members.person_id` holds the linked Person's `syncUuid` (unique per
+  store, so one account per person); `claim_person` lets a member link themselves once, never
+  to a chefe or to Gerência (only the owner/admin link freely), and the owner unlinks by
+  setting it to null. `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
+  holds the picker and `completeProfile`, which opens the person form once approved.
+- The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
+  `insert into public.app_admins select id from auth.users where email = '...';`): owner of
+  every store (`my_store_role`, `my_store_ids`), all listed in Conta.
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

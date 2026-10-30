@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.60.2] — 2026-10-31
+
+### Changed
+- **Asking to join a store** in the app: "Entrar com código" now sends a request; Conta shows
+  "Pedido enviado" (Verificar, Cancelar pedido) and nothing of the store reaches the phone
+  until it is approved. "Não estou na lista" asks for the name instead of a form: whoever
+  approves adds the person. Once approved, "Verificar" syncs and opens the profile.
+- **Pedidos para entrar** in Membros (and a count on Home) for chefes, Gerência and the owner,
+  to approve or refuse. Members no longer have roles to choose: "Só leitura" is gone.
+- "O meu perfil" only lets a member pick themselves from the list; someone missing asks
+  Gerência.
+
 ## [0.60.1] — 2026-10-31
 
 ### Fixed

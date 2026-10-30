@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
+import '../models/store_access.dart';
 import 'photo_store.dart';
 import 'supabase_sync_remote.dart';
 import 'sync_service.dart';
@@ -12,8 +13,9 @@ import 'sync_service.dart';
 /// A member's role in a store, as `store_role` in `supabase/migrations`
 /// (by name: viewer < editor < owner).
 enum StoreRole {
-  viewer('Só leitura'),
-  editor('Edição'),
+  // Viewers ("Só leitura") became members when join requests came in.
+  viewer('Membro'),
+  editor('Membro'),
   owner('Dono');
 
   const StoreRole(this.label);
@@ -27,11 +29,74 @@ enum StoreRole {
 
 /// A store this account belongs to; [personId] is the `syncUuid` of the
 /// Person this account is in it (its profile), null when not linked yet.
+/// [pending] while the request to join waits for approval: nothing syncs.
 typedef StoreInfo = ({
   String id,
   String name,
   StoreRole role,
   String? personId,
+  bool pending,
+  StoreAccess access,
+});
+
+/// Whether this device syncs with [s]: not while the request to join waits.
+bool syncsWith(StoreInfo s) => !s.pending;
+
+/// [s] as the `account_store` pref keeps it.
+String storeInfoToJson(StoreInfo s) => jsonEncode({
+  'id': s.id,
+  'name': s.name,
+  'role': s.role.name,
+  'personId': s.personId,
+  'pending': s.pending,
+  'access': s.access.toJson(),
+});
+
+/// The store [raw] (from [storeInfoToJson]) describes; null when unreadable.
+StoreInfo? storeInfoFromJson(String? raw) {
+  if (raw == null) return null;
+  try {
+    if (jsonDecode(raw) case final Map<String, dynamic> j) {
+      if (j case {
+        'id': final String id,
+        'name': final String name,
+        'role': final String role,
+      }) {
+        final r = StoreRole.fromName(role);
+        return (
+          id: id,
+          name: name,
+          role: r,
+          // Missing in what versions before profiles saved.
+          personId: j['personId'] as String?,
+          // Missing in what versions before join requests saved.
+          pending: j['pending'] == true,
+          access: switch (j['access']) {
+            final Map<String, dynamic> a => StoreAccess.fromJson(a),
+            _ => _accessOfRole(r),
+          },
+        );
+      }
+    }
+  } on FormatException {
+    // Unreadable: as if no store was chosen.
+  }
+  return null;
+}
+
+/// What a store's role alone says, until `my_access` answers.
+StoreAccess _accessOfRole(StoreRole r) =>
+    StoreAccess(admin: false, owner: r == StoreRole.owner, gerencia: false);
+
+/// A request to join the current store, waiting for approval: as the
+/// person [personId] ([personName]), or [requestedName] for someone new.
+typedef JoinRequest = ({
+  String userId,
+  String email,
+  String? personId,
+  String? personName,
+  String? requestedName,
+  DateTime createdAt,
 });
 typedef StoreMember = ({
   String userId,
@@ -84,7 +149,12 @@ class AccountService extends ChangeNotifier {
 
   /// Whether this device may wipe all data: anyone when not syncing, only
   /// the owner when it is (the wipe reaches the whole store).
-  bool get canWipeAll => store == null || store!.role == StoreRole.owner;
+  bool get canWipeAll =>
+      store == null || store!.access.owner || store!.access.admin;
+
+  /// What this account may do in the current store; everything when there
+  /// is none.
+  StoreAccess get access => store?.access ?? StoreAccess.full;
 
   SupabaseClient get _api => _client!;
 
@@ -105,7 +175,7 @@ class AccountService extends ChangeNotifier {
       }
     }, onError: (_) {});
     email = _prefs.getString(_emailKey);
-    store = _storeFromJson(_prefs.getString(_storeKey));
+    store = storeInfoFromJson(_prefs.getString(_storeKey));
     if (_prefs.getString(_sessionKey) != null) unawaited(_restore());
   }
 
@@ -128,7 +198,7 @@ class AccountService extends ChangeNotifier {
       return;
     }
     if (store case final s?) unawaited(_startSync(s));
-    unawaited(_refreshStore());
+    unawaited(refreshStore().catchError((_) {}));
   }
 
   void _retryLater() {
@@ -137,22 +207,39 @@ class AccountService extends ChangeNotifier {
     _retry = Timer(const Duration(minutes: 1), _restore);
   }
 
-  /// Takes the store's current name and this account's role from the
-  /// server; leaves the store if this account was removed from it.
-  Future<void> _refreshStore() async {
+  /// Takes the store's current name, this account's role and access and
+  /// whether its request is still pending from the server; starts syncing
+  /// once approved, and leaves the store if this account was removed from
+  /// it (or its request refused). Throws when offline.
+  Future<void> refreshStore() async {
     final current = store;
     if (current == null) return;
-    try {
-      final mine = await myStores();
-      final now = mine.where((s) => s.id == current.id).firstOrNull;
-      if (now == null) {
-        await leaveStore();
-      } else if (now != current) {
-        await _saveStore(now);
-        if (now.role != current.role) unawaited(_startSync(now));
-      }
-    } catch (_) {
-      // Offline: keep what was saved.
+    final mine = await myStores();
+    final listed = mine.where((s) => s.id == current.id).firstOrNull;
+    if (listed == null) {
+      await leaveStore();
+      return;
+    }
+    final now = listed.pending
+        ? listed
+        : (
+            id: listed.id,
+            name: listed.name,
+            role: listed.role,
+            personId: listed.personId,
+            pending: false,
+            access: StoreAccess.fromJson(
+              await _api.rpc<Map<String, dynamic>>(
+                'my_access',
+                params: {'p_store': current.id},
+              ),
+            ),
+          );
+    if (now == current) return;
+    await _saveStore(now);
+    // Completes after the first sync once approved.
+    if (now.pending != current.pending || now.role != current.role) {
+      await _startSync(now);
     }
   }
 
@@ -197,24 +284,22 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The stores this account belongs to, by name.
+  /// The stores this account belongs to (or asked to join), by name; every
+  /// store for the app's admin. Access is the role's until [refreshStore].
   Future<List<StoreInfo>> myStores() async {
-    final uid = _api.auth.currentUser?.id;
-    if (uid == null) return const [];
-    final rows = await _api
-        .from('store_members')
-        .select('role, person_id, stores(id, name)')
-        .eq('user_id', uid);
+    if (_api.auth.currentUser == null) return const [];
+    final rows = await _api.rpc<List<dynamic>>('my_stores');
     return [
-      for (final r in rows)
-        if (r['stores'] case {'id': final String id, 'name': final String n})
-          (
-            id: id,
-            name: n,
-            role: StoreRole.fromName(r['role']),
-            personId: r['person_id'] as String?,
-          ),
-    ]..sort((a, b) => a.name.compareTo(b.name));
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          id: r['id'] as String,
+          name: r['name'] as String,
+          role: StoreRole.fromName(r['role']),
+          personId: r['person_id'] as String?,
+          pending: r['status'] == 'pending',
+          access: _accessOfRole(StoreRole.fromName(r['role'])),
+        ),
+    ];
   }
 
   /// Creates a store owned by this account and syncs with it.
@@ -228,6 +313,8 @@ class AccountService extends ChangeNotifier {
       name: name.trim(),
       role: StoreRole.owner,
       personId: null,
+      pending: false,
+      access: _accessOfRole(StoreRole.owner),
     ));
   }
 
@@ -244,16 +331,58 @@ class AccountService extends ChangeNotifier {
     );
   }
 
-  /// Joins the store with the join [code] (as an editor, unless already a
-  /// member), as the person [personId] if given, and syncs with it.
-  Future<void> joinStore(String code, {String? personId}) async {
+  /// Asks to join the store with the join [code] as the person [personId],
+  /// or as someone new called [name], and chooses it: it syncs once a chefe,
+  /// Gerência or the owner approves (see [refreshStore]). A member already
+  /// keeps their membership.
+  Future<void> joinStore(String code, {String? personId, String? name}) async {
     final id = await _api.rpc<String>(
       'join_store',
-      params: {'p_code': code, 'p_person': personId},
+      params: {'p_code': code, 'p_person': personId, 'p_name': name},
     );
     final joined = (await myStores()).firstWhere((s) => s.id == id);
     await useStore(joined);
   }
+
+  /// Withdraws this account's pending request to join the current store.
+  Future<void> cancelJoinRequest() async {
+    await _api
+        .from('store_members')
+        .delete()
+        .eq('store_id', store!.id)
+        .eq('user_id', _api.auth.currentUser!.id);
+    await leaveStore();
+  }
+
+  /// The requests to join the current store, oldest first. For those who
+  /// approve them ([StoreAccess.canApprove]).
+  Future<List<JoinRequest>> joinRequests() async {
+    final rows = await _api.rpc<List<dynamic>>(
+      'store_join_requests',
+      params: {'p_store': store!.id},
+    );
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          userId: r['user_id'] as String,
+          email: r['email'] as String? ?? '',
+          personId: r['person_id'] as String?,
+          personName: r['person_name'] as String?,
+          requestedName: r['requested_name'] as String?,
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+        ),
+    ];
+  }
+
+  Future<void> approveJoin(String userId) => _api.rpc<void>(
+    'approve_join',
+    params: {'p_store': store!.id, 'p_user': userId},
+  );
+
+  Future<void> refuseJoin(String userId) => _api.rpc<void>(
+    'refuse_join',
+    params: {'p_store': store!.id, 'p_user': userId},
+  );
 
   /// The current store's people with no account linked yet.
   Future<List<UnlinkedPerson>> unlinkedPeople() async => _unlinkedFromJson(
@@ -285,6 +414,8 @@ class AccountService extends ChangeNotifier {
       name: s.name,
       role: s.role,
       personId: personId,
+      pending: s.pending,
+      access: s.access,
     ));
   }
 
@@ -293,6 +424,8 @@ class AccountService extends ChangeNotifier {
   Future<void> useStore(StoreInfo s) async {
     await _saveStore(s);
     await _startSync(s);
+    // The access the role alone doesn't say (chefe, Gerência, admin).
+    unawaited(refreshStore().catchError((_) {}));
   }
 
   /// Stops syncing with the store; the data stays on this device.
@@ -303,9 +436,13 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _startSync(StoreInfo s) {
+  Future<void> _startSync(StoreInfo s) async {
+    if (!syncsWith(s)) {
+      _stopSync();
+      return;
+    }
     PhotoStore.instance.remote = SupabasePhotoRemote(_api, s.id);
-    return SyncService.instance.start(
+    await SyncService.instance.start(
       SupabaseSyncRemote(_api, s.id),
       s.id,
       canPush: s.role != StoreRole.viewer,
@@ -319,40 +456,8 @@ class AccountService extends ChangeNotifier {
 
   Future<void> _saveStore(StoreInfo s) async {
     store = s;
-    await _prefs.setString(
-      _storeKey,
-      jsonEncode({
-        'id': s.id,
-        'name': s.name,
-        'role': s.role.name,
-        'personId': s.personId,
-      }),
-    );
+    await _prefs.setString(_storeKey, storeInfoToJson(s));
     notifyListeners();
-  }
-
-  StoreInfo? _storeFromJson(String? raw) {
-    if (raw == null) return null;
-    try {
-      if (jsonDecode(raw) case final Map<String, dynamic> j) {
-        if (j case {
-          'id': final String id,
-          'name': final String name,
-          'role': final String role,
-        }) {
-          return (
-            id: id,
-            name: name,
-            role: StoreRole.fromName(role),
-            // Missing in what versions before profiles saved.
-            personId: j['personId'] as String?,
-          );
-        }
-      }
-    } on FormatException {
-      // Unreadable: as if no store was chosen.
-    }
-    return null;
   }
 
   /// Everyone in the current store, owners first.
