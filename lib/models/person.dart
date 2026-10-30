@@ -1,16 +1,37 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'person.g.dart';
+class Person with SyncFields {
+  Person();
 
-@collection
-class Person {
-  Id id = Isar.autoIncrement;
-
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  factory Person.fromJson(Map<String, dynamic> j) {
+    final p = Person()
+      ..fullName = stringFromJson(j['fullName'])
+      ..collaboratorNumber = stringFromJson(j['collaboratorNumber'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..dateOfBirth = dateFromJson(j['dateOfBirth'])
+      ..hireDate = dateFromJson(j['hireDate'])
+      ..photoPath = stringOrNull(j['photoPath'])
+      ..phoneNumber = stringOrNull(j['phoneNumber'])
+      ..team = stringOrNull(j['team'])
+      ..chefe = stringOrNull(j['chefe'])
+      ..turno = stringOrNull(j['turno'])
+      ..permanencia = boolFromJson(j['permanencia'])
+      ..partTime = boolFromJson(j['partTime'])
+      ..supervisor = boolFromJson(j['supervisor'])
+      ..segundaLinha = boolFromJson(j['segundaLinha'])
+      ..folgas = intsFromJson(j['folgas'])
+      ..weeklyHours = intOrNull(j['weeklyHours'])
+      ..shiftStart = intOrNull(j['shiftStart'])
+      ..shiftEnd = intOrNull(j['shiftEnd'])
+      ..ausencias = [
+        for (final a in mapsFromJson(j['ausencias'])) Ausencia.fromJson(a),
+      ]
+      ..storeStartDate = dateFromJson(j['storeStartDate'])
+      ..notes = stringsFromJson(j['notes'])
+      ..genero = enumFromJson(Genero.values, j['genero']);
+    syncFieldsFromJson(p, j);
+    return p;
+  }
 
   late String fullName;
   String collaboratorNumber = '';
@@ -73,8 +94,34 @@ class Person {
 
   /// Only used to agree words with the person ("Novo" / "Nova"); null when
   /// not set.
-  @Enumerated(EnumType.name)
   Genero? genero;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'fullName': fullName,
+    'collaboratorNumber': collaboratorNumber,
+    'createdAt': dateToJson(createdAt),
+    'dateOfBirth': dateToJson(dateOfBirth),
+    'hireDate': dateToJson(hireDate),
+    'photoPath': photoPath,
+    'phoneNumber': phoneNumber,
+    'team': team,
+    'chefe': chefe,
+    'turno': turno,
+    'permanencia': permanencia,
+    'partTime': partTime,
+    'supervisor': supervisor,
+    'segundaLinha': segundaLinha,
+    'folgas': folgas,
+    'weeklyHours': weeklyHours,
+    'shiftStart': shiftStart,
+    'shiftEnd': shiftEnd,
+    'ausencias': [for (final a in ausencias) a.toJson()],
+    'storeStartDate': dateToJson(storeStartDate),
+    'notes': notes,
+    'genero': genero?.name,
+  };
 }
 
 enum Genero {
@@ -97,9 +144,20 @@ enum AusenciaTipo {
 
 /// A period away from work, from [start] to [end] (both whole days,
 /// inclusive). Baixas are recorded without a reason.
-@embedded
 class Ausencia {
-  @Enumerated(EnumType.name)
+  Ausencia();
+
+  factory Ausencia.fromJson(Map<String, dynamic> j) => Ausencia()
+    ..tipo = enumFromJson(AusenciaTipo.values, j['tipo']) ?? AusenciaTipo.outra
+    ..start = dateFromJsonOr(j['start'], DateTime(2000))
+    ..end = dateFromJsonOr(j['end'], DateTime(2000));
+
+  Map<String, dynamic> toJson() => {
+    'tipo': tipo.name,
+    'start': dateToJson(start),
+    'end': dateToJson(end),
+  };
+
   AusenciaTipo tipo = AusenciaTipo.ferias;
   DateTime start = DateTime(2000);
   DateTime end = DateTime(2000);

@@ -1,16 +1,23 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'inventory.g.dart';
+class Inventory with SyncFields {
+  Inventory();
 
-@collection
-class Inventory {
-  Id id = Isar.autoIncrement;
+  factory Inventory.fromJson(Map<String, dynamic> j) {
+    final i = Inventory()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..name = stringFromJson(j['name'])
+      ..valueCents = intFromJson(j['valueCents'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..code = stringOrNull(j['code'])
+      ..startedAt = dateFromJson(j['startedAt'])
+      ..finishedAt = dateFromJson(j['finishedAt'])
+      ..finalValueCents = intOrNull(j['finalValueCents']);
+    syncFieldsFromJson(i, j);
+    return i;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
@@ -38,4 +45,18 @@ class Inventory {
 
   bool get isLegacy => startedAt == null;
   bool get isFinalized => finishedAt != null;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'name': name,
+    'valueCents': valueCents,
+    'createdAt': dateToJson(createdAt),
+    'code': code,
+    'startedAt': dateToJson(startedAt),
+    'finishedAt': dateToJson(finishedAt),
+    'finalValueCents': finalValueCents,
+  };
 }

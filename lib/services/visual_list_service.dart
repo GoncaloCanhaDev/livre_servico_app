@@ -1,16 +1,15 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/opening_list.dart';
 import '../models/visual_list.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class VisualListService extends ChangeNotifier {
   VisualListService._();
   static final VisualListService instance = VisualListService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
   Future<void> add({
     String? syncUuid,
@@ -29,9 +28,7 @@ class VisualListService extends ChangeNotifier {
       ..createdByNames = by ?? [];
     if (syncUuid != null) entry.syncUuid = syncUuid;
     SyncMeta.stamp(entry);
-    await _isar.writeTxn(() async {
-      await _isar.visualLists.put(entry);
-    });
+    await _db.visualLists.put(entry);
     notifyListeners();
   }
 
@@ -56,63 +53,31 @@ class VisualListService extends ChangeNotifier {
       ..createdByNames = by ?? []
       ..backdated = true;
     SyncMeta.stamp(entry);
-    await _isar.writeTxn(() => _isar.visualLists.put(entry));
+    await _db.visualLists.put(entry);
     notifyListeners();
   }
 
   Future<List<VisualList>> entriesForServiceDay(
     DateTime day, {
     bool includeDeleted = false,
-  }) {
-    if (includeDeleted) {
-      return _isar.visualLists
-          .where()
-          .serviceDayEqualTo(day)
-          .sortByCreatedAtDesc()
-          .findAll();
-    }
-    return _isar.visualLists
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByCreatedAtDesc()
-        .findAll();
-  }
+  }) async =>
+      (await _db.visualLists.where(
+        (v) => v.serviceDay.isAtSameMomentAs(day),
+        includeDeleted: includeDeleted,
+      ))..sort(_newestFirst);
 
   Future<void> deleteAll() async {
-    final rows = await _isar.visualLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.visualLists.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.visualLists.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.visualLists.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.visualLists.put(row);
-    });
-    notifyListeners();
+    if (await _db.visualLists.softDelete(id)) notifyListeners();
   }
 
-  Future<List<VisualList>> all({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.visualLists.where().sortByCreatedAtDesc().findAll();
-    }
-    return _isar.visualLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByCreatedAtDesc()
-        .findAll();
-  }
+  Future<List<VisualList>> all({bool includeDeleted = false}) async =>
+      (await _db.visualLists.all(includeDeleted: includeDeleted))
+        ..sort(_newestFirst);
+
+  static int _newestFirst(VisualList a, VisualList b) =>
+      b.createdAt.compareTo(a.createdAt);
 }

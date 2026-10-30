@@ -1,40 +1,26 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class DailyTasksService extends ChangeNotifier {
   DailyTasksService._();
   static final DailyTasksService instance = DailyTasksService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
   Future<DailyTasks> currentOrCreate() async {
-    final day = currentServiceDay();
-    final existing = await _isar.dailyTasks
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await find(currentServiceDay());
     if (existing != null) {
       if (_sanitize(existing)) {
         SyncMeta.stamp(existing);
-        await _isar.writeTxn(() async {
-          await _isar.dailyTasks.put(existing);
-        });
+        await _db.dailyTasks.put(existing);
       }
       return existing;
     }
-    final created = DailyTasks()..serviceDay = day;
-    SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.dailyTasks.put(created);
-    });
-    return created;
+    return forDay(currentServiceDay());
   }
 
   bool _sanitize(DailyTasks t) {
@@ -55,71 +41,35 @@ class DailyTasksService extends ChangeNotifier {
   }
 
   /// The row for [serviceDay], without creating one; null when none.
-  Future<DailyTasks?> find(DateTime serviceDay) => _isar.dailyTasks
-      .where()
-      .serviceDayEqualTo(serviceDay)
-      .filter()
-      .syncDeletedAtIsNull()
-      .findFirst();
+  Future<DailyTasks?> find(DateTime serviceDay) => _db.dailyTasks.firstWhere(
+    (t) => t.serviceDay.isAtSameMomentAs(serviceDay),
+  );
 
   Future<DailyTasks> forDay(DateTime serviceDay) async {
-    final existing = await _isar.dailyTasks
-        .where()
-        .serviceDayEqualTo(serviceDay)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await find(serviceDay);
     if (existing != null) return existing;
     final created = DailyTasks()..serviceDay = serviceDay;
     SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.dailyTasks.put(created);
-    });
+    await _db.dailyTasks.put(created);
     return created;
   }
 
   Future<void> save(DailyTasks t) async {
     t.lastUpdatedAt = DateTime.now();
     SyncMeta.stamp(t);
-    await _isar.writeTxn(() async {
-      await _isar.dailyTasks.put(t);
-    });
+    await _db.dailyTasks.put(t);
     notifyListeners();
   }
 
   Future<void> deleteAll() async {
-    final rows = await _isar.dailyTasks
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.dailyTasks.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.dailyTasks.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.dailyTasks.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.dailyTasks.put(row);
-    });
-    notifyListeners();
+    if (await _db.dailyTasks.softDelete(id)) notifyListeners();
   }
 
-  Future<List<DailyTasks>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.dailyTasks.where().sortByServiceDayDesc().findAll();
-    }
-    return _isar.dailyTasks
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByServiceDayDesc()
-        .findAll();
-  }
+  Future<List<DailyTasks>> history({bool includeDeleted = false}) async =>
+      (await _db.dailyTasks.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.serviceDay.compareTo(a.serviceDay));
 }

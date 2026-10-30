@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,8 +11,8 @@ import '../models/horario.dart';
 import '../models/horario_codigos.dart';
 import '../models/horario_mes.dart';
 import '../models/teams.dart';
+import 'local_db.dart';
 import 'person_service.dart';
-import 'shift_service.dart';
 
 /// What an import brought: the months it saved or deleted, and per month
 /// the names that matched nobody in Livre Serviço.
@@ -22,7 +21,7 @@ typedef HorariosImport = ({
   Map<String, List<String>> unmatched,
 });
 
-/// The Livre Serviço horários: months in Isar ([HorarioMes]), codes and
+/// The Livre Serviço horários: months in [LocalDb] ([HorarioMes]), codes and
 /// absence names in shared preferences (defaults until a file brings its
 /// own), and an [index] linking each line to its person. They are edited
 /// as a JSON file: [exportFile], edit, [pickAndImport].
@@ -33,7 +32,7 @@ class HorarioService extends ChangeNotifier {
   static const _codigosKey = 'horario_codigos';
   static const _ausenciasKey = 'horario_ausencias';
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
   late SharedPreferences _prefs;
 
   Horarios _horarios = Horarios.empty;
@@ -58,7 +57,7 @@ class HorarioService extends ChangeNotifier {
     } on FormatException {
       // Unreadable saved codes: keep the defaults rather than fail startup.
     }
-    final months = await _isar.horarioMes.where().findAll();
+    final months = await _db.horarioMeses.all();
     _horarios = Horarios(
       codigos: codigos,
       ausencias: ausencias,
@@ -106,11 +105,13 @@ class HorarioService extends ChangeNotifier {
     if (file.ausencias case final a?) {
       await _prefs.setString(_ausenciasKey, jsonEncode(a));
     }
-    await _isar.writeTxn(() async {
-      if (replaceAll) await _isar.horarioMes.clear();
+    await _db.transaction(() async {
+      if (replaceAll) await _db.horarioMeses.clear();
       for (final e in file.meses.entries) {
+        // One row per month: a month in the file replaces the saved one.
+        await _db.horarioMeses.deleteWhere((m) => m.mes == e.key);
         if (e.value case final rows?) {
-          await _isar.horarioMes.put(
+          await _db.horarioMeses.put(
             HorarioMes()
               ..mes = e.key
               ..linhas = [
@@ -120,8 +121,6 @@ class HorarioService extends ChangeNotifier {
                     ..codigos = r.value,
               ],
           );
-        } else {
-          await _isar.horarioMes.where().mesEqualTo(e.key).deleteAll();
         }
       }
     });
@@ -140,7 +139,7 @@ class HorarioService extends ChangeNotifier {
 
   /// Removes every saved month (codes are kept), for "Apagar tudo".
   Future<void> clearMonths() async {
-    await _isar.writeTxn(() => _isar.horarioMes.clear());
+    await _db.horarioMeses.clear();
     _horarios = Horarios(
       codigos: _horarios.codigos,
       ausencias: _horarios.ausencias,

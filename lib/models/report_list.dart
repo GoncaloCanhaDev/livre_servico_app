@@ -1,21 +1,27 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'report_list.g.dart';
+class ReportList with SyncFields {
+  ReportList();
 
-@collection
-class ReportList {
-  Id id = Isar.autoIncrement;
+  factory ReportList.fromJson(Map<String, dynamic> j) {
+    final r = ReportList()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..diasSemVendas = intFromJson(j['diasSemVendas'])
+      ..regularizacoes = intFromJson(j['regularizacoes'])
+      ..massiva = intFromJson(j['massiva'])
+      ..repetidos = intFromJson(j['repetidos'])
+      ..backdated = boolFromJson(j['backdated'])
+      ..finalizedAt = dateFromJson(j['finalizedAt']);
+    syncFieldsFromJson(r, j);
+    return r;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
 
-  @Index(unique: true, replace: true)
   late DateTime serviceDay;
 
   int diasSemVendas = 0;
@@ -30,4 +36,18 @@ class ReportList {
 
   bool get isFinalized => finalizedAt != null;
   int get total => diasSemVendas + regularizacoes + massiva + repetidos;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'serviceDay': dateToJson(serviceDay),
+    'diasSemVendas': diasSemVendas,
+    'regularizacoes': regularizacoes,
+    'massiva': massiva,
+    'repetidos': repetidos,
+    'backdated': backdated,
+    'finalizedAt': dateToJson(finalizedAt),
+  };
 }

@@ -1,15 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/pedido.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class PedidoService extends ChangeNotifier {
   PedidoService._();
   static final PedidoService instance = PedidoService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
   /// Creates an in-progress pedido from the Novo form.
   Future<Pedido> create({
@@ -23,14 +22,12 @@ class PedidoService extends ChangeNotifier {
       ..supplier = _blankToNull(supplier)
       ..expectedDate = expectedDate;
     SyncMeta.stamp(p);
-    await _isar.writeTxn(() async {
-      p.id = await _isar.pedidos.put(p);
-    });
+    await _db.pedidos.put(p);
     notifyListeners();
     return p;
   }
 
-  Future<Pedido?> getById(int id) => _isar.pedidos.get(id);
+  Future<Pedido?> getById(int id) => _db.pedidos.get(id);
 
   /// Saves the form's current values on an in-progress pedido; blank text
   /// clears a field.
@@ -45,7 +42,7 @@ class PedidoService extends ChangeNotifier {
     p.supplier = _blankToNull(supplier);
     p.expectedDate = expectedDate;
     SyncMeta.stamp(p);
-    await _isar.writeTxn(() => _isar.pedidos.put(p));
+    await _db.pedidos.put(p);
     notifyListeners();
   }
 
@@ -53,7 +50,7 @@ class PedidoService extends ChangeNotifier {
     if (p.isFinalized) return;
     p.finishedAt = DateTime.now();
     SyncMeta.stamp(p);
-    await _isar.writeTxn(() => _isar.pedidos.put(p));
+    await _db.pedidos.put(p);
     notifyListeners();
   }
 
@@ -61,39 +58,19 @@ class PedidoService extends ChangeNotifier {
       (s == null || s.trim().isEmpty) ? null : s.trim();
 
   Future<void> deleteAll() async {
-    final rows = await _isar.pedidos.filter().syncDeletedAtIsNull().findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() => _isar.pedidos.putAll(rows));
-    notifyListeners();
+    if (await _db.pedidos.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.pedidos.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() => _isar.pedidos.put(row));
-    notifyListeners();
+    if (await _db.pedidos.softDelete(id)) notifyListeners();
   }
 
   /// The pedidos not finalized yet that have an expected date.
-  Future<List<Pedido>> openWithDate() => _isar.pedidos
-      .filter()
-      .syncDeletedAtIsNull()
-      .finishedAtIsNull()
-      .expectedDateIsNotNull()
-      .findAll();
+  Future<List<Pedido>> openWithDate() => _db.pedidos.where(
+    (p) => p.finishedAt == null && p.expectedDate != null,
+  );
 
-  Future<List<Pedido>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.pedidos.where().sortByCreatedAtDesc().findAll();
-    }
-    return _isar.pedidos
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByCreatedAtDesc()
-        .findAll();
-  }
+  Future<List<Pedido>> history({bool includeDeleted = false}) async =>
+      (await _db.pedidos.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 }

@@ -1,18 +1,48 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'daily_tasks.g.dart';
+class DailyTasks with SyncFields {
+  DailyTasks();
 
-@collection
-class DailyTasks {
-  Id id = Isar.autoIncrement;
+  factory DailyTasks.fromJson(Map<String, dynamic> j) {
+    final t = DailyTasks()
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..kiwiAbertura = boolFromJson(j['kiwiAbertura'])
+      ..kiwiAberturaBy = stringOrNull(j['kiwiAberturaBy'])
+      ..kiwiAberturaByNames = stringsFromJson(j['kiwiAberturaByNames'])
+      ..alteracoesPreco = boolFromJson(j['alteracoesPreco'])
+      ..alteracoesPrecoBy = stringOrNull(j['alteracoesPrecoBy'])
+      ..alteracoesPrecoByNames = stringsFromJson(j['alteracoesPrecoByNames'])
+      ..alteracoesPrecoCount = intFromJson(j['alteracoesPrecoCount'])
+      ..verificacaoTemperaturas = boolFromJson(j['verificacaoTemperaturas'])
+      ..verificacaoTemperaturasBy = stringOrNull(
+        j['verificacaoTemperaturasBy'],
+      )
+      ..verificacaoTemperaturasByNames = stringsFromJson(
+        j['verificacaoTemperaturasByNames'],
+      )
+      ..preenchimentoQuadro = boolFromJson(j['preenchimentoQuadro'])
+      ..preenchimentoQuadroBy = stringOrNull(j['preenchimentoQuadroBy'])
+      ..preenchimentoQuadroByNames = stringsFromJson(
+        j['preenchimentoQuadroByNames'],
+      )
+      ..verificacaoValidades = boolFromJson(j['verificacaoValidades'])
+      ..verificacaoValidadesBy = stringOrNull(j['verificacaoValidadesBy'])
+      ..verificacaoValidadesByNames = stringsFromJson(
+        j['verificacaoValidadesByNames'],
+      )
+      ..verificacaoValidadesCount = intFromJson(j['verificacaoValidadesCount'])
+      ..validadesNoite = boolFromJson(j['validadesNoite'])
+      ..validadesNoiteByNames = stringsFromJson(j['validadesNoiteByNames'])
+      ..validadesNoiteCount = intFromJson(j['validadesNoiteCount'])
+      ..kiwiFecho = boolFromJson(j['kiwiFecho'])
+      ..kiwiFechoBy = stringOrNull(j['kiwiFechoBy'])
+      ..kiwiFechoByNames = stringsFromJson(j['kiwiFechoByNames'])
+      ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
+      ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
+    syncFieldsFromJson(t, j);
+    return t;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
-
-  @Index(unique: true, replace: true)
   late DateTime serviceDay;
 
   bool kiwiAbertura = false;
@@ -53,4 +83,35 @@ class DailyTasks {
   List<String> backdatedTaskKeys = [];
 
   DateTime? lastUpdatedAt;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'serviceDay': dateToJson(serviceDay),
+    'kiwiAbertura': kiwiAbertura,
+    'kiwiAberturaBy': kiwiAberturaBy,
+    'kiwiAberturaByNames': kiwiAberturaByNames,
+    'alteracoesPreco': alteracoesPreco,
+    'alteracoesPrecoBy': alteracoesPrecoBy,
+    'alteracoesPrecoByNames': alteracoesPrecoByNames,
+    'alteracoesPrecoCount': alteracoesPrecoCount,
+    'verificacaoTemperaturas': verificacaoTemperaturas,
+    'verificacaoTemperaturasBy': verificacaoTemperaturasBy,
+    'verificacaoTemperaturasByNames': verificacaoTemperaturasByNames,
+    'preenchimentoQuadro': preenchimentoQuadro,
+    'preenchimentoQuadroBy': preenchimentoQuadroBy,
+    'preenchimentoQuadroByNames': preenchimentoQuadroByNames,
+    'verificacaoValidades': verificacaoValidades,
+    'verificacaoValidadesBy': verificacaoValidadesBy,
+    'verificacaoValidadesByNames': verificacaoValidadesByNames,
+    'verificacaoValidadesCount': verificacaoValidadesCount,
+    'validadesNoite': validadesNoite,
+    'validadesNoiteByNames': validadesNoiteByNames,
+    'validadesNoiteCount': validadesNoiteCount,
+    'kiwiFecho': kiwiFecho,
+    'kiwiFechoBy': kiwiFechoBy,
+    'kiwiFechoByNames': kiwiFechoByNames,
+    'backdatedTaskKeys': backdatedTaskKeys,
+    'lastUpdatedAt': dateToJson(lastUpdatedAt),
+  };
 }

@@ -139,7 +139,7 @@ Turno? turnoOf(Person p) {
 }
 
 /// Whether [a] and [b] are the same person: the same object, or the same
-/// (non-empty) syncUuid, e.g. the form's copy and the one read from Isar.
+/// (non-empty) syncUuid, e.g. the form's copy and the one read from the database.
 bool _same(Person a, Person b) =>
     identical(a, b) || (a.syncUuid.isNotEmpty && a.syncUuid == b.syncUuid);
 

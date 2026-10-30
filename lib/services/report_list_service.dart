@@ -1,31 +1,26 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/opening_list.dart';
 import '../models/report_list.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class ReportListService extends ChangeNotifier {
   ReportListService._();
   static final ReportListService instance = ReportListService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
+
+  Future<ReportList?> _forDay(DateTime day) =>
+      _db.reportLists.firstWhere((l) => l.serviceDay.isAtSameMomentAs(day));
 
   Future<ReportList> currentOrCreate() async {
     final day = currentServiceDay();
-    final existing = await _isar.reportLists
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _forDay(day);
     if (existing != null) return existing;
     final created = ReportList()..serviceDay = day;
     SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.reportLists.put(created);
-    });
+    await _db.reportLists.put(created);
     return created;
   }
 
@@ -42,9 +37,7 @@ class ReportListService extends ChangeNotifier {
     if (massiva != null) list.massiva = massiva;
     if (repetidos != null) list.repetidos = repetidos;
     SyncMeta.stamp(list);
-    await _isar.writeTxn(() async {
-      await _isar.reportLists.put(list);
-    });
+    await _db.reportLists.put(list);
     notifyListeners();
   }
 
@@ -55,12 +48,7 @@ class ReportListService extends ChangeNotifier {
     required int massiva,
     required int repetidos,
   }) async {
-    final existing = await _isar.reportLists
-        .where()
-        .serviceDayEqualTo(serviceDay)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _forDay(serviceDay);
     final row = existing ?? (ReportList()..serviceDay = serviceDay);
     row.diasSemVendas = diasSemVendas;
     row.regularizacoes = regularizacoes;
@@ -69,7 +57,7 @@ class ReportListService extends ChangeNotifier {
     row.finalizedAt = DateTime.now();
     row.backdated = true;
     SyncMeta.stamp(row);
-    await _isar.writeTxn(() => _isar.reportLists.put(row));
+    await _db.reportLists.put(row);
     notifyListeners();
   }
 
@@ -77,60 +65,27 @@ class ReportListService extends ChangeNotifier {
     if (list.isFinalized) return;
     list.finalizedAt = DateTime.now();
     SyncMeta.stamp(list);
-    await _isar.writeTxn(() async {
-      await _isar.reportLists.put(list);
-    });
+    await _db.reportLists.put(list);
     notifyListeners();
   }
 
   Future<List<ReportList>> entriesForServiceDay(
     DateTime day, {
     bool includeDeleted = false,
-  }) {
-    if (includeDeleted) {
-      return _isar.reportLists.where().serviceDayEqualTo(day).findAll();
-    }
-    return _isar.reportLists
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-  }
+  }) => _db.reportLists.where(
+    (l) => l.serviceDay.isAtSameMomentAs(day),
+    includeDeleted: includeDeleted,
+  );
 
   Future<void> deleteAll() async {
-    final rows = await _isar.reportLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.reportLists.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.reportLists.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.reportLists.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.reportLists.put(row);
-    });
-    notifyListeners();
+    if (await _db.reportLists.softDelete(id)) notifyListeners();
   }
 
-  Future<List<ReportList>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.reportLists.where().sortByServiceDayDesc().findAll();
-    }
-    return _isar.reportLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByServiceDayDesc()
-        .findAll();
-  }
+  Future<List<ReportList>> history({bool includeDeleted = false}) async =>
+      (await _db.reportLists.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.serviceDay.compareTo(a.serviceDay));
 }

@@ -2,29 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/auto_list.dart';
-import '../models/custom_task.dart';
-import '../models/daily_tasks.dart';
 import '../models/horario.dart';
-import '../models/info_entry.dart';
-import '../models/inventory.dart';
-import '../models/opening_list.dart';
-import '../models/pedido.dart';
-import '../models/person.dart';
-import '../models/report_list.dart';
-import '../models/truck_reception.dart';
+import '../models/local_row.dart';
 import '../models/vasilhame.dart';
-import '../models/visual_list.dart';
-import '../models/weekly_tasks.dart';
 import 'horario_service.dart';
+import 'local_db.dart';
 import 'settings_service.dart';
-import 'shift_service.dart';
-import 'sync_meta.dart';
 
 class BackupService {
   BackupService._();
@@ -32,7 +19,14 @@ class BackupService {
 
   static const _formatVersion = 1;
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
+
+  /// The collections a backup carries, by their key in its "collections"
+  /// (the horário months travel in "horarios" instead).
+  List<LocalCollection<SyncedRow>> get _backedUp => [
+    for (final c in _db.collections)
+      if (c != _db.horarioMeses) c,
+  ];
 
   static const _lastBackupAtKey = 'last_backup_at';
   static const _lastPromptAtKey = 'last_backup_prompt_at';
@@ -115,28 +109,9 @@ class BackupService {
   }
 
   Future<void> clearAll() async {
-    Future<void> wipe<T>(IsarCollection<T> col) async {
-      final rows = await col.where().findAll();
-      if (rows.isEmpty) return;
-      for (final r in rows) {
-        SyncMeta.softDelete(r);
-      }
-      await _isar.writeTxn(() => col.putAll(rows));
+    for (final c in _backedUp) {
+      await c.softDeleteAll();
     }
-
-    await wipe(_isar.truckReceptions);
-    await wipe(_isar.openingLists);
-    await wipe(_isar.autoLists);
-    await wipe(_isar.reportLists);
-    await wipe(_isar.visualLists);
-    await wipe(_isar.dailyTasks);
-    await wipe(_isar.weeklyTasks);
-    await wipe(_isar.inventorys);
-    await wipe(_isar.infoEntrys);
-    await wipe(_isar.persons);
-    await wipe(_isar.pedidos);
-    await wipe(_isar.customTasks);
-    await wipe(_isar.customTaskEntrys);
     await HorarioService.instance.clearMonths();
   }
 
@@ -149,21 +124,7 @@ class BackupService {
       'vasilhame': [for (final v in settings.vasilhame) v.toJson()],
       'settings': {'visualGoal': settings.visualGoal},
       'horarios': HorarioService.instance.horarios.toJson(),
-      'collections': {
-        'TruckReception': await _isar.truckReceptions.where().exportJson(),
-        'OpeningList': await _isar.openingLists.where().exportJson(),
-        'AutoList': await _isar.autoLists.where().exportJson(),
-        'ReportList': await _isar.reportLists.where().exportJson(),
-        'VisualList': await _isar.visualLists.where().exportJson(),
-        'DailyTasks': await _isar.dailyTasks.where().exportJson(),
-        'WeeklyTasks': await _isar.weeklyTasks.where().exportJson(),
-        'Inventory': await _isar.inventorys.where().exportJson(),
-        'InfoEntry': await _isar.infoEntrys.where().exportJson(),
-        'Person': await _isar.persons.where().exportJson(),
-        'Pedido': await _isar.pedidos.where().exportJson(),
-        'CustomTask': await _isar.customTasks.where().exportJson(),
-        'CustomTaskEntry': await _isar.customTaskEntrys.where().exportJson(),
-      },
+      'collections': {for (final c in _backedUp) c.name: c.exportJson()},
     };
   }
 
@@ -189,36 +150,19 @@ class BackupService {
       _ => null,
     };
 
-    /// Replaces [col] with the file's [key] rows; a collection the file
-    /// doesn't have (older backups) is left as it is.
-    Future<void> replace<T>(
-      IsarCollection<T> col,
-      String key, [
-      Map<String, dynamic> Function(Map<String, dynamic>)? adapt,
-    ]) async {
-      final v = raw[key];
-      if (v is! List) return;
-      final rows = v.cast<Map<String, dynamic>>();
-      await col.clear();
-      await col.importJson(adapt == null ? rows : rows.map(adapt).toList());
-    }
-
-    await _isar.writeTxn(() async {
-      await replace(_isar.truckReceptions, 'TruckReception');
-      await replace(_isar.openingLists, 'OpeningList');
-      await replace(_isar.autoLists, 'AutoList');
-      await replace(_isar.reportLists, 'ReportList');
-      await replace(_isar.visualLists, 'VisualList');
-      await replace(_isar.dailyTasks, 'DailyTasks');
-      await replace(_isar.weeklyTasks, 'WeeklyTasks');
-      await replace(_isar.inventorys, 'Inventory');
-      await replace(_isar.infoEntrys, 'InfoEntry');
-      await replace(_isar.persons, 'Person', personJsonForImport);
-      await replace(_isar.pedidos, 'Pedido');
-      await replace(_isar.customTasks, 'CustomTask');
-      await replace(_isar.customTaskEntrys, 'CustomTaskEntry');
+    // Replaces each collection with the file's rows; a collection the file
+    // doesn't have (older backups) is left as it is.
+    await _db.transaction(() async {
+      for (final c in _backedUp) {
+        final v = raw[c.name];
+        if (v is! List) continue;
+        final rows = mapsFromJson(v);
+        await c.importJson(
+          c == _db.persons ? rows.map(personJsonForImport).toList() : rows,
+        );
+      }
     });
-    await ShiftService.instance.backfillSync();
+    await _db.backfillSync();
 
     final settings = SettingsService.instance;
     if (vasilhame != null) await settings.setVasilhame(vasilhame);

@@ -9,7 +9,8 @@ truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tas
 (order headers: number, supplier, expected date), and the store's people, grouped into fixed teams with chefes, used at a
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
-data lives in an on-device Isar database, there is no backend or remote sync currently wired up.
+data lives in an on-device SQLite database (Drift); an online database is being added (see
+"Online database" below) but nothing syncs yet.
 It's built for and used by a single supervisor (livre serviço / reposição team lead at a Pingo
 Doce store) running it on their own phone to manage their team's checklists day to day — not a
 multi-tenant product.
@@ -18,8 +19,6 @@ multi-tenant product.
 
 - Install deps: `flutter pub get`
 - Run app: `flutter run`
-- Regenerate Isar model code (`*.g.dart`) after changing any `@collection` class:
-  `dart run build_runner build --delete-conflicting-outputs`
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
@@ -28,37 +27,46 @@ multi-tenant product.
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião and `test/abertura_tab_test.dart` sends the
-  Abertura sections). Widget tests run
-  against a real, empty Isar database in a temp folder: `openAppDb` / `closeAppDb` in
-  `test/helpers/app_db.dart` start the services like `main()` does, loading the host
-  `libisar.so` from the pub cache. A database call only completes inside `runAsync` and the
+  Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format).
+  Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
+  `closeAppDb` in `test/helpers/app_db.dart` start the services like `main()` does, with
+  `NativeDatabase.memory()` (needs the host's SQLite library, e.g. `libsqlite3` on
+  Linux). A database call only completes inside `runAsync` and the
   code awaiting it only resumes on a pump, so use the helpers in `test/helpers/pump.dart`
   (`pumpApp`, `settle`, `tapAndSettle`, `dbCall`), never `pumpAndSettle`.
 
 ## Architecture
 
-### Data layer: Isar
+### Data layer: LocalDb (Drift / SQLite)
 
-- `ShiftService.init()` (`lib/services/shift_service.dart`) opens the single `Isar` instance
-  for the whole app, registering every collection schema. All other services obtain the
-  database via `ShiftService.instance.isar` — there is one Isar instance for the app's
-  lifetime. The name is historical: clock in/out shift tracking was removed and this class
-  now only owns the database.
-- Every persisted model lives in `lib/models/*.dart` as an `@collection` class with a generated
-  `*.g.dart` counterpart. After adding/editing a model, run the build_runner command above.
-- Models carry legacy sync-related fields (`syncUuid`, `syncUpdatedAt`, `syncDeletedAt`,
-  `synced`). They are not wired to a backend yet (a prior Supabase sync layer was removed; a new
-  one is in progress, see "Online database" below), but the soft-delete pattern built on top
-  of them is how deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` on
-  every delete. Reads must filter with `.syncDeletedAtIsNull()` to exclude tombstoned rows;
-  `ShiftService.backfillSync()` fills in missing UUIDs on legacy rows: once at the first startup
-  (then the `syncBackfilled` pref skips it) and after every backup import. Look rows up
-  by an indexed field with `.where()` (then `.filter()` for the rest), not `.filter()` alone,
-  which reads every row.
+- `LocalDb.init()` (`lib/services/local_db.dart`) opens the app's single SQLite database
+  through Drift (`drift_flutter`: a file on the phone; on the web, `sqlite3.wasm` and
+  `drift_worker.js` in `web/`). There is no Drift code generation: one table, `local_rows`
+  (collection, id, data), made with plain SQL, holds every row as a JSON document, like the
+  online `records`. Each collection (`LocalDb.instance.persons`, `.dailyTasks`...) is read
+  into memory at startup and queried in Dart with `all`, `where`, `firstWhere` and `get`;
+  every read builds new objects, so a row changes nothing until it is `put`. Writes go to
+  SQLite first; `LocalDb.transaction` groups several.
+- Every persisted model in `lib/models/*.dart` mixes in `SyncFields` (`lib/models/local_row.dart`:
+  the local `id`, 0 until saved, and the sync fields) and has `toJson` / `fromJson`. Adding a
+  field means adding it to both; no migration is needed. The JSON is the format Isar's
+  `exportJson` wrote before the move to Drift (dates as microseconds since the epoch, enums by
+  name or by index as each model's `toJson` writes them), so older backups still import: never
+  rename a field or reorder an enum stored by index. Register a new model in
+  `LocalDb.collections`.
+- The sync fields (`syncUuid`, `syncUpdatedAt`, `syncDeletedAt`, `synced`) are not wired to a
+  backend yet (see "Online database" below), but the soft-delete pattern built on them is how
+  deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` (or a
+  collection's `softDelete` / `softDeleteAll`) on every delete. Reads skip tombstoned rows
+  unless they pass `includeDeleted: true`. `LocalDb.backfillSync()` fills in missing UUIDs:
+  once at the first startup (then the `syncBackfilled` pref skips it) and after every backup
+  import. Compare dates kept as keys (`serviceDay`, `serviceWeek`, `periodKey`) with
+  `isAtSameMomentAs`, not `==`.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
   pick a file) and a "clear all data" wipe, independent of the sync fields above. The export is
-  indented JSON with `vasilhame` and `settings` before `collections` (every Isar collection);
-  import replaces only the collections and sections the file has. Add new collections there.
+  indented JSON with `vasilhame` and `settings` before `collections` (every `LocalDb`
+  collection but `HorarioMes`, keyed by its name); import replaces only the collections and
+  sections the file has.
 - People belong to one of the fixed teams in `lib/models/teams.dart` (`Person.team` stores the
   `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
   through `chefeSlotOf`, which ignores slots the team doesn't have. `PersonService.save` keeps
@@ -98,7 +106,7 @@ multi-tenant product.
 - Horários (Livre Serviço only) come from Pingo Doce's monthly sheet of shift codes ("H73",
   "W82") and absence codes ("FO", "F", "A", "LP"). They are edited as a JSON file (export, edit
   by hand or with Claude, import): `codigos`, `ausencias` and `meses` ("2026-10" → name → one
-  space-separated code per day). `HorarioService` keeps months in Isar (`HorarioMes`), codes in
+  space-separated code per day). `HorarioService` keeps months in `LocalDb` (`HorarioMes`), codes in
   shared preferences (defaults in `lib/models/horario_codigos.dart`), and a `HorarioIndex`
   linking lines to Livre Serviço people by name (`personForRow`). An import replaces only the
   months it has. Pass `HorarioService.instance.index` as `horario:` to `offLabelOn` /
@@ -157,7 +165,7 @@ multi-tenant product.
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`ShiftService.init()`, `HorarioService.instance.init()`.
+`LocalDb.init()`, `HorarioService.instance.init()`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 
@@ -181,7 +189,7 @@ The app is moving to run on the web too, with an online Supabase database shared
 users, while staying offline-first on the phone. The plan, one version per phase: (1) Supabase
 schema, (2) replace Isar with Drift (SQLite, which also runs on the web), (3) a sync engine,
 (4) login and roles, (5) web fixes (photos to Supabase Storage, backup files, WhatsApp links,
-hosting). Only phase 1 is done: nothing in `lib/` talks to Supabase yet.
+hosting). Phases 1 and 2 are done: nothing in `lib/` talks to Supabase yet.
 
 - `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one

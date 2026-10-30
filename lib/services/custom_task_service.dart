@@ -1,21 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/custom_task.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class CustomTaskService extends ChangeNotifier {
   CustomTaskService._();
   static final CustomTaskService instance = CustomTaskService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
-  Future<List<CustomTask>> tasks() => _isar.customTasks
-      .filter()
-      .syncDeletedAtIsNull()
-      .sortByCreatedAt()
-      .findAll();
+  Future<List<CustomTask>> tasks() async =>
+      (await _db.customTasks.all())
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
   Future<CustomTask> addTask({
     required String title,
@@ -28,31 +25,27 @@ class CustomTaskService extends ChangeNotifier {
       ..inputType = inputType
       ..createdAt = DateTime.now();
     SyncMeta.stamp(task);
-    await _isar.writeTxn(() => _isar.customTasks.put(task));
+    await _db.customTasks.put(task);
     notifyListeners();
     return task;
   }
 
   Future<void> deleteTask(String taskUuid) async {
-    final task = await _isar.customTasks
-        .where()
-        .syncUuidEqualTo(taskUuid)
-        .findFirst();
+    final task = await _db.customTasks.firstWhere(
+      (t) => t.syncUuid == taskUuid,
+      includeDeleted: true,
+    );
     if (task == null || task.syncDeletedAt != null) return;
     SyncMeta.softDelete(task);
-    await _isar.writeTxn(() => _isar.customTasks.put(task));
+    await _db.customTasks.put(task);
     notifyListeners();
   }
 
-  Future<CustomTaskEntry?> entryFor(String taskUuid, DateTime periodKey) {
-    return _isar.customTaskEntrys
-        .where()
-        .taskUuidEqualTo(taskUuid)
-        .filter()
-        .periodKeyEqualTo(periodKey)
-        .syncDeletedAtIsNull()
-        .findFirst();
-  }
+  Future<CustomTaskEntry?> entryFor(String taskUuid, DateTime periodKey) =>
+      _db.customTaskEntries.firstWhere(
+        (e) =>
+            e.taskUuid == taskUuid && e.periodKey.isAtSameMomentAs(periodKey),
+      );
 
   /// Marks the entry for `(taskUuid, periodKey)` as done by [who]. Finds the
   /// existing entry for that period, or creates one if this is the first
@@ -74,8 +67,7 @@ class CustomTaskService extends ChangeNotifier {
     entry.count = count;
     entry.backdated = backdated;
     SyncMeta.stamp(entry);
-    final toSave = entry;
-    await _isar.writeTxn(() => _isar.customTaskEntrys.put(toSave));
+    await _db.customTaskEntries.put(entry);
     notifyListeners();
   }
 }

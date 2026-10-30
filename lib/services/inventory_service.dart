@@ -1,22 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/inventory.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class InventoryService extends ChangeNotifier {
   InventoryService._();
   static final InventoryService instance = InventoryService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
   Future<int> save(Inventory inv) async {
     SyncMeta.stamp(inv);
-    late int id;
-    await _isar.writeTxn(() async {
-      id = await _isar.inventorys.put(inv);
-    });
+    final id = await _db.inventories.put(inv);
     notifyListeners();
     return id;
   }
@@ -27,48 +23,26 @@ class InventoryService extends ChangeNotifier {
     inv.finalValueCents = finalValueCents;
     inv.valueCents = finalValueCents;
     SyncMeta.stamp(inv);
-    await _isar.writeTxn(() => _isar.inventorys.put(inv));
+    await _db.inventories.put(inv);
     notifyListeners();
   }
 
-  Future<Inventory?> getByUuid(String uuid) =>
-      _isar.inventorys.where().syncUuidEqualTo(uuid).findFirst();
+  Future<Inventory?> getByUuid(String uuid) => _db.inventories.firstWhere(
+    (i) => i.syncUuid == uuid,
+    includeDeleted: true,
+  );
 
-  Future<Inventory?> getById(int id) => _isar.inventorys.get(id);
+  Future<Inventory?> getById(int id) => _db.inventories.get(id);
 
   Future<void> delete(int id) async {
-    final row = await _isar.inventorys.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.inventorys.put(row);
-    });
-    notifyListeners();
+    if (await _db.inventories.softDelete(id)) notifyListeners();
   }
 
   Future<void> deleteAll() async {
-    final rows = await _isar.inventorys
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.inventorys.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.inventories.softDeleteAll()) notifyListeners();
   }
 
-  Future<List<Inventory>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.inventorys.where().sortByCreatedAtDesc().findAll();
-    }
-    return _isar.inventorys
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByCreatedAtDesc()
-        .findAll();
-  }
+  Future<List<Inventory>> history({bool includeDeleted = false}) async =>
+      (await _db.inventories.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 }

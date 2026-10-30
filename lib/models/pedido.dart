@@ -1,16 +1,20 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'pedido.g.dart';
+class Pedido with SyncFields {
+  Pedido();
 
-@collection
-class Pedido {
-  Id id = Isar.autoIncrement;
+  factory Pedido.fromJson(Map<String, dynamic> j) {
+    final p = Pedido()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..finishedAt = dateFromJson(j['finishedAt'])
+      ..numero = stringOrNull(j['numero'])
+      ..supplier = stringOrNull(j['supplier'])
+      ..expectedDate = dateFromJson(j['expectedDate']);
+    syncFieldsFromJson(p, j);
+    return p;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   String? createdByInitials;
 
   late DateTime createdAt;
@@ -38,4 +42,15 @@ class Pedido {
     ).add(const Duration(days: 1));
     return today.isAfter(endOfExpectedDay);
   }
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdAt': dateToJson(createdAt),
+    'finishedAt': dateToJson(finishedAt),
+    'numero': numero,
+    'supplier': supplier,
+    'expectedDate': dateToJson(expectedDate),
+  };
 }

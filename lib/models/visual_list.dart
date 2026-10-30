@@ -1,24 +1,28 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'visual_list.g.dart';
+class VisualList with SyncFields {
+  VisualList();
 
-@collection
-class VisualList {
-  Id id = Isar.autoIncrement;
+  factory VisualList.fromJson(Map<String, dynamic> j) {
+    final v = VisualList()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..itensPicados = intFromJson(j['itensPicados'])
+      ..quebraCents = intFromJson(j['quebraCents'])
+      ..beneficioCents = intFromJson(j['beneficioCents'])
+      ..backdated = boolFromJson(j['backdated']);
+    syncFieldsFromJson(v, j);
+    return v;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
 
-  @Index()
   late DateTime createdAt;
 
-  @Index()
   late DateTime serviceDay;
 
   int itensPicados = 0;
@@ -27,6 +31,19 @@ class VisualList {
 
   /// True when this entry was added via the backdate flow instead of on its own day.
   bool backdated = false;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'createdAt': dateToJson(createdAt),
+    'serviceDay': dateToJson(serviceDay),
+    'itensPicados': itensPicados,
+    'quebraCents': quebraCents,
+    'beneficioCents': beneficioCents,
+    'backdated': backdated,
+  };
 }
 
 int parseEurosToCents(String input) {

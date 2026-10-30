@@ -1,9 +1,7 @@
 import 'package:intl/intl.dart';
-import 'package:isar_community/isar.dart';
 
+import 'local_row.dart';
 import 'names.dart';
-
-part 'truck_reception.g.dart';
 
 /// The old palete categories, kept only to read receptions saved before
 /// [truckDepartments] existed. Stored by index, so never reorder them.
@@ -83,10 +81,25 @@ const truckDepartments = [
   TruckDepartment('prodout', 'Prodout'),
 ];
 
-@embedded
 class PalletCount {
+  PalletCount();
+
+  factory PalletCount.fromJson(Map<String, dynamic> j) => PalletCount()
+    ..category =
+        enumFromJson(PalletCategory.values, j['category']) ??
+        PalletCategory.dph
+    ..department = stringOrNull(j['department'])
+    ..total = intFromJson(j['total'])
+    ..mistas = intFromJson(j['mistas']);
+
+  Map<String, dynamic> toJson() => {
+    'category': category.index,
+    'department': department,
+    'total': total,
+    'mistas': mistas,
+  };
+
   /// Legacy — only read when [department] is null.
-  @enumerated
   PalletCategory category = PalletCategory.dph;
 
   /// A [TruckDepartment.id]; null on receptions saved before departamentos.
@@ -95,7 +108,6 @@ class PalletCount {
   int mistas = 0;
 
   /// The departamento's name, or the old category's for older rows.
-  @ignore
   String get label {
     final id = department;
     if (id == null) return category.label;
@@ -107,37 +119,86 @@ class PalletCount {
 }
 
 /// A number of expositores carrying the same thing ("3 · Coca-Cola").
-@embedded
 class Expositor {
+  Expositor();
+
+  factory Expositor.fromJson(Map<String, dynamic> j) => Expositor()
+    ..amount = intFromJson(j['amount'])
+    ..content = stringFromJson(j['content']);
+
+  Map<String, dynamic> toJson() => {'amount': amount, 'content': content};
+
   int amount = 0;
   String content = '';
 }
 
-@embedded
 class SentVasilhameItem {
+  SentVasilhameItem();
+
+  factory SentVasilhameItem.fromJson(Map<String, dynamic> j) =>
+      SentVasilhameItem()
+        ..productName = stringFromJson(j['productName'])
+        ..amount = intFromJson(j['amount']);
+
+  Map<String, dynamic> toJson() => {
+    'productName': productName,
+    'amount': amount,
+  };
+
   String productName = '';
   int amount = 0;
 }
 
-@collection
-class TruckReception {
-  Id id = Isar.autoIncrement;
+class TruckReception with SyncFields {
+  TruckReception();
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  factory TruckReception.fromJson(Map<String, dynamic> j) {
+    final t = TruckReception()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..arrivalTime = dateFromJsonOr(j['arrivalTime'], DateTime(2000))
+      ..type = enumFromJson(TruckType.values, j['type'])
+      ..licensePlate = stringOrNull(j['licensePlate'])
+      ..supplier = stringOrNull(j['supplier'])
+      ..notes = stringOrNull(j['notes'])
+      ..issues = stringOrNull(j['issues'])
+      ..pallets = [
+        for (final p in mapsFromJson(j['pallets'])) PalletCount.fromJson(p),
+      ]
+      ..sentVasilhame = [
+        for (final v in mapsFromJson(j['sentVasilhame']))
+          SentVasilhameItem.fromJson(v),
+      ]
+      ..expositores = [
+        for (final e in mapsFromJson(j['expositores'])) Expositor.fromJson(e),
+      ];
+    syncFieldsFromJson(t, j);
+    return t;
+  }
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'arrivalTime': dateToJson(arrivalTime),
+    'type': type?.name,
+    'licensePlate': licensePlate,
+    'supplier': supplier,
+    'notes': notes,
+    'issues': issues,
+    'pallets': [for (final p in pallets) p.toJson()],
+    'sentVasilhame': [for (final v in sentVasilhame) v.toJson()],
+    'expositores': [for (final e in expositores) e.toJson()],
+  };
 
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
 
-  @Index()
   late DateTime arrivalTime;
 
   /// Null on receptions saved before the type existed.
-  @Enumerated(EnumType.name)
   TruckType? type;
 
   String? licensePlate;

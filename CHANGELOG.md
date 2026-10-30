@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.15] — 2026-10-30
+
+### Changed
+- The app's data is now kept in SQLite (through Drift) instead of Isar, which can't run in a
+  browser: the second step towards the web version. **Data saved by an earlier version is not
+  carried over on its own:** make a backup (Definições → Cópia de segurança) before updating,
+  then import it in this version. Backup files keep the same format, so older ones still
+  import. The old database file is left on the phone untouched.
+
+### Other
+- Tests for the new database and for reading rows in the old backup format.
+
 ## [0.56.14] — 2026-10-30
 
 ### Other

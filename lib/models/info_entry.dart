@@ -1,19 +1,27 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'info_entry.g.dart';
+class InfoEntry with SyncFields {
+  InfoEntry();
 
-@collection
-class InfoEntry {
-  Id id = Isar.autoIncrement;
+  factory InfoEntry.fromJson(Map<String, dynamic> j) {
+    final e = InfoEntry()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..bucket = stringFromJson(j['bucket'])
+      ..title = stringFromJson(j['title'])
+      ..description = stringFromJson(j['description'])
+      ..contact = stringOrNull(j['contact'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..group = stringOrNull(j['group'])
+      ..phone = stringOrNull(j['phone'])
+      ..email = stringOrNull(j['email'])
+      ..pinned = boolFromJson(j['pinned'])
+      ..photoPaths = stringsFromJson(j['photoPaths']);
+    syncFieldsFromJson(e, j);
+    return e;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   String? createdByInitials;
 
-  @Index()
   late String bucket;
 
   /// The entry's title; a contact's name.
@@ -37,4 +45,20 @@ class InfoEntry {
 
   /// Photos copied into the app's documents folder (not in backups).
   List<String> photoPaths = [];
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'bucket': bucket,
+    'title': title,
+    'description': description,
+    'contact': contact,
+    'createdAt': dateToJson(createdAt),
+    'group': group,
+    'phone': phone,
+    'email': email,
+    'pinned': pinned,
+    'photoPaths': photoPaths,
+  };
 }

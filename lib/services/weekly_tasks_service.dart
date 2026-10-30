@@ -1,39 +1,29 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/weekly_tasks.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class WeeklyTasksService extends ChangeNotifier {
   WeeklyTasksService._();
   static final WeeklyTasksService instance = WeeklyTasksService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
+
+  Future<WeeklyTasks?> _find(DateTime serviceWeek) => _db.weeklyTasks
+      .firstWhere((t) => t.serviceWeek.isAtSameMomentAs(serviceWeek));
 
   Future<WeeklyTasks> currentOrCreate() async {
     final week = currentServiceWeek();
-    final existing = await _isar.weeklyTasks
-        .where()
-        .serviceWeekEqualTo(week)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _find(week);
     if (existing != null) {
       if (_sanitize(existing)) {
         SyncMeta.stamp(existing);
-        await _isar.writeTxn(() async {
-          await _isar.weeklyTasks.put(existing);
-        });
+        await _db.weeklyTasks.put(existing);
       }
       return existing;
     }
-    final created = WeeklyTasks()..serviceWeek = week;
-    SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.weeklyTasks.put(created);
-    });
-    return created;
+    return forWeek(week);
   }
 
   bool _sanitize(WeeklyTasks t) {
@@ -50,63 +40,30 @@ class WeeklyTasksService extends ChangeNotifier {
   }
 
   Future<WeeklyTasks> forWeek(DateTime serviceWeek) async {
-    final existing = await _isar.weeklyTasks
-        .where()
-        .serviceWeekEqualTo(serviceWeek)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _find(serviceWeek);
     if (existing != null) return existing;
     final created = WeeklyTasks()..serviceWeek = serviceWeek;
     SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.weeklyTasks.put(created);
-    });
+    await _db.weeklyTasks.put(created);
     return created;
   }
 
   Future<void> save(WeeklyTasks t) async {
     t.lastUpdatedAt = DateTime.now();
     SyncMeta.stamp(t);
-    await _isar.writeTxn(() async {
-      await _isar.weeklyTasks.put(t);
-    });
+    await _db.weeklyTasks.put(t);
     notifyListeners();
   }
 
   Future<void> deleteAll() async {
-    final rows = await _isar.weeklyTasks
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.weeklyTasks.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.weeklyTasks.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.weeklyTasks.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.weeklyTasks.put(row);
-    });
-    notifyListeners();
+    if (await _db.weeklyTasks.softDelete(id)) notifyListeners();
   }
 
-  Future<List<WeeklyTasks>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.weeklyTasks.where().sortByServiceWeekDesc().findAll();
-    }
-    return _isar.weeklyTasks
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByServiceWeekDesc()
-        .findAll();
-  }
+  Future<List<WeeklyTasks>> history({bool includeDeleted = false}) async =>
+      (await _db.weeklyTasks.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.serviceWeek.compareTo(a.serviceWeek));
 }

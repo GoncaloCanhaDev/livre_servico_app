@@ -1,21 +1,25 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'auto_list.g.dart';
+class AutoList with SyncFields {
+  AutoList();
 
-@collection
-class AutoList {
-  Id id = Isar.autoIncrement;
+  factory AutoList.fromJson(Map<String, dynamic> j) {
+    final a = AutoList()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..congelados = intFromJson(j['congelados'])
+      ..opls = intFromJson(j['opls'])
+      ..naoPereciveis = intFromJson(j['naoPereciveis'])
+      ..backdated = boolFromJson(j['backdated']);
+    syncFieldsFromJson(a, j);
+    return a;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
 
-  @Index()
   late DateTime createdAt;
 
   int congelados = 0;
@@ -26,4 +30,16 @@ class AutoList {
   bool backdated = false;
 
   int get total => congelados + opls + naoPereciveis;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'createdAt': dateToJson(createdAt),
+    'congelados': congelados,
+    'opls': opls,
+    'naoPereciveis': naoPereciveis,
+    'backdated': backdated,
+  };
 }

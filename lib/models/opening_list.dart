@@ -1,21 +1,51 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'opening_list.g.dart';
+class OpeningList with SyncFields {
+  OpeningList();
 
-@collection
-class OpeningList {
-  Id id = Isar.autoIncrement;
+  factory OpeningList.fromJson(Map<String, dynamic> j) {
+    final l = OpeningList()
+      ..createdByInitials = stringOrNull(j['createdByInitials'])
+      ..createdByNames = stringsFromJson(j['createdByNames'])
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..congelados = intFromJson(j['congelados'])
+      ..opls = intFromJson(j['opls'])
+      ..naoPereciveis = intFromJson(j['naoPereciveis'])
+      ..congeladosDoneAt = dateFromJson(j['congeladosDoneAt'])
+      ..congeladosByNames = stringsFromJson(j['congeladosByNames'])
+      ..oplsDoneAt = dateFromJson(j['oplsDoneAt'])
+      ..oplsByNames = stringsFromJson(j['oplsByNames'])
+      ..naoPereciveisDoneAt = dateFromJson(j['naoPereciveisDoneAt'])
+      ..naoPereciveisByNames = stringsFromJson(j['naoPereciveisByNames'])
+      ..backdated = boolFromJson(j['backdated'])
+      ..finalizedAt = dateFromJson(j['finalizedAt']);
+    syncFieldsFromJson(l, j);
+    return l;
+  }
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'createdByInitials': createdByInitials,
+    'createdByNames': createdByNames,
+    'serviceDay': dateToJson(serviceDay),
+    'congelados': congelados,
+    'opls': opls,
+    'naoPereciveis': naoPereciveis,
+    'congeladosDoneAt': dateToJson(congeladosDoneAt),
+    'congeladosByNames': congeladosByNames,
+    'oplsDoneAt': dateToJson(oplsDoneAt),
+    'oplsByNames': oplsByNames,
+    'naoPereciveisDoneAt': dateToJson(naoPereciveisDoneAt),
+    'naoPereciveisByNames': naoPereciveisByNames,
+    'backdated': backdated,
+    'finalizedAt': dateToJson(finalizedAt),
+  };
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? createdByInitials;
   List<String> createdByNames = [];
 
-  @Index(unique: true, replace: true)
   late DateTime serviceDay;
 
   int congelados = 0;

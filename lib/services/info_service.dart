@@ -1,12 +1,11 @@
 import 'dart:io';
 
-import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 /// Reads and writes the Informações entries and their photos.
@@ -14,26 +13,22 @@ class InfoService {
   InfoService._();
   static final InfoService instance = InfoService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
 
   /// Every entry that hasn't been deleted, oldest first.
-  Future<List<InfoEntry>> all() async {
-    final rows = await _isar.infoEntrys
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    return rows..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
+  Future<List<InfoEntry>> all() async =>
+      (await _db.infoEntries.all())
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
   Future<void> save(InfoEntry e) async {
     SyncMeta.stamp(e);
-    await _isar.writeTxn(() => _isar.infoEntrys.put(e));
+    await _db.infoEntries.put(e);
   }
 
   /// Soft-deletes [e] and removes its photo files.
   Future<void> delete(InfoEntry e) async {
     SyncMeta.softDelete(e);
-    await _isar.writeTxn(() => _isar.infoEntrys.put(e));
+    await _db.infoEntries.put(e);
     for (final path in e.photoPaths) {
       deletePhoto(path);
     }
@@ -51,7 +46,7 @@ class InfoService {
         ..group = to;
       SyncMeta.stamp(e);
     }
-    await _isar.writeTxn(() => _isar.infoEntrys.putAll(rows));
+    await _db.infoEntries.putAll(rows);
   }
 
   /// Copies the picked photo at [sourcePath] into the app's folder and

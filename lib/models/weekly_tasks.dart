@@ -1,21 +1,32 @@
-import 'package:isar_community/isar.dart';
-
+import 'local_row.dart';
 import 'opening_list.dart';
 
-part 'weekly_tasks.g.dart';
+class WeeklyTasks with SyncFields {
+  WeeklyTasks();
 
-@collection
-class WeeklyTasks {
-  Id id = Isar.autoIncrement;
-
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  factory WeeklyTasks.fromJson(Map<String, dynamic> j) {
+    final w = WeeklyTasks()
+      ..serviceWeek = dateFromJsonOr(j['serviceWeek'], DateTime(2000))
+      ..limpezaMaquinaVoltas = boolFromJson(j['limpezaMaquinaVoltas'])
+      ..limpezaMaquinaVoltasBy = stringOrNull(j['limpezaMaquinaVoltasBy'])
+      ..limpezaMaquinaVoltasByNames = stringsFromJson(
+        j['limpezaMaquinaVoltasByNames'],
+      )
+      ..verificar1a = boolFromJson(j['verificar1a'])
+      ..verificar1aBy = stringOrNull(j['verificar1aBy'])
+      ..verificar1aByNames = stringsFromJson(j['verificar1aByNames'])
+      ..verificar1aCount = intFromJson(j['verificar1aCount'])
+      ..verificar4a = boolFromJson(j['verificar4a'])
+      ..verificar4aBy = stringOrNull(j['verificar4aBy'])
+      ..verificar4aByNames = stringsFromJson(j['verificar4aByNames'])
+      ..verificar4aCount = intFromJson(j['verificar4aCount'])
+      ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
+      ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
+    syncFieldsFromJson(w, j);
+    return w;
+  }
 
   /// Monday (5am cutoff) of the service week this row covers.
-  @Index(unique: true, replace: true)
   late DateTime serviceWeek;
 
   bool limpezaMaquinaVoltas = false;
@@ -42,6 +53,25 @@ class WeeklyTasks {
   List<String> backdatedTaskKeys = [];
 
   DateTime? lastUpdatedAt;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'serviceWeek': dateToJson(serviceWeek),
+    'limpezaMaquinaVoltas': limpezaMaquinaVoltas,
+    'limpezaMaquinaVoltasBy': limpezaMaquinaVoltasBy,
+    'limpezaMaquinaVoltasByNames': limpezaMaquinaVoltasByNames,
+    'verificar1a': verificar1a,
+    'verificar1aBy': verificar1aBy,
+    'verificar1aByNames': verificar1aByNames,
+    'verificar1aCount': verificar1aCount,
+    'verificar4a': verificar4a,
+    'verificar4aBy': verificar4aBy,
+    'verificar4aByNames': verificar4aByNames,
+    'verificar4aCount': verificar4aCount,
+    'backdatedTaskKeys': backdatedTaskKeys,
+    'lastUpdatedAt': dateToJson(lastUpdatedAt),
+  };
 }
 
 /// Monday (5am cutoff) of the service week containing [now].

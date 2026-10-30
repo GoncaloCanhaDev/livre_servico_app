@@ -1,30 +1,25 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 
 import '../models/opening_list.dart';
-import 'shift_service.dart';
+import 'local_db.dart';
 import 'sync_meta.dart';
 
 class OpeningListService extends ChangeNotifier {
   OpeningListService._();
   static final OpeningListService instance = OpeningListService._();
 
-  Isar get _isar => ShiftService.instance.isar;
+  LocalDb get _db => LocalDb.instance;
+
+  Future<OpeningList?> _forDay(DateTime day) =>
+      _db.openingLists.firstWhere((l) => l.serviceDay.isAtSameMomentAs(day));
 
   Future<OpeningList> currentOrCreate() async {
     final day = currentServiceDay();
-    final existing = await _isar.openingLists
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _forDay(day);
     if (existing != null) return existing;
     final created = OpeningList()..serviceDay = day;
     SyncMeta.stamp(created);
-    await _isar.writeTxn(() async {
-      created.id = await _isar.openingLists.put(created);
-    });
+    await _db.openingLists.put(created);
     return created;
   }
 
@@ -39,9 +34,7 @@ class OpeningListService extends ChangeNotifier {
     if (opls != null) list.opls = opls;
     if (naoPereciveis != null) list.naoPereciveis = naoPereciveis;
     SyncMeta.stamp(list);
-    await _isar.writeTxn(() async {
-      await _isar.openingLists.put(list);
-    });
+    await _db.openingLists.put(list);
     notifyListeners();
   }
 
@@ -55,9 +48,7 @@ class OpeningListService extends ChangeNotifier {
     if (list.isSectionDone(section)) return;
     list.markSectionDone(section, names, DateTime.now());
     SyncMeta.stamp(list);
-    await _isar.writeTxn(() async {
-      await _isar.openingLists.put(list);
-    });
+    await _db.openingLists.put(list);
     notifyListeners();
   }
 
@@ -70,19 +61,14 @@ class OpeningListService extends ChangeNotifier {
     required int value,
     required List<String> names,
   }) async {
-    final existing = await _isar.openingLists
-        .where()
-        .serviceDayEqualTo(serviceDay)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findFirst();
+    final existing = await _forDay(serviceDay);
     final row = existing ?? (OpeningList()..serviceDay = serviceDay);
     if (row.isSectionDone(section)) return null;
     row.setValue(section, value);
     row.markSectionDone(section, names, DateTime.now());
     row.backdated = true;
     SyncMeta.stamp(row);
-    await _isar.writeTxn(() => _isar.openingLists.put(row));
+    await _db.openingLists.put(row);
     notifyListeners();
     return row;
   }
@@ -90,51 +76,20 @@ class OpeningListService extends ChangeNotifier {
   Future<List<OpeningList>> entriesForServiceDay(
     DateTime day, {
     bool includeDeleted = false,
-  }) {
-    if (includeDeleted) {
-      return _isar.openingLists.where().serviceDayEqualTo(day).findAll();
-    }
-    return _isar.openingLists
-        .where()
-        .serviceDayEqualTo(day)
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-  }
+  }) => _db.openingLists.where(
+    (l) => l.serviceDay.isAtSameMomentAs(day),
+    includeDeleted: includeDeleted,
+  );
 
   Future<void> deleteAll() async {
-    final rows = await _isar.openingLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .findAll();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      SyncMeta.softDelete(r);
-    }
-    await _isar.writeTxn(() async {
-      await _isar.openingLists.putAll(rows);
-    });
-    notifyListeners();
+    if (await _db.openingLists.softDeleteAll()) notifyListeners();
   }
 
   Future<void> delete(int id) async {
-    final row = await _isar.openingLists.get(id);
-    if (row == null || row.syncDeletedAt != null) return;
-    SyncMeta.softDelete(row);
-    await _isar.writeTxn(() async {
-      await _isar.openingLists.put(row);
-    });
-    notifyListeners();
+    if (await _db.openingLists.softDelete(id)) notifyListeners();
   }
 
-  Future<List<OpeningList>> history({bool includeDeleted = false}) {
-    if (includeDeleted) {
-      return _isar.openingLists.where().sortByServiceDayDesc().findAll();
-    }
-    return _isar.openingLists
-        .filter()
-        .syncDeletedAtIsNull()
-        .sortByServiceDayDesc()
-        .findAll();
-  }
+  Future<List<OpeningList>> history({bool includeDeleted = false}) async =>
+      (await _db.openingLists.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.serviceDay.compareTo(a.serviceDay));
 }

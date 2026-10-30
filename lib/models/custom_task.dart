@@ -1,50 +1,69 @@
-import 'package:isar_community/isar.dart';
+import 'local_row.dart';
 
-part 'custom_task.g.dart';
-
+/// Stored by index, so never reorder it.
 enum CustomTaskFrequency { daily, weekly, oneOff }
 
+/// Stored by index, so never reorder it.
 enum CustomTaskInputType { simple, count }
 
-@collection
-class CustomTask {
-  Id id = Isar.autoIncrement;
+class CustomTask with SyncFields {
+  CustomTask();
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  factory CustomTask.fromJson(Map<String, dynamic> j) {
+    final t = CustomTask()
+      ..title = stringFromJson(j['title'])
+      ..frequency =
+          enumFromJson(CustomTaskFrequency.values, j['frequency']) ??
+          CustomTaskFrequency.daily
+      ..inputType =
+          enumFromJson(CustomTaskInputType.values, j['inputType']) ??
+          CustomTaskInputType.simple
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000));
+    syncFieldsFromJson(t, j);
+    return t;
+  }
 
   late String title;
 
-  @enumerated
   CustomTaskFrequency frequency = CustomTaskFrequency.daily;
 
-  @enumerated
   CustomTaskInputType inputType = CustomTaskInputType.simple;
 
   late DateTime createdAt;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'title': title,
+    'frequency': frequency.index,
+    'inputType': inputType.index,
+    'createdAt': dateToJson(createdAt),
+  };
 }
 
-@collection
-class CustomTaskEntry {
-  Id id = Isar.autoIncrement;
+class CustomTaskEntry with SyncFields {
+  CustomTaskEntry();
 
-  @Index()
-  String syncUuid = '';
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime? syncDeletedAt;
-  bool synced = true;
+  factory CustomTaskEntry.fromJson(Map<String, dynamic> j) {
+    final e = CustomTaskEntry()
+      ..taskUuid = stringFromJson(j['taskUuid'])
+      ..periodKey = dateFromJsonOr(j['periodKey'], oneOffPeriodKey)
+      ..done = boolFromJson(j['done'])
+      ..doneBy = stringOrNull(j['doneBy'])
+      ..doneByNames = stringsFromJson(j['doneByNames'])
+      ..count = intOrNull(j['count'])
+      ..doneAt = dateFromJson(j['doneAt'])
+      ..backdated = boolFromJson(j['backdated']);
+    syncFieldsFromJson(e, j);
+    return e;
+  }
 
   /// The [CustomTask.syncUuid] this entry records a completion for.
-  @Index()
   late String taskUuid;
 
   /// The service day (daily tasks), the service week's Monday (weekly
   /// tasks), or [oneOffPeriodKey] (one-off tasks — they never reset, so
   /// they only ever have a single entry, always keyed to that constant).
-  @Index()
   late DateTime periodKey;
 
   bool done = false;
@@ -59,6 +78,19 @@ class CustomTaskEntry {
   /// True when this entry was completed via the backdate flow rather than
   /// on its own period.
   bool backdated = false;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'taskUuid': taskUuid,
+    'periodKey': dateToJson(periodKey),
+    'done': done,
+    'doneBy': doneBy,
+    'doneByNames': doneByNames,
+    'count': count,
+    'doneAt': dateToJson(doneAt),
+    'backdated': backdated,
+  };
 }
 
 /// Fixed period key for one-off custom tasks — see [CustomTaskEntry.periodKey].
