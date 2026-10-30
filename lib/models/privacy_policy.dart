@@ -24,8 +24,8 @@ const privacyPolicy = <PolicySection>[
   (
     title: 'Responsável pelos dados',
     paragraphs: [
-      'Responsável pelo tratamento: [PREENCHER: nome].',
-      'Contacto para questões de privacidade: [PREENCHER: email].',
+      'Responsável pelo tratamento: Gonçalo Canha.',
+      'Contacto para questões de privacidade: goncalocanha.p@gmail.com.',
     ],
   ),
   (
