@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class InventoryService extends ChangeNotifier {
-  InventoryService._();
+  InventoryService._() {
+    LocalDb.listenRemote(const {'Inventory'}, notifyListeners);
+  }
   static final InventoryService instance = InventoryService._();
 
   LocalDb get _db => LocalDb.instance;

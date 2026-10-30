@@ -10,7 +10,7 @@ truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tas
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
 data lives in an on-device SQLite database (Drift); an online database is being added (see
-"Online database" below) but nothing syncs yet.
+"Online database" below): the sync engine exists, but nothing starts it until there is a login.
 It's built for and used by a single supervisor (livre serviço / reposição team lead at a Pingo
 Doce store) running it on their own phone to manage their team's checklists day to day — not a
 multi-tenant product.
@@ -27,7 +27,8 @@ multi-tenant product.
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião and `test/abertura_tab_test.dart` sends the
-  Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format).
+  Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
+  `test/sync_engine_test.dart` the sync engine between two devices).
   Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
   `closeAppDb` in `test/helpers/app_db.dart` start the services like `main()` does, with
   `NativeDatabase.memory()` (needs the host's SQLite library; on Linux
@@ -56,11 +57,12 @@ multi-tenant product.
   name or by index as each model's `toJson` writes them), so older backups still import: never
   rename a field or reorder an enum stored by index. Register a new model in
   `LocalDb.collections`.
-- The sync fields (`syncUuid`, `syncUpdatedAt`, `syncDeletedAt`, `synced`) are not wired to a
-  backend yet (see "Online database" below), but the soft-delete pattern built on them is how
-  deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` (or a
-  collection's `softDelete` / `softDeleteAll`) on every delete. Reads skip tombstoned rows
-  unless they pass `includeDeleted: true`. `LocalDb.backfillSync()` fills in missing UUIDs:
+- The sync fields (`syncUuid`, `syncUpdatedAt`, `syncDeletedAt`, `synced`) are what the sync
+  engine works from (see "Online database" below), so every save must go through
+  `SyncMeta.stamp(row)` (it also marks the row pending a push, `synced` false) and every delete
+  through `SyncMeta.softDelete(row)` (or a collection's `softDelete` / `softDeleteAll`): never
+  remove rows for good (`clear`, `deleteWhere`), or the delete never reaches other devices.
+  Reads skip tombstoned rows unless they pass `includeDeleted: true`. `LocalDb.backfillSync()` fills in missing UUIDs:
   once at the first startup (then the `syncBackfilled` pref skips it) and after every backup
   import. Compare dates kept as keys (`serviceDay`, `serviceWeek`, `periodKey`) with
   `isAtSameMomentAs`, not `==`.
@@ -183,7 +185,7 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   intent works). Photos are copied into the app's documents folder (`people_photos/`,
   `info_photos/`); backups only carry their paths, not the files.
 - `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY` for the online database being added
-  (see "Online database" below); nothing in `lib/` reads them yet.
+  (see "Online database" below); nothing in `lib/` reads them yet (phase 4 will).
 
 ### Online database (in progress)
 
@@ -191,7 +193,8 @@ The app is moving to run on the web too, with an online Supabase database shared
 users, while staying offline-first on the phone. The plan, one version per phase: (1) Supabase
 schema, (2) replace Isar with Drift (SQLite, which also runs on the web), (3) a sync engine,
 (4) login and roles, (5) web fixes (photos to Supabase Storage, backup files, WhatsApp links,
-hosting). Phases 1 and 2 are done: nothing in `lib/` talks to Supabase yet.
+hosting). Phases 1 to 3 are done; until phase 4 adds a login, nothing calls
+`SyncService.start`, so the app doesn't talk to Supabase yet.
 
 - `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
@@ -202,6 +205,21 @@ hosting). Phases 1 and 2 are done: nothing in `lib/` talks to Supabase yet.
   returns the rows where the server's copy won). Pull by `server_updated_at`, the server's
   clock, starting a minute before the last cursor. Rows are never deleted, only tombstoned
   with `deleted_at` = `syncDeletedAt`.
+- `SyncEngine` (`lib/services/sync_engine.dart`) does one sync of `LocalDb` with a
+  `SyncRemote` (`SupabaseSyncRemote` on the `supabase` package, or the in-memory `FakeRemote`
+  in `test/sync_engine_test.dart`): pushes each collection's pending rows (every row on the
+  first sync with a store), marks them synced unless saved again meanwhile, then pulls pages
+  from the cursor kept in shared preferences (`syncCursor:<storeId>`). Rows from the server go
+  through `LocalCollection.applyRemote`, which keeps a local row saved at the same time or later,
+  and `LocalDb.remoteChanges` then tells the services (each subscribes with
+  `LocalDb.listenRemote` in its constructor, so its screens reload). A row there is one of per
+  day, week or month is keyed online by that period (`syncKey` in `LocalDb`: `DailyTasks`,
+  `WeeklyTasks`, `OpeningList`, `ReportList`, `CustomTaskEntry`, `HorarioMes`), so two devices
+  share one row instead of each making its own. A backup import calls
+  `SyncEngine.forgetCursors`, so the next sync pushes and pulls everything again.
+- `SyncService` runs the engine while a store is connected (`start(remote, storeId)`): at once,
+  three seconds after a save (`LocalDb.localWrites`) and every minute. It is not wired to
+  Realtime yet. Settings in shared preferences (vasilhame, horário codes, goals) don't sync.
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

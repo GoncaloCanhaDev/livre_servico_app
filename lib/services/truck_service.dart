@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class TruckService extends ChangeNotifier {
-  TruckService._();
+  TruckService._() {
+    LocalDb.listenRemote(const {'TruckReception'}, notifyListeners);
+  }
   static final TruckService instance = TruckService._();
 
   LocalDb get _db => LocalDb.instance;

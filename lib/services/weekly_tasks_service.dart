@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class WeeklyTasksService extends ChangeNotifier {
-  WeeklyTasksService._();
+  WeeklyTasksService._() {
+    LocalDb.listenRemote(const {'WeeklyTasks'}, notifyListeners);
+  }
   static final WeeklyTasksService instance = WeeklyTasksService._();
 
   LocalDb get _db => LocalDb.instance;

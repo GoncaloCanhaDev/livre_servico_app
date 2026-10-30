@@ -6,7 +6,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class ReportListService extends ChangeNotifier {
-  ReportListService._();
+  ReportListService._() {
+    LocalDb.listenRemote(const {'ReportList'}, notifyListeners);
+  }
   static final ReportListService instance = ReportListService._();
 
   LocalDb get _db => LocalDb.instance;

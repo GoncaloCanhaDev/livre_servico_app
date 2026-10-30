@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class PedidoService extends ChangeNotifier {
-  PedidoService._();
+  PedidoService._() {
+    LocalDb.listenRemote(const {'Pedido'}, notifyListeners);
+  }
   static final PedidoService instance = PedidoService._();
 
   LocalDb get _db => LocalDb.instance;
@@ -66,9 +68,8 @@ class PedidoService extends ChangeNotifier {
   }
 
   /// The pedidos not finalized yet that have an expected date.
-  Future<List<Pedido>> openWithDate() => _db.pedidos.where(
-    (p) => p.finishedAt == null && p.expectedDate != null,
-  );
+  Future<List<Pedido>> openWithDate() =>
+      _db.pedidos.where((p) => p.finishedAt == null && p.expectedDate != null);
 
   Future<List<Pedido>> history({bool includeDeleted = false}) async =>
       (await _db.pedidos.all(includeDeleted: includeDeleted))

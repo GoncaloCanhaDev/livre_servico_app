@@ -5,7 +5,12 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class CustomTaskService extends ChangeNotifier {
-  CustomTaskService._();
+  CustomTaskService._() {
+    LocalDb.listenRemote(const {
+      'CustomTask',
+      'CustomTaskEntry',
+    }, notifyListeners);
+  }
   static final CustomTaskService instance = CustomTaskService._();
 
   LocalDb get _db => LocalDb.instance;

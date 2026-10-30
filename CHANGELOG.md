@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.17] — 2026-10-30
+
+### Other
+- Third step towards the web version: the sync engine, which keeps the app's data and a
+  store's online database up to date with each other (pushing what was saved here, pulling
+  what other devices saved, the copy saved last winning). Nothing starts it until there is a
+  login, so there is no visible change yet.
+- A day's tasks and lists, a week's tasks, a custom task's entry for a period and a horário
+  month are each one row online, so two devices filling in the same day share it.
+- Deleting or replacing a horário month now keeps a deleted marker instead of erasing the row,
+  so the delete can reach other devices.
+- After importing a backup, the next sync sends everything and fetches the store's data again.
+
 ## [0.56.16] — 2026-10-30
 
 ### Other

@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class AutoListService extends ChangeNotifier {
-  AutoListService._();
+  AutoListService._() {
+    LocalDb.listenRemote(const {'AutoList'}, notifyListeners);
+  }
   static final AutoListService instance = AutoListService._();
 
   LocalDb get _db => LocalDb.instance;

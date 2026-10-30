@@ -5,7 +5,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class OpeningListService extends ChangeNotifier {
-  OpeningListService._();
+  OpeningListService._() {
+    LocalDb.listenRemote(const {'OpeningList'}, notifyListeners);
+  }
   static final OpeningListService instance = OpeningListService._();
 
   LocalDb get _db => LocalDb.instance;

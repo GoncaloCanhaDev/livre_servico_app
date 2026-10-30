@@ -6,7 +6,9 @@ import 'local_db.dart';
 import 'sync_meta.dart';
 
 class VisualListService extends ChangeNotifier {
-  VisualListService._();
+  VisualListService._() {
+    LocalDb.listenRemote(const {'VisualList'}, notifyListeners);
+  }
   static final VisualListService instance = VisualListService._();
 
   LocalDb get _db => LocalDb.instance;
@@ -60,11 +62,10 @@ class VisualListService extends ChangeNotifier {
   Future<List<VisualList>> entriesForServiceDay(
     DateTime day, {
     bool includeDeleted = false,
-  }) async =>
-      (await _db.visualLists.where(
-        (v) => v.serviceDay.isAtSameMomentAs(day),
-        includeDeleted: includeDeleted,
-      ))..sort(_newestFirst);
+  }) async => (await _db.visualLists.where(
+    (v) => v.serviceDay.isAtSameMomentAs(day),
+    includeDeleted: includeDeleted,
+  ))..sort(_newestFirst);
 
   Future<void> deleteAll() async {
     if (await _db.visualLists.softDeleteAll()) notifyListeners();

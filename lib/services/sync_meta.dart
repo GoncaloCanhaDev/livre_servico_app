@@ -4,19 +4,19 @@ import '../models/local_row.dart';
 
 /// Keeps the sync fields of a row up to date before it is saved.
 ///
-/// The fields ([SyncedRow.syncUuid], [SyncedRow.syncUpdatedAt],
-/// [SyncedRow.syncDeletedAt], [SyncedRow.synced]) are not sent anywhere yet;
-/// the online database (see `supabase/`) will sync by them.
+/// `SyncEngine` syncs by these fields ([SyncedRow.syncUuid],
+/// [SyncedRow.syncUpdatedAt], [SyncedRow.syncDeletedAt]): a stamped row is
+/// pending ([SyncedRow.synced] false) until it is pushed.
 class SyncMeta {
   SyncMeta._();
   static const _uuid = Uuid();
 
-  /// Assigns a uuid if the row doesn't have one and bumps the
-  /// last-updated timestamp.
+  /// Assigns a uuid if the row doesn't have one, bumps the last-updated
+  /// timestamp and marks the row pending a push.
   static void stamp(SyncedRow row) {
     if (row.syncUuid.isEmpty) row.syncUuid = _uuid.v4();
     row.syncUpdatedAt = DateTime.now();
-    row.synced = true;
+    row.synced = false;
   }
 
   /// Marks [row] as a tombstone (soft delete). The row stays in the
@@ -27,14 +27,14 @@ class SyncMeta {
     if (row.syncUuid.isEmpty) row.syncUuid = _uuid.v4();
     row.syncDeletedAt = now;
     row.syncUpdatedAt = now;
-    row.synced = true;
+    row.synced = false;
   }
 
-  /// Backfills missing uuids on legacy rows.
+  /// Backfills missing uuids on legacy rows. Whether the row is pending is
+  /// left as it is: the first sync with a store pushes every row anyway.
   static bool backfillIfNeeded(SyncedRow row) {
     if (row.syncUuid.isNotEmpty) return false;
     row.syncUuid = _uuid.v4();
-    row.synced = true;
     return true;
   }
 }

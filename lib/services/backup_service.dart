@@ -12,6 +12,7 @@ import '../models/vasilhame.dart';
 import 'horario_service.dart';
 import 'local_db.dart';
 import 'settings_service.dart';
+import 'sync_engine.dart';
 
 class BackupService {
   BackupService._();
@@ -163,6 +164,10 @@ class BackupService {
       }
     });
     await _db.backfillSync();
+    // The import replaced rows here without the server: the next sync
+    // pushes them all and pulls the store's rows again, keeping whichever
+    // copy of each was saved last.
+    await SyncEngine.forgetCursors(await SharedPreferences.getInstance());
 
     final settings = SettingsService.instance;
     if (vasilhame != null) await settings.setVasilhame(vasilhame);

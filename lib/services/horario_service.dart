@@ -13,6 +13,7 @@ import '../models/horario_mes.dart';
 import '../models/teams.dart';
 import 'local_db.dart';
 import 'person_service.dart';
+import 'sync_meta.dart';
 
 /// What an import brought: the months it saved or deleted, and per month
 /// the names that matched nobody in Livre Serviço.
@@ -26,7 +27,9 @@ typedef HorariosImport = ({
 /// own), and an [index] linking each line to its person. They are edited
 /// as a JSON file: [exportFile], edit, [pickAndImport].
 class HorarioService extends ChangeNotifier {
-  HorarioService._();
+  HorarioService._() {
+    LocalDb.listenRemote(const {'HorarioMes'}, _reloadMonths);
+  }
   static final instance = HorarioService._();
 
   static const _codigosKey = 'horario_codigos';
@@ -57,17 +60,28 @@ class HorarioService extends ChangeNotifier {
     } on FormatException {
       // Unreadable saved codes: keep the defaults rather than fail startup.
     }
-    final months = await _db.horarioMeses.all();
     _horarios = Horarios(
       codigos: codigos,
       ausencias: ausencias,
-      meses: {
-        for (final m in months)
-          m.mes: {for (final l in m.linhas) l.nome: l.codigos},
-      },
+      meses: await _savedMonths(),
     );
     await _reindex();
     PersonService.instance.addListener(_reindex);
+  }
+
+  Future<Map<String, Map<String, List<String>>>> _savedMonths() async => {
+    for (final m in await _db.horarioMeses.all())
+      m.mes: {for (final l in m.linhas) l.nome: l.codigos},
+  };
+
+  /// Reads the months again, after a sync brought some.
+  Future<void> _reloadMonths() async {
+    _horarios = Horarios(
+      codigos: _horarios.codigos,
+      ausencias: _horarios.ausencias,
+      meses: await _savedMonths(),
+    );
+    await _reindex();
   }
 
   /// Links each line to a Livre Serviço person again (after an import or a
@@ -106,23 +120,43 @@ class HorarioService extends ChangeNotifier {
       await _prefs.setString(_ausenciasKey, jsonEncode(a));
     }
     await _db.transaction(() async {
-      if (replaceAll) await _db.horarioMeses.clear();
+      // One row per month, kept when deleted (a tombstone, so the delete
+      // syncs): a month in the file replaces the saved one.
+      final saved = {
+        for (final m in await _db.horarioMeses.all(includeDeleted: true))
+          m.mes: m,
+      };
+      final changed = <HorarioMes>[];
       for (final e in file.meses.entries) {
-        // One row per month: a month in the file replaces the saved one.
-        await _db.horarioMeses.deleteWhere((m) => m.mes == e.key);
-        if (e.value case final rows?) {
-          await _db.horarioMeses.put(
-            HorarioMes()
-              ..mes = e.key
-              ..linhas = [
-                for (final r in rows.entries)
-                  HorarioLinha()
-                    ..nome = r.key
-                    ..codigos = r.value,
-              ],
-          );
+        final rows = e.value;
+        final row = saved[e.key];
+        if (rows == null) {
+          if (row != null && row.syncDeletedAt == null) {
+            SyncMeta.softDelete(row);
+            changed.add(row);
+          }
+          continue;
+        }
+        final month = (row ?? (HorarioMes()..mes = e.key))
+          ..syncDeletedAt = null
+          ..linhas = [
+            for (final r in rows.entries)
+              HorarioLinha()
+                ..nome = r.key
+                ..codigos = r.value,
+          ];
+        SyncMeta.stamp(month);
+        changed.add(month);
+      }
+      if (replaceAll) {
+        for (final m in saved.values) {
+          if (!file.meses.containsKey(m.mes) && m.syncDeletedAt == null) {
+            SyncMeta.softDelete(m);
+            changed.add(m);
+          }
         }
       }
+      await _db.horarioMeses.putAll(changed);
     });
     _horarios = next;
     await _reindex();
@@ -139,7 +173,7 @@ class HorarioService extends ChangeNotifier {
 
   /// Removes every saved month (codes are kept), for "Apagar tudo".
   Future<void> clearMonths() async {
-    await _db.horarioMeses.clear();
+    await _db.horarioMeses.softDeleteAll();
     _horarios = Horarios(
       codigos: _horarios.codigos,
       ausencias: _horarios.ausencias,

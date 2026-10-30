@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -27,6 +28,10 @@ import 'sync_meta.dart';
 /// (collection, id), the way the online database keeps them (`records`).
 /// Each collection is read into memory when the app starts and queried in
 /// Dart; writes go to SQLite first, then to memory.
+///
+/// For sync (see `SyncEngine`), a row saved by the app is pending until
+/// pushed ([SyncedRow.synced] false); rows from the server are written with
+/// [LocalCollection.applyRemote], which tells listeners of [remoteChanges].
 class LocalDb {
   LocalDb._(this._db);
 
@@ -41,11 +46,13 @@ class LocalDb {
   final openingLists = LocalCollection<OpeningList>._(
     'OpeningList',
     OpeningList.fromJson,
+    syncKey: (l) => dayKey(l.serviceDay),
   );
   final autoLists = LocalCollection<AutoList>._('AutoList', AutoList.fromJson);
   final reportLists = LocalCollection<ReportList>._(
     'ReportList',
     ReportList.fromJson,
+    syncKey: (l) => dayKey(l.serviceDay),
   );
   final visualLists = LocalCollection<VisualList>._(
     'VisualList',
@@ -54,10 +61,12 @@ class LocalDb {
   final dailyTasks = LocalCollection<DailyTasks>._(
     'DailyTasks',
     DailyTasks.fromJson,
+    syncKey: (t) => dayKey(t.serviceDay),
   );
   final weeklyTasks = LocalCollection<WeeklyTasks>._(
     'WeeklyTasks',
     WeeklyTasks.fromJson,
+    syncKey: (t) => dayKey(t.serviceWeek),
   );
   final inventories = LocalCollection<Inventory>._(
     'Inventory',
@@ -76,10 +85,12 @@ class LocalDb {
   final customTaskEntries = LocalCollection<CustomTaskEntry>._(
     'CustomTaskEntry',
     CustomTaskEntry.fromJson,
+    syncKey: (e) => '${e.taskUuid}/${dayKey(e.periodKey)}',
   );
   final horarioMeses = LocalCollection<HorarioMes>._(
     'HorarioMes',
     HorarioMes.fromJson,
+    syncKey: (m) => m.mes,
   );
 
   late final List<LocalCollection<SyncedRow>> collections = [
@@ -103,9 +114,47 @@ class LocalDb {
   /// stamped when written, so it isn't needed again.
   static const _backfilledKey = 'syncBackfilled';
 
+  static final _localWrites = StreamController<String>.broadcast(sync: true);
+  static final _remoteChanges = StreamController<Set<String>>.broadcast(
+    sync: true,
+  );
+
+  /// The name of a collection each time the app saves rows in it that are
+  /// then pending a push.
+  static Stream<String> get localWrites => _localWrites.stream;
+
+  /// The names of the collections that rows from the server changed, once
+  /// per sync that changed any.
+  static Stream<Set<String>> get remoteChanges => _remoteChanges.stream;
+
+  /// Calls [onChange] whenever rows from the server change one of
+  /// [collections]: services refresh their screens with it.
+  static StreamSubscription<Set<String>> listenRemote(
+    Set<String> collections,
+    void Function() onChange,
+  ) => remoteChanges.listen((changed) {
+    if (changed.any(collections.contains)) onChange();
+  });
+
+  static void notifyRemoteChanges(Set<String> collections) {
+    if (collections.isNotEmpty) _remoteChanges.add(collections);
+  }
+
   /// Opens the database (on the device, or [executor] in tests, e.g.
   /// `NativeDatabase.memory()`) and reads every collection into memory.
   static Future<void> init({QueryExecutor? executor}) async {
+    final local = await open(executor: executor);
+    instance = local;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_backfilledKey) != true) {
+      await local.backfillSync();
+      await prefs.setBool(_backfilledKey, true);
+    }
+  }
+
+  /// Opens a database without making it [instance]: [init] for the app, or
+  /// a second device in sync tests.
+  static Future<LocalDb> open({QueryExecutor? executor}) async {
     final db = _Database(
       executor ??
           driftDatabase(
@@ -121,12 +170,7 @@ class LocalDb {
       c._db = db;
     }
     await local._load();
-    instance = local;
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_backfilledKey) != true) {
-      await local.backfillSync();
-      await prefs.setBool(_backfilledKey, true);
-    }
+    return local;
   }
 
   Future<void> close() => _db.close();
@@ -176,11 +220,20 @@ class LocalDb {
 /// decoded JSON. Every read builds new objects from it, so changing a row
 /// changes nothing until it is [put].
 class LocalCollection<T extends SyncedRow> {
-  LocalCollection._(this.name, this._fromJson);
+  LocalCollection._(
+    this.name,
+    this._fromJson, {
+    String Function(T row)? syncKey,
+  }) : _syncKey = syncKey;
 
   /// The model's name, as stored in `local_rows` and in backups ("Person").
   final String name;
   final T Function(Map<String, dynamic>) _fromJson;
+
+  /// The row's id online: its syncUuid, or for a row there is one of per
+  /// day, week or month, that period, so two devices that each made one
+  /// share it instead of having two.
+  final String Function(T row)? _syncKey;
   late _Database _db;
 
   final _rows = <int, Map<String, dynamic>>{};
@@ -238,14 +291,25 @@ class LocalCollection<T extends SyncedRow> {
 
   Future<void> putAll(List<T> rows) async {
     if (rows.isEmpty) return;
-    final pending = <int, Map<String, dynamic>>{};
+    await _write(_encode(rows));
+    if (rows.any((r) => !r.synced)) LocalDb._localWrites.add(name);
+  }
+
+  /// [rows] as stored, giving each an id if it has none.
+  Map<int, Map<String, dynamic>> _encode(List<T> rows) {
+    final encoded = <int, Map<String, dynamic>>{};
     for (final row in rows) {
       if (row.id <= 0) row.id = ++_lastId;
       if (row.id > _lastId) _lastId = row.id;
       // Encoded and decoded, so memory never shares a list with [row].
       final json = jsonEncode(row.toJson()..['id'] = row.id);
-      pending[row.id] = jsonDecode(json) as Map<String, dynamic>;
+      encoded[row.id] = jsonDecode(json) as Map<String, dynamic>;
     }
+    return encoded;
+  }
+
+  Future<void> _write(Map<int, Map<String, dynamic>> pending) async {
+    if (pending.isEmpty) return;
     await _db.transaction(() async {
       for (final e in pending.entries) {
         await _db.customStatement(
@@ -308,12 +372,84 @@ class LocalCollection<T extends SyncedRow> {
     for (final e in _rows.entries) {...e.value, 'id': e.key},
   ];
 
-  /// Replaces every row with [rows] from a backup (see [exportJson]).
+  /// Replaces every row with [rows] from a backup (see [exportJson]). They
+  /// are pending, so the next sync pushes them (and keeps whichever copy of
+  /// each row was saved last).
   Future<void> importJson(List<Map<String, dynamic>> rows) async {
     await clear();
-    await putAll([for (final j in rows) _fromJson(j)]);
+    await putAll([for (final j in rows) _fromJson(j)..synced = false]);
+  }
+
+  // ---- Sync (see SyncEngine) ----
+
+  String syncKeyOf(T row) => _syncKey?.call(row) ?? row.syncUuid;
+
+  /// What is stored online for [row]: its JSON without the local fields.
+  Map<String, dynamic> syncData(T row) => row.toJson()
+    ..remove('id')
+    ..remove('synced');
+
+  /// The rows to push, tombstones included: those pending, or with [all]
+  /// every row (the first sync with a store).
+  Future<List<T>> toPush({bool all = false}) async => [
+    for (final r in await this.all(includeDeleted: true))
+      if (all || !r.synced) r,
+  ];
+
+  /// Marks [pushed] as synced, unless a row was saved again since it was
+  /// read for the push.
+  Future<void> markSynced(Iterable<SyncedRow> pushed) async {
+    final done = <int, Map<String, dynamic>>{};
+    for (final row in pushed) {
+      final current = _rows[row.id];
+      if (current == null || current['synced'] != false) continue;
+      final savedAt = dateFromJson(current['syncUpdatedAt']);
+      if (savedAt == null || !savedAt.isAtSameMomentAs(row.syncUpdatedAt)) {
+        continue;
+      }
+      done[row.id] = {...current, 'synced': true};
+    }
+    await _write(done);
+  }
+
+  /// Saves rows from the server ([data] as [syncData] wrote it, under their
+  /// [syncKeyOf] key), each over the local row with the same key unless the
+  /// local one was saved at the same time or later. Returns how many
+  /// changed.
+  Future<int> applyRemote(
+    List<({String key, Map<String, dynamic> data, DateTime updatedAt})> rows,
+  ) async {
+    if (rows.isEmpty) return 0;
+    final byKey = <String, int>{
+      for (final e in _rows.entries) syncKeyOf(_read(e.key, e.value)): e.key,
+    };
+    final staged = <int, Map<String, dynamic>>{};
+    for (final r in rows) {
+      final id = byKey[r.key];
+      if (id != null) {
+        final current = staged[id] ?? _rows[id]!;
+        final savedAt = dateFromJson(current['syncUpdatedAt']);
+        if (savedAt != null && !r.updatedAt.isAfter(savedAt)) continue;
+      }
+      final row = _fromJson(r.data)
+        ..id = id ?? 0
+        ..syncUpdatedAt = r.updatedAt
+        ..synced = true;
+      staged.addAll(_encode([row]));
+      // Later rows in [rows] with the same key compare with this one.
+      byKey[r.key] = row.id;
+    }
+    await _write(staged);
+    return staged.length;
   }
 }
+
+/// [d]'s local date as "2026-10-30", the online key of a row there is one
+/// of per day or week.
+String dayKey(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
 
 /// The SQLite database: one table, made with plain SQL, so there is no
 /// Drift code to generate.
