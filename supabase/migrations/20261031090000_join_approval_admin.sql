@@ -167,6 +167,50 @@ as $$
     ), false);
 $$;
 
+-- Links the signed-in member of p_store to the Person p_person, unless
+-- another account has it. Access comes from that person (chefe, Gerência),
+-- so a member links themselves only once, and never to a chefe or to
+-- Gerência: for those, the request goes through an approver (join_store) or
+-- the owner sets the link. The owner (and the admin) may link freely.
+create or replace function public.claim_person(p_store uuid, p_person text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_data jsonb;
+begin
+  if public.my_store_role(p_store) is null then
+    raise exception 'Não pertence a esta loja.' using errcode = '42501';
+  end if;
+  select data into v_data from public.records
+  where store_id = p_store and collection = 'Person' and id = p_person
+    and deleted_at is null;
+  if v_data is null then
+    raise exception 'Esta pessoa foi apagada.' using errcode = 'P0002';
+  end if;
+  if public.my_store_role(p_store) <> 'owner' then
+    if exists (
+      select 1 from public.store_members
+      where store_id = p_store and user_id = auth.uid() and person_id is not null
+    ) then
+      raise exception 'A sua conta já está ligada a uma pessoa. Peça ao dono da loja para a desligar.'
+        using errcode = '42501';
+    end if;
+    if v_data ->> 'team' = 'gerencia' or public.person_chefe_team(v_data) is not null then
+      raise exception 'Para ser um chefe ou da gerência, peça a um chefe ou à gerência que aprove.'
+        using errcode = '42501';
+    end if;
+  end if;
+  update public.store_members set person_id = p_person
+  where store_id = p_store and user_id = auth.uid();
+exception
+  when unique_violation then
+    raise exception 'Esta pessoa já tem conta.' using errcode = '23505';
+end;
+$$;
+
 -- Asks to join the store with code p_code as the person p_person, or (not in
 -- the list) with the name p_name; a member already keeps their membership
 -- and, given p_person, is linked to it. Returns the store's id.

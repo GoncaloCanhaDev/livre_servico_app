@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.60.1] — 2026-10-31
+
+### Fixed
+- A member could take a chefe's or Gerência's access by linking their account to that person.
+  Now a member links themselves only once, and never to a chefe or to Gerência (that goes
+  through an approver, or the owner); the owner and the admin still link freely.
+
 ## [0.60.0] — 2026-10-31
 
 ### Added
