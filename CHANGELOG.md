@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.59.1] — 2026-10-30
+
+### Changed
+- **"Quem é você?" shows only names and numbers.** Before joining, the list of the store's
+  people shows each one's collaborator number (searchable) instead of their team, and the
+  database sends nothing else about them (migration `20261030210000_unlinked_people_number`).
+
 ## [0.59.0] — 2026-10-30
 
 ### Added

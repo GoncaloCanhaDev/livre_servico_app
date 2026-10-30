@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/person.dart';
-import '../models/teams.dart';
 import '../services/account_service.dart';
 import '../services/local_db.dart';
 import '../theme.dart';
@@ -35,7 +34,10 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
     final q = _query.trim().toLowerCase();
     final shown = [
       for (final p in widget.people)
-        if (q.isEmpty || p.name.toLowerCase().contains(q)) p,
+        if (q.isEmpty ||
+            p.name.toLowerCase().contains(q) ||
+            p.number.toLowerCase().contains(q))
+          p,
     ];
     return Scaffold(
       appBar: AppBar(title: const Text('Quem é você?')),
@@ -67,7 +69,9 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
               ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(p.name.isEmpty ? 'Sem nome' : p.name),
-                subtitle: Text(teamById(p.team)?.name ?? 'Sem equipa'),
+                subtitle: Text(
+                  p.number.isEmpty ? 'Sem número' : 'Nº ${p.number}',
+                ),
                 onTap: () => Navigator.pop(context, (personId: p.id)),
               ),
             if (widget.people.isEmpty)

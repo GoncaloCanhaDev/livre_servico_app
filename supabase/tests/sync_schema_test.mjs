@@ -106,7 +106,7 @@ ok('editor cannot promote self', (await as(B, `update store_members set role = '
 ok('pull query works', (await as(B, `select id from records where store_id = $1 and server_updated_at > $2 order by server_updated_at`, [store, '2000-01-01'])).length === 2);
 
 // Joining with the store's code and linking an account to its person.
-await push(B, [row('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', team: 'livre' }), row('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
+await push(B, [row('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', phoneNumber: '900' }), row('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
 await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /dono/);
 const [{ store_join_code: code }] = await as(A, 'select public.store_join_code($1)', [store]);
 ok('code has 8 plain characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
@@ -115,7 +115,8 @@ await throws('wrong code', () => as(D, `select public.join_store_preview('NOPE')
 const typed = code.slice(0, 4).toLowerCase() + '-' + code.slice(4);
 let [{ join_store_preview: preview }] = await as(D, 'select public.join_store_preview($1)', [typed]);
 ok('preview has the store name', preview.store_id === store && preview.store_name === 'Pingo Doce X');
-ok('preview lists live people, by name', preview.people.map((p) => p.id).join() === 'p5,p4,p1' && preview.people[1].full_name === 'Zé' && preview.people[1].team === 'livre');
+ok('preview lists live people, by name', preview.people.map((p) => p.id).join() === 'p5,p4,p1' && preview.people[1].full_name === 'Zé' && preview.people[1].collaborator_number === '4321');
+ok('preview shows only name and number', Object.keys(preview.people[1]).sort().join() === 'collaborator_number,full_name,id');
 ok('preview joins nothing', (await as(D, 'select * from records')).length === 0);
 await as(D, 'select public.join_store($1, $2)', [code, 'p4']);
 ok('joined as editor', (await as(D, 'select role, person_id from store_members where user_id = $1', [D]))[0]?.role === 'editor');

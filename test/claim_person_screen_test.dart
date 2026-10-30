@@ -21,8 +21,8 @@ void main() {
                   storeName: 'Loja X',
                   canAddNew: canAddNew,
                   people: [
-                    (id: 'p1', name: 'Ana Silva', team: 'gerencia'),
-                    (id: 'p2', name: 'Rui Costa', team: null),
+                    (id: 'p1', name: 'Ana Silva', number: '12345'),
+                    (id: 'p2', name: 'Rui Costa', number: ''),
                   ],
                 ),
               ),
@@ -44,8 +44,8 @@ void main() {
       tester,
       canAddNew: true,
       choose: () async {
-        expect(find.text('Gerência'), findsOneWidget);
-        expect(find.text('Sem equipa'), findsOneWidget);
+        expect(find.text('Nº 12345'), findsOneWidget);
+        expect(find.text('Sem número'), findsOneWidget);
         await tester.tap(find.text('Rui Costa'));
       },
     );

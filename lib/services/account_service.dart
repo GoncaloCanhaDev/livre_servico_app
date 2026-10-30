@@ -40,8 +40,9 @@ typedef StoreMember = ({
   String? personId,
 });
 
-/// One of a store's people with no account linked yet.
-typedef UnlinkedPerson = ({String id, String name, String? team});
+/// One of a store's people with no account linked yet: only what the
+/// "Quem é você?" list shows, so no other personal details leave the store.
+typedef UnlinkedPerson = ({String id, String name, String number});
 
 /// What joining a store with its code shows first.
 typedef JoinPreview = ({
@@ -267,7 +268,7 @@ class AccountService extends ChangeNotifier {
       (
         id: r['id'] as String,
         name: r['full_name'] as String? ?? '',
-        team: r['team'] as String?,
+        number: r['collaborator_number'] as String? ?? '',
       ),
   ];
 
