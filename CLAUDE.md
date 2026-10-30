@@ -212,8 +212,8 @@ files, WhatsApp links, hosting).
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
   JSON document in `records`, keyed by (`store_id`, `collection`, `id`): the model name and its
   `syncUuid` (or a fixed key, like the day for `DailyTasks`), so model fields never need a
-  migration. Users belong to a store through `store_members` as editor or owner (old viewers
-  became editors), pending until approved.
+  migration. Users belong to a store through `store_members` as editors (old viewers and owners
+  became editors; there are no store owners), pending until approved.
 - Push with the `push_records` RPC (last write wins on `updated_at` = `syncUpdatedAt`; it
   returns the rows where the server's copy won). Pull with the `pull_records` RPC by
   `server_updated_at`, the server's clock, starting a minute before the last cursor. Person
@@ -246,37 +246,39 @@ files, WhatsApp links, hosting).
   and its members (`store_member_list`, `add_store_member`). Choosing a store starts
   `SyncService` (`my_stores` lists them). `StoreInfo.access` (`lib/models/store_access.dart`,
   from the server's `my_access`; `AccountService.access` is `StoreAccess.full` with no store)
-  says whether this account is the admin, the owner, in Gerência or chefe of a team, all
-  derived from the Person it is linked to. While syncing, only the owner (or the admin) may
+  says whether this account is the admin, in Gerência or chefe of a team, the last two
+  derived from the Person it is linked to. Gerência manages members (`can_manage_members`:
+  join code, adding by email, linking, removing; `canManageMembers`); only the admin creates
+  stores (`create_store`, "Criar loja" via `isAppAdmin`). While syncing, only the admin may
   "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every device. The old
   viewer role ("Só leitura") is gone: every approved member edits the everyday data. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
   `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
   already are.
 - Each store has a join code (`store_codes`, read only through `store_join_code` /
-  `reset_store_join_code`, owners only). With it, `join_store_preview` shows a signed-in
+  `reset_store_join_code`, Gerência and the admin). With it, `join_store_preview` shows a signed-in
   stranger the store's name and its people with no account yet (name and collaborator number
   only), and `join_store` records a *pending* request (`store_members.status`) for the person
   they picked or the name they typed (`requested_name`). A pending member sees nothing of the
   store and doesn't sync (`StoreInfo.pending`; Conta shows "Pedido enviado"). Chefes,
-  Gerência, the owner and the admin (`can_approve`) list requests (`store_join_requests`, in
+  Gerência and the admin (`can_approve`) list requests (`store_join_requests`, in
   Membros and a count on Home) and `approve_join` (a typed name becomes a new Person) or
   `refuse_join`. `store_members.person_id` holds the linked Person's `syncUuid` (unique per
   store, so one account per person); `claim_person` lets a member link themselves once, never
-  to a chefe or to Gerência (only the owner/admin link freely: Membros → "Ligar a uma pessoa",
-  `linkMember`), and the owner unlinks by setting it to null. `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
+  to a chefe or to Gerência (only the admin links freely; Gerência links others in Membros → "Ligar a uma pessoa",
+  `linkMember`, and unlinks by setting it to null; members may update only `person_id`). `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
   holds the picker and `completeProfile`, which opens the person form once approved.
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
-  `insert into public.app_admins select id from auth.users where email = '...';`): owner of
+  `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.
 - Personal data: every member reads the others' public fields (`person_public_keys`: name,
   photo, género, date of birth, team and roles); the whole Person is read by the person, the
-  chefe de secção of their team, Gerência, the owner and the admin (`person_access`). The
+  chefe de secção of their team, Gerência and the admin (`person_access`). The
   server redacts in `pull_records` and the `records` select policy hides the rest (so Realtime
   too); `push_records` keeps only the fields the caller may edit (`person_edit_keys`: the
   person their name, photo, phone, birth date, género, notes; their chefe folgas and
-  ausências; Gerência those plus team, chefe, turno and tags; owner/admin everything), so a
-  redacted copy pushed back wipes nothing. Only Gerência, the owner and the admin add people;
-  only the owner and the admin delete. The app mirrors this in `StoreAccess`
+  ausências; Gerência those plus team, chefe, turno and tags; the admin everything), so a
+  redacted copy pushed back wipes nothing. Only Gerência and the admin add people;
+  only the admin deletes. The app mirrors this in `StoreAccess`
   (`canSeePersonal`, `canEdit(person, PersonFieldGroup)`, `canRequestUpdate`, `canAddPeople`,
   `canDeletePeople`): the person form locks fields with `EditLock`, and the person page,
   Pessoas and Home hide what the account can't do. Keep the Dart groups and the SQL key lists

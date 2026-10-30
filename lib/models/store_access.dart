@@ -18,13 +18,12 @@ enum PersonFieldGroup {
 
 /// What the signed-in account may do in the store it syncs with, as the
 /// server's `my_access` says (`supabase/migrations`): it comes from the
-/// Person the account is linked to (chefe de secção, Gerência), the store's
-/// owner and the app's admin. Signed out, [full]: one person on their own
+/// Person the account is linked to (chefe de secção, Gerência) and the
+/// app's admin (there are no store owners). Signed out, [full]: one person on their own
 /// phone sees and edits everything.
 class StoreAccess {
   const StoreAccess({
     required this.admin,
-    required this.owner,
     required this.gerencia,
     this.chefeTeam,
     this.personId,
@@ -32,19 +31,16 @@ class StoreAccess {
 
   factory StoreAccess.fromJson(Map<String, dynamic> j) => StoreAccess(
     admin: j['admin'] == true,
-    owner: j['owner'] == true,
     gerencia: j['gerencia'] == true,
     chefeTeam: j['chefe_team'] as String?,
     personId: j['person_id'] as String?,
   );
 
-  static const full = StoreAccess(admin: true, owner: true, gerencia: true);
+  static const full = StoreAccess(admin: true, gerencia: true);
 
-  /// The app's admin: everything, in every store.
+  /// The app's admin: everything, in every store (creating stores, wiping
+  /// all data).
   final bool admin;
-
-  /// The store's owner (join code, members, wiping all data).
-  final bool owner;
 
   /// The account's person is in Gerência.
   final bool gerencia;
@@ -56,9 +52,17 @@ class StoreAccess {
   final String? personId;
 
   /// Whether this account approves requests to join the store.
-  bool get canApprove => admin || owner || gerencia || chefeTeam != null;
+  bool get canApprove => admin || gerencia || chefeTeam != null;
 
-  bool get _all => admin || owner;
+  /// Whether this account shares the join code and adds, links and removes
+  /// members.
+  bool get canManageMembers => admin || gerencia;
+
+  /// Whether this account may wipe all the store's data (it reaches every
+  /// device).
+  bool get canWipeAll => admin;
+
+  bool get _all => admin;
 
   /// Whether [p] is this account's own person.
   bool isSelf(Person p) => personId != null && p.syncUuid == personId;
@@ -89,7 +93,6 @@ class StoreAccess {
 
   Map<String, dynamic> toJson() => {
     'admin': admin,
-    'owner': owner,
     'gerencia': gerencia,
     'chefe_team': chefeTeam,
     'person_id': personId,
@@ -99,11 +102,10 @@ class StoreAccess {
   bool operator ==(Object other) =>
       other is StoreAccess &&
       other.admin == admin &&
-      other.owner == owner &&
       other.gerencia == gerencia &&
       other.chefeTeam == chefeTeam &&
       other.personId == personId;
 
   @override
-  int get hashCode => Object.hash(admin, owner, gerencia, chefeTeam, personId);
+  int get hashCode => Object.hash(admin, gerencia, chefeTeam, personId);
 }

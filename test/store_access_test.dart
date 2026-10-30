@@ -5,30 +5,31 @@ import 'package:livre_servico_app/models/store_access.dart';
 void main() {
   StoreAccess read(Map<String, dynamic> j) => StoreAccess.fromJson({
     'admin': false,
-    'owner': false,
     'gerencia': false,
     'chefe_team': null,
     'person_id': null,
     ...j,
   });
 
-  test('chefes, Gerência, the owner and the admin approve requests', () {
+  test('chefes, Gerência and the admin approve requests', () {
     expect(read({'chefe_team': 'talho', 'person_id': 'p1'}).canApprove, isTrue);
     expect(read({'gerencia': true}).canApprove, isTrue);
-    expect(read({'owner': true}).canApprove, isTrue);
     expect(read({'admin': true}).canApprove, isTrue);
     expect(read({'person_id': 'p1'}).canApprove, isFalse);
     expect(StoreAccess.full.canApprove, isTrue);
   });
 
   test('round trip through JSON', () {
-    final a = read({'chefe_team': 'talho', 'person_id': 'p1', 'owner': true});
+    final a = read({
+      'chefe_team': 'talho',
+      'person_id': 'p1',
+      'gerencia': true,
+    });
     final b = StoreAccess.fromJson(a.toJson());
     expect(b.chefeTeam, 'talho');
     expect(b.personId, 'p1');
-    expect(b.owner, isTrue);
+    expect(b.gerencia, isTrue);
     expect(b.admin, isFalse);
-    expect(b.gerencia, isFalse);
     expect(b, a);
   });
 
@@ -87,10 +88,9 @@ void main() {
       expect(a.canDeletePeople, isFalse);
     });
 
-    test('the admin, the owner and no store: everything', () {
+    test('the admin and no store: everything', () {
       for (final a in [
         read({'admin': true}),
-        read({'owner': true}),
         StoreAccess.full,
       ]) {
         expect(a.canSeePersonal(rui), isTrue);
@@ -109,5 +109,15 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  test('Gerência and the admin manage members; only the admin wipes', () {
+    expect(read({'gerencia': true}).canManageMembers, isTrue);
+    expect(read({'admin': true}).canManageMembers, isTrue);
+    expect(read({'chefe_team': 'talho'}).canManageMembers, isFalse);
+    expect(read({}).canManageMembers, isFalse);
+    expect(read({'gerencia': true}).canWipeAll, isFalse);
+    expect(read({'admin': true}).canWipeAll, isTrue);
+    expect(StoreAccess.full.canWipeAll, isTrue);
   });
 }

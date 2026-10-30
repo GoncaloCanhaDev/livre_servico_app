@@ -33,10 +33,10 @@ void main() {
     expect(
       accountErrorText(
         const PostgrestException(
-          message: 'Só o dono da loja pode adicionar pessoas.',
+          message: 'Só a gerência pode adicionar pessoas.',
         ),
       ),
-      'Só o dono da loja pode adicionar pessoas.',
+      'Só a gerência pode adicionar pessoas.',
     );
   });
 
@@ -54,7 +54,6 @@ void main() {
       pending: true,
       access: StoreAccess(
         admin: false,
-        owner: false,
         gerencia: false,
         chefeTeam: 'talho',
         personId: 'p1',
@@ -76,13 +75,13 @@ void main() {
     );
   });
 
-  test('a store saved by an older version is approved, owner by role', () {
+  test('a store saved by an older version is approved, with no access', () {
     final s = storeInfoFromJson(
       '{"id":"s1","name":"Loja","role":"owner","personId":null}',
     )!;
     expect(s.pending, isFalse);
-    expect(s.access.owner, isTrue);
-    expect(s.access.canApprove, isTrue);
+    expect(s.access.canApprove, isFalse);
+    expect(s.access.canWipeAll, isFalse);
     expect(storeInfoFromJson('nope'), isNull);
   });
 }

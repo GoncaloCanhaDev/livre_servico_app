@@ -36,11 +36,13 @@ await db.exec(`
     ('00000000-0000-0000-0000-00000000000f','admin@x.pt'),
     ('00000000-0000-0000-0000-000000000011','h@x.pt');
 `);
-for (const m of migrations) await db.exec(m);
+// Like Supabase: the API roles get every new table, before the migrations
+// take away what they shouldn't have.
 await db.exec(`
   grant usage on schema public to authenticated, anon;
-  grant select, insert, update, delete on all tables in schema public to authenticated;
+  alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
 `);
+for (const m of migrations) await db.exec(m);
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b',
   C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d',
@@ -57,12 +59,17 @@ const throws = async (name, fn, re) => {
   catch (e) { ok(name + ' -> ' + e.message, re ? re.test(e.message) : true); }
 };
 
+// A is the app's admin (there are no store owners).
+await db.query(`insert into app_admins values ($1)`, [A]);
+await throws('only the admin creates stores', () => as(B, `select public.create_store('Outra')`), /administrador/);
 const [{ create_store: store }] = await as(A, `select public.create_store('Pingo Doce X')`);
-ok('owner sees store', (await as(A, 'select * from stores')).length === 1);
+ok('admin sees store', (await as(A, 'select * from stores')).length === 1);
+ok('the creator is a plain member', (await as(A, 'select role from store_members where user_id = $1', [A]))[0].role === 'editor');
 await as(A, `select public.add_store_member($1, ' editor@X.pt ', 'editor')`, [store]);
 await as(A, `select public.add_store_member($1, 'viewer@x.pt', 'viewer')`, [store]);
 await throws('unknown email', () => as(A, `select public.add_store_member($1, 'nobody@x.pt')`, [store]), /Não há/);
-await throws('editor cannot add members', () => as(B, `select public.add_store_member($1, 'stranger@x.pt')`, [store]), /dono/);
+await throws('editor cannot add members', () => as(B, `select public.add_store_member($1, 'stranger@x.pt')`, [store]), /gerência/);
+await throws('nobody is made owner', () => as(A, `select public.add_store_member($1, 'stranger@x.pt', 'owner')`, [store]), /dono/);
 await throws('owner cannot change self', () => as(A, `select public.add_store_member($1, 'owner@x.pt', 'viewer')`, [store]), /próprio/);
 
 const row = (id, t, data, del = null, collection = 'Note') => ({ collection, id, data, updated_at: t, deleted_at: del });
@@ -92,7 +99,7 @@ await throws('client cannot fake server time',
   async () => { await as(B, `update records set server_updated_at = '2000-01-01' where id = 'p1'`); const r = await as(B, `select server_updated_at from records where id='p1'`); if (r[0].server_updated_at.getFullYear() === 2000) throw new Error('faked'); throw new Error('trigger wins'); }, /trigger wins/);
 
 let members = await as(B, 'select * from public.store_member_list($1)', [store]);
-ok('members list has emails, owner first', members.length === 3 && members[0].email === 'owner@x.pt' && members[0].role === 'owner');
+ok('members list has emails, no owner', members.length === 3 && members.some((m) => m.email === 'owner@x.pt') && !members.some((m) => m.role === 'owner'));
 await throws('stranger cannot list members', () => as(D, 'select * from public.store_member_list($1)', [store]), /Não pertence/);
 
 await db.exec('reset role');
@@ -103,15 +110,15 @@ ok('stranger sees no photo', (await as(D, `select * from storage.objects`)).leng
 await throws('viewer cannot add a photo', () => as(C, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, [store + '/b.jpg']), /row-level security/);
 await throws('editor cannot add to another store', () => as(B, `insert into storage.objects (bucket_id, name) values ('photos', 'other/c.jpg')`), /row-level security/);
 
-ok('owner cannot remove self', (await as(A, 'delete from store_members where user_id = $1 returning *', [A])).length === 0);
-ok('owner removes viewer', (await as(A, 'delete from store_members where user_id = $1 returning *', [C])).length === 1);
+ok('admin cannot remove self', (await as(A, 'delete from store_members where user_id = $1 returning *', [A])).length === 0);
+ok('admin removes viewer', (await as(A, 'delete from store_members where user_id = $1 returning *', [C])).length === 1);
 ok('removed viewer reads nothing', (await as(C, 'select * from records')).length === 0);
-ok('editor cannot promote self', (await as(B, `update store_members set role = 'owner' where user_id = $1 returning *`, [B])).length === 0);
+await throws('editor cannot promote self', () => as(B, `update store_members set role = 'owner' where user_id = $1 returning *`, [B]), /permission denied/);
 ok('pull query works', (await as(B, `select id from records where store_id = $1 and server_updated_at > $2 order by server_updated_at`, [store, '2000-01-01'])).length === 2);
 
 // Joining with the store's code and linking an account to its person.
 await push(A, [person('p1', '2026-10-30T10:00:00Z', { name: 'Ana' }), person('p2', '2026-10-30T11:00:00Z', { name: 'Rui' }, '2026-10-30T11:00:00Z'), person('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', phoneNumber: '900' }), person('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
-await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /dono/);
+await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /gerência/);
 const [{ store_join_code: code }] = await as(A, 'select public.store_join_code($1)', [store]);
 ok('code has 8 plain characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
 ok('code stays the same', (await as(A, 'select public.store_join_code($1) c', [store]))[0].c === code);
@@ -135,8 +142,8 @@ await throws('pending member cannot claim', () => as(D, 'select public.claim_per
 await throws('editor without chefe cannot list requests', () => as(B, 'select * from public.store_join_requests($1)', [store]), /aprovar/);
 await throws('editor without chefe cannot approve', () => as(B, 'select public.approve_join($1, $2)', [store, D]), /aprovar/);
 await push(A, [person('pc', '2026-10-30T12:00:00Z', { fullName: 'Chefe', team: 'talho', chefe: 'chefe' })]);
-await throws('member cannot claim a chefe', () => as(B, 'select public.claim_person($1, $2)', [store, 'pc']), /dono da loja/);
-ok('owner links a member to a chefe', (await as(A, `update store_members set person_id = 'pc' where user_id = $1 returning *`, [B])).length === 1);
+await throws('member cannot claim a chefe', () => as(B, 'select public.claim_person($1, $2)', [store, 'pc']), /gerência \(Membros\)/);
+ok('admin links a member to a chefe', (await as(A, `update store_members set person_id = 'pc' where user_id = $1 returning *`, [B])).length === 1);
 ok('chefe access', (await as(B, 'select public.my_access($1) a', [store]))[0].a.chefe_team === 'talho');
 let requests = await as(B, 'select * from public.store_join_requests($1)', [store]);
 ok('chefe sees the request', requests.length === 1 && requests[0].user_id === D && requests[0].email === 'stranger@x.pt' && requests[0].person_name === 'Zé');
@@ -150,7 +157,7 @@ await throws('join needs a person or a name', () => as(E, 'select public.join_st
 ok('failed join adds nothing', (await as(E, 'select * from public.my_stores()')).length === 0);
 await as(E, 'select public.join_store($1, null, $2)', [code, '  Nova ']);
 requests = await as(A, 'select * from public.store_join_requests($1)', [store]);
-ok('owner sees the typed name', requests.length === 1 && requests[0].requested_name === 'Nova' && requests[0].person_id === null);
+ok('admin sees the typed name', requests.length === 1 && requests[0].requested_name === 'Nova' && requests[0].person_id === null);
 await as(A, 'select public.approve_join($1, $2)', [store, E]);
 const [nova] = await as(E, `select r.id, r.data, s.person_id from records r join store_members s on s.person_id = r.id where s.user_id = $1`, [E]);
 ok('typed name creates the person', nova?.data.fullName === 'Nova' && nova.data.syncUuid === nova.id && typeof nova.data.syncUpdatedAt === 'number');
@@ -171,7 +178,7 @@ await push(A, [person('pg', '2026-10-30T12:00:00Z', { fullName: 'Gerente', team:
 await db.exec('reset role'); await db.query(`update store_members set person_id = 'pg' where user_id = $1`, [E]);
 ok('gerencia access', (await as(E, 'select public.my_access($1) a', [store]))[0].a.gerencia === true);
 const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
-ok('member access', sorted((await as(D, 'select public.my_access($1) a', [store]))[0].a) === sorted({ admin: false, owner: false, gerencia: false, chefe_team: null, person_id: 'p4', status: 'approved' }));
+ok('member access', sorted((await as(D, 'select public.my_access($1) a', [store]))[0].a) === sorted({ admin: false, gerencia: false, chefe_team: null, person_id: 'p4', status: 'approved' }));
 await db.exec('reset role');
 const chefeTeam = async (d) => (await db.query('select public.person_chefe_team($1) t', [JSON.stringify(d)])).rows[0].t;
 ok('chefe de dia is chefe of livre servico', await chefeTeam({ team: 'livre_servico', chefe: 'dia' }) === 'livre_servico');
@@ -179,23 +186,23 @@ ok('frente de loja has no chefe', await chefeTeam({ team: 'frente_de_loja', chef
 ok('no slot, no chefe', await chefeTeam({ team: 'talho' }) === null);
 await db.query(`insert into app_admins values ($1)`, [F]);
 const fStores = await as(F, 'select * from public.my_stores()');
-ok('admin sees every store as owner', fStores.length === 1 && fStores[0].role === 'owner' && fStores[0].status === 'approved');
+ok('admin sees every store', fStores.length === 1 && fStores[0].role === 'owner' && fStores[0].status === 'approved');
 ok('admin reads records', (await as(F, 'select * from records')).length > 0);
 ok('admin access', (await as(F, 'select public.my_access($1) a', [store]))[0].a.admin === true);
 ok('admin approves', (await as(F, 'select public.can_approve($1) c', [store]))[0].c === true);
 await as(A, 'select public.join_store($1, $2)', [code, 'p1']);
-ok('owner joining keeps owner', (await as(A, 'select role, person_id from store_members where user_id = $1', [A]))[0].role === 'owner');
+ok('a member joining again keeps their membership', (await as(A, 'select role, person_id from store_members where user_id = $1', [A]))[0].role === 'editor');
 ok('editor cannot unlink others', (await as(B, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 0);
-ok('owner unlinks a member', (await as(A, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 1);
+ok('admin unlinks a member', (await as(A, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 1);
 await throws('stranger cannot claim', () => as(C, 'select public.claim_person($1, $2)', [store, 'p4']), /Não pertence/);
 const [{ reset_store_join_code: code2 }] = await as(A, 'select public.reset_store_join_code($1)', [store]);
 ok('new code', code2 !== code);
 await throws('old code stops working', () => as(C, 'select public.join_store_preview($1)', [code]), /Não há/);
-await throws('editor cannot reset the code', () => as(B, 'select public.reset_store_join_code($1)', [store]), /dono/);
+await throws('editor cannot reset the code', () => as(B, 'select public.reset_store_join_code($1)', [store]), /gerência/);
 await throws('internal function hidden', () => as(D, `select public.store_by_code('x')`), /permission denied/);
 
 // People's personal data by hierarchy. B: chefe of talho (pc); D: p4 in
-// talho; H: pn in peixaria; E: Gerência (pg); F: admin; A: owner.
+// talho; H: pn in peixaria; E: Gerência (pg); A and F: admins.
 await db.exec('reset role');
 await db.query(`update records set data = data || '{"team":"talho","folgas":[1],"notes":["x"],"phoneNumber":"900"}' where id = 'p4'`);
 await db.query(`update store_members set person_id = 'p4' where user_id = $1`, [D]);
@@ -211,7 +218,7 @@ ok('chefe sees own team full', (await pulled(B, 'p4')).data.phoneNumber === '900
 ok('chefe does not see other team', !('phoneNumber' in (await pulled(B, 'pn')).data));
 ok('gerencia sees all full', (await pulled(E, 'pn')).data.phoneNumber === '111' && (await pulled(E, 'p4')).data.phoneNumber === '900');
 ok('admin sees all full', (await pulled(F, 'pn')).data.phoneNumber === '111');
-ok('owner sees all full', (await pulled(A, 'pn')).data.phoneNumber === '111');
+ok('a second admin sees all full', (await pulled(A, 'pn')).data.phoneNumber === '111');
 ok('pull_records keeps other rows whole', (await as(H, 'select * from public.pull_records($1, $2, $3)', [store, null, 1000])).some((r) => r.collection === 'Note'));
 await throws('stranger cannot pull', () => as(C, 'select * from public.pull_records($1, $2, $3)', [store, null, 10]), /Não pertence/);
 ok('select policy hides personal rows', !(await as(H, `select id from records where collection = 'Person'`)).some((r) => r.id === 'p4'));
@@ -272,11 +279,18 @@ const future = await stored('p4');
 ok('a person is never saved in the future', future.data.phoneNumber === '922' && future.updated_at <= new Date());
 await push(B, [person('p4', new Date(Date.now() + 1000).toISOString(), { ...future.data, folgas: [4] })]);
 ok('later edits still count after a future push', JSON.stringify((await stored('p4')).data.folgas) === '[4]');
+ok('gerencia sees the code', /^[A-HJ-NP-Z2-9]{8}$/.test((await as(E, 'select public.store_join_code($1) c', [store]))[0].c));
+ok('gerencia unlinks a member', (await as(E, 'update store_members set person_id = null where user_id = $1 returning *', [H])).length === 1);
+ok('gerencia links a member', (await as(E, `update store_members set person_id = 'pn' where user_id = $1 returning *`, [H])).length === 1);
+await throws('gerencia cannot change roles', () => as(E, `update store_members set role = 'owner' where user_id = $1`, [H]), /permission denied/);
+ok('gerencia cannot relink themselves', (await as(E, `update store_members set person_id = 'p5' where user_id = $1 returning *`, [E])).length === 0);
+ok('a chefe does not manage members', (await as(B, 'update store_members set person_id = null where user_id = $1 returning *', [H])).length === 0);
 await push(H, [row('d1', '2026-10-30T12:00:00Z', { done: true }, null, 'DailyTasks')]);
 ok('non-Person rows unchanged', (await as(D, `select * from records where collection = 'DailyTasks'`)).length === 1);
 await throws('direct Person insert blocked', () => as(H, `insert into records (store_id, collection, id, data, updated_at) values ($1, 'Person', 'pz', '{}', now())`, [store]), /row-level security/);
 ok('direct Person update blocked', (await as(D, `update records set data = data || '{"team":"gerencia"}' where id = 'p4' returning id`)).length === 0);
 
+ok('gerencia removes a member', (await as(E, 'delete from store_members where user_id = $1 returning *', [H])).length === 1);
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
 

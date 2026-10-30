@@ -152,12 +152,7 @@ void main() {
     testWidgets('a member edits their own name and phone only', (tester) async {
       final ana = await saved(tester, talho('Ana'));
       signedInAs(
-        StoreAccess(
-          admin: false,
-          owner: false,
-          gerencia: false,
-          personId: ana.syncUuid,
-        ),
+        StoreAccess(admin: false, gerencia: false, personId: ana.syncUuid),
       );
       await openForm(tester, ana);
       expect(editable(tester, 'Nome completo'), isTrue);
@@ -176,7 +171,6 @@ void main() {
       signedInAs(
         const StoreAccess(
           admin: false,
-          owner: false,
           gerencia: false,
           chefeTeam: 'talho',
           personId: 'chefe',
@@ -212,12 +206,7 @@ void main() {
             ..profileUpdateRequestedBy = 'Chefe Rui',
         );
         signedInAs(
-          StoreAccess(
-            admin: false,
-            owner: false,
-            gerencia: false,
-            personId: ana.syncUuid,
-          ),
+          StoreAccess(admin: false, gerencia: false, personId: ana.syncUuid),
         );
         await pumpApp(tester, const LivreServicoApp());
         expect(find.text('Atualize o seu perfil'), findsOneWidget);
@@ -240,7 +229,6 @@ void main() {
       signedInAs(
         StoreAccess(
           admin: false,
-          owner: false,
           gerencia: false,
           chefeTeam: 'talho',
           personId: chefe.syncUuid,
@@ -270,9 +258,7 @@ void main() {
       tester,
     ) async {
       final ana = await saved(tester, talho('Ana'));
-      signedInAs(
-        const StoreAccess(admin: false, owner: false, gerencia: false),
-      );
+      signedInAs(const StoreAccess(admin: false, gerencia: false));
       await pumpApp(tester, const LivreServicoApp());
       tester
           .state<NavigatorState>(find.byType(Navigator))

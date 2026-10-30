@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.63.0] — 2026-10-31
+
+### Removed
+- **Store owners.** The app's admin creates stores ("Criar loja" only shows for them) and is the
+  only one who may "Apagar Todos os Dados" while syncing or see and edit everyone's data
+  everywhere. Gerência now shares and resets the join code and adds, links and removes members
+  in Membros; members can only change which person an account is (never a role). Migration
+  `20261031150000_no_store_owners` (existing owners become members).
+
 ## [0.62.5] — 2026-10-31
 
 ### Fixed

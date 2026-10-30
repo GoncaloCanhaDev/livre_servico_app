@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: Text(
                 canWipeAll
                     ? 'Remove permanentemente todos os dados da aplicação.'
-                    : 'Só o dono da loja: apagaria os dados de todos os '
+                    : 'Só o administrador: apagaria os dados de todos os '
                           'aparelhos.',
               ),
               trailing: Icon(

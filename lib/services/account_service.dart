@@ -12,12 +12,13 @@ import 'sync_engine.dart';
 import 'sync_service.dart';
 
 /// A member's role in a store, as `store_role` in `supabase/migrations`
-/// (by name: viewer < editor < owner).
+/// (by name: viewer < editor < owner). Nobody is an owner any more (the
+/// app's admin shows as one in `my_stores`).
 enum StoreRole {
   // Viewers ("Só leitura") became members when join requests came in.
   viewer('Membro'),
   editor('Membro'),
-  owner('Dono');
+  owner('Administrador');
 
   const StoreRole(this.label);
   final String label;
@@ -74,7 +75,9 @@ StoreInfo? storeInfoFromJson(String? raw) {
           pending: j['pending'] == true,
           access: switch (j['access']) {
             final Map<String, dynamic> a => StoreAccess.fromJson(a),
-            _ => _accessOfRole(r),
+            // An older version's owner was a store owner, not the admin:
+            // nothing until `my_access` answers.
+            _ => const StoreAccess(admin: false, gerencia: false),
           },
         );
       }
@@ -85,9 +88,10 @@ StoreInfo? storeInfoFromJson(String? raw) {
   return null;
 }
 
-/// What a store's role alone says, until `my_access` answers.
+/// What a store's role alone says, until `my_access` answers: `my_stores`
+/// gives the app's admin the owner role.
 StoreAccess _accessOfRole(StoreRole r) =>
-    StoreAccess(admin: false, owner: r == StoreRole.owner, gerencia: false);
+    StoreAccess(admin: r == StoreRole.owner, gerencia: false);
 
 /// A request to join the current store, waiting for approval: as the
 /// person [personId] ([personName]), or [requestedName] for someone new.
@@ -151,9 +155,8 @@ class AccountService extends ChangeNotifier {
   StoreInfo? store;
 
   /// Whether this device may wipe all data: anyone when not syncing, only
-  /// the owner when it is (the wipe reaches the whole store).
-  bool get canWipeAll =>
-      store == null || store!.access.owner || store!.access.admin;
+  /// the app's admin when it is (the wipe reaches the whole store).
+  bool get canWipeAll => access.canWipeAll;
 
   /// What this account may do in the current store; everything when there
   /// is none.
@@ -326,7 +329,17 @@ class AccountService extends ChangeNotifier {
     ];
   }
 
-  /// Creates a store owned by this account and syncs with it.
+  /// Whether this account is the app's admin (it creates stores); false
+  /// when that can't be asked (offline).
+  Future<bool> isAppAdmin() async {
+    try {
+      return await _api.rpc<bool>('is_app_admin');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Creates a store (the app's admin only) and syncs with it.
   Future<void> createStore(String name) async {
     final id = await _api.rpc<String>(
       'create_store',
@@ -338,7 +351,7 @@ class AccountService extends ChangeNotifier {
       role: StoreRole.owner,
       personId: null,
       pending: false,
-      access: _accessOfRole(StoreRole.owner),
+      access: const StoreAccess(admin: true, gerencia: false),
     ));
   }
 
@@ -357,7 +370,7 @@ class AccountService extends ChangeNotifier {
 
   /// Asks to join the store with the join [code] as the person [personId],
   /// or as someone new called [name], and chooses it: it syncs once a chefe,
-  /// Gerência or the owner approves (see [refreshStore]). A member already
+  /// or Gerência approves (see [refreshStore]). A member already
   /// keeps their membership.
   Future<void> joinStore(String code, {String? personId, String? name}) async {
     final id = await _api.rpc<String>(
@@ -491,7 +504,7 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Everyone in the current store, owners first.
+  /// Everyone in the current store.
   Future<List<StoreMember>> members() async {
     final rows = await _api.rpc<List<dynamic>>(
       'store_member_list',
@@ -508,7 +521,7 @@ class AccountService extends ChangeNotifier {
     ];
   }
 
-  /// The current store's join code, which the owner shares with the team.
+  /// The current store's join code, which Gerência shares with the team.
   Future<String> joinCode() =>
       _api.rpc<String>('store_join_code', params: {'p_store': store!.id});
 

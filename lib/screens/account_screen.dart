@@ -219,6 +219,7 @@ class _StorePicker extends StatefulWidget {
 
 class _StorePickerState extends State<_StorePicker> {
   late Future<List<StoreInfo>> _stores = AccountService.instance.myStores();
+  late final Future<bool> _isAdmin = AccountService.instance.isAppAdmin();
 
   Future<bool> _confirmMerge(String storeName) async =>
       await showDialog<bool>(
@@ -252,9 +253,9 @@ class _StorePickerState extends State<_StorePicker> {
     }
   }
 
-  /// Asks to join a store with the code its owner shares: the person says
+  /// Asks to join a store with the code Gerência shares: the person says
   /// who they are in its list of people (or types their name), then waits
-  /// for a chefe, Gerência or the owner to approve.
+  /// for a chefe or Gerência to approve.
   Future<void> _join() async {
     final ctrl = TextEditingController();
     final code = await showDialog<String>(
@@ -267,7 +268,7 @@ class _StorePickerState extends State<_StorePicker> {
           textCapitalization: TextCapitalization.characters,
           decoration: const InputDecoration(
             labelText: 'Código da loja',
-            helperText: 'Peça-o ao dono da loja.',
+            helperText: 'Peça-o à gerência da loja.',
             border: OutlineInputBorder(),
           ),
         ),
@@ -386,8 +387,8 @@ class _StorePickerState extends State<_StorePicker> {
           }
           if (stores.isEmpty) {
             return Text(
-              'Ainda não pertence a nenhuma loja. Entre com o código que o '
-              'dono da loja lhe der, ou crie uma.',
+              'Ainda não pertence a nenhuma loja. Entre com o código que a '
+              'gerência da loja lhe der.',
               style: TextStyle(color: context.muted),
             );
           }
@@ -412,11 +413,19 @@ class _StorePickerState extends State<_StorePicker> {
         icon: const Icon(Icons.vpn_key),
         label: const Text('Entrar com código'),
       ),
-      const SizedBox(height: 8),
-      OutlinedButton.icon(
-        onPressed: _create,
-        icon: const Icon(Icons.add_business),
-        label: const Text('Criar loja'),
+      // Only the app's admin creates stores.
+      FutureBuilder<bool>(
+        future: _isAdmin,
+        builder: (context, snap) => snap.data != true
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: OutlinedButton.icon(
+                  onPressed: _create,
+                  icon: const Icon(Icons.add_business),
+                  label: const Text('Criar loja'),
+                ),
+              ),
       ),
       const SizedBox(height: 8),
       TextButton(
@@ -607,7 +616,7 @@ class _PendingState extends State<_Pending> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Aguarde que um chefe de secção, a gerência ou o dono da loja '
+          'Aguarde que um chefe de secção ou a gerência da loja '
           'aprove o pedido. Até lá, nada da loja chega a este aparelho.',
           textAlign: TextAlign.center,
           style: TextStyle(color: context.muted),

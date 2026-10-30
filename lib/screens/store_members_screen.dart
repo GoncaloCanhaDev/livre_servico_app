@@ -7,8 +7,8 @@ import '../theme.dart';
 import 'claim_person_screen.dart';
 
 /// Conta → Membros: who is in the store, and which person each account is.
-/// Chefes, Gerência and the owner approve or refuse requests to join. The
-/// owner shares the store's code (anyone with it can ask to join), adds
+/// Chefes, Gerência and the admin approve or refuse requests to join.
+/// Gerência shares the store's code (anyone with it can ask to join), adds
 /// people by the email of their account, unlinks them from a person and
 /// removes them.
 class StoreMembersScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
   /// Person names by `syncUuid`, for the members linked to one.
   Map<String, String> _names = const {};
 
-  bool get _isOwner => _account.access.owner || _account.access.admin;
+  bool get _manages => _account.access.canManageMembers;
 
   @override
   void initState() {
@@ -204,7 +204,7 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Membros')),
-    floatingActionButton: _isOwner
+    floatingActionButton: _manages
         ? FloatingActionButton.extended(
             onPressed: _add,
             icon: const Icon(Icons.person_add),
@@ -236,7 +236,7 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
           return ListView(
             padding: const EdgeInsets.only(bottom: 88),
             children: [
-              if (_isOwner) const _JoinCodeCard(),
+              if (_manages) const _JoinCodeCard(),
               _Requests(
                 requests: _requests,
                 onApprove: (r) => _run(() => _account.approveJoin(r.userId)),
@@ -247,8 +247,8 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
                   leading: const Icon(Icons.person),
                   title: Text(m.email),
                   subtitle: Text(_subtitle(m)),
-                  // The owner manages the others, never themselves.
-                  onTap: _isOwner && m.email != _account.email
+                  // Gerência manages the others, never themselves.
+                  onTap: _manages && m.email != _account.email
                       ? () => _edit(m)
                       : null,
                 ),
@@ -326,7 +326,7 @@ class _Requests extends StatelessWidget {
   );
 }
 
-/// The store's join code, for the owner to share: with it, someone signed
+/// The store's join code, for Gerência to share: with it, someone signed
 /// in picks who they are in the list of people and asks to join.
 class _JoinCodeCard extends StatefulWidget {
   const _JoinCodeCard();
@@ -387,7 +387,7 @@ class _JoinCodeCardState extends State<_JoinCodeCard> {
               const SizedBox(height: 4),
               Text(
                 'Quem tiver o código pede para entrar e diz quem é na lista '
-                'de pessoas; um chefe, a gerência ou o dono aprova. '
+                'de pessoas; um chefe ou a gerência aprova. '
                 'Partilhe-o só com a equipa.',
                 style: TextStyle(color: context.muted),
               ),
