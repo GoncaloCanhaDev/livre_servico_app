@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auto_list.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
-import '../models/horario_mes.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/local_row.dart';
@@ -87,11 +86,6 @@ class LocalDb {
     CustomTaskEntry.fromJson,
     syncKey: (e) => '${e.taskUuid}/${dayKey(e.periodKey)}',
   );
-  final horarioMeses = LocalCollection<HorarioMes>._(
-    'HorarioMes',
-    HorarioMes.fromJson,
-    syncKey: (m) => m.mes,
-  );
 
   late final List<LocalCollection<SyncedRow>> collections = [
     truckReceptions,
@@ -107,7 +101,6 @@ class LocalDb {
     persons,
     customTasks,
     customTaskEntries,
-    horarioMeses,
   ];
 
   /// Set once [backfillSync] has run at startup: rows saved since are

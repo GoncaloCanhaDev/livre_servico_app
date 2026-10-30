@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/daily_tasks.dart';
-import '../../models/horario.dart';
 import '../../models/pedido.dart';
 import '../../models/person.dart';
 import '../../models/planning.dart';
@@ -14,7 +13,6 @@ import '../../models/today.dart';
 import '../../models/truck_reception.dart';
 import '../../services/auto_list_service.dart';
 import '../../services/daily_tasks_service.dart';
-import '../../services/horario_service.dart';
 import '../../services/opening_list_service.dart';
 import '../../services/pedido_service.dart';
 import '../../services/person_service.dart';
@@ -24,7 +22,6 @@ import '../../services/truck_service.dart';
 import '../../services/visual_list_service.dart';
 import '../../theme.dart';
 import '../historico_screen.dart';
-import '../horarios_screen.dart';
 import '../pedidos_screen.dart';
 import '../people_screen.dart';
 import '../tasks_screen.dart';
@@ -33,21 +30,20 @@ import '../tasks_screen.dart';
 class _TodayData {
   const _TodayData({
     required this.serviceDay,
-    required this.hasHorario,
+    required this.hasShifts,
     required this.onShift,
     required this.counts,
     required this.pending,
     required this.overduePedidos,
     required this.trucks,
     required this.pallets,
-    required this.missingMonth,
     required this.birthdays,
   });
 
   final DateTime serviceDay;
 
-  /// Whether this month has a horário for Livre Serviço.
-  final bool hasHorario;
+  /// Whether anyone in Livre Serviço has their shift times set.
+  final bool hasShifts;
   final List<OnShift> onShift;
   final ({int dia, int noite}) counts;
   final List<String> pending;
@@ -55,16 +51,12 @@ class _TodayData {
   final int trucks;
   final int pallets;
 
-  /// Next month's key when its horário is due and not imported.
-  final String? missingMonth;
-
   /// Today's birthdays and those in the next 7 days, everyone in Pessoas.
   final List<({Person person, DateTime date})> birthdays;
 }
 
 /// The home screen's summary of the service day: who is working now, the
-/// daily tasks still to do, a missing next month's horário, birthdays, late
-/// pedidos and today's camiões. Each line
+/// daily tasks still to do, birthdays, late pedidos and today's camiões. Each line
 /// opens its page.
 class TodayCard extends StatefulWidget {
   const TodayCard({super.key});
@@ -104,7 +96,6 @@ class _TodayCardState extends State<TodayCard> {
   Timer? _clock;
 
   List<Listenable> get _sources => [
-    HorarioService.instance,
     PersonService.instance,
     DailyTasksService.instance,
     OpeningListService.instance,
@@ -177,7 +168,6 @@ class _TodayCardState extends State<TodayCard> {
     if (rows == null || !mounted) return;
     final now = DateTime.now();
     final day = rows.day;
-    final index = HorarioService.instance.index;
     final people = [
       for (final p in rows.everyone)
         if (p.team == livreServicoId) p,
@@ -185,9 +175,9 @@ class _TodayCardState extends State<TodayCard> {
     setState(() {
       _data = _TodayData(
         serviceDay: day,
-        hasHorario: index.horarios.meses.containsKey(monthKey(day)),
-        onShift: onShiftAt(index, people, now),
-        counts: shiftCountsOn(index, people, day),
+        hasShifts: people.any((p) => shiftSpanOn(p, day) != null),
+        onShift: onShiftAt(people, now),
+        counts: shiftCountsOn(people, day),
         pending: pendingDailyTasks(
           rows.tasks,
           aberturaDone: rows.aberturaDone,
@@ -199,7 +189,6 @@ class _TodayCardState extends State<TodayCard> {
         overduePedidos: rows.pedidos.where((p) => p.isOverdue).length,
         trucks: rows.trucks.length,
         pallets: rows.trucks.fold(0, (s, t) => s + t.totalPallets),
-        missingMonth: missingNextMonth(HorarioService.instance.horarios, day),
         birthdays: upcomingBirthdays(rows.everyone, day),
       );
     });
@@ -229,7 +218,7 @@ class _TodayCardState extends State<TodayCard> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
-          if (d.hasHorario)
+          if (d.hasShifts)
             _Line(
               icon: Icons.groups,
               title: d.onShift.isEmpty
@@ -240,7 +229,7 @@ class _TodayCardState extends State<TodayCard> {
                   d.onShift.map((s) => shortName(s.person.fullName)).join(', '),
                 'Hoje: ${d.counts.dia} de dia · ${d.counts.noite} de noite',
               ].join('\n'),
-              onTap: () => _open(const HorariosScreen()),
+              onTap: () => _open(const PeopleScreen()),
             ),
           _Line(
             icon: d.pending.isEmpty ? Icons.task_alt : Icons.pending_actions,
@@ -253,13 +242,6 @@ class _TodayCardState extends State<TodayCard> {
             text: d.pending.isEmpty ? null : d.pending.join(', '),
             onTap: () => _open(const TasksScreen()),
           ),
-          if (d.missingMonth case final month?)
-            _Line(
-              icon: Icons.event_busy,
-              color: Colors.orange.shade800,
-              title: 'Falta o horário de ${monthName(month)}',
-              onTap: () => _open(const HorariosScreen()),
-            ),
           if (d.birthdays.isNotEmpty)
             _Line(
               icon: Icons.cake,

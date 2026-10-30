@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.61.0] — 2026-10-31
+
+### Removed
+- **Horários.** The monthly shift sheet (screen, import/export, codes) is gone: it showed
+  everyone's folgas and absences. Who's off comes from each person's folgas and ausências;
+  "A trabalhar agora" (Hoje card, task picker) and "Hoje · 07:00–15:00" in Pessoas come from
+  each person's own entrada and saída. Older backups with a "horarios" section still import
+  (it is ignored).
+
 ## [0.60.2] — 2026-10-31
 
 ### Changed

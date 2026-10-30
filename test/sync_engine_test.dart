@@ -4,7 +4,6 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
-import 'package:livre_servico_app/models/horario_mes.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/sync_engine.dart';
@@ -254,15 +253,6 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single.alteracoesPrecoCount, 5);
     }
-  });
-
-  test('one row per horário month, by its month', () async {
-    final m = HorarioMes()..mes = '2026-11';
-    SyncMeta.stamp(m);
-    await a.db.horarioMeses.put(m);
-    await a.sync();
-
-    expect(remote.of('HorarioMes').single.id, '2026-11');
   });
 
   test('a row saved again during its push stays pending', () async {

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
-import 'package:livre_servico_app/models/horario.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/models/today.dart';
@@ -11,38 +10,14 @@ Person _p(int id, String name) => Person()
   ..team = 'livre_servico'
   ..createdAt = DateTime(2026);
 
-final _codigos = {
-  'H73': HorarioCodigo.fromJson('H73', {
-    'entrada': '07:00',
-    'pausa': '12:00-13:00',
-    'saida': '16:00',
-  }),
-  'W82': HorarioCodigo.fromJson('W82', {
-    'entrada': '22:00',
-    'pausa': '03:00-04:00',
-    'saida': '07:00',
-  }),
-  'U1': HorarioCodigo.fromJson('U1', {'entrada': '20:00', 'saida': '24:00'}),
-};
-
-/// October 2026 with [rows] (name → codes for days 1, 2, …; FO after).
-HorarioIndex _index(List<Person> people, Map<String, List<String>> rows) =>
-    HorarioIndex(
-      Horarios(
-        codigos: _codigos,
-        ausencias: const {'FO': 'Folga', 'F': 'Férias'},
-        meses: {
-          '2026-10': {
-            for (final r in rows.entries)
-              r.key: [
-                ...r.value,
-                for (var i = r.value.length; i < 31; i++) 'FO',
-              ],
-          },
-        },
-      ),
-      people,
-    );
+/// [p] with their own shift, [start] and [end] in "07:00" form.
+Person _shift(Person p, String start, String end) {
+  int m(String t) =>
+      int.parse(t.split(':')[0]) * 60 + int.parse(t.split(':')[1]);
+  return p
+    ..shiftStart = m(start)
+    ..shiftEnd = m(end);
+}
 
 List<String> _pending(
   DailyTasks? t,
@@ -61,98 +36,73 @@ List<String> _pending(
 );
 
 void main() {
-  group('HorarioCodigo.spanOn', () {
+  group('shiftSpanOn', () {
     test('a day shift runs on its own date', () {
-      final s = _codigos['H73']!.spanOn(DateTime(2026, 10, 8));
-      expect(s.start, DateTime(2026, 10, 8, 7));
-      expect(s.end, DateTime(2026, 10, 8, 16));
+      final p = _shift(_p(1, 'Ana'), '07:00', '16:00');
+      final span = shiftSpanOn(p, DateTime(2026, 10, 1))!;
+      expect(span.start, DateTime(2026, 10, 1, 7));
+      expect(span.end, DateTime(2026, 10, 1, 16));
     });
 
     test('a night shift ends the next morning', () {
-      final s = _codigos['W82']!.spanOn(DateTime(2026, 10, 31));
-      expect(s.start, DateTime(2026, 10, 31, 22));
-      expect(s.end, DateTime(2026, 11, 1, 7));
+      final p = _shift(_p(1, 'Ana'), '22:00', '07:00');
+      final span = shiftSpanOn(p, DateTime(2026, 10, 1))!;
+      expect(span.start, DateTime(2026, 10, 1, 22));
+      expect(span.end, DateTime(2026, 10, 2, 7));
     });
 
-    test('24:00 is the next midnight', () {
-      final s = _codigos['U1']!.spanOn(DateTime(2026, 10, 8));
-      expect(s.end, DateTime(2026, 10, 9));
+    test('needs both ends', () {
+      expect(
+        shiftSpanOn(_p(1, 'Ana')..shiftStart = 420, DateTime(2026)),
+        isNull,
+      );
     });
   });
 
   group('onShiftAt', () {
-    final ana = _p(1, 'Ana Silva');
-    final rui = _p(2, 'Rui Costa');
-    final eva = _p(3, 'Eva Lopes');
-    final idx = _index(
-      [ana, rui, eva],
-      {
-        'Ana Silva': ['H73', 'H73'],
-        'Rui Costa': ['W82', 'FO'],
-        'Eva Lopes': ['F', 'W82'],
-      },
-    );
+    // Thursday 1 October 2026.
+    final ana = _shift(_p(1, 'Ana'), '07:00', '16:00');
+    final rui = _shift(_p(2, 'Rui'), '22:00', '07:00');
+    final bea = _shift(_p(3, 'Bea'), '06:00', '14:00');
+    final noShift = _p(4, 'Zé');
 
     test('lists who is inside their shift, earliest start first', () {
-      expect(
-        onShiftAt(idx, [
-          ana,
-          rui,
-          eva,
-        ], DateTime(2026, 10, 1, 10)).map((s) => s.person.fullName),
-        ['Ana Silva'],
-      );
-      expect(
-        onShiftAt(idx, [
-          ana,
-          rui,
-          eva,
-        ], DateTime(2026, 10, 2, 23)).map((s) => s.person.fullName),
-        ['Eva Lopes'],
-      );
+      final at = onShiftAt([ana, rui, bea, noShift], DateTime(2026, 10, 1, 10));
+      expect(at.map((s) => s.person.fullName), ['Bea', 'Ana']);
     });
 
-    test("includes a night shift that started the day before", () {
-      final now = DateTime(2026, 10, 2, 6, 30);
-      expect(onShiftAt(idx, [ana, rui, eva], now).map((s) => s.person.id), [
-        rui.id,
-      ]);
+    test('includes a night shift that started the day before', () {
+      final at = onShiftAt([ana, rui, bea], DateTime(2026, 10, 1, 6, 30));
+      expect(at.map((s) => s.person.fullName), ['Rui', 'Bea']);
     });
 
     test('the end of a shift is outside it', () {
-      expect(onShiftAt(idx, [ana], DateTime(2026, 10, 1, 16)), isEmpty);
-      expect(onShiftAt(idx, [ana], DateTime(2026, 10, 1, 7)), hasLength(1));
+      expect(onShiftAt([ana], DateTime(2026, 10, 1, 16)), isEmpty);
     });
 
-    test('an ausência entered in the app wins', () {
-      final away = _p(1, 'Ana Silva')
+    test('nobody on a folga or an ausência', () {
+      final folga = _shift(_p(5, 'Eva'), '07:00', '16:00')..folgas = [4];
+      final away = _shift(_p(6, 'Ivo'), '07:00', '16:00')
         ..ausencias = [
           Ausencia()
-            ..tipo = AusenciaTipo.baixa
-            ..start = DateTime(2026, 10, 1)
-            ..end = DateTime(2026, 10, 5),
+            ..tipo = AusenciaTipo.ferias
+            ..start = DateTime(2026, 9, 28)
+            ..end = DateTime(2026, 10, 2),
         ];
-      expect(onShiftAt(idx, [away], DateTime(2026, 10, 1, 10)), isEmpty);
+      expect(onShiftAt([folga, away], DateTime(2026, 10, 1, 10)), isEmpty);
     });
   });
 
   group('shiftCountsOn', () {
-    test('counts day and night shifts, not absences', () {
-      final people = [_p(1, 'Ana'), _p(2, 'Rui'), _p(3, 'Eva'), _p(4, 'Ivo')];
-      final idx = _index(people, {
-        'Ana': ['H73'],
-        'Rui': ['W82'],
-        'Eva': ['F'],
-        'Ivo': ['U1'],
-      });
-      expect(shiftCountsOn(idx, people, DateTime(2026, 10, 1, 5)), (
-        dia: 1,
-        noite: 2,
-      ));
-      expect(shiftCountsOn(idx, people, DateTime(2026, 10, 2)), (
-        dia: 0,
-        noite: 0,
-      ));
+    test('counts day and night shifts, not folgas', () {
+      final counts = shiftCountsOn([
+        _shift(_p(1, 'Ana'), '07:00', '16:00'),
+        _shift(_p(2, 'Rui'), '22:00', '07:00'),
+        _shift(_p(3, 'Bea'), '20:00', '24:00'),
+        _shift(_p(4, 'Eva'), '07:00', '16:00')..folgas = [4],
+        _p(5, 'Zé'),
+      ], DateTime(2026, 10, 1));
+      expect(counts, (dia: 1, noite: 2));
     });
   });
 

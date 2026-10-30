@@ -30,7 +30,7 @@ multi-tenant product.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
-  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`, `lib/models/horario.dart`,
+  `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
@@ -78,7 +78,7 @@ multi-tenant product.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
   pick a file) and a "clear all data" wipe, independent of the sync fields above. The export is
   indented JSON with `vasilhame` and `settings` before `collections` (every `LocalDb`
-  collection but `HorarioMes`, keyed by its name); import replaces only the collections and
+  collection, keyed by its name); import replaces only the collections and
   sections the file has.
 - People belong to one of the fixed teams in `lib/models/teams.dart` (`Person.team` stores the
   `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
@@ -116,18 +116,10 @@ multi-tenant product.
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
-- Horários (Livre Serviço only) come from Pingo Doce's monthly sheet of shift codes ("H73",
-  "W82") and absence codes ("FO", "F", "A", "LP"). They are edited as a JSON file (export, edit
-  by hand or with Claude, import): `codigos`, `ausencias` and `meses` ("2026-10" → name → one
-  space-separated code per day). `HorarioService` keeps months in `LocalDb` (`HorarioMes`), codes in
-  shared preferences (defaults in `lib/models/horario_codigos.dart`), and a `HorarioIndex`
-  linking lines to Livre Serviço people by name (`personForRow`). An import replaces only the
-  months it has. Pass `HorarioService.instance.index` as `horario:` to `offLabelOn` /
-  `awayTagOn` / `offNoteOn` / `buildPeopleSections`: an app ausência wins, then the horário,
-  then the fixed folgas. "Today" for horários is `currentServiceDay()`. A person's own
-  `shiftStart`/`shiftEnd` (each optional, e.g. a horário de amamentação) replace the code's
-  entrada/saída: read a person's shift through `HorarioIndex.shiftOn` or
-  `HorarioCodigo.forPerson`, never `horarios.codigos[code]` directly.
+- There are no horários (the monthly shift sheet was removed in 0.61.0, since it showed
+  everyone's folgas and absences): who works when comes from each person's `folgas`,
+  `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`
+  (`lib/models/today.dart`) read those for the "A trabalhar agora" line and the picker.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in
@@ -146,7 +138,7 @@ multi-tenant product.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
   then an HTTPS fallback, then the `whatsapp://` scheme; on the web only the HTTPS link, in a
   new tab.
-- Exports (backup, horários) go through `shareJsonFile` (`lib/services/share_file.dart`), an
+- Exports (backup) go through `shareJsonFile` (`lib/services/share_file.dart`), an
   in-memory file: the share sheet on the phone, a download in a browser.
 
 ### UI layer
@@ -162,8 +154,7 @@ multi-tenant product.
   passing `_changed`, so only the open tab reloads),
   `truck_form_screen.dart` (`lib/screens/truck_form/`), `person_form_screen.dart`
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
-  the ausência dialog) and `horarios_screen.dart` (`lib/screens/horarios/`: today's cards,
-  the month grid).
+  the ausência dialog).
 - `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
   `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`. Its
   `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
@@ -182,7 +173,7 @@ multi-tenant product.
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
 `LocalDb.init()`, `PhotoStore.instance.migrateLegacy()` (its own try/catch: a failure there
-doesn't stop the app), `HorarioService.instance.init()`, `AccountService.instance.init()`
+doesn't stop the app), `AccountService.instance.init()`
 (which restores the saved session in the background, so it never waits for the network).
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
@@ -219,7 +210,7 @@ files, WhatsApp links, hosting).
 - `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
   JSON document in `records`, keyed by (`store_id`, `collection`, `id`): the model name and its
-  `syncUuid` (or a fixed key, like the month for `HorarioMes`), so model fields never need a
+  `syncUuid` (or a fixed key, like the day for `DailyTasks`), so model fields never need a
   migration. Users belong to a store through `store_members` as viewer, editor or owner.
 - Push with the `push_records` RPC (last write wins on `updated_at` = `syncUpdatedAt`; it
   returns the rows where the server's copy won). Pull by `server_updated_at`, the server's
@@ -234,14 +225,14 @@ files, WhatsApp links, hosting).
   and `LocalDb.remoteChanges` then tells the services (each subscribes with
   `LocalDb.listenRemote` in its constructor, so its screens reload). A row there is one of per
   day, week or month is keyed online by that period (`syncKey` in `LocalDb`: `DailyTasks`,
-  `WeeklyTasks`, `OpeningList`, `ReportList`, `CustomTaskEntry`, `HorarioMes`), so two devices
+  `WeeklyTasks`, `OpeningList`, `ReportList`, `CustomTaskEntry`), so two devices
   share one row instead of each making its own. A backup import calls
   `SyncEngine.forgetCursors`, so the next sync pushes and pulls everything again.
 - `SyncService` runs the engine while a store is connected (`start(remote, storeId)`): at once,
   three seconds after a save (`LocalDb.localWrites`), a second after Realtime says the store's
   `records` changed (`SyncRemote.changes`: a Supabase Realtime channel filtered by store; the
   event only triggers the usual sync, so it needs no merge logic of its own), when the app
-  comes back to the foreground, and every minute in case an event was missed. Settings in shared preferences (vasilhame, horário codes, goals) don't sync.
+  comes back to the foreground, and every minute in case an event was missed. Settings in shared preferences (vasilhame, goals) don't sync.
 - `AccountService` (`lib/services/account_service.dart`) is the optional login: email and
   password on the `supabase` package (not `supabase_flutter`, so no extra plugins; the session
   is kept in shared preferences, implicit auth flow), the chosen store (`account_store` pref)

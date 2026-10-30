@@ -4,7 +4,6 @@ import '../models/opening_list.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
-import '../services/horario_service.dart';
 import '../services/person_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -59,13 +58,11 @@ class _PeopleScreenState extends State<PeopleScreen> {
     super.initState();
     _reload();
     PersonService.instance.addListener(_reload);
-    HorarioService.instance.addListener(_reload);
   }
 
   @override
   void dispose() {
     PersonService.instance.removeListener(_reload);
-    HorarioService.instance.removeListener(_reload);
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -348,7 +345,6 @@ class _PersonTile extends StatelessWidget {
     final p = person;
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
-    final horario = HorarioService.instance.index;
     return ListTile(
       leading: PersonAvatar(name: p.fullName, photoPath: p.photoPath),
       title: Wrap(
@@ -361,8 +357,7 @@ class _PersonTile extends StatelessWidget {
           for (final tag in roleTagsOf(p)) RoleBadge(tag),
           if (tenureTagOf(p, today) case final tenure?)
             RoleBadge(tenure, tenure: true),
-          if (awayTagOn(p, today, horario: horario) case final away?)
-            RoleBadge(away, away: true),
+          if (awayTagOn(p, today) case final away?) RoleBadge(away, away: true),
           if (isBirthdayOn(p, today))
             const RoleBadge(birthdayTag, birthday: true),
         ],
@@ -370,7 +365,7 @@ class _PersonTile extends StatelessWidget {
       subtitle: Text.rich(
         TextSpan(
           children: [
-            if (offNoteOn(p, today, horario: horario) case final off?)
+            if (offNoteOn(p, today) case final off?)
               TextSpan(
                 text: '$off  ',
                 style: TextStyle(
@@ -378,7 +373,7 @@ class _PersonTile extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               )
-            else if (horarioTextOn(p, today, horario) case final shift?)
+            else if (horarioText(p) case final shift?)
               TextSpan(
                 text: 'Hoje · $shift  ',
                 style: TextStyle(

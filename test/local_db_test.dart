@@ -5,11 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/custom_task.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
-import 'package:livre_servico_app/models/horario_mes.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/truck_reception.dart';
-import 'package:livre_servico_app/models/horario.dart';
-import 'package:livre_servico_app/services/horario_service.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -186,15 +183,15 @@ void main() {
 
     test('deleteWhere and clear remove rows for good', () async {
       final db = LocalDb.instance;
-      await db.horarioMeses.put(HorarioMes()..mes = '2026-10');
-      await db.horarioMeses.put(HorarioMes()..mes = '2026-11');
-      await db.horarioMeses.deleteWhere((m) => m.mes == '2026-10');
+      await db.persons.put(ana()..fullName = 'Ana');
+      await db.persons.put(ana()..fullName = 'Rui');
+      await db.persons.deleteWhere((p) => p.fullName == 'Ana');
       expect(
-        (await db.horarioMeses.all(includeDeleted: true)).map((m) => m.mes),
-        ['2026-11'],
+        (await db.persons.all(includeDeleted: true)).map((p) => p.fullName),
+        ['Rui'],
       );
-      await db.horarioMeses.clear();
-      expect(await db.horarioMeses.all(includeDeleted: true), isEmpty);
+      await db.persons.clear();
+      expect(await db.persons.all(includeDeleted: true), isEmpty);
     });
 
     test('importJson replaces the rows and keeps their ids', () async {
@@ -230,41 +227,6 @@ void main() {
       await db.persons.put(ana());
       await db.backfillSync();
       expect((await db.persons.get(1))!.syncUuid, isNotEmpty);
-    });
-  });
-
-  group('HorarioService months', () {
-    setUp(() => HorarioService.instance.init());
-
-    test('one row per month; a removed month stays as a tombstone', () async {
-      final svc = HorarioService.instance;
-      final days = List.filled(30, 'FO');
-      await svc.apply(
-        HorariosFile(
-          meses: {
-            '2026-11': {'Ana': days},
-          },
-        ),
-      );
-      await svc.apply(
-        HorariosFile(
-          meses: {
-            '2026-11': {'Ana': days},
-          },
-        ),
-      );
-      final saved = await LocalDb.instance.horarioMeses.all();
-      expect(saved, hasLength(1));
-      expect(saved.single.synced, isFalse);
-
-      await svc.apply(const HorariosFile(meses: {'2026-11': null}));
-
-      expect(await LocalDb.instance.horarioMeses.all(), isEmpty);
-      final kept = await LocalDb.instance.horarioMeses.all(
-        includeDeleted: true,
-      );
-      expect(kept.single.syncDeletedAt, isNotNull);
-      expect(svc.horarios.meses, isEmpty);
     });
   });
 }

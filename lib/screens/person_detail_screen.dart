@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/daily_tasks.dart';
-import '../models/horario.dart';
 import '../models/opening_list.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
@@ -13,7 +12,6 @@ import '../models/validades.dart';
 import '../models/visual_list.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
-import '../services/horario_service.dart';
 import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/person_service.dart';
@@ -52,7 +50,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.addListener(_reload);
     TruckService.instance.addListener(_reload);
     PersonService.instance.addListener(_reload);
-    HorarioService.instance.addListener(_reload);
   }
 
   @override
@@ -65,7 +62,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.removeListener(_reload);
     TruckService.instance.removeListener(_reload);
     PersonService.instance.removeListener(_reload);
-    HorarioService.instance.removeListener(_reload);
     super.dispose();
   }
 
@@ -403,14 +399,9 @@ class _DetailsTab extends StatelessWidget {
     final dateFmt = DateFormat("d 'de' MMMM y", 'pt_PT');
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
-    final schedule = HorarioService.instance.index;
     final away = ausenciaOn(p, today);
-    final awayTag = awayTagOn(p, today, horario: schedule);
-    final offToday = offLabelOn(p, today, horario: schedule);
-    final scheduleDays = [
-      for (var i = 0; i < 7; i++)
-        DateTime(today.year, today.month, today.day + i),
-    ].where((d) => schedule.hasLine(p, d)).toList();
+    final awayTag = awayTagOn(p, today);
+    final offToday = offLabelOn(p, today);
     final tags = roleTagsOf(p);
     final tenure = tenureTagOf(p, today);
     final birthday = isBirthdayOn(p, today);
@@ -475,7 +466,7 @@ class _DetailsTab extends StatelessWidget {
             value: offToday,
             highlight: true,
           )
-        else if (_scheduleText(p, today, schedule) case final shift?)
+        else if (horario case final shift?)
           _InfoRow(icon: Icons.work_outline, label: 'Hoje', value: shift),
         _InfoRow(
           icon: Icons.groups_outlined,
@@ -501,16 +492,6 @@ class _DetailsTab extends StatelessWidget {
             label: 'Data de nascimento',
             value: dateFmt.format(dob),
           ),
-        if (scheduleDays.isNotEmpty) ...[
-          const _DetailHeading('Horário'),
-          for (final d in scheduleDays)
-            _InfoRow(
-              icon: Icons.calendar_today_outlined,
-              label: _dayName(d, today),
-              value: _scheduleText(p, d, schedule) ?? '—',
-              highlight: offLabelOn(p, d, horario: schedule) != null,
-            ),
-        ],
         const _DetailHeading('Planeamento'),
         _InfoRow(
           icon: Icons.schedule,
@@ -561,30 +542,6 @@ class _DetailsTab extends StatelessWidget {
       ],
     );
   }
-}
-
-/// [p]'s horário on [day]: "H73 · 07:00–16:00 (pausa 12:00–13:00)", the
-/// absence's name ("Folga", "Férias"), or null without a line that month.
-String? _scheduleText(Person p, DateTime day, HorarioIndex schedule) {
-  final code = schedule.codeOn(p, day);
-  if (code == null) return null;
-  if (schedule.shiftOn(p, day) case final shift?) {
-    return '$code · ${shift.timesText}';
-  }
-  return schedule.horarios.ausencias[code] ?? code;
-}
-
-/// "Hoje", "Amanhã" or "Sexta, 9 out".
-String _dayName(DateTime day, DateTime today) {
-  final diff = DateTime(
-    day.year,
-    day.month,
-    day.day,
-  ).difference(DateTime(today.year, today.month, today.day)).inDays;
-  if (diff == 0) return 'Hoje';
-  if (diff == 1) return 'Amanhã';
-  final name = DateFormat("EEEE, d MMM", 'pt_PT').format(day);
-  return name[0].toUpperCase() + name.substring(1);
 }
 
 /// A group title on the Detalhes tab.

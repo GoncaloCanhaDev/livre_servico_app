@@ -4,10 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/horario.dart';
 import '../models/local_row.dart';
 import '../models/vasilhame.dart';
-import 'horario_service.dart';
 import 'local_db.dart';
 import 'settings_service.dart';
 import 'share_file.dart';
@@ -21,12 +19,9 @@ class BackupService {
 
   LocalDb get _db => LocalDb.instance;
 
-  /// The collections a backup carries, by their key in its "collections"
-  /// (the horário months travel in "horarios" instead).
-  List<LocalCollection<SyncedRow>> get _backedUp => [
-    for (final c in _db.collections)
-      if (c != _db.horarioMeses) c,
-  ];
+  /// The collections a backup carries, by their key in its "collections".
+  /// (Backups from before 0.61.0 also have "horarios", now ignored.)
+  List<LocalCollection<SyncedRow>> get _backedUp => _db.collections;
 
   static const _lastBackupAtKey = 'last_backup_at';
   static const _lastPromptAtKey = 'last_backup_prompt_at';
@@ -106,7 +101,6 @@ class BackupService {
     for (final c in _backedUp) {
       await c.softDeleteAll();
     }
-    await HorarioService.instance.clearMonths();
   }
 
   Future<Map<String, dynamic>> _buildPayload() async {
@@ -117,7 +111,6 @@ class BackupService {
       // First, so it is easy to find and edit by hand.
       'vasilhame': [for (final v in settings.vasilhame) v.toJson()],
       'settings': {'visualGoal': settings.visualGoal},
-      'horarios': HorarioService.instance.horarios.toJson(),
       'collections': {for (final c in _backedUp) c.name: c.exportJson()},
     };
   }
@@ -136,13 +129,6 @@ class BackupService {
 
     // Checked before anything is replaced, so a mistake changes nothing.
     final vasilhame = vasilhameFromBackup(payload);
-    final horarios = switch (payload['horarios']) {
-      final Map<String, dynamic> h => parseHorariosFile(
-        h,
-        current: HorarioService.instance.horarios,
-      ),
-      _ => null,
-    };
 
     // Replaces each collection with the file's rows; a collection the file
     // doesn't have (older backups) is left as it is.
@@ -164,9 +150,6 @@ class BackupService {
 
     final settings = SettingsService.instance;
     if (vasilhame != null) await settings.setVasilhame(vasilhame);
-    if (horarios != null) {
-      await HorarioService.instance.apply(horarios, replaceAll: true);
-    }
     if (payload['settings'] case {'visualGoal': final int goal}) {
       await settings.setVisualGoal(goal);
     }

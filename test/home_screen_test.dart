@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/screens/account_screen.dart';
 import 'package:livre_servico_app/screens/historico_screen.dart';
-import 'package:livre_servico_app/screens/horarios_screen.dart';
 import 'package:livre_servico_app/screens/info_screen.dart';
 import 'package:livre_servico_app/screens/inventory_screen.dart';
 import 'package:livre_servico_app/screens/pedidos_screen.dart';
@@ -36,7 +35,6 @@ void main() {
     ('Informações', InfoScreen),
     ('Histórico', HistoricoScreen),
     ('Pessoas', PeopleScreen),
-    ('Horários', HorariosScreen),
   ]) {
     testWidgets('$label opens from Home', (tester) async {
       await pumpApp(tester, const LivreServicoApp());

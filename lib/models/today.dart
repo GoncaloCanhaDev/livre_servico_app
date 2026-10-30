@@ -1,63 +1,69 @@
 import 'daily_tasks.dart';
-import 'horario.dart';
 import 'person.dart';
 import 'planning.dart';
 import 'teams.dart';
 import 'validades.dart';
 
-/// A person inside their horário shift, and that shift.
-typedef OnShift = ({Person person, HorarioCodigo shift});
+/// A person inside their shift, and when it started and ends.
+typedef OnShift = ({Person person, DateTime start, DateTime end});
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// The shift [p] has on [day]'s date in [index], with their own entrada and
-/// saída when set, or null (no line, an absence code, or an ausência entered
-/// in the app).
-HorarioCodigo? _shiftOn(HorarioIndex index, Person p, DateTime day) {
-  if (ausenciaOn(p, day) != null) return null;
-  return index.shiftOn(p, day);
+/// When [p]'s own shift (`shiftStart`/`shiftEnd`) runs if it starts on
+/// [day]'s date; one ending at or before its start ends the next day. Null
+/// unless both ends are set.
+({DateTime start, DateTime end})? shiftSpanOn(Person p, DateTime day) {
+  final start = p.shiftStart;
+  final end = p.shiftEnd;
+  if (start == null || end == null) return null;
+  final d = _dateOnly(day);
+  return (
+    start: d.add(Duration(minutes: start)),
+    end: d.add(Duration(minutes: end <= start ? end + 24 * 60 : end)),
+  );
 }
+
+/// [p]'s shift on [day]'s date, unless they are off that day (a folga or an
+/// ausência, see [offLabelOn]).
+({DateTime start, DateTime end})? _workingSpanOn(Person p, DateTime day) =>
+    offLabelOn(p, day) == null ? shiftSpanOn(p, day) : null;
 
 /// Who of [people] is inside their shift at [now] (a night shift from the day
 /// before included), earliest start first, then by name.
-List<OnShift> onShiftAt(HorarioIndex index, List<Person> people, DateTime now) {
+List<OnShift> onShiftAt(List<Person> people, DateTime now) {
   final today = _dateOnly(now);
-  final found = <(DateTime, OnShift)>[];
+  final found = <OnShift>[];
   for (final p in people) {
     for (final day in [
       DateTime(today.year, today.month, today.day - 1),
       today,
     ]) {
-      final shift = _shiftOn(index, p, day);
-      if (shift == null) continue;
-      final span = shift.spanOn(day);
+      final span = _workingSpanOn(p, day);
+      if (span == null) continue;
       if (!now.isBefore(span.start) && now.isBefore(span.end)) {
-        found.add((span.start, (person: p, shift: shift)));
+        found.add((person: p, start: span.start, end: span.end));
         break;
       }
     }
   }
   found.sort((a, b) {
-    final byStart = a.$1.compareTo(b.$1);
+    final byStart = a.start.compareTo(b.start);
     return byStart != 0
         ? byStart
-        : a.$2.person.fullName.compareTo(b.$2.person.fullName);
+        : a.person.fullName.compareTo(b.person.fullName);
   });
-  return [for (final (_, s) in found) s];
+  return found;
 }
 
-/// How many of [people] have a day and a night shift on [day]'s date.
-({int dia, int noite}) shiftCountsOn(
-  HorarioIndex index,
-  List<Person> people,
-  DateTime day,
-) {
+/// How many of [people] work a day and a night shift on [day]'s date: a
+/// night shift starts at 20:00 or later, or ends the next day.
+({int dia, int noite}) shiftCountsOn(List<Person> people, DateTime day) {
   var dia = 0;
   var noite = 0;
   for (final p in people) {
-    final shift = _shiftOn(index, p, day);
-    if (shift == null) continue;
-    if (shift.noturno) {
+    final span = _workingSpanOn(p, day);
+    if (span == null) continue;
+    if (span.start.hour >= 20 || span.end.day != span.start.day) {
       noite++;
     } else {
       dia++;

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/horario.dart';
 import '../../models/opening_list.dart';
 import '../../models/person.dart';
 import '../../models/planning.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
-import '../../services/horario_service.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
 import '../people_sections.dart';
@@ -174,16 +172,14 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
 
   /// [people] grouped like the Pessoas list, each section collapsible and
   /// showing how many of its people are ticked, after a first "A trabalhar
-  /// agora" section (Livre Serviço people inside their horário shift, on the
+  /// agora" section (Livre Serviço people inside their own shift, on the
   /// current service day). People off on the selected day are greyed out
   /// with the reason and listed last, but can still be ticked.
   Widget _sectionList(List<Person> people) {
-    final schedule = HorarioService.instance.index;
     final sections = buildPeopleSections(
       people,
       query: _searchCtrl.text,
       offDay: _selectedDay,
-      horario: schedule,
     );
     if (sections.isEmpty) {
       return const Padding(
@@ -198,7 +194,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
     final onShift = !_isNow
         ? const <OnShift>[]
         : [
-            for (final s in onShiftAt(schedule, [
+            for (final s in onShiftAt([
               for (final p in people)
                 if (p.team == livreServicoId) p,
             ], DateTime.now()))
@@ -229,7 +225,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             for (final s in onShift) s.person,
           ], onShiftOpen),
           if (onShiftOpen)
-            for (final s in onShift) _tile(s.person, schedule),
+            for (final s in onShift) _tile(s.person),
         ],
         for (final section in sections) ...[
           header(
@@ -239,16 +235,16 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             _isOpen(section.title, turno: section.turno),
           ),
           if (_isOpen(section.title, turno: section.turno))
-            for (final p in section.people) _tile(p, schedule),
+            for (final p in section.people) _tile(p),
         ],
       ],
     );
   }
 
   /// [p]'s row: greyed out with the reason when off on the selected day,
-  /// else with their horário shift that day (or nº de colaborador).
-  Widget _tile(Person p, HorarioIndex schedule) {
-    if (offNoteOn(p, _selectedDay, horario: schedule) case final off?) {
+  /// else with their shift (or nº de colaborador).
+  Widget _tile(Person p) {
+    if (offNoteOn(p, _selectedDay) case final off?) {
       return CheckboxListTile(
         secondary: PersonInitialsBadge(
           name: p.fullName,
@@ -262,7 +258,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             Text(p.fullName, style: TextStyle(color: context.muted)),
             if (tenureTagOf(p, _selectedDay) case final tenure?)
               RoleBadge(tenure, tenure: true),
-            if (awayTagOn(p, _selectedDay, horario: schedule) case final away?)
+            if (awayTagOn(p, _selectedDay) case final away?)
               RoleBadge(away, away: true),
           ],
         ),
@@ -271,7 +267,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
         onChanged: (checked) => _toggle(p, checked),
       );
     }
-    final shift = horarioTextOn(p, _selectedDay, schedule);
+    final shift = horarioText(p);
     return CheckboxListTile(
       secondary: PersonInitialsBadge(name: p.fullName),
       title: switch (tenureTagOf(p, _selectedDay)) {

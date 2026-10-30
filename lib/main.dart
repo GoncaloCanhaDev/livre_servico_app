@@ -4,7 +4,6 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
 import 'services/account_service.dart';
-import 'services/horario_service.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
 import 'services/settings_service.dart';
@@ -24,7 +23,6 @@ void main() async {
     } catch (_) {
       // Not worth stopping the app over: tried again at the next start.
     }
-    await HorarioService.instance.init();
     // Restores the session in the background: never waits for the network.
     await AccountService.instance.init();
   } catch (e) {
