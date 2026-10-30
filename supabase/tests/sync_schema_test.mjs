@@ -291,6 +291,31 @@ await throws('direct Person insert blocked', () => as(H, `insert into records (s
 ok('direct Person update blocked', (await as(D, `update records set data = data || '{"team":"gerencia"}' where id = 'p4' returning id`)).length === 0);
 
 ok('gerencia removes a member', (await as(E, 'delete from store_members where user_id = $1 returning *', [H])).length === 1);
+// Moving to another store: only the admin does it, on request.
+const [{ create_store: store2 }] = await as(A, `select public.create_store('Pingo Doce Y')`);
+const [{ c: codeY }] = await as(A, 'select public.store_join_code($1) c', [store2]);
+await throws('a member does not join a second store', () => as(D, 'select public.join_store($1, null, $2)', [codeY, 'Zé']), /administrador/);
+await throws('nobody adds someone from another store', () => as(A, `select public.add_store_member($1, 'stranger@x.pt')`, [store2]), /administrador/);
+await as(D, 'select public.request_store_transfer($1, $2)', [store, '  Braga, a partir de 1/11 ']);
+ok('a member asks to move', (await as(D, 'select * from public.my_store_transfer()'))[0]?.note === 'Braga, a partir de 1/11');
+await throws('only the admin lists moves', () => as(E, 'select * from public.store_transfer_requests()'), /administrador/);
+let moves = await as(A, 'select * from public.store_transfer_requests()');
+ok('the admin sees the request', moves.length === 1 && moves[0].user_id === D && moves[0].from_store_name === 'Pingo Doce X' && moves[0].person_name === 'Zé');
+await throws('only the admin moves people', () => as(E, 'select public.transfer_member($1, $2, $3)', [D, store, store2]), /administrador/);
+await as(A, 'select public.transfer_member($1, $2, $3)', [D, store, store2]);
+const mine2 = await as(D, 'select * from public.my_stores()');
+ok('the member is now in the new store only', mine2.length === 1 && mine2[0].id === store2 && mine2[0].person_id === 'p4' && mine2[0].status === 'approved');
+await db.exec('reset role');
+const moved = (await db.query(`select store_id, deleted_at, data from records where collection = 'Person' and id = 'p4' order by deleted_at nulls first`)).rows;
+ok('the profile moves with them', moved.length === 2 && moved[0].store_id === store2 && moved[0].deleted_at === null && moved[0].data.fullName === 'Zé' && !('syncDeletedAt' in moved[0].data && moved[0].data.syncDeletedAt));
+ok('the old store keeps a tombstone', moved[1].store_id === store && moved[1].deleted_at !== null && typeof moved[1].data.syncDeletedAt === 'number');
+ok('the request is done', (await as(A, 'select * from public.store_transfer_requests()')).length === 0);
+ok('they read the new store', (await as(D, 'select * from public.pull_records($1, null, 100)', [store2])).some((r) => r.id === 'p4'));
+await throws('and not the old one', () => as(D, 'select * from public.pull_records($1, null, 100)', [store]), /Não pertence/);
+await as(D, 'select public.request_store_transfer($1, $2)', [store2, 'engano']);
+await as(D, 'select public.cancel_store_transfer()');
+ok('a request can be withdrawn', (await as(D, 'select * from public.my_store_transfer()')).length === 0);
+
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
 

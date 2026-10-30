@@ -30,14 +30,17 @@ bool replacesLocalDataOf(SharedPreferences prefs, String storeId) =>
 /// server keeps them) and [storeId]'s come down whole on the next sync, so
 /// no one sees, or copies, a store they didn't choose. Throws
 /// [PendingChangesException], changing nothing, while rows of the other
-/// store wait to be pushed.
+/// store wait to be pushed; with [force] (the admin moved this account out
+/// of that store, which would refuse them now) they go too.
 Future<void> prepareLocalDataFor(
   LocalDb db,
   SharedPreferences prefs,
-  String storeId,
-) async {
+  String storeId, {
+  bool force = false,
+}) async {
   if (replacesLocalDataOf(prefs, storeId)) {
     for (final c in db.collections) {
+      if (force) break;
       if ((await c.toPush()).isNotEmpty) throw const PendingChangesException();
     }
     await db.transaction(() async {

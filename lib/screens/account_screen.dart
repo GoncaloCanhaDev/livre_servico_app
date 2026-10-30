@@ -8,6 +8,7 @@ import '../services/sync_service.dart';
 import '../theme.dart';
 import 'claim_person_screen.dart';
 import 'person_detail_screen.dart';
+import 'start_screen.dart';
 import 'store_members_screen.dart';
 
 /// Definições → Conta: sign in to the online database, choose the store
@@ -221,6 +222,35 @@ class _StorePickerState extends State<_StorePicker> {
   late Future<List<StoreInfo>> _stores = AccountService.instance.myStores();
   late final Future<bool> _isAdmin = AccountService.instance.isAppAdmin();
 
+  @override
+  void initState() {
+    super.initState();
+    _openOwnStore();
+  }
+
+  /// Everyone but the admin belongs to one store: open it at once.
+  Future<void> _openOwnStore() async {
+    final List<StoreInfo> stores;
+    final bool admin;
+    try {
+      stores = await _stores;
+      admin = await _isAdmin;
+    } catch (_) {
+      return; // The list shows the error.
+    }
+    final s = storeToOpen(stores, admin: admin);
+    if (s == null || !mounted) return;
+    if (AccountService.instance.replacesLocalData(s.id)) {
+      await _use(s);
+      return;
+    }
+    try {
+      await AccountService.instance.useStore(s);
+    } catch (e) {
+      if (mounted) _showError(context, e);
+    }
+  }
+
   /// Asks before syncing with [storeName] ([storeId]; null for a new
   /// store): this phone's data joins it, or, when it is another store's,
   /// leaves the phone.
@@ -414,10 +444,22 @@ class _StorePickerState extends State<_StorePicker> {
         },
       ),
       const SizedBox(height: 16),
-      FilledButton.icon(
-        onPressed: _join,
-        icon: const Icon(Icons.vpn_key),
-        label: const Text('Entrar com código'),
+      // Someone already in a store moves only through the admin.
+      FutureBuilder<List<Object>>(
+        future: Future.wait<Object>([_stores, _isAdmin]),
+        builder: (context, snap) {
+          final data = snap.data;
+          if (data == null) return const SizedBox.shrink();
+          final stores = data[0] as List<StoreInfo>;
+          if (data[1] != true && stores.isNotEmpty) {
+            return const SizedBox.shrink();
+          }
+          return FilledButton.icon(
+            onPressed: _join,
+            icon: const Icon(Icons.vpn_key),
+            label: const Text('Entrar com código'),
+          );
+        },
       ),
       // Only the app's admin creates stores.
       FutureBuilder<bool>(
@@ -522,20 +564,23 @@ class _Connected extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const StoreMembersScreen()),
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.swap_horiz),
-          title: const Text('Mudar de loja'),
-          subtitle: const Text('Deixa de sincronizar com esta loja.'),
-          onTap: () => _confirm(
-            context,
-            title: 'Mudar de loja',
-            text:
-                'Este aparelho deixa de sincronizar com ${store.name}. Os '
-                'dados ficam neste aparelho.',
-            action: 'Mudar',
-            onConfirm: account.leaveStore,
-          ),
-        ),
+        if (account.access.admin)
+          ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: const Text('Mudar de loja'),
+            subtitle: const Text('Deixa de sincronizar com esta loja.'),
+            onTap: () => _confirm(
+              context,
+              title: 'Mudar de loja',
+              text:
+                  'Este aparelho deixa de sincronizar com ${store.name}. Os '
+                  'dados ficam neste aparelho.',
+              action: 'Mudar',
+              onConfirm: account.leaveStore,
+            ),
+          )
+        else
+          const _TransferTile(),
         ListTile(
           leading: const Icon(Icons.logout),
           title: const Text('Terminar sessão'),
@@ -643,6 +688,121 @@ class _PendingState extends State<_Pending> {
       ],
     );
   }
+}
+
+/// "Pedir mudança de loja": asks the admin to move this account (and its
+/// person) to another store, with a note; while asked, the note and a way
+/// to withdraw it.
+class _TransferTile extends StatefulWidget {
+  const _TransferTile();
+
+  @override
+  State<_TransferTile> createState() => _TransferTileState();
+}
+
+class _TransferTileState extends State<_TransferTile> {
+  late Future<({String note, DateTime createdAt})?> _request = AccountService
+      .instance
+      .myTransfer();
+
+  void _reload() =>
+      setState(() => _request = AccountService.instance.myTransfer());
+
+  Future<void> _ask() async {
+    final note = await showDialog<String>(
+      context: context,
+      builder: (_) => const _TransferNoteDialog(),
+    );
+    if (note == null || !mounted) return;
+    try {
+      await AccountService.instance.requestTransfer(note);
+    } catch (e) {
+      if (mounted) _showError(context, e);
+    }
+    _reload();
+  }
+
+  Future<void> _cancel() async {
+    try {
+      await AccountService.instance.cancelTransfer();
+    } catch (e) {
+      if (mounted) _showError(context, e);
+    }
+    _reload();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FutureBuilder<({String note, DateTime createdAt})?>(
+        future: _request,
+        builder: (context, snap) {
+          final request = snap.data;
+          if (request == null) {
+            return ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: const Text('Pedir mudança de loja'),
+              subtitle: const Text('O administrador muda-o de loja.'),
+              onTap: _ask,
+            );
+          }
+          return ListTile(
+            leading: const Icon(Icons.hourglass_top),
+            title: const Text('Mudança de loja pedida'),
+            subtitle: Text(
+              request.note.isEmpty
+                  ? 'À espera do administrador.'
+                  : '${request.note} · à espera do administrador.',
+            ),
+            trailing: TextButton(
+              onPressed: _cancel,
+              child: const Text('Cancelar'),
+            ),
+          );
+        },
+      );
+}
+
+/// Asks where to move (and from when); pops with the note, trimmed.
+class _TransferNoteDialog extends StatefulWidget {
+  const _TransferNoteDialog();
+
+  @override
+  State<_TransferNoteDialog> createState() => _TransferNoteDialogState();
+}
+
+class _TransferNoteDialogState extends State<_TransferNoteDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Pedir mudança de loja'),
+    content: TextField(
+      controller: _ctrl,
+      autofocus: true,
+      maxLines: 3,
+      decoration: const InputDecoration(
+        labelText: 'Para que loja, e a partir de quando',
+        hintText: 'Pingo Doce Braga, a partir de 1/11',
+        border: OutlineInputBorder(),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancelar'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
+        child: const Text('Pedir'),
+      ),
+    ],
+  );
 }
 
 /// "O meu perfil": the person this account is in the store; before it is

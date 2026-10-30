@@ -95,6 +95,18 @@ StoreInfo? storeInfoFromJson(String? raw) {
 StoreAccess _accessOfRole(StoreRole r) =>
     StoreAccess(admin: r == StoreRole.owner, gerencia: false);
 
+/// A request to move an account (and its person [personName]) out of the
+/// store [fromStore], with the [note] saying where to.
+typedef TransferRequest = ({
+  String userId,
+  String email,
+  String fromStore,
+  String fromStoreName,
+  String? personName,
+  String note,
+  DateTime createdAt,
+});
+
 /// A request to join the current store, waiting for approval: as the
 /// person [personId] ([personName]), or [requestedName] for someone new.
 typedef JoinRequest = ({
@@ -215,10 +227,11 @@ class AccountService extends ChangeNotifier {
   }
 
   /// After a sync, at most every 10 minutes: whether this account's access
-  /// changed (promoted to chefe, moved team, removed from the store).
+  /// changed (promoted to chefe, moved team, moved to another store or
+  /// removed: then the sync fails, so a failed one counts too).
   void _checkAccessNowAndThen() {
     final sync = SyncService.instance;
-    if (sync.isSyncing || sync.lastError != null || store == null) return;
+    if (sync.isSyncing || store == null) return;
     final now = DateTime.now();
     final last = _accessCheckedAt;
     if (last != null && now.difference(last) < const Duration(minutes: 10)) {
@@ -244,7 +257,14 @@ class AccountService extends ChangeNotifier {
     final mine = await myStores();
     final listed = mine.where((s) => s.id == current.id).firstOrNull;
     if (listed == null) {
-      await leaveStore();
+      // Moved by the admin to another store: follow, leaving behind what
+      // the old store would now refuse. Otherwise, removed.
+      if (mine.length == 1 && !current.access.admin) {
+        _stopSync();
+        await useStore(mine.single, force: true);
+      } else {
+        await leaveStore();
+      }
       return;
     }
     final now = listed.pending
@@ -334,6 +354,51 @@ class AccountService extends ChangeNotifier {
         ),
     ];
   }
+
+  /// Asks the admin to move this account to another store; [note] says
+  /// where to (and from when).
+  Future<void> requestTransfer(String note) => _api.rpc<void>(
+    'request_store_transfer',
+    params: {'p_store': store!.id, 'p_note': note},
+  );
+
+  /// This account's request to move, if any.
+  Future<({String note, DateTime createdAt})?> myTransfer() async {
+    final rows = await _api.rpc<List<dynamic>>('my_store_transfer');
+    if (rows.isEmpty) return null;
+    final r = rows.first as Map<String, dynamic>;
+    return (
+      note: r['note'] as String? ?? '',
+      createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+    );
+  }
+
+  Future<void> cancelTransfer() => _api.rpc<void>('cancel_store_transfer');
+
+  /// Every request to move to another store, oldest first. The admin only.
+  Future<List<TransferRequest>> transferRequests() async {
+    final rows = await _api.rpc<List<dynamic>>('store_transfer_requests');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          userId: r['user_id'] as String,
+          email: r['email'] as String? ?? '',
+          fromStore: r['from_store'] as String,
+          fromStoreName: r['from_store_name'] as String? ?? '',
+          personName: r['person_name'] as String?,
+          note: r['note'] as String? ?? '',
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+        ),
+    ];
+  }
+
+  /// Moves [userId] (with their person) from the store [from] to [to]. The
+  /// admin only.
+  Future<void> transferMember(String userId, String from, String to) =>
+      _api.rpc<void>(
+        'transfer_member',
+        params: {'p_user': userId, 'p_from': from, 'p_to': to},
+      );
 
   /// Whether this account is the app's admin (it creates stores); false
   /// when that can't be asked (offline).
@@ -472,8 +537,8 @@ class AccountService extends ChangeNotifier {
   /// phone first, and [s]'s comes down. Throws [PendingChangesException]
   /// while the other store's changes wait to be sent. Completes after the
   /// first sync.
-  Future<void> useStore(StoreInfo s) async {
-    await prepareLocalDataFor(LocalDb.instance, _prefs, s.id);
+  Future<void> useStore(StoreInfo s, {bool force = false}) async {
+    await prepareLocalDataFor(LocalDb.instance, _prefs, s.id, force: force);
     await _saveStore(s);
     await _startSync(s);
     // The access the role alone doesn't say (chefe, Gerência, admin).

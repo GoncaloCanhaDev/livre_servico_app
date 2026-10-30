@@ -16,6 +16,11 @@ bool needsAccountFirst({
   required StoreInfo? store,
 }) => web && configured && (!signedIn || store == null || store.pending);
 
+/// The store to open on its own after signing in, without a list to pick
+/// from: everyone but the admin belongs to one store.
+StoreInfo? storeToOpen(List<StoreInfo> stores, {required bool admin}) =>
+    !admin && stores.length == 1 ? stores.single : null;
+
 /// The app's first page: Conta while [needsAccountFirst], then Home.
 class StartScreen extends StatelessWidget {
   const StartScreen({super.key});

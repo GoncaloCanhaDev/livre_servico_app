@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.65.0] — 2026-10-31
+
+### Added
+- **One store per person; moves through the admin** (migration
+  `20261031180000_store_transfers`). Everyone but the admin belongs to one store, which opens
+  on its own at sign-in; they can't join or be added to another. Conta → "Pedir mudança de
+  loja" asks the admin, with a note saying where to (it can be withdrawn). The admin sees the
+  requests on Home ("N pedidos de mudança de loja"), picks the store and moves the person: the
+  account and the profile go to the new store, the history stays in the old one, and the
+  person's phone follows by itself. "Mudar de loja" is now only for the admin.
+
 ## [0.64.0] — 2026-10-31
 
 ### Changed

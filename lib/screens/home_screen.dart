@@ -12,6 +12,7 @@ import 'truck_form_screen.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/today_card.dart';
+import 'widgets/transfer_requests_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const ProfileRequestCard(),
               const JoinRequestsCard(),
+              const TransferRequestsCard(),
               const TodayCard(),
               GridView.count(
                 crossAxisCount: 2,

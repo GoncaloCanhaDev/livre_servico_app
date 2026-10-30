@@ -273,6 +273,15 @@ files, WhatsApp links, hosting).
   to a chefe or to Gerência (only the admin links freely; Gerência links others in Membros → "Ligar a uma pessoa",
   `linkMember`, and unlinks by setting it to null; members may update only `person_id`). `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
   holds the picker and `completeProfile`, which opens the person form once approved.
+- One store per person: everyone but the admin belongs to one store (`in_other_store`:
+  `join_store` and `add_store_member` refuse a second). At sign-in that store opens on its own
+  (`storeToOpen` in `start_screen.dart`); "Entrar com código" only shows with no store, and
+  "Mudar de loja" only for the admin. Others ask in Conta → "Pedir mudança de loja"
+  (`request_store_transfer`, `store_transfers`, with a note); the admin sees them on Home and in
+  `StoreTransfersScreen` (`store_transfer_requests`) and moves them (`transfer_member`: the
+  membership and the Person go to the new store, the old store keeps a tombstone and the
+  history). The moved phone follows on its next access check (`refreshStore`, which clears the
+  old store's data with `force`).
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.

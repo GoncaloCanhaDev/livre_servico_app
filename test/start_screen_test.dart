@@ -40,4 +40,11 @@ void main() {
   test('a website build without the database opens on Home', () {
     expect(first(configured: false, signedIn: false), isFalse);
   });
+
+  test("everyone but the admin opens their one store at once", () {
+    expect(storeToOpen([store()], admin: false)?.id, 's1');
+    expect(storeToOpen([store()], admin: true), isNull);
+    expect(storeToOpen([], admin: false), isNull);
+    expect(storeToOpen([store(), store()], admin: false), isNull);
+  });
 }

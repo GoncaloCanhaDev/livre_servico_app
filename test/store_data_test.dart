@@ -70,4 +70,12 @@ void main() {
     expect(await db.persons.all(), hasLength(1));
     expect(prefs.getString(localDataStoreKey), 's1');
   });
+
+  test('a move clears even unsent changes, which the old store would refuse', () async {
+    await prepareLocalDataFor(db, prefs, 's1');
+    await ana(synced: false);
+    await prepareLocalDataFor(db, prefs, 's2', force: true);
+    expect(await db.persons.all(includeDeleted: true), isEmpty);
+    expect(prefs.getString(localDataStoreKey), 's2');
+  });
 }
