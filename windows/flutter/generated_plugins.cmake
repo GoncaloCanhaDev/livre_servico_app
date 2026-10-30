@@ -4,8 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
-  isar_community_flutter_libs
   share_plus
+  sqlite3_flutter_libs
   url_launcher_windows
 )
 

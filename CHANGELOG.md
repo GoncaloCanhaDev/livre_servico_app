@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.56.16] — 2026-10-30
+
+### Other
+- `pubspec.lock` and the generated plugin files no longer list Isar; they now match the move to
+  Drift in 0.56.15, which is now checked: `flutter analyze` is clean and every test passes.
+- `web/` has `sqlite3.wasm` and `drift_worker.js`, which the web build needs to open its
+  database.
+- Tests find SQLite on Linux without the `libsqlite3-dev` package.
+
 ## [0.56.15] — 2026-10-30
 
 ### Changed

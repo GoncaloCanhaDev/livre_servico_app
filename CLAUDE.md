@@ -30,8 +30,9 @@ multi-tenant product.
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format).
   Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
   `closeAppDb` in `test/helpers/app_db.dart` start the services like `main()` does, with
-  `NativeDatabase.memory()` (needs the host's SQLite library, e.g. `libsqlite3` on
-  Linux). A database call only completes inside `runAsync` and the
+  `NativeDatabase.memory()` (needs the host's SQLite library; on Linux
+  `test/flutter_test_config.dart` falls back to `libsqlite3.so.0` when the -dev package's
+  `libsqlite3.so` is missing). A database call only completes inside `runAsync` and the
   code awaiting it only resumes on a pump, so use the helpers in `test/helpers/pump.dart`
   (`pumpApp`, `settle`, `tapAndSettle`, `dbCall`), never `pumpAndSettle`.
 
@@ -41,9 +42,10 @@ multi-tenant product.
 
 - `LocalDb.init()` (`lib/services/local_db.dart`) opens the app's single SQLite database
   through Drift (`drift_flutter`: a file on the phone; on the web, `sqlite3.wasm` and
-  `drift_worker.js` in `web/`). There is no Drift code generation: one table, `local_rows`
-  (collection, id, data), made with plain SQL, holds every row as a JSON document, like the
-  online `records`. Each collection (`LocalDb.instance.persons`, `.dailyTasks`...) is read
+  `drift_worker.js` in `web/`, downloaded from the sqlite3.dart and drift GitHub releases
+  matching the versions in `pubspec.lock`: replace them when those packages are upgraded).
+  There is no Drift code generation: one table, `local_rows` (collection, id, data), made
+  with plain SQL, holds every row as a JSON document, like the online `records`. Each collection (`LocalDb.instance.persons`, `.dailyTasks`...) is read
   into memory at startup and queried in Dart with `all`, `where`, `firstWhere` and `get`;
   every read builds new objects, so a row changes nothing until it is `put`. Writes go to
   SQLite first; `LocalDb.transaction` groups several.
