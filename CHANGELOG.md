@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.59.0] — 2026-10-30
+
+### Added
+- **Joining a store with its code.** The owner sees the store's code in Conta → Membros (copy
+  it, or make a new one so the old stops working). Someone signed in taps "Entrar com código",
+  picks who they are in the store's list of people (only those without an account show) or
+  "Não estou na lista", and joins with Edição; then their person form opens to correct or
+  complete it.
+- **"O meu perfil"** in Conta: each account is linked to one person in the store (never two
+  accounts to the same person), and opens that person's page. Members added by email say who
+  they are there. Membros shows each account's person, and the owner can unlink one.
+- Run the new `supabase/migrations/20261030190000_join_code_profiles.sql` in the SQL Editor.
+
 ## [0.58.1] — 2026-10-30
 
 ### Changed

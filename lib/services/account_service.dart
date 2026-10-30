@@ -25,8 +25,30 @@ enum StoreRole {
   );
 }
 
-typedef StoreInfo = ({String id, String name, StoreRole role});
-typedef StoreMember = ({String userId, String email, StoreRole role});
+/// A store this account belongs to; [personId] is the `syncUuid` of the
+/// Person this account is in it (its profile), null when not linked yet.
+typedef StoreInfo = ({
+  String id,
+  String name,
+  StoreRole role,
+  String? personId,
+});
+typedef StoreMember = ({
+  String userId,
+  String email,
+  StoreRole role,
+  String? personId,
+});
+
+/// One of a store's people with no account linked yet.
+typedef UnlinkedPerson = ({String id, String name, String? team});
+
+/// What joining a store with its code shows first.
+typedef JoinPreview = ({
+  String storeId,
+  String storeName,
+  List<UnlinkedPerson> people,
+});
 
 /// The account on the online database (Supabase) and the store this device
 /// syncs with. Optional: signed out, the app works on its own as before.
@@ -104,7 +126,7 @@ class AccountService extends ChangeNotifier {
       _retryLater();
       return;
     }
-    if (store case final s?) _startSync(s);
+    if (store case final s?) unawaited(_startSync(s));
     unawaited(_refreshStore());
   }
 
@@ -126,7 +148,7 @@ class AccountService extends ChangeNotifier {
         await leaveStore();
       } else if (now != current) {
         await _saveStore(now);
-        _startSync(now);
+        if (now.role != current.role) unawaited(_startSync(now));
       }
     } catch (_) {
       // Offline: keep what was saved.
@@ -180,12 +202,17 @@ class AccountService extends ChangeNotifier {
     if (uid == null) return const [];
     final rows = await _api
         .from('store_members')
-        .select('role, stores(id, name)')
+        .select('role, person_id, stores(id, name)')
         .eq('user_id', uid);
     return [
       for (final r in rows)
         if (r['stores'] case {'id': final String id, 'name': final String n})
-          (id: id, name: n, role: StoreRole.fromName(r['role'])),
+          (
+            id: id,
+            name: n,
+            role: StoreRole.fromName(r['role']),
+            personId: r['person_id'] as String?,
+          ),
     ]..sort((a, b) => a.name.compareTo(b.name));
   }
 
@@ -195,14 +222,76 @@ class AccountService extends ChangeNotifier {
       'create_store',
       params: {'p_name': name.trim()},
     );
-    await useStore((id: id, name: name.trim(), role: StoreRole.owner));
+    await useStore((
+      id: id,
+      name: name.trim(),
+      role: StoreRole.owner,
+      personId: null,
+    ));
+  }
+
+  /// The store with the join [code] and its people with no account yet.
+  Future<JoinPreview> previewJoin(String code) async {
+    final r = await _api.rpc<Map<String, dynamic>>(
+      'join_store_preview',
+      params: {'p_code': code},
+    );
+    return (
+      storeId: r['store_id'] as String,
+      storeName: r['store_name'] as String,
+      people: _unlinkedFromJson(r['people'] as List<dynamic>),
+    );
+  }
+
+  /// Joins the store with the join [code] (as an editor, unless already a
+  /// member), as the person [personId] if given, and syncs with it.
+  Future<void> joinStore(String code, {String? personId}) async {
+    final id = await _api.rpc<String>(
+      'join_store',
+      params: {'p_code': code, 'p_person': personId},
+    );
+    final joined = (await myStores()).firstWhere((s) => s.id == id);
+    await useStore(joined);
+  }
+
+  /// The current store's people with no account linked yet.
+  Future<List<UnlinkedPerson>> unlinkedPeople() async => _unlinkedFromJson(
+    await _api.rpc<List<dynamic>>(
+      'store_unlinked_people',
+      params: {'p_store': store!.id},
+    ),
+  );
+
+  List<UnlinkedPerson> _unlinkedFromJson(List<dynamic> rows) => [
+    for (final r in rows.cast<Map<String, dynamic>>())
+      (
+        id: r['id'] as String,
+        name: r['full_name'] as String? ?? '',
+        team: r['team'] as String?,
+      ),
+  ];
+
+  /// Links this account to the current store's person [personId] (its
+  /// profile), unless another account has that person.
+  Future<void> claimPerson(String personId) async {
+    final s = store!;
+    await _api.rpc<void>(
+      'claim_person',
+      params: {'p_store': s.id, 'p_person': personId},
+    );
+    await _saveStore((
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      personId: personId,
+    ));
   }
 
   /// Syncs this device with [s]: its rows and this device's are merged, the
-  /// copy of each row saved last winning.
+  /// copy of each row saved last winning. Completes after the first sync.
   Future<void> useStore(StoreInfo s) async {
     await _saveStore(s);
-    _startSync(s);
+    await _startSync(s);
   }
 
   /// Stops syncing with the store; the data stays on this device.
@@ -213,14 +302,12 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _startSync(StoreInfo s) {
+  Future<void> _startSync(StoreInfo s) {
     PhotoStore.instance.remote = SupabasePhotoRemote(_api, s.id);
-    unawaited(
-      SyncService.instance.start(
-        SupabaseSyncRemote(_api, s.id),
-        s.id,
-        canPush: s.role != StoreRole.viewer,
-      ),
+    return SyncService.instance.start(
+      SupabaseSyncRemote(_api, s.id),
+      s.id,
+      canPush: s.role != StoreRole.viewer,
     );
   }
 
@@ -233,7 +320,12 @@ class AccountService extends ChangeNotifier {
     store = s;
     await _prefs.setString(
       _storeKey,
-      jsonEncode({'id': s.id, 'name': s.name, 'role': s.role.name}),
+      jsonEncode({
+        'id': s.id,
+        'name': s.name,
+        'role': s.role.name,
+        'personId': s.personId,
+      }),
     );
     notifyListeners();
   }
@@ -241,12 +333,20 @@ class AccountService extends ChangeNotifier {
   StoreInfo? _storeFromJson(String? raw) {
     if (raw == null) return null;
     try {
-      if (jsonDecode(raw) case {
-        'id': final String id,
-        'name': final String name,
-        'role': final String role,
-      }) {
-        return (id: id, name: name, role: StoreRole.fromName(role));
+      if (jsonDecode(raw) case final Map<String, dynamic> j) {
+        if (j case {
+          'id': final String id,
+          'name': final String name,
+          'role': final String role,
+        }) {
+          return (
+            id: id,
+            name: name,
+            role: StoreRole.fromName(role),
+            // Missing in what versions before profiles saved.
+            personId: j['personId'] as String?,
+          );
+        }
       }
     } on FormatException {
       // Unreadable: as if no store was chosen.
@@ -266,9 +366,18 @@ class AccountService extends ChangeNotifier {
           userId: r['user_id'] as String,
           email: r['email'] as String? ?? '',
           role: StoreRole.fromName(r['role']),
+          personId: r['person_id'] as String?,
         ),
     ];
   }
+
+  /// The current store's join code, which the owner shares with the team.
+  Future<String> joinCode() =>
+      _api.rpc<String>('store_join_code', params: {'p_store': store!.id});
+
+  /// Replaces the join code, so the old one stops working. Owners only.
+  Future<String> resetJoinCode() =>
+      _api.rpc<String>('reset_store_join_code', params: {'p_store': store!.id});
 
   /// Adds the account with [email] to the current store, or changes its
   /// role. Owners only; that person must have created their account.
@@ -280,6 +389,14 @@ class AccountService extends ChangeNotifier {
       'p_role': role.name,
     },
   );
+
+  /// Unlinks another member's account from their person, so it can be
+  /// picked again. Owners only.
+  Future<void> unlinkMember(String userId) => _api
+      .from('store_members')
+      .update({'person_id': null})
+      .eq('store_id', store!.id)
+      .eq('user_id', userId);
 
   Future<void> removeMember(String userId) => _api
       .from('store_members')

@@ -34,7 +34,8 @@ multi-tenant product.
   `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião and `test/abertura_tab_test.dart` sends the
+  `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
+  picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
   `test/sync_engine_test.dart` the sync engine between two devices).
   Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
@@ -250,6 +251,14 @@ files, WhatsApp links, hosting).
   device. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
   `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
   already are.
+- Each store has a join code (`store_codes`, read only through `store_join_code` /
+  `reset_store_join_code`, owners only). With it, `join_store_preview` shows a signed-in
+  stranger the store's name and its people with no account yet, and `join_store` makes them an
+  editor, linked to the person they picked: `store_members.person_id` holds that Person's
+  `syncUuid` (unique per store, so one account per person; `claim_person` links a member
+  later, and the owner unlinks by setting it to null). `StoreInfo.personId` is this account's
+  person; `claim_person_screen.dart` holds the picker and `completeProfile`, which opens the
+  person form after joining (or a new person's, then claims it).
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

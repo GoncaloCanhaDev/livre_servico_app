@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/person.dart';
 import '../services/account_service.dart';
+import '../services/person_service.dart';
 import '../services/sync_service.dart';
 import '../theme.dart';
+import 'claim_person_screen.dart';
+import 'person_detail_screen.dart';
 import 'store_members_screen.dart';
 
 /// Definições → Conta: sign in to the online database, choose the store
@@ -246,6 +250,66 @@ class _StorePickerState extends State<_StorePicker> {
     }
   }
 
+  /// Joins a store with the code its owner shares: the person says who
+  /// they are in its list of people, then checks their details.
+  Future<void> _join() async {
+    final ctrl = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Entrar numa loja'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: const InputDecoration(
+            labelText: 'Código da loja',
+            helperText: 'Peça-o ao dono da loja.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (code == null || code.isEmpty || !mounted) return;
+    // Joining replaces this screen with the connected one, so keep these.
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final account = AccountService.instance;
+    try {
+      final preview = await account.previewJoin(code);
+      final choice = await nav.push<({String? personId})>(
+        MaterialPageRoute(
+          builder: (_) => ClaimPersonScreen(
+            storeName: preview.storeName,
+            people: preview.people,
+          ),
+        ),
+      );
+      if (choice == null || !mounted) return;
+      if (!await _confirmMerge(preview.storeName)) return;
+      await account.joinStore(code, personId: choice.personId);
+      await completeProfile(nav, messenger, personId: choice.personId);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(accountErrorText(e)),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
+  }
+
   Future<void> _create() async {
     final ctrl = TextEditingController();
     final name = await showDialog<String>(
@@ -316,8 +380,8 @@ class _StorePickerState extends State<_StorePicker> {
           }
           if (stores.isEmpty) {
             return Text(
-              'Ainda não pertence a nenhuma loja. Crie uma, ou peça ao dono '
-              'de uma loja que o adicione com o email ${widget.email}.',
+              'Ainda não pertence a nenhuma loja. Entre com o código que o '
+              'dono da loja lhe der, ou crie uma.',
               style: TextStyle(color: context.muted),
             );
           }
@@ -335,6 +399,12 @@ class _StorePickerState extends State<_StorePicker> {
         },
       ),
       const SizedBox(height: 16),
+      FilledButton.icon(
+        onPressed: _join,
+        icon: const Icon(Icons.vpn_key),
+        label: const Text('Entrar com código'),
+      ),
+      const SizedBox(height: 8),
       OutlinedButton.icon(
         onPressed: _create,
         icon: const Icon(Icons.add_business),
@@ -426,6 +496,7 @@ class _Connected extends StatelessWidget {
           ),
         ),
         const Divider(),
+        _MyProfileTile(personId: store.personId),
         ListTile(
           leading: const Icon(Icons.group),
           title: const Text('Membros'),
@@ -468,6 +539,74 @@ class _Connected extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "O meu perfil": the person this account is in the store; before it is
+/// linked, a way to say which one.
+class _MyProfileTile extends StatefulWidget {
+  const _MyProfileTile({required this.personId});
+
+  final String? personId;
+
+  @override
+  State<_MyProfileTile> createState() => _MyProfileTileState();
+}
+
+class _MyProfileTileState extends State<_MyProfileTile> {
+  Person? _person;
+
+  @override
+  void initState() {
+    super.initState();
+    PersonService.instance.addListener(_load);
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_MyProfileTile old) {
+    super.didUpdateWidget(old);
+    if (old.personId != widget.personId) _load();
+  }
+
+  @override
+  void dispose() {
+    PersonService.instance.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final id = widget.personId;
+    final p = id == null ? null : await myPerson(id);
+    if (mounted) setState(() => _person = p);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final person = _person;
+    if (widget.personId == null) {
+      return ListTile(
+        leading: const Icon(Icons.badge_outlined),
+        title: const Text('O meu perfil'),
+        subtitle: const Text('Diga quem é na lista de pessoas da loja.'),
+        onTap: () => pickMyPerson(context),
+      );
+    }
+    return ListTile(
+      leading: const Icon(Icons.badge),
+      title: const Text('O meu perfil'),
+      subtitle: Text(
+        person?.fullName ?? 'Os seus dados ainda não chegaram a este aparelho.',
+      ),
+      onTap: person == null
+          ? SyncService.instance.syncNow
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PersonDetailScreen(person: person),
+              ),
+            ),
     );
   }
 }

@@ -31,7 +31,8 @@ await db.exec(`
     ('00000000-0000-0000-0000-00000000000a','owner@x.pt'),
     ('00000000-0000-0000-0000-00000000000b','Editor@x.pt'),
     ('00000000-0000-0000-0000-00000000000c','viewer@x.pt'),
-    ('00000000-0000-0000-0000-00000000000d','stranger@x.pt');
+    ('00000000-0000-0000-0000-00000000000d','stranger@x.pt'),
+    ('00000000-0000-0000-0000-00000000000e','new@x.pt');
 `);
 for (const m of migrations) await db.exec(m);
 await db.exec(`
@@ -40,7 +41,8 @@ await db.exec(`
 `);
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b',
-  C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d';
+  C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d',
+  E = '00000000-0000-0000-0000-00000000000e';
 let fails = 0;
 const as = async (user, sql, params) => {
   await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${user}', false); set role authenticated;`);
@@ -102,6 +104,43 @@ ok('owner removes viewer', (await as(A, 'delete from store_members where user_id
 ok('removed viewer reads nothing', (await as(C, 'select * from records')).length === 0);
 ok('editor cannot promote self', (await as(B, `update store_members set role = 'owner' where user_id = $1 returning *`, [B])).length === 0);
 ok('pull query works', (await as(B, `select id from records where store_id = $1 and server_updated_at > $2 order by server_updated_at`, [store, '2000-01-01'])).length === 2);
+
+// Joining with the store's code and linking an account to its person.
+await push(B, [row('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', team: 'livre' }), row('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
+await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /dono/);
+const [{ store_join_code: code }] = await as(A, 'select public.store_join_code($1)', [store]);
+ok('code has 8 plain characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
+ok('code stays the same', (await as(A, 'select public.store_join_code($1) c', [store]))[0].c === code);
+await throws('wrong code', () => as(D, `select public.join_store_preview('NOPE')`), /Não há/);
+const typed = code.slice(0, 4).toLowerCase() + '-' + code.slice(4);
+let [{ join_store_preview: preview }] = await as(D, 'select public.join_store_preview($1)', [typed]);
+ok('preview has the store name', preview.store_id === store && preview.store_name === 'Pingo Doce X');
+ok('preview lists live people, by name', preview.people.map((p) => p.id).join() === 'p5,p4,p1' && preview.people[1].full_name === 'Zé' && preview.people[1].team === 'livre');
+ok('preview joins nothing', (await as(D, 'select * from records')).length === 0);
+await as(D, 'select public.join_store($1, $2)', [code, 'p4']);
+ok('joined as editor', (await as(D, 'select role, person_id from store_members where user_id = $1', [D]))[0]?.role === 'editor');
+ok('joined member reads records', (await as(D, 'select * from records')).length > 0);
+[{ join_store_preview: preview }] = await as(E, 'select public.join_store_preview($1)', [code]);
+ok('linked person leaves the list', !preview.people.some((p) => p.id === 'p4'));
+await throws('nobody else takes a linked person', () => as(E, 'select public.join_store($1, $2)', [code, 'p4']), /já tem conta/);
+ok('failed join adds nothing', (await as(E, 'select * from stores')).length === 0);
+await as(E, 'select public.join_store($1)', [code]);
+ok('join without a person', (await as(E, 'select * from stores')).length === 1);
+await throws('deleted person', () => as(E, 'select public.claim_person($1, $2)', [store, 'p2']), /apagada/);
+await as(E, 'select public.claim_person($1, $2)', [store, 'p5']);
+ok('members see who is unlinked', (await as(E, 'select id from public.store_unlinked_people($1)', [store])).map((p) => p.id).join() === 'p1');
+members = await as(A, 'select * from public.store_member_list($1)', [store]);
+ok('members list has the persons', members.find((m) => m.user_id === D).person_id === 'p4' && members.find((m) => m.user_id === A).person_id === null);
+await as(A, 'select public.join_store($1, $2)', [code, 'p1']);
+ok('owner joining keeps owner', (await as(A, 'select role, person_id from store_members where user_id = $1', [A]))[0].role === 'owner');
+ok('editor cannot unlink others', (await as(B, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 0);
+ok('owner unlinks a member', (await as(A, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 1);
+await throws('stranger cannot claim', () => as(C, 'select public.claim_person($1, $2)', [store, 'p4']), /Não pertence/);
+const [{ reset_store_join_code: code2 }] = await as(A, 'select public.reset_store_join_code($1)', [store]);
+ok('new code', code2 !== code);
+await throws('old code stops working', () => as(C, 'select public.join_store_preview($1)', [code]), /Não há/);
+await throws('editor cannot reset the code', () => as(B, 'select public.reset_store_join_code($1)', [store]), /dono/);
+await throws('internal function hidden', () => as(D, `select public.store_by_code('x')`), /permission denied/);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
