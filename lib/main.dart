@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
+import 'services/account_service.dart';
 import 'services/horario_service.dart';
 import 'services/local_db.dart';
 import 'services/settings_service.dart';
@@ -17,6 +18,8 @@ void main() async {
     await SettingsService.instance.init();
     await LocalDb.init();
     await HorarioService.instance.init();
+    // Restores the session in the background: never waits for the network.
+    await AccountService.instance.init();
   } catch (e) {
     bootError = '$e';
   }

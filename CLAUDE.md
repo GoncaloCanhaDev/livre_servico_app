@@ -9,8 +9,9 @@ truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tas
 (order headers: number, supplier, expected date), and the store's people, grouped into fixed teams with chefes, used at a
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
-data lives in an on-device SQLite database (Drift); an online database is being added (see
-"Online database" below): the sync engine exists, but nothing starts it until there is a login.
+data lives in an on-device SQLite database (Drift), and optionally syncs with an online
+Supabase database once signed in (Definições → Conta e Sincronização; see "Online database"
+below).
 It's built for and used by a single supervisor (livre serviço / reposição team lead at a Pingo
 Doce store) running it on their own phone to manage their team's checklists day to day — not a
 multi-tenant product.
@@ -18,7 +19,8 @@ multi-tenant product.
 ## Commands
 
 - Install deps: `flutter pub get`
-- Run app: `flutter run`
+- Run app: `flutter run --dart-define-from-file=.env` (copy `.env.example` to `.env`, which is
+  git-ignored, and fill in the Supabase project; without it the app runs signed out, as before)
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
@@ -169,7 +171,8 @@ multi-tenant product.
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`LocalDb.init()`, `HorarioService.instance.init()`.
+`LocalDb.init()`, `HorarioService.instance.init()`, `AccountService.instance.init()` (which
+restores the saved session in the background, so it never waits for the network).
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 
@@ -184,8 +187,9 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
   intent works). Photos are copied into the app's documents folder (`people_photos/`,
   `info_photos/`); backups only carry their paths, not the files.
-- `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY` for the online database being added
-  (see "Online database" below); nothing in `lib/` reads them yet (phase 4 will).
+- `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY`; `AccountService` reads them with
+  `String.fromEnvironment`, so they are baked in at build time with
+  `--dart-define-from-file=.env`. The anon key is public by design (access is the RLS rules).
 
 ### Online database (in progress)
 
@@ -193,8 +197,7 @@ The app is moving to run on the web too, with an online Supabase database shared
 users, while staying offline-first on the phone. The plan, one version per phase: (1) Supabase
 schema, (2) replace Isar with Drift (SQLite, which also runs on the web), (3) a sync engine,
 (4) login and roles, (5) web fixes (photos to Supabase Storage, backup files, WhatsApp links,
-hosting). Phases 1 to 3 are done; until phase 4 adds a login, nothing calls
-`SyncService.start`, so the app doesn't talk to Supabase yet.
+hosting). Phases 1 to 4 are done.
 
 - `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
@@ -220,6 +223,15 @@ hosting). Phases 1 to 3 are done; until phase 4 adds a login, nothing calls
 - `SyncService` runs the engine while a store is connected (`start(remote, storeId)`): at once,
   three seconds after a save (`LocalDb.localWrites`) and every minute. It is not wired to
   Realtime yet. Settings in shared preferences (vasilhame, horário codes, goals) don't sync.
+- `AccountService` (`lib/services/account_service.dart`) is the optional login: email and
+  password on the `supabase` package (not `supabase_flutter`, so no extra plugins; the session
+  is kept in shared preferences, implicit auth flow), the chosen store (`account_store` pref)
+  and its members (`store_member_list`, `add_store_member`). Choosing a store starts
+  `SyncService`; a viewer (`StoreRole.viewer`, "Só leitura") only pulls. While syncing, only
+  the owner may "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every
+  device. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
+  `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
+  already are.
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

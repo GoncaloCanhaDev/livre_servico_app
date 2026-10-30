@@ -297,6 +297,25 @@ void main() {
     expect(writes, ['Person']);
   });
 
+  test('a viewer only pulls', () async {
+    await a.db.persons.put(person('Ana'));
+    await a.sync();
+    final viewer = SyncEngine(
+      db: b.db,
+      remote: remote,
+      storeId: 'viewer',
+      prefs: await SharedPreferences.getInstance(),
+      canPush: false,
+    );
+    await b.db.persons.put(person('Rui'));
+
+    final report = await viewer.run();
+
+    expect(report.pushed, 0);
+    expect(remote.of('Person'), hasLength(1));
+    expect(await b.db.persons.all(), hasLength(2));
+  });
+
   test('after forgetCursors every row is pushed again', () async {
     await a.db.persons.put(person('Ana'));
     await a.sync();

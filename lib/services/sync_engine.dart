@@ -81,12 +81,17 @@ class SyncEngine {
     required this.remote,
     required this.storeId,
     required this.prefs,
+    this.canPush = true,
   });
 
   final LocalDb db;
   final SyncRemote remote;
   final String storeId;
   final SharedPreferences prefs;
+
+  /// False for a viewer, who can't change the store's rows: pull only, and
+  /// what they save stays on this device.
+  final bool canPush;
 
   static const _pushBatch = 500;
   static const _pullPage = 1000;
@@ -115,9 +120,10 @@ class SyncEngine {
     };
     final changed = <String>{};
     var pushed = 0;
-    for (final c in db.collections) {
-      final n = await _push(c, all: cursor == null, changed: changed);
-      pushed += n;
+    if (canPush) {
+      for (final c in db.collections) {
+        pushed += await _push(c, all: cursor == null, changed: changed);
+      }
     }
     final pulled = await _pull(cursor, changed);
     LocalDb.notifyRemoteChanges(changed);

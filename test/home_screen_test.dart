@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
+import 'package:livre_servico_app/screens/account_screen.dart';
 import 'package:livre_servico_app/screens/historico_screen.dart';
 import 'package:livre_servico_app/screens/horarios_screen.dart';
 import 'package:livre_servico_app/screens/info_screen.dart';
@@ -56,5 +57,22 @@ void main() {
     await pumpApp(tester, const LivreServicoApp());
     await tapAndSettle(tester, find.byIcon(Icons.settings));
     expect(find.byType(SettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('Conta opens from Definições; tests have no online project', (
+    tester,
+  ) async {
+    await pumpApp(tester, const LivreServicoApp());
+    await tapAndSettle(tester, find.byIcon(Icons.settings));
+    expect(
+      find.text('Sem conta: os dados ficam só neste aparelho.'),
+      findsOneWidget,
+    );
+    await tapAndSettle(tester, find.text('Conta e Sincronização'));
+    expect(find.byType(AccountScreen), findsOneWidget);
+    expect(
+      find.textContaining('não tem a base de dados online'),
+      findsOneWidget,
+    );
   });
 }

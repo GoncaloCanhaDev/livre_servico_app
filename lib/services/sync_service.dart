@@ -33,14 +33,20 @@ class SyncService extends ChangeNotifier {
   Object? lastError;
 
   /// Starts syncing [db] (by default the app's) with [remote], the store
-  /// [storeId].
-  Future<void> start(SyncRemote remote, String storeId, {LocalDb? db}) async {
+  /// [storeId]; pulling only unless [canPush].
+  Future<void> start(
+    SyncRemote remote,
+    String storeId, {
+    bool canPush = true,
+    LocalDb? db,
+  }) async {
     stop();
     _engine = SyncEngine(
       db: db ?? LocalDb.instance,
       remote: remote,
       storeId: storeId,
       prefs: await SharedPreferences.getInstance(),
+      canPush: canPush,
     );
     _writes = LocalDb.localWrites.listen((_) {
       _soon?.cancel();

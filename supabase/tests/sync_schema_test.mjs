@@ -75,6 +75,10 @@ ok('nobody can hard-delete', (await as(A, 'delete from records returning id')).l
 await throws('client cannot fake server time',
   async () => { await as(B, `update records set server_updated_at = '2000-01-01' where id = 'p1'`); const r = await as(B, `select server_updated_at from records where id='p1'`); if (r[0].server_updated_at.getFullYear() === 2000) throw new Error('faked'); throw new Error('trigger wins'); }, /trigger wins/);
 
+let members = await as(B, 'select * from public.store_member_list($1)', [store]);
+ok('members list has emails, owner first', members.length === 3 && members[0].email === 'owner@x.pt' && members[0].role === 'owner');
+await throws('stranger cannot list members', () => as(D, 'select * from public.store_member_list($1)', [store]), /Não pertence/);
+
 ok('owner cannot remove self', (await as(A, 'delete from store_members where user_id = $1 returning *', [A])).length === 0);
 ok('owner removes viewer', (await as(A, 'delete from store_members where user_id = $1 returning *', [C])).length === 1);
 ok('removed viewer reads nothing', (await as(C, 'select * from records')).length === 0);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/account_service.dart';
 import '../services/backup_service.dart';
 import '../services/settings_service.dart';
+import 'account_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,11 +17,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     SettingsService.instance.addListener(_onSettingsChanged);
+    AccountService.instance.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    AccountService.instance.removeListener(_onSettingsChanged);
     super.dispose();
   }
 
@@ -90,14 +94,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  String _accountSubtitle() {
+    final account = AccountService.instance;
+    if (account.store case final s?) return 'A sincronizar com ${s.name}.';
+    if (account.isSignedIn) return 'Escolha a loja para sincronizar.';
+    return 'Sem conta: os dados ficam só neste aparelho.';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final canWipeAll = AccountService.instance.canWipeAll;
     return Scaffold(
       appBar: AppBar(title: const Text('Definições')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            _sectionHeader('Conta'),
+            ListTile(
+              title: const Text(
+                'Conta e Sincronização',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(_accountSubtitle()),
+              trailing: const Icon(Icons.cloud_sync),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+            const Divider(),
             _sectionHeader('Objetivos Diários'),
             _goalTile(
               title: 'Lista Visual',
@@ -161,17 +187,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: _onImport,
             ),
             ListTile(
-              title: const Text(
+              enabled: canWipeAll,
+              title: Text(
                 'Apagar Todos os Dados',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Colors.red,
+                  color: canWipeAll ? Colors.red : null,
                 ),
               ),
-              subtitle: const Text(
-                'Remove permanentemente todos os dados da aplicação.',
+              subtitle: Text(
+                canWipeAll
+                    ? 'Remove permanentemente todos os dados da aplicação.'
+                    : 'Só o dono da loja: apagaria os dados de todos os '
+                          'aparelhos.',
               ),
-              trailing: const Icon(Icons.delete_forever, color: Colors.red),
+              trailing: Icon(
+                Icons.delete_forever,
+                color: canWipeAll ? Colors.red : null,
+              ),
               onTap: _onDeleteAll,
             ),
           ],

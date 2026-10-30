@@ -7,6 +7,25 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.57.0] — 2026-10-30
+
+### Added
+- **Conta e Sincronização** (Definições): optionally sign in with an email and password, create
+  the store or choose one you were added to, and the app keeps this device's data and the
+  store's online copy in step with each other. Without an account it works as before, only on
+  this device. Signing out or changing store keeps the data here.
+- **Membros**: the store's owner adds people by the email of their account, as Edição (reads
+  and changes the data) or Só leitura (only reads), changes their role or removes them.
+
+### Changed
+- While syncing, only the store's owner can "Apagar Todos os Dados", since it would empty the
+  data on every device.
+
+### Other
+- The online database gets `store_member_list`, so the Membros screen can show emails
+  (`supabase/migrations/20261030150000_store_member_list.sql`: run it in the SQL Editor).
+- Builds read the Supabase project from `.env`: `flutter run --dart-define-from-file=.env`.
+
 ## [0.56.17] — 2026-10-30
 
 ### Other
