@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.62.5] — 2026-10-31
+
+### Fixed
+- A member could push someone's row with a time in the future, changing nothing but making
+  every real edit after it lose (last write wins). A push with no field the caller may change
+  now leaves the row alone, and a person is never saved later than the server's clock.
+
 ## [0.62.4] — 2026-10-31
 
 ### Fixed

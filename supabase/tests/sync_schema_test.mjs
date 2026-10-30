@@ -264,6 +264,14 @@ ok('self cannot set a request', !('profileUpdateRequestedAt' in (await stored('p
 await push(H, [person('pn', '2026-10-30T21:00:00Z', { ...(await stored('pn')).data, profileUpdateRequestedAt: 3 })]);
 ok('member cannot ask others', !('profileUpdateRequestedAt' in (await stored('p4')).data) && (await stored('pn')).data.profileUpdateRequestedAt === undefined);
 
+const before4 = (await stored('p4')).updated_at;
+await push(H, [person('p4', '2100-01-01T00:00:00Z', (await pulled(H, 'p4')).data)]);
+ok('a push with nothing allowed leaves the row alone', (await stored('p4')).updated_at.getTime() === before4.getTime());
+await push(D, [person('p4', '2100-01-01T00:00:00Z', { ...(await stored('p4')).data, phoneNumber: '922' })]);
+const future = await stored('p4');
+ok('a person is never saved in the future', future.data.phoneNumber === '922' && future.updated_at <= new Date());
+await push(B, [person('p4', new Date(Date.now() + 1000).toISOString(), { ...future.data, folgas: [4] })]);
+ok('later edits still count after a future push', JSON.stringify((await stored('p4')).data.folgas) === '[4]');
 await push(H, [row('d1', '2026-10-30T12:00:00Z', { done: true }, null, 'DailyTasks')]);
 ok('non-Person rows unchanged', (await as(D, `select * from records where collection = 'DailyTasks'`)).length === 1);
 await throws('direct Person insert blocked', () => as(H, `insert into records (store_id, collection, id, data, updated_at) values ($1, 'Person', 'pz', '{}', now())`, [store]), /row-level security/);

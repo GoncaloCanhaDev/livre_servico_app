@@ -211,6 +211,10 @@ begin
       continue;
     end if;
     v_keys := public.person_edit_keys(p_store, v_row.id, v_server.data);
+    -- Nothing this caller may change: the row (and its time) stays as it is.
+    if v_keys = '{}' then
+      continue;
+    end if;
     if v_keys is null then
       update public.records
         set data = v_row.data, updated_at = v_row.updated_at, deleted_at = v_row.deleted_at
@@ -234,8 +238,10 @@ begin
     if v_row.data ? 'syncUpdatedAt' then
       v_data := v_data || jsonb_build_object('syncUpdatedAt', v_row.data -> 'syncUpdatedAt');
     end if;
+    -- Never later than now: a time in the future would make every real
+    -- edit after it look older, and lose (last write wins).
     update public.records
-      set data = v_data, updated_at = v_row.updated_at
+      set data = v_data, updated_at = least(v_row.updated_at, now())
     where store_id = p_store and collection = 'Person' and id = v_row.id;
   end loop;
 
