@@ -33,7 +33,8 @@ await db.exec(`
     ('00000000-0000-0000-0000-00000000000c','viewer@x.pt'),
     ('00000000-0000-0000-0000-00000000000d','stranger@x.pt'),
     ('00000000-0000-0000-0000-00000000000e','new@x.pt'),
-    ('00000000-0000-0000-0000-00000000000f','admin@x.pt');
+    ('00000000-0000-0000-0000-00000000000f','admin@x.pt'),
+    ('00000000-0000-0000-0000-000000000011','h@x.pt');
 `);
 for (const m of migrations) await db.exec(m);
 await db.exec(`
@@ -43,7 +44,8 @@ await db.exec(`
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b',
   C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d',
-  E = '00000000-0000-0000-0000-00000000000e', F = '00000000-0000-0000-0000-00000000000f';
+  E = '00000000-0000-0000-0000-00000000000e', F = '00000000-0000-0000-0000-00000000000f',
+  H = '00000000-0000-0000-0000-000000000011';
 let fails = 0;
 const as = async (user, sql, params) => {
   await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${user}', false); set role authenticated;`);
@@ -63,7 +65,8 @@ await throws('unknown email', () => as(A, `select public.add_store_member($1, 'n
 await throws('editor cannot add members', () => as(B, `select public.add_store_member($1, 'stranger@x.pt')`, [store]), /dono/);
 await throws('owner cannot change self', () => as(A, `select public.add_store_member($1, 'owner@x.pt', 'viewer')`, [store]), /próprio/);
 
-const row = (id, t, data, del = null) => ({ collection: 'Person', id, data, updated_at: t, deleted_at: del });
+const row = (id, t, data, del = null, collection = 'Note') => ({ collection, id, data, updated_at: t, deleted_at: del });
+const person = (id, t, data, del = null) => row(id, t, data, del, 'Person');
 const push = (u, rows) => as(u, 'select * from public.push_records($1, $2)', [store, JSON.stringify(rows)]);
 
 let back = await push(B, [row('p1', '2026-10-30T10:00:00Z', { name: 'Ana' }), row('p2', '2026-10-30T10:00:00Z', { name: 'Rui' })]);
@@ -107,7 +110,7 @@ ok('editor cannot promote self', (await as(B, `update store_members set role = '
 ok('pull query works', (await as(B, `select id from records where store_id = $1 and server_updated_at > $2 order by server_updated_at`, [store, '2000-01-01'])).length === 2);
 
 // Joining with the store's code and linking an account to its person.
-await push(B, [row('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', phoneNumber: '900' }), row('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
+await push(A, [person('p1', '2026-10-30T10:00:00Z', { name: 'Ana' }), person('p2', '2026-10-30T11:00:00Z', { name: 'Rui' }, '2026-10-30T11:00:00Z'), person('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', phoneNumber: '900' }), person('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
 await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /dono/);
 const [{ store_join_code: code }] = await as(A, 'select public.store_join_code($1)', [store]);
 ok('code has 8 plain characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
@@ -131,7 +134,7 @@ ok('pending member sees no photos', (await as(D, `select * from storage.objects`
 await throws('pending member cannot claim', () => as(D, 'select public.claim_person($1, $2)', [store, 'p5']), /Não pertence/);
 await throws('editor without chefe cannot list requests', () => as(B, 'select * from public.store_join_requests($1)', [store]), /aprovar/);
 await throws('editor without chefe cannot approve', () => as(B, 'select public.approve_join($1, $2)', [store, D]), /aprovar/);
-await push(B, [row('pc', '2026-10-30T12:00:00Z', { fullName: 'Chefe', team: 'talho', chefe: 'chefe' })]);
+await push(A, [person('pc', '2026-10-30T12:00:00Z', { fullName: 'Chefe', team: 'talho', chefe: 'chefe' })]);
 await throws('member cannot claim a chefe', () => as(B, 'select public.claim_person($1, $2)', [store, 'pc']), /chefe ou à gerência/);
 await db.exec('reset role'); await db.query(`update store_members set person_id = 'pc' where user_id = $1`, [B]);
 ok('chefe access', (await as(B, 'select public.my_access($1) a', [store]))[0].a.chefe_team === 'talho');
@@ -164,7 +167,7 @@ await as(E, 'select public.claim_person($1, $2)', [store, 'p5']);
 ok('members see who is unlinked', (await as(E, 'select id from public.store_unlinked_people($1)', [store])).map((p) => p.id).join() === nova.id + ',p1');
 members = await as(A, 'select * from public.store_member_list($1)', [store]);
 ok('members list has the persons', members.find((m) => m.user_id === D).person_id === 'p4' && members.find((m) => m.user_id === A).person_id === null);
-await push(B, [row('pg', '2026-10-30T12:00:00Z', { fullName: 'Gerente', team: 'gerencia' })]);
+await push(A, [person('pg', '2026-10-30T12:00:00Z', { fullName: 'Gerente', team: 'gerencia' })]);
 await db.exec('reset role'); await db.query(`update store_members set person_id = 'pg' where user_id = $1`, [E]);
 ok('gerencia access', (await as(E, 'select public.my_access($1) a', [store]))[0].a.gerencia === true);
 const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
@@ -190,6 +193,81 @@ ok('new code', code2 !== code);
 await throws('old code stops working', () => as(C, 'select public.join_store_preview($1)', [code]), /Não há/);
 await throws('editor cannot reset the code', () => as(B, 'select public.reset_store_join_code($1)', [store]), /dono/);
 await throws('internal function hidden', () => as(D, `select public.store_by_code('x')`), /permission denied/);
+
+// People's personal data by hierarchy. B: chefe of talho (pc); D: p4 in
+// talho; H: pn in peixaria; E: Gerência (pg); F: admin; A: owner.
+await db.exec('reset role');
+await db.query(`update records set data = data || '{"team":"talho","folgas":[1],"notes":["x"],"phoneNumber":"900"}' where id = 'p4'`);
+await db.query(`update store_members set person_id = 'p4' where user_id = $1`, [D]);
+await push(A, [person('pn', '2026-10-30T12:00:00Z', { fullName: 'Nuno', team: 'peixaria', phoneNumber: '111', folgas: [3] })]);
+await as(H, 'select public.join_store($1, $2)', [code2, 'pn']);
+await as(A, 'select public.approve_join($1, $2)', [store, H]);
+const pulled = async (u, id) => (await as(u, 'select * from public.pull_records($1, $2, $3)', [store, null, 1000])).find((r) => r.id === id);
+const stored = async (id) => { await db.exec('reset role'); return (await db.query(`select * from records where collection = 'Person' and id = $1`, [id])).rows[0]; };
+let r4 = await pulled(H, 'p4');
+ok('member sees others redacted', r4.data.fullName === 'Zé' && r4.data.team === 'talho' && !('phoneNumber' in r4.data) && !('folgas' in r4.data) && !('notes' in r4.data) && !('collaboratorNumber' in r4.data));
+ok('member sees own full', (await pulled(H, 'pn')).data.phoneNumber === '111');
+ok('chefe sees own team full', (await pulled(B, 'p4')).data.phoneNumber === '900');
+ok('chefe does not see other team', !('phoneNumber' in (await pulled(B, 'pn')).data));
+ok('gerencia sees all full', (await pulled(E, 'pn')).data.phoneNumber === '111' && (await pulled(E, 'p4')).data.phoneNumber === '900');
+ok('admin sees all full', (await pulled(F, 'pn')).data.phoneNumber === '111');
+ok('owner sees all full', (await pulled(A, 'pn')).data.phoneNumber === '111');
+ok('pull_records keeps other rows whole', (await as(H, 'select * from public.pull_records($1, $2, $3)', [store, null, 1000])).some((r) => r.collection === 'Note'));
+await throws('stranger cannot pull', () => as(C, 'select * from public.pull_records($1, $2, $3)', [store, null, 10]), /Não pertence/);
+ok('select policy hides personal rows', !(await as(H, `select id from records where collection = 'Person'`)).some((r) => r.id === 'p4'));
+ok('select policy shows own row', (await as(H, `select id from records where collection = 'Person'`)).some((r) => r.id === 'pn'));
+
+back = await push(D, [person('p4', '2026-10-30T13:00:00Z', { ...(await stored('p4')).data, team: 'gerencia', chefe: 'chefe', phoneNumber: '911', collaboratorNumber: '0' })]);
+let s4 = (await stored('p4')).data;
+ok('self cannot change own role', s4.team === 'talho' && !('chefe' in s4) && s4.collaboratorNumber === '4321');
+ok('self edits own phone', s4.phoneNumber === '911');
+ok('push returns the merged row', back.length === 1 && back[0].data.team === 'talho');
+ok('self is still not gerencia', (await as(D, 'select public.my_access($1) a', [store]))[0].a.gerencia === false);
+
+await push(B, [person('p4', '2026-10-30T14:00:00Z', { ...s4, folgas: [2], phoneNumber: '000' })]);
+s4 = (await stored('p4')).data;
+ok('chefe edits team folgas only', JSON.stringify(s4.folgas) === '[2]' && s4.phoneNumber === '911');
+const sn = (await stored('pn')).data;
+await push(B, [person('pn', '2026-10-30T14:00:00Z', { ...sn, folgas: [5] })]);
+ok('chefe cannot edit other team', JSON.stringify((await stored('pn')).data.folgas) === '[3]');
+await push(E, [person('p4', '2026-10-30T15:00:00Z', { ...s4, chefe: 'chefe', folgas: [6] })]);
+s4 = (await stored('p4')).data;
+ok('gerencia changes roles and folgas', s4.chefe === 'chefe' && JSON.stringify(s4.folgas) === '[6]');
+await push(E, [person('p4', '2026-10-30T15:30:00Z', { ...s4, chefe: null })]);
+s4 = (await stored('p4')).data;
+
+const redacted = (await pulled(H, 'p4')).data;
+await push(H, [person('p4', '2026-10-30T16:00:00Z', redacted)]);
+s4 = (await stored('p4')).data;
+ok('redacted push keeps hidden fields', s4.phoneNumber === '911' && JSON.stringify(s4.folgas) === '[6]' && s4.notes[0] === 'x');
+await push(H, [person('px', '2026-10-30T16:00:00Z', { fullName: 'Intruso' })]);
+ok('member cannot add people', (await stored('px')) === undefined);
+await push(H, [person('p4', '2026-10-30T17:00:00Z', redacted, '2026-10-30T17:00:00Z')]);
+ok('member cannot delete people', (await stored('p4')).deleted_at === null);
+await push(E, [person('py', '2026-10-30T16:00:00Z', { fullName: 'Novo' })]);
+ok('gerencia adds people', (await stored('py'))?.data.fullName === 'Novo');
+await push(E, [person('py', '2026-10-30T17:00:00Z', { fullName: 'Novo' }, '2026-10-30T17:00:00Z')]);
+ok('gerencia cannot delete people', (await stored('py')).deleted_at === null);
+await push(F, [person('py', '2026-10-30T18:00:00Z', { fullName: 'Novo' }, '2026-10-30T18:00:00Z')]);
+ok('admin deletes people', (await stored('py')).deleted_at !== null);
+
+s4 = (await stored('p4')).data;
+await push(B, [person('p4', '2026-10-30T19:00:00Z', { ...s4, profileUpdateRequestedAt: 1, profileUpdateRequestedBy: 'Chefe' })]);
+s4 = (await stored('p4')).data;
+ok('chefe asks for an update', s4.profileUpdateRequestedAt === 1 && s4.profileUpdateRequestedBy === 'Chefe');
+const { profileUpdateRequestedAt: _a, profileUpdateRequestedBy: _b, ...cleared } = s4;
+await push(D, [person('p4', '2026-10-30T20:00:00Z', cleared)]);
+s4 = (await stored('p4')).data;
+ok('self clears the request', !('profileUpdateRequestedAt' in s4) && !('profileUpdateRequestedBy' in s4));
+await push(D, [person('p4', '2026-10-30T21:00:00Z', { ...s4, profileUpdateRequestedAt: 2, profileUpdateRequestedBy: 'Zé' })]);
+ok('self cannot set a request', !('profileUpdateRequestedAt' in (await stored('p4')).data));
+await push(H, [person('pn', '2026-10-30T21:00:00Z', { ...(await stored('pn')).data, profileUpdateRequestedAt: 3 })]);
+ok('member cannot ask others', !('profileUpdateRequestedAt' in (await stored('p4')).data) && (await stored('pn')).data.profileUpdateRequestedAt === undefined);
+
+await push(H, [row('d1', '2026-10-30T12:00:00Z', { done: true }, null, 'DailyTasks')]);
+ok('non-Person rows unchanged', (await as(D, `select * from records where collection = 'DailyTasks'`)).length === 1);
+await throws('direct Person insert blocked', () => as(H, `insert into records (store_id, collection, id, data, updated_at) values ($1, 'Person', 'pz', '{}', now())`, [store]), /row-level security/);
+ok('direct Person update blocked', (await as(D, `update records set data = data || '{"team":"gerencia"}' where id = 'p4' returning id`)).length === 0);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);

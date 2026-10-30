@@ -7,6 +7,20 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.62.0] — 2026-10-31
+
+### Added
+- **People's personal data by hierarchy** (database, migration `20261031120000_person_access`).
+  Everyone in a store reads others' name, photo, género, date of birth and role; the rest of a
+  person is read only by themselves, the chefe de secção of their team, Gerência, the owner and
+  the app admin. The app pulls through `pull_records`, which hides the rest; a plain select
+  (and Realtime) doesn't give those rows out. Each field of a person is saved only from someone
+  who may edit it: the person their name, photo, phone, birth date, género and notes; their
+  chefe their folgas and ausências; Gerência those and the roles; the owner and the admin
+  everything. A copy without the hidden fields, pushed back, wipes nothing. Only Gerência, the
+  owner and the admin add people; only the owner and the admin delete them. The app follows
+  in the next versions.
+
 ## [0.61.0] — 2026-10-31
 
 ### Removed
