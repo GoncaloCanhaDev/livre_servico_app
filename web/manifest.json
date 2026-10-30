@@ -1,11 +1,11 @@
 {
-    "name": "livre_servico_app",
-    "short_name": "livre_servico_app",
+    "name": "Livre Serviço Companion",
+    "short_name": "Livre Serviço",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#111111",
+    "description": "Listas, tarefas, camiões e pessoas da equipa de Livre Serviço.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

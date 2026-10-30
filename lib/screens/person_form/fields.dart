@@ -5,7 +5,7 @@ part of '../person_form_screen.dart';
 class _PhotoButton extends StatelessWidget {
   const _PhotoButton({required this.photo, required this.onTap});
 
-  final File? photo;
+  final ImageProvider? photo;
   final VoidCallback onTap;
 
   @override
@@ -18,7 +18,8 @@ class _PhotoButton extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 48,
-              backgroundImage: photo == null ? null : FileImage(photo),
+              backgroundImage: photo,
+              onBackgroundImageError: photo == null ? null : (_, _) {},
               child: photo == null ? const Icon(Icons.person, size: 48) : null,
             ),
             Positioned(

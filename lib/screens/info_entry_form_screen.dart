@@ -111,7 +111,9 @@ class _InfoEntryFormScreenState extends State<InfoEntryFormScreen> {
       imageQuality: 85,
     );
     if (picked == null) return;
-    final path = await InfoService.instance.storePhoto(picked.path);
+    final path = await InfoService.instance.storePhoto(
+      await picked.readAsBytes(),
+    );
     if (!mounted) {
       InfoService.instance.deletePhoto(path);
       return;

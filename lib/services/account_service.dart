@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
+import 'photo_store.dart';
 import 'supabase_sync_remote.dart';
 import 'sync_service.dart';
 
@@ -164,7 +165,7 @@ class AccountService extends ChangeNotifier {
 
   Future<void> _forget() async {
     _retry?.cancel();
-    SyncService.instance.stop();
+    _stopSync();
     email = null;
     store = null;
     await _prefs.remove(_sessionKey);
@@ -206,19 +207,27 @@ class AccountService extends ChangeNotifier {
 
   /// Stops syncing with the store; the data stays on this device.
   Future<void> leaveStore() async {
-    SyncService.instance.stop();
+    _stopSync();
     store = null;
     await _prefs.remove(_storeKey);
     notifyListeners();
   }
 
-  void _startSync(StoreInfo s) => unawaited(
-    SyncService.instance.start(
-      SupabaseSyncRemote(_api, s.id),
-      s.id,
-      canPush: s.role != StoreRole.viewer,
-    ),
-  );
+  void _startSync(StoreInfo s) {
+    PhotoStore.instance.remote = SupabasePhotoRemote(_api, s.id);
+    unawaited(
+      SyncService.instance.start(
+        SupabaseSyncRemote(_api, s.id),
+        s.id,
+        canPush: s.role != StoreRole.viewer,
+      ),
+    );
+  }
+
+  void _stopSync() {
+    SyncService.instance.stop();
+    PhotoStore.instance.remote = null;
+  }
 
   Future<void> _saveStore(StoreInfo s) async {
     store = s;

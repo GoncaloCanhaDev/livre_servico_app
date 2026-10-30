@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,6 +9,17 @@ class WhatsAppService {
   /// The user picks the destination (contact or group) themselves.
   static Future<bool> send(String message) async {
     final encoded = Uri.encodeComponent(message);
+    final httpsUri = Uri.parse('https://api.whatsapp.com/send?text=$encoded');
+
+    // In a browser, only the web link works: it opens WhatsApp Web (or the
+    // app, on a phone's browser) in a new tab.
+    if (kIsWeb) {
+      try {
+        return await launchUrl(httpsUri, webOnlyWindowName: '_blank');
+      } catch (_) {
+        return false;
+      }
+    }
 
     // Try the intent-style URL first (works best on Android)
     final intentUri = Uri.parse(
@@ -19,7 +31,6 @@ class WhatsAppService {
     } catch (_) {}
 
     // Fallback: HTTPS URL
-    final httpsUri = Uri.parse('https://api.whatsapp.com/send?text=$encoded');
     try {
       final ok = await launchUrl(
         httpsUri,

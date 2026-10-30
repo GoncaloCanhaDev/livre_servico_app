@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +10,7 @@ import '../models/vasilhame.dart';
 import 'horario_service.dart';
 import 'local_db.dart';
 import 'settings_service.dart';
+import 'share_file.dart';
 import 'sync_engine.dart';
 
 class BackupService {
@@ -36,22 +35,16 @@ class BackupService {
 
   Future<ShareResult> exportToFile() async {
     final payload = await _buildPayload();
-    final dir = await getTemporaryDirectory();
     final timestamp = DateTime.now()
         .toIso8601String()
         .replaceAll(':', '-')
         .split('.')
         .first;
-    final file = File('${dir.path}/livre_servico_backup_$timestamp.json');
     // Indented so the file can be edited by hand (e.g. its "vasilhame").
-    await file.writeAsString(
+    final result = await shareJsonFile(
       const JsonEncoder.withIndent('  ').convert(payload),
-    );
-    final result = await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path, mimeType: 'application/json')],
-        subject: 'Cópia de segurança - Livre Serviço',
-      ),
+      name: 'livre_servico_backup_$timestamp.json',
+      subject: 'Cópia de segurança - Livre Serviço',
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastBackupAtKey, DateTime.now().toIso8601String());

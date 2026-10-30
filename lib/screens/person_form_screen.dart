@@ -1,17 +1,15 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
 import '../services/person_service.dart';
+import '../services/photo_store.dart';
 import '../services/sync_meta.dart';
 import '../theme.dart';
-import 'widgets/person_avatar.dart';
 
 part 'person_form/ausencia_dialog.dart';
 part 'person_form/fields.dart';
@@ -52,7 +50,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
   /// Existing photo path (if editing and one was already set).
   String? _photoPath;
-  File? _pendingPhoto;
+  Uint8List? _pendingPhoto;
   bool _removePhoto = false;
 
   String? _team; // Team.id, null = Sem equipa
@@ -183,9 +181,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
       maxWidth: 1024,
       imageQuality: 85,
     );
-    if (picked == null || !mounted) return;
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
     setState(() {
-      _pendingPhoto = File(picked.path);
+      _pendingPhoto = bytes;
       _removePhoto = false;
     });
   }
@@ -328,24 +328,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     SyncMeta.stamp(person);
 
     var photoPath = _photoPath;
-    if (_pendingPhoto != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final peopleDir = Directory('${dir.path}/people_photos');
-      if (!peopleDir.existsSync()) peopleDir.createSync(recursive: true);
-      final ext = _pendingPhoto!.path.split('.').last;
-      final dest = '${peopleDir.path}/${person.syncUuid}.$ext';
-      await _pendingPhoto!.copy(dest);
-      if (photoPath != null && photoPath != dest) {
-        try {
-          File(photoPath).deleteSync();
-        } catch (_) {}
-      }
-      photoPath = dest;
-      PersonAvatar.forget();
+    if (_pendingPhoto case final bytes?) {
+      if (photoPath != null) await PhotoStore.instance.remove(photoPath);
+      photoPath = await PhotoStore.instance.add(bytes);
     } else if (_removePhoto && photoPath != null) {
-      try {
-        File(photoPath).deleteSync();
-      } catch (_) {}
+      await PhotoStore.instance.remove(photoPath);
       photoPath = null;
     }
     person.photoPath = photoPath;
@@ -367,9 +354,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               _PhotoButton(
-                photo:
-                    _pendingPhoto ??
-                    (_hasPhotoPreview ? File(_photoPath!) : null),
+                photo: switch (_pendingPhoto) {
+                  final bytes? => MemoryImage(bytes),
+                  null when _hasPhotoPreview => PhotoImage(_photoPath!),
+                  null => null,
+                },
                 onTap: _pickPhoto,
               ),
               const SizedBox(height: 8),

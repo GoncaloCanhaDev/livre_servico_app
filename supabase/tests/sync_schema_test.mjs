@@ -16,6 +16,16 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema auth to authenticated, anon;
+  -- Minimal stand-in for Supabase Storage.
+  create schema storage;
+  create table storage.buckets (id text primary key, name text, public boolean);
+  create table storage.objects (id serial primary key, bucket_id text, name text);
+  alter table storage.objects enable row level security;
+  create function storage.foldername(name text) returns text[] language sql immutable as
+    $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+  grant usage on schema storage to authenticated;
+  grant select, insert, update on storage.objects to authenticated;
+  grant usage on sequence storage.objects_id_seq to authenticated;
   grant execute on function auth.uid() to authenticated, anon;
   insert into auth.users values
     ('00000000-0000-0000-0000-00000000000a','owner@x.pt'),
@@ -78,6 +88,14 @@ await throws('client cannot fake server time',
 let members = await as(B, 'select * from public.store_member_list($1)', [store]);
 ok('members list has emails, owner first', members.length === 3 && members[0].email === 'owner@x.pt' && members[0].role === 'owner');
 await throws('stranger cannot list members', () => as(D, 'select * from public.store_member_list($1)', [store]), /Não pertence/);
+
+await db.exec('reset role');
+ok('photos bucket is private', (await db.query(`select public from storage.buckets where id = 'photos'`)).rows[0].public === false);
+await as(B, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, [store + '/a.jpg']);
+ok('viewer sees the photo', (await as(C, `select * from storage.objects`)).length === 1);
+ok('stranger sees no photo', (await as(D, `select * from storage.objects`)).length === 0);
+await throws('viewer cannot add a photo', () => as(C, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, [store + '/b.jpg']), /row-level security/);
+await throws('editor cannot add to another store', () => as(B, `insert into storage.objects (bucket_id, name) values ('photos', 'other/c.jpg')`), /row-level security/);
 
 ok('owner cannot remove self', (await as(A, 'delete from store_members where user_id = $1 returning *', [A])).length === 0);
 ok('owner removes viewer', (await as(A, 'delete from store_members where user_id = $1 returning *', [C])).length === 1);

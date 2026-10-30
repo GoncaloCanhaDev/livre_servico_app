@@ -1,10 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/horario.dart';
@@ -13,6 +10,7 @@ import '../models/horario_mes.dart';
 import '../models/teams.dart';
 import 'local_db.dart';
 import 'person_service.dart';
+import 'share_file.dart';
 import 'sync_meta.dart';
 
 /// What an import brought: the months it saved or deleted, and per month
@@ -184,16 +182,10 @@ class HorarioService extends ChangeNotifier {
 
   /// Shares every saved horário as an indented `horarios.json`.
   Future<void> exportFile() async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/horarios.json');
-    await file.writeAsString(
+    await shareJsonFile(
       const JsonEncoder.withIndent('  ').convert(_horarios.toJson()),
-    );
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path, mimeType: 'application/json')],
-        subject: 'Horários - Livre Serviço',
-      ),
+      name: 'horarios.json',
+      subject: 'Horários - Livre Serviço',
     );
   }
 

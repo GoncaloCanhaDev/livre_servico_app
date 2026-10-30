@@ -21,6 +21,12 @@ multi-tenant product.
 - Install deps: `flutter pub get`
 - Run app: `flutter run --dart-define-from-file=.env` (copy `.env.example` to `.env`, which is
   git-ignored, and fill in the Supabase project; without it the app runs signed out, as before)
+- Web: `flutter run -d chrome --dart-define-from-file=.env`; to host, `flutter build web
+  --release --dart-define-from-file=.env` and upload `build/web/` to any static host (e.g.
+  `npx wrangler pages deploy build/web --project-name livre-servico` for Cloudflare Pages). Add
+  the hosted URL in Supabase (Authentication → URL Configuration: Site URL) so email
+  confirmation links land there. Never use dart:io or path_provider outside a conditional
+  import (see `legacy_photos_io.dart`): `flutter build web` fails or the browser throws.
 - Lint/analyze: `flutter analyze`
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
@@ -137,7 +143,10 @@ multi-tenant product.
 - `SettingsService` wraps `shared_preferences` for simple user prefs (goals) and is initialized
   in `main()` before the app runs. There are no notifications/reminders of any kind.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
-  then an HTTPS fallback, then the `whatsapp://` scheme.
+  then an HTTPS fallback, then the `whatsapp://` scheme; on the web only the HTTPS link, in a
+  new tab.
+- Exports (backup, horários) go through `shareJsonFile` (`lib/services/share_file.dart`), an
+  in-memory file: the share sheet on the phone, a download in a browser.
 
 ### UI layer
 
@@ -171,8 +180,9 @@ multi-tenant product.
 ### Startup sequence
 
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
-`LocalDb.init()`, `HorarioService.instance.init()`, `AccountService.instance.init()` (which
-restores the saved session in the background, so it never waits for the network).
+`LocalDb.init()`, `PhotoStore.instance.migrateLegacy()` (its own try/catch: a failure there
+doesn't stop the app), `HorarioService.instance.init()`, `AccountService.instance.init()`
+(which restores the saved session in the background, so it never waits for the network).
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 
@@ -185,19 +195,25 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   "Acessórios Transporte" sheet: SAP code as `code`, EAN as `ean`). `barcode_widget` is only used to show a vasilhame item's `ean` as a barcode.
 - `image_picker` (person photos, Informações photos) is the only camera use; Android declares
   no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
-  intent works). Photos are copied into the app's documents folder (`people_photos/`,
-  `info_photos/`); backups only carry their paths, not the files.
+  intent works). Photos are kept by `PhotoStore` (`lib/services/photo_store.dart`): rows hold a
+  `photo:<name>` reference (`Person.photoPath`, `InfoEntry.photoPaths`), the bytes live in the
+  local database's `local_photos` table (so they work in the browser too) and, while a store is
+  connected, in its folder of the `photos` bucket in Supabase Storage (uploaded with each sync,
+  downloaded the first time another device shows them). Show one with `PhotoImage(ref)`.
+  Photos never change (a new one gets a new name) and are never deleted online. Older
+  versions saved files in the documents folder: `migrateLegacy` moves them in once. Backups
+  only carry the references, not the photos.
 - `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY`; `AccountService` reads them with
   `String.fromEnvironment`, so they are baked in at build time with
   `--dart-define-from-file=.env`. The anon key is public by design (access is the RLS rules).
 
-### Online database (in progress)
+### Online database
 
-The app is moving to run on the web too, with an online Supabase database shared by several
-users, while staying offline-first on the phone. The plan, one version per phase: (1) Supabase
-schema, (2) replace Isar with Drift (SQLite, which also runs on the web), (3) a sync engine,
-(4) login and roles, (5) web fixes (photos to Supabase Storage, backup files, WhatsApp links,
-hosting). Phases 1 to 4 are done.
+The app runs on the phone and on the web, with an optional online Supabase database shared
+by several users, while staying offline-first on the phone. It was built in five phases, all
+done: (1) Supabase schema, (2) Isar replaced by Drift (SQLite, which also runs on the web),
+(3) the sync engine, (4) login and roles, (5) web fixes (photos to Supabase Storage, backup
+files, WhatsApp links, hosting).
 
 - `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one

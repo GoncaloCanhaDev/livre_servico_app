@@ -51,3 +51,6 @@ app.*.map.json
 
 # Supabase schema tests (supabase/tests)
 node_modules/
+
+# Browser test screenshots
+.playwright-mcp/

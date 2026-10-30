@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'local_db.dart';
+import 'photo_store.dart';
 import 'sync_engine.dart';
 
 /// Runs [SyncEngine] while a store is connected: right away, a few seconds
@@ -84,6 +85,7 @@ class SyncService extends ChangeNotifier {
   Future<void> _run(SyncEngine engine) async {
     try {
       await engine.run();
+      if (engine.canPush) await PhotoStore.instance.uploadPending();
       lastSyncedAt = DateTime.now();
       lastError = null;
     } catch (e) {

@@ -1,8 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
-/// A row of small thumbnails for [paths]; tapping one opens it full screen.
+import '../../services/photo_store.dart';
+
+/// A row of small thumbnails for [paths] ([PhotoStore] references);
+/// tapping one opens it full screen.
 /// With [onRemove], each thumbnail gets a ✕.
 class PhotoStrip extends StatelessWidget {
   const PhotoStrip({super.key, required this.paths, this.onRemove});
@@ -29,12 +30,11 @@ class PhotoStrip extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.file(
-                    File(path),
+                  child: Image(
+                    image: ResizeImage(PhotoImage(path), width: 192),
                     width: 64,
                     height: 64,
                     fit: BoxFit.cover,
-                    cacheWidth: 192,
                     errorBuilder: (_, _, _) => Container(
                       width: 64,
                       height: 64,
@@ -95,8 +95,8 @@ class PhotoViewerScreen extends StatelessWidget {
               InteractiveViewer(
                 maxScale: 5,
                 child: Center(
-                  child: Image.file(
-                    File(path),
+                  child: Image(
+                    image: PhotoImage(path),
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.broken_image_outlined,
                       color: Colors.white54,

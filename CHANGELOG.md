@@ -7,6 +7,27 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.58.0] — 2026-10-30
+
+### Added
+- **The app runs in a browser**, from the same code: `flutter build web` and put `build/web` on
+  any static host. Data, photos and backups work there as on the phone; with an account, the
+  browser and the phones share the store's data.
+- Photos of people and Informações are shared with the store: they are sent online with each
+  sync, and another device downloads one the first time it shows it.
+
+### Changed
+- Photos are kept inside the app's database instead of as separate files; the ones already
+  on the phone are moved in at the first start of this version.
+- In a browser, the backup and horários exports download a file, and WhatsApp opens WhatsApp
+  Web in a new tab.
+- The web page is called "Livre Serviço Companion", in Portuguese.
+
+### Other
+- The online database gets a private `photos` bucket, one folder per store, readable by its
+  members and writable by editors and owners
+  (`supabase/migrations/20261030170000_photos_bucket.sql`: run it in the SQL Editor).
+
 ## [0.57.0] — 2026-10-30
 
 ### Added

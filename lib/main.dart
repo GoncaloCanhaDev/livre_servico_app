@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'services/account_service.dart';
 import 'services/horario_service.dart';
 import 'services/local_db.dart';
+import 'services/photo_store.dart';
 import 'services/settings_service.dart';
 import 'theme.dart';
 
@@ -17,6 +18,12 @@ void main() async {
   try {
     await SettingsService.instance.init();
     await LocalDb.init();
+    try {
+      // Once: photo files from earlier versions into the database.
+      await PhotoStore.instance.migrateLegacy();
+    } catch (_) {
+      // Not worth stopping the app over: tried again at the next start.
+    }
     await HorarioService.instance.init();
     // Restores the session in the background: never waits for the network.
     await AccountService.instance.init();

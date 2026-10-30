@@ -1,11 +1,11 @@
-import 'dart:io';
+import 'dart:async';
 
-import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
 import 'local_db.dart';
+import 'photo_store.dart';
 import 'sync_meta.dart';
 
 /// Reads and writes the Informações entries and their photos.
@@ -25,7 +25,7 @@ class InfoService {
     await _db.infoEntries.put(e);
   }
 
-  /// Soft-deletes [e] and removes its photo files.
+  /// Soft-deletes [e] and removes its photos from this device.
   Future<void> delete(InfoEntry e) async {
     SyncMeta.softDelete(e);
     await _db.infoEntries.put(e);
@@ -49,21 +49,8 @@ class InfoService {
     await _db.infoEntries.putAll(rows);
   }
 
-  /// Copies the picked photo at [sourcePath] into the app's folder and
-  /// returns the copy's path.
-  Future<String> storePhoto(String sourcePath) async {
-    final docs = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docs.path}/info_photos');
-    if (!dir.existsSync()) dir.createSync(recursive: true);
-    final ext = sourcePath.contains('.') ? sourcePath.split('.').last : 'jpg';
-    final dest = '${dir.path}/${const Uuid().v4()}.$ext';
-    await File(sourcePath).copy(dest);
-    return dest;
-  }
+  /// Saves a picked photo; returns its reference (see [PhotoStore]).
+  Future<String> storePhoto(Uint8List bytes) => PhotoStore.instance.add(bytes);
 
-  void deletePhoto(String path) {
-    try {
-      File(path).deleteSync();
-    } catch (_) {}
-  }
+  void deletePhoto(String ref) => unawaited(PhotoStore.instance.remove(ref));
 }

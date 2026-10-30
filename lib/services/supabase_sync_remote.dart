@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
 
+import 'photo_store.dart';
 import 'sync_engine.dart';
 
 /// [SyncRemote] on the Supabase database in `supabase/migrations`: pushes
@@ -37,4 +39,28 @@ class SupabaseSyncRemote implements SyncRemote {
         .limit(limit);
     return [for (final r in rows) SyncRecord.fromServerJson(r)];
   }
+}
+
+/// [PhotoRemote] on the `photos` bucket in Supabase Storage, one folder per
+/// store (see `supabase/migrations`).
+class SupabasePhotoRemote implements PhotoRemote {
+  SupabasePhotoRemote(this.client, this.storeId);
+
+  final SupabaseClient client;
+  final String storeId;
+
+  StorageFileApi get _bucket => client.storage.from('photos');
+
+  @override
+  Future<void> upload(String name, Uint8List bytes) => _bucket.uploadBinary(
+    '$storeId/$name',
+    bytes,
+    fileOptions: FileOptions(
+      upsert: true,
+      contentType: name.endsWith('.png') ? 'image/png' : 'image/jpeg',
+    ),
+  );
+
+  @override
+  Future<Uint8List> download(String name) => _bucket.download('$storeId/$name');
 }

@@ -204,6 +204,46 @@ class LocalDb {
     }
   }
 
+  // ---- Photos (see PhotoStore) ----
+  // Kept in their own table, read one at a time, never all at startup.
+
+  Future<Uint8List?> photo(String name) async {
+    final row = await _db
+        .customSelect(
+          'SELECT bytes FROM local_photos WHERE name = ?',
+          variables: [Variable.withString(name)],
+        )
+        .getSingleOrNull();
+    return row?.read<Uint8List>('bytes');
+  }
+
+  Future<void> putPhoto(
+    String name,
+    Uint8List bytes, {
+    required bool uploaded,
+  }) => _db.customStatement(
+    'INSERT OR REPLACE INTO local_photos (name, bytes, uploaded) '
+    'VALUES (?, ?, ?)',
+    [name, bytes, uploaded ? 1 : 0],
+  );
+
+  /// The photos saved here that aren't online yet.
+  Future<List<String>> photosToUpload() async => [
+    for (final r
+        in await _db
+            .customSelect('SELECT name FROM local_photos WHERE uploaded = 0')
+            .get())
+      r.read<String>('name'),
+  ];
+
+  Future<void> markPhotoUploaded(String name) => _db.customStatement(
+    'UPDATE local_photos SET uploaded = 1 WHERE name = ?',
+    [name],
+  );
+
+  Future<void> deletePhoto(String name) =>
+      _db.customStatement('DELETE FROM local_photos WHERE name = ?', [name]);
+
   /// Fills in missing sync fields (UUIDs) on rows from before they existed:
   /// once at the first startup, and after importing a backup, which may be
   /// that old.
@@ -475,6 +515,12 @@ class _Database extends GeneratedDatabase {
         'id INTEGER NOT NULL, '
         'data TEXT NOT NULL, '
         'PRIMARY KEY (collection, id))',
+      );
+      await customStatement(
+        'CREATE TABLE IF NOT EXISTS local_photos ('
+        'name TEXT NOT NULL PRIMARY KEY, '
+        'bytes BLOB NOT NULL, '
+        'uploaded INTEGER NOT NULL DEFAULT 0)',
       );
     },
   );
