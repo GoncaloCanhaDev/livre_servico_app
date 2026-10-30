@@ -51,13 +51,30 @@ class FakeRemote implements SyncRemote {
     return newer;
   }
 
+  /// What the server gives out of each row it pulls, like `pull_records`
+  /// redacting people; the row as it is when null.
+  Map<String, dynamic> Function(SyncRecord)? redact;
+
   @override
   Future<List<SyncRecord>> pull({DateTime? since, required int limit}) async {
     final found = [
       for (final r in rows.values)
         if (since == null || !r.serverUpdatedAt!.isBefore(since)) r,
     ]..sort((a, b) => a.serverUpdatedAt!.compareTo(b.serverUpdatedAt!));
-    return found.take(limit).toList();
+    return [
+      for (final r in found.take(limit))
+        switch (redact) {
+          null => r,
+          final f => SyncRecord(
+            collection: r.collection,
+            id: r.id,
+            data: f(r),
+            updatedAt: r.updatedAt,
+            deletedAt: r.deletedAt,
+            serverUpdatedAt: r.serverUpdatedAt,
+          ),
+        },
+    ];
   }
 
   List<SyncRecord> of(String collection) => [
@@ -123,6 +140,54 @@ void main() {
   tearDown(() async {
     await a.db.close();
     await b.db.close();
+  });
+
+  group('people redacted by the server', () {
+    Map<String, dynamic> withoutPhone(SyncRecord r) => r.collection == 'Person'
+        ? (Map.of(r.data)..remove('phoneNumber'))
+        : r.data;
+
+    test('stale full copies are replaced by redacted ones', () async {
+      await a.db.persons.put(person('Ana')..phoneNumber = '900');
+      await a.sync();
+      remote.redact = withoutPhone;
+
+      await SyncEngine.forgetCursor(
+        await SharedPreferences.getInstance(),
+        a.engine.storeId,
+      );
+      await a.sync();
+
+      final ana = (await a.db.persons.all()).single;
+      expect(ana.phoneNumber, isNull);
+      expect(ana.fullName, 'Ana');
+      expect(remote.of('Person').single.data['phoneNumber'], '900');
+    });
+
+    test('pending local edit survives a redacted copy', () async {
+      final ana = person('Ana')..phoneNumber = '900';
+      await a.db.persons.put(ana);
+      final redacted = Map.of(a.db.persons.syncData(ana))
+        ..remove('phoneNumber');
+      expect(
+        await a.db.persons.applyRemote([
+          (key: ana.syncUuid, data: redacted, updatedAt: ana.syncUpdatedAt),
+        ], replaceSynced: true),
+        0,
+      );
+      expect((await a.db.persons.all()).single.phoneNumber, '900');
+    });
+
+    test('forgetCursor forgets one store only', () async {
+      SharedPreferences.setMockInitialValues({
+        'syncCursor:s1': '2026-10-30T12:00:00Z',
+        'syncCursor:s2': '2026-10-30T12:00:00Z',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await SyncEngine.forgetCursor(prefs, 's1');
+      expect(prefs.getString('syncCursor:s1'), isNull);
+      expect(prefs.getString('syncCursor:s2'), isNotNull);
+    });
   });
 
   test('a saved row is pending until pushed', () async {

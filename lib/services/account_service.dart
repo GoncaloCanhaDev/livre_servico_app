@@ -8,6 +8,7 @@ import 'package:supabase/supabase.dart';
 import '../models/store_access.dart';
 import 'photo_store.dart';
 import 'supabase_sync_remote.dart';
+import 'sync_engine.dart';
 import 'sync_service.dart';
 
 /// A member's role in a store, as `store_role` in `supabase/migrations`
@@ -133,10 +134,12 @@ class AccountService extends ChangeNotifier {
   static const _sessionKey = 'account_session';
   static const _emailKey = 'account_email';
   static const _storeKey = 'account_store';
+  static const _redactedPrefix = 'peopleRedacted:';
 
   late SharedPreferences _prefs;
   SupabaseClient? _client;
   Timer? _retry;
+  DateTime? _accessCheckedAt;
 
   bool get isConfigured => _url.isNotEmpty && _anonKey.isNotEmpty;
 
@@ -176,6 +179,7 @@ class AccountService extends ChangeNotifier {
     }, onError: (_) {});
     email = _prefs.getString(_emailKey);
     store = storeInfoFromJson(_prefs.getString(_storeKey));
+    SyncService.instance.addListener(_checkAccessNowAndThen);
     if (_prefs.getString(_sessionKey) != null) unawaited(_restore());
   }
 
@@ -198,6 +202,20 @@ class AccountService extends ChangeNotifier {
       return;
     }
     if (store case final s?) unawaited(_startSync(s));
+    unawaited(refreshStore().catchError((_) {}));
+  }
+
+  /// After a sync, at most every 10 minutes: whether this account's access
+  /// changed (promoted to chefe, moved team, removed from the store).
+  void _checkAccessNowAndThen() {
+    final sync = SyncService.instance;
+    if (sync.isSyncing || sync.lastError != null || store == null) return;
+    final now = DateTime.now();
+    final last = _accessCheckedAt;
+    if (last != null && now.difference(last) < const Duration(minutes: 10)) {
+      return;
+    }
+    _accessCheckedAt = now;
     unawaited(refreshStore().catchError((_) {}));
   }
 
@@ -237,8 +255,14 @@ class AccountService extends ChangeNotifier {
           );
     if (now == current) return;
     await _saveStore(now);
+    if (now.access != current.access) {
+      // People come back as this account may now read them.
+      await SyncEngine.forgetCursor(_prefs, now.id);
+    }
     // Completes after the first sync once approved.
-    if (now.pending != current.pending || now.role != current.role) {
+    if (now.pending != current.pending ||
+        now.role != current.role ||
+        now.access != current.access) {
       await _startSync(now);
     }
   }
@@ -440,6 +464,13 @@ class AccountService extends ChangeNotifier {
     if (!syncsWith(s)) {
       _stopSync();
       return;
+    }
+    // Versions before 0.62.1 kept everyone's people whole: pull them all
+    // again, once, as this account may read them.
+    final redactedKey = '$_redactedPrefix${s.id}';
+    if (_prefs.getBool(redactedKey) != true) {
+      await SyncEngine.forgetCursor(_prefs, s.id);
+      await _prefs.setBool(redactedKey, true);
     }
     PhotoStore.instance.remote = SupabasePhotoRemote(_api, s.id);
     await SyncService.instance.start(

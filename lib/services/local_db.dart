@@ -447,11 +447,14 @@ class LocalCollection<T extends SyncedRow> {
 
   /// Saves rows from the server ([data] as [syncData] wrote it, under their
   /// [syncKeyOf] key), each over the local row with the same key unless the
-  /// local one was saved at the same time or later. Returns how many
-  /// changed.
+  /// local one was saved at the same time or later. With [replaceSynced], a
+  /// local row with nothing pending takes the server's copy saved at the
+  /// same time too: the server gives out people redacted, and a copy kept
+  /// from before must not stay whole. Returns how many changed.
   Future<int> applyRemote(
-    List<({String key, Map<String, dynamic> data, DateTime updatedAt})> rows,
-  ) async {
+    List<({String key, Map<String, dynamic> data, DateTime updatedAt})> rows, {
+    bool replaceSynced = false,
+  }) async {
     if (rows.isEmpty) return 0;
     final byKey = <String, int>{
       for (final e in _rows.entries) syncKeyOf(_read(e.key, e.value)): e.key,
@@ -462,13 +465,26 @@ class LocalCollection<T extends SyncedRow> {
       if (id != null) {
         final current = staged[id] ?? _rows[id]!;
         final savedAt = dateFromJson(current['syncUpdatedAt']);
-        if (savedAt != null && !r.updatedAt.isAfter(savedAt)) continue;
+        final replace =
+            replaceSynced &&
+            current['synced'] != false &&
+            (savedAt == null || !r.updatedAt.isBefore(savedAt));
+        if (!replace && savedAt != null && !r.updatedAt.isAfter(savedAt)) {
+          continue;
+        }
       }
       final row = _fromJson(r.data)
         ..id = id ?? 0
         ..syncUpdatedAt = r.updatedAt
         ..synced = true;
-      staged.addAll(_encode([row]));
+      final encoded = _encode([row]);
+      // The same row again (every pull overlaps the last): nothing changed.
+      if (id != null &&
+          jsonEncode(encoded[id]) == jsonEncode(staged[id] ?? _rows[id])) {
+        byKey[r.key] = id;
+        continue;
+      }
+      staged.addAll(encoded);
       // Later rows in [rows] with the same key compare with this one.
       byKey[r.key] = row.id;
     }

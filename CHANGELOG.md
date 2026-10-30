@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.62.1] — 2026-10-31
+
+### Changed
+- **Sync pulls through `pull_records`**: people come as this account may read them. A phone
+  that kept everyone's details whole from before pulls everyone again, once, and keeps only
+  what it may see; so does a phone whose account is promoted, demoted or moved team (checked
+  after syncs, at most every 10 minutes).
+
 ## [0.62.0] — 2026-10-31
 
 ### Added

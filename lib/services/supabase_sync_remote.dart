@@ -7,7 +7,8 @@ import 'photo_store.dart';
 import 'sync_engine.dart';
 
 /// [SyncRemote] on the Supabase database in `supabase/migrations`: pushes
-/// through `push_records`, pulls from `records`. [client] must be signed in
+/// through `push_records`, pulls through `pull_records` (people redacted to
+/// what this account may read). [client] must be signed in
 /// as a member of [storeId].
 class SupabaseSyncRemote implements SyncRemote {
   SupabaseSyncRemote(this.client, this.storeId);
@@ -32,14 +33,18 @@ class SupabaseSyncRemote implements SyncRemote {
 
   @override
   Future<List<SyncRecord>> pull({DateTime? since, required int limit}) async {
-    var query = client.from('records').select().eq('store_id', storeId);
-    if (since != null) {
-      query = query.gte('server_updated_at', since.toUtc().toIso8601String());
-    }
-    final rows = await query
-        .order('server_updated_at', ascending: true)
-        .limit(limit);
-    return [for (final r in rows) SyncRecord.fromServerJson(r)];
+    final rows = await client.rpc<List<dynamic>>(
+      'pull_records',
+      params: {
+        'p_store': storeId,
+        'p_since': since?.toUtc().toIso8601String(),
+        'p_limit': limit,
+      },
+    );
+    return [
+      for (final r in rows)
+        SyncRecord.fromServerJson(Map<String, dynamic>.from(r as Map)),
+    ];
   }
 
   /// Supabase Realtime on `records` (published by the first migration),

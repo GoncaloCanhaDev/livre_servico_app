@@ -108,6 +108,12 @@ class SyncEngine {
   static const _cursorPrefix = 'syncCursor:';
   String get _cursorKey => '$_cursorPrefix$storeId';
 
+  /// Forgets where the store [storeId]'s pulls got to, so the next sync
+  /// pushes every row and pulls everything again: after this account's
+  /// access changed, so people come back as it may now read them.
+  static Future<void> forgetCursor(SharedPreferences prefs, String storeId) =>
+      prefs.remove('$_cursorPrefix$storeId');
+
   /// Forgets where every store's pulls got to, so the next sync pushes
   /// every row and pulls everything again: after a backup import, which
   /// replaces rows here without going through the server.
@@ -164,7 +170,10 @@ class SyncEngine {
       final newer = await remote.push(records);
       // Every row of a key: the older ones were replaced by the pushed one.
       await c.markSynced([for (final k in batch) ...byKey[k]!]);
-      if (await c.applyRemote([for (final r in newer) _incoming(r)]) > 0) {
+      if (await c.applyRemote([
+            for (final r in newer) _incoming(r),
+          ], replaceSynced: _redacted(c.name)) >
+          0) {
         changed.add(c.name);
       }
     }
@@ -187,7 +196,10 @@ class SyncEngine {
       }
       for (final e in byCollection.entries) {
         final rows = [for (final r in e.value) _incoming(r)];
-        if (await byName[e.key]!.applyRemote(rows) > 0) changed.add(e.key);
+        final c = byName[e.key]!;
+        if (await c.applyRemote(rows, replaceSynced: _redacted(e.key)) > 0) {
+          changed.add(e.key);
+        }
       }
       final last = page.isEmpty ? null : page.last.serverUpdatedAt;
       if (last != null && (newest == null || last.isAfter(newest))) {
@@ -208,6 +220,10 @@ class SyncEngine {
     }
     return pulled;
   }
+
+  /// Whether the server gives out [collection]'s rows redacted for this
+  /// account (`pull_records` in `supabase/migrations`).
+  static bool _redacted(String collection) => collection == 'Person';
 
   SyncRecord _record(LocalCollection<SyncedRow> c, String key, SyncedRow r) =>
       SyncRecord(

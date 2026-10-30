@@ -211,23 +211,29 @@ files, WhatsApp links, hosting).
   `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
   JSON document in `records`, keyed by (`store_id`, `collection`, `id`): the model name and its
   `syncUuid` (or a fixed key, like the day for `DailyTasks`), so model fields never need a
-  migration. Users belong to a store through `store_members` as viewer, editor or owner.
+  migration. Users belong to a store through `store_members` as editor or owner (old viewers
+  became editors), pending until approved.
 - Push with the `push_records` RPC (last write wins on `updated_at` = `syncUpdatedAt`; it
-  returns the rows where the server's copy won). Pull by `server_updated_at`, the server's
-  clock, starting a minute before the last cursor. Rows are never deleted, only tombstoned
+  returns the rows where the server's copy won). Pull with the `pull_records` RPC by
+  `server_updated_at`, the server's clock, starting a minute before the last cursor. Person
+  rows are redacted per account there and merged field by field in `push_records` (see
+  "Personal data" below). Rows are never deleted, only tombstoned
   with `deleted_at` = `syncDeletedAt`.
 - `SyncEngine` (`lib/services/sync_engine.dart`) does one sync of `LocalDb` with a
   `SyncRemote` (`SupabaseSyncRemote` on the `supabase` package, or the in-memory `FakeRemote`
   in `test/sync_engine_test.dart`): pushes each collection's pending rows (every row on the
   first sync with a store), marks them synced unless saved again meanwhile, then pulls pages
   from the cursor kept in shared preferences (`syncCursor:<storeId>`). Rows from the server go
-  through `LocalCollection.applyRemote`, which keeps a local row saved at the same time or later,
-  and `LocalDb.remoteChanges` then tells the services (each subscribes with
+  through `LocalCollection.applyRemote`, which keeps a local row saved at the same time or later
+  (for `Person`, `replaceSynced`: a row with nothing pending takes the server's copy, so a
+  redacted copy replaces one kept whole), and `LocalDb.remoteChanges` then tells the services (each subscribes with
   `LocalDb.listenRemote` in its constructor, so its screens reload). A row there is one of per
   day, week or month is keyed online by that period (`syncKey` in `LocalDb`: `DailyTasks`,
   `WeeklyTasks`, `OpeningList`, `ReportList`, `CustomTaskEntry`), so two devices
   share one row instead of each making its own. A backup import calls
-  `SyncEngine.forgetCursors`, so the next sync pushes and pulls everything again.
+  `SyncEngine.forgetCursors`, so the next sync pushes and pulls everything again;
+  `AccountService` calls `SyncEngine.forgetCursor` when this account's access changes (checked
+  after syncs, every 10 minutes at most) and once per store (`peopleRedacted:<storeId>`).
 - `SyncService` runs the engine while a store is connected (`start(remote, storeId)`): at once,
   three seconds after a save (`LocalDb.localWrites`), a second after Realtime says the store's
   `records` changed (`SyncRemote.changes`: a Supabase Realtime channel filtered by store; the
