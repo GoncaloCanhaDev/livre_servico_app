@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/person.dart';
 import '../models/teams.dart';
+import 'account_service.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -18,8 +19,14 @@ class PersonService extends ChangeNotifier {
   void notifyExternal() => notifyListeners();
 
   /// Saves [p]. If [p] is now a chefe, whoever else held that team's slot
-  /// loses it in the same transaction (one holder per slot).
+  /// loses it in the same transaction (one holder per slot). Someone saving
+  /// their own profile answers a request to update it.
   Future<int> save(Person p) async {
+    if (AccountService.instance.access.isSelf(p)) {
+      p
+        ..profileUpdateRequestedAt = null
+        ..profileUpdateRequestedBy = null;
+    }
     SyncMeta.stamp(p);
     final others = await _db.persons.all();
     final demoted = chefeConflicts(p, others);
@@ -34,6 +41,16 @@ class PersonService extends ChangeNotifier {
     });
     notifyListeners();
     return id;
+  }
+
+  /// Asks [p] to update their profile, in the name of [byName].
+  Future<void> requestUpdate(Person p, String byName) async {
+    p
+      ..profileUpdateRequestedAt = DateTime.now()
+      ..profileUpdateRequestedBy = byName;
+    SyncMeta.stamp(p);
+    await _db.persons.put(p);
+    notifyListeners();
   }
 
   Future<void> delete(int id) async {

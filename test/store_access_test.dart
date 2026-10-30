@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/store_access.dart';
 
 void main() {
@@ -35,5 +36,78 @@ void main() {
     final a = StoreAccess.fromJson(const {});
     expect(a.canApprove, isFalse);
     expect(a.personId, isNull);
+  });
+
+  group('who sees and edits each part of a profile', () {
+    Person person(String uuid, String team) => Person()
+      ..fullName = uuid
+      ..team = team
+      ..createdAt = DateTime(2026)
+      ..syncUuid = uuid;
+    final ana = person('ana', 'talho');
+    final rui = person('rui', 'peixaria');
+
+    test('a member: their own profile only', () {
+      final a = read({'person_id': 'ana'});
+      expect(a.canSeePersonal(ana), isTrue);
+      expect(a.canSeePersonal(rui), isFalse);
+      expect(a.canEdit(ana, PersonFieldGroup.self), isTrue);
+      expect(a.canEdit(ana, PersonFieldGroup.schedule), isFalse);
+      expect(a.canEdit(ana, PersonFieldGroup.role), isFalse);
+      expect(a.canEdit(ana, PersonFieldGroup.other), isFalse);
+      expect(a.canEdit(rui, PersonFieldGroup.self), isFalse);
+      expect(a.canRequestUpdate(ana), isFalse);
+      expect(a.canRequestUpdate(rui), isFalse);
+      expect(a.canAddPeople, isFalse);
+      expect(a.canDeletePeople, isFalse);
+    });
+
+    test("a chefe: their team's folgas and ausências", () {
+      final a = read({'chefe_team': 'talho', 'person_id': 'chefe'});
+      expect(a.canSeePersonal(ana), isTrue);
+      expect(a.canSeePersonal(rui), isFalse);
+      expect(a.canEdit(ana, PersonFieldGroup.schedule), isTrue);
+      expect(a.canEdit(ana, PersonFieldGroup.role), isFalse);
+      expect(a.canEdit(ana, PersonFieldGroup.self), isFalse);
+      expect(a.canEdit(rui, PersonFieldGroup.schedule), isFalse);
+      expect(a.canRequestUpdate(ana), isTrue);
+      expect(a.canRequestUpdate(rui), isFalse);
+      expect(a.canAddPeople, isFalse);
+    });
+
+    test('Gerência: everyone, folgas, ausências and roles', () {
+      final a = read({'gerencia': true, 'person_id': 'g'});
+      expect(a.canSeePersonal(rui), isTrue);
+      expect(a.canEdit(rui, PersonFieldGroup.schedule), isTrue);
+      expect(a.canEdit(rui, PersonFieldGroup.role), isTrue);
+      expect(a.canEdit(rui, PersonFieldGroup.self), isFalse);
+      expect(a.canEdit(rui, PersonFieldGroup.other), isFalse);
+      expect(a.canRequestUpdate(rui), isTrue);
+      expect(a.canAddPeople, isTrue);
+      expect(a.canDeletePeople, isFalse);
+    });
+
+    test('the admin, the owner and no store: everything', () {
+      for (final a in [
+        read({'admin': true}),
+        read({'owner': true}),
+        StoreAccess.full,
+      ]) {
+        expect(a.canSeePersonal(rui), isTrue);
+        for (final g in PersonFieldGroup.values) {
+          expect(a.canEdit(rui, g), isTrue);
+        }
+        expect(a.canRequestUpdate(rui), isTrue);
+        expect(a.canAddPeople, isTrue);
+        expect(a.canDeletePeople, isTrue);
+      }
+    });
+
+    test('nobody asks themselves for an update', () {
+      expect(
+        read({'gerencia': true, 'person_id': 'rui'}).canRequestUpdate(rui),
+        isFalse,
+      );
+    });
   });
 }

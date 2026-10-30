@@ -28,7 +28,9 @@ class Person with SyncFields {
       ]
       ..storeStartDate = dateFromJson(j['storeStartDate'])
       ..notes = stringsFromJson(j['notes'])
-      ..genero = enumFromJson(Genero.values, j['genero']);
+      ..genero = enumFromJson(Genero.values, j['genero'])
+      ..profileUpdateRequestedAt = dateFromJson(j['profileUpdateRequestedAt'])
+      ..profileUpdateRequestedBy = stringOrNull(j['profileUpdateRequestedBy']);
     syncFieldsFromJson(p, j);
     return p;
   }
@@ -96,6 +98,13 @@ class Person with SyncFields {
   /// not set.
   Genero? genero;
 
+  /// When a chefe or Gerência asked this person to update their profile;
+  /// null when nobody did or once they saved it.
+  DateTime? profileUpdateRequestedAt;
+
+  /// Who asked ([profileUpdateRequestedAt]), by name.
+  String? profileUpdateRequestedBy;
+
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
@@ -121,6 +130,8 @@ class Person with SyncFields {
     'storeStartDate': dateToJson(storeStartDate),
     'notes': notes,
     'genero': genero?.name,
+    'profileUpdateRequestedAt': dateToJson(profileUpdateRequestedAt),
+    'profileUpdateRequestedBy': profileUpdateRequestedBy,
   };
 }
 

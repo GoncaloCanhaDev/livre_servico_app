@@ -124,6 +124,17 @@ void main() {
       final json = jsonDecode(jsonEncode(p.toJson())) as Map<String, dynamic>;
       expect(Person.fromJson(json).toJson(), p.toJson());
     });
+
+    test('a request to update the profile reads back', () {
+      final p = ana()
+        ..profileUpdateRequestedAt = DateTime(2026, 10, 31, 9)
+        ..profileUpdateRequestedBy = 'Chefe';
+      final back = Person.fromJson(
+        jsonDecode(jsonEncode(p.toJson())) as Map<String, dynamic>,
+      );
+      expect(back.profileUpdateRequestedAt, DateTime(2026, 10, 31, 9));
+      expect(back.profileUpdateRequestedBy, 'Chefe');
+    });
   });
 
   group('LocalDb', () {
