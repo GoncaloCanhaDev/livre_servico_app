@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/store_access.dart';
+import 'package:livre_servico_app/screens/people_screen.dart';
 import 'package:livre_servico_app/screens/person_detail_screen.dart';
 import 'package:livre_servico_app/screens/person_form_screen.dart';
 import 'package:livre_servico_app/screens/widgets/edit_lock.dart';
@@ -270,6 +271,42 @@ void main() {
       await settle(tester);
       expect(find.byIcon(Icons.edit), findsNothing);
       expect(find.byTooltip('Pedir atualização'), findsNothing);
+    });
+
+    Future<void> openPessoas(WidgetTester tester) async {
+      await pumpApp(tester, const LivreServicoApp());
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .push(MaterialPageRoute<void>(builder: (_) => const PeopleScreen()));
+      await settle(tester);
+    }
+
+    testWidgets("the admin sees each person's store under the name", (
+      tester,
+    ) async {
+      await saved(
+        tester,
+        talho('Ana')
+          ..team = 'livre_servico'
+          ..turno = 'dia',
+      );
+      signedInAs(const StoreAccess(admin: true, gerencia: false));
+      await openPessoas(tester);
+      await scrollTo(tester, find.text('Ana'));
+      expect(find.textContaining('Loja'), findsOneWidget);
+    });
+
+    testWidgets('nobody else sees the store there', (tester) async {
+      await saved(
+        tester,
+        talho('Ana')
+          ..team = 'livre_servico'
+          ..turno = 'dia',
+      );
+      signedInAs(const StoreAccess(admin: false, gerencia: true));
+      await openPessoas(tester);
+      await scrollTo(tester, find.text('Ana'));
+      expect(find.textContaining('Loja'), findsNothing);
     });
   });
 }

@@ -357,6 +357,9 @@ class _PersonTile extends StatelessWidget {
     final p = person;
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
+    // The admin sees every store: say which one, under the name.
+    final account = AccountService.instance;
+    final storeName = account.access.admin ? account.store?.name : null;
     return ListTile(
       leading: PersonAvatar(name: p.fullName, photoPath: p.photoPath),
       title: Wrap(
@@ -377,6 +380,17 @@ class _PersonTile extends StatelessWidget {
       subtitle: Text.rich(
         TextSpan(
           children: [
+            if (storeName != null)
+              TextSpan(
+                // On its own line when more follows.
+                text:
+                    offNoteOn(p, today) != null ||
+                        horarioText(p) != null ||
+                        p.partTime
+                    ? '$storeName\n'
+                    : storeName,
+                style: TextStyle(color: context.muted),
+              ),
             if (offNoteOn(p, today) case final off?)
               TextSpan(
                 text: '$off  ',
