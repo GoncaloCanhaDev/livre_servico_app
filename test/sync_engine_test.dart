@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,7 @@ import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/sync_engine.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
+import 'package:livre_servico_app/services/sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The online database in memory, following the rules of `push_records`
@@ -18,6 +21,11 @@ class FakeRemote implements SyncRemote {
 
   /// Runs while a push is on the network, before the server answers.
   Future<void> Function()? duringPush;
+
+  final _changes = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get changes => _changes.stream;
 
   @override
   Future<List<SyncRecord>> push(List<SyncRecord> incoming) async {
@@ -36,6 +44,7 @@ class FakeRemote implements SyncRemote {
           deletedAt: r.deletedAt,
           serverUpdatedAt: _clock,
         );
+        _changes.add(null);
       } else if (server.updatedAt.isAfter(r.updatedAt)) {
         newer.add(server);
       }
@@ -99,6 +108,9 @@ void main() {
   late FakeRemote remote;
   late Device a;
   late Device b;
+
+  // SyncService watches the app coming back to the foreground.
+  TestWidgetsFlutterBinding.ensureInitialized();
 
   // Two devices: two databases on purpose.
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -342,6 +354,43 @@ void main() {
       'data': {'fullName': 'Ana'},
       'updated_at': '2026-10-30T12:00:00.123456Z',
       'deleted_at': null,
+    });
+  });
+
+  group('SyncService', () {
+    tearDown(SyncService.instance.stop);
+
+    test('a save on another device arrives without waiting a minute', () async {
+      final service = SyncService.instance;
+      await service.start(remote, 'serviceB', db: b.db);
+      expect(service.lastSyncedAt, isNotNull);
+
+      await a.db.persons.put(person('Ana'));
+      await a.sync();
+      // Realtime's event, then the short wait before syncing.
+      await Future<void>.delayed(const Duration(milliseconds: 1600));
+
+      expect((await b.db.persons.all()).single.fullName, 'Ana');
+    });
+
+    test('a save here is pushed a few seconds later', () async {
+      await SyncService.instance.start(remote, 'serviceA', db: a.db);
+      await a.db.persons.put(person('Ana'));
+      expect(remote.of('Person'), isEmpty);
+
+      await Future<void>.delayed(const Duration(milliseconds: 3600));
+
+      expect(remote.of('Person'), hasLength(1));
+    });
+
+    test('nothing syncs after stop', () async {
+      await SyncService.instance.start(remote, 'serviceA', db: a.db);
+      SyncService.instance.stop();
+      await a.db.persons.put(person('Ana'));
+
+      await Future<void>.delayed(const Duration(milliseconds: 3600));
+
+      expect(remote.of('Person'), isEmpty);
     });
   });
 }

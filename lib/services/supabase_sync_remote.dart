@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
 
@@ -38,6 +40,36 @@ class SupabaseSyncRemote implements SyncRemote {
         .order('server_updated_at', ascending: true)
         .limit(limit);
     return [for (final r in rows) SyncRecord.fromServerJson(r)];
+  }
+
+  /// Supabase Realtime on `records` (published by the first migration),
+  /// for this store's rows; the access rules still apply.
+  @override
+  Stream<void> get changes {
+    RealtimeChannel? channel;
+    late final StreamController<void> events;
+    events = StreamController<void>(
+      onListen: () {
+        channel = client
+            .channel('records:$storeId')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'records',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'store_id',
+                value: storeId,
+              ),
+              callback: (_) => events.add(null),
+            )
+            .subscribe();
+      },
+      onCancel: () async {
+        if (channel case final c?) await client.removeChannel(c);
+      },
+    );
+    return events.stream;
   }
 }
 

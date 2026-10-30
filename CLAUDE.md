@@ -237,8 +237,10 @@ files, WhatsApp links, hosting).
   share one row instead of each making its own. A backup import calls
   `SyncEngine.forgetCursors`, so the next sync pushes and pulls everything again.
 - `SyncService` runs the engine while a store is connected (`start(remote, storeId)`): at once,
-  three seconds after a save (`LocalDb.localWrites`) and every minute. It is not wired to
-  Realtime yet. Settings in shared preferences (vasilhame, horário codes, goals) don't sync.
+  three seconds after a save (`LocalDb.localWrites`), a second after Realtime says the store's
+  `records` changed (`SyncRemote.changes`: a Supabase Realtime channel filtered by store; the
+  event only triggers the usual sync, so it needs no merge logic of its own), when the app
+  comes back to the foreground, and every minute in case an event was missed. Settings in shared preferences (vasilhame, horário codes, goals) don't sync.
 - `AccountService` (`lib/services/account_service.dart`) is the optional login: email and
   password on the `supabase` package (not `supabase_flutter`, so no extra plugins; the session
   is kept in shared preferences, implicit auth flow), the chosen store (`account_store` pref)

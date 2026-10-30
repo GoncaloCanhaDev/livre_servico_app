@@ -66,6 +66,10 @@ abstract interface class SyncRemote {
   /// Up to [limit] rows the server wrote at [since] or later (all with
   /// null), oldest write first.
   Future<List<SyncRecord>> pull({DateTime? since, required int limit});
+
+  /// An event each time the server writes one of the store's rows (from
+  /// any device, this one included), while listened to.
+  Stream<void> get changes;
 }
 
 /// What one [SyncEngine.run] did.
