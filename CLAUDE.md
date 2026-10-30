@@ -286,8 +286,7 @@ files, WhatsApp links, hosting).
   `PrivacyPolicyScreen`, from Definições). "Criar conta" opens it first, with "Li e aceito" at
   the end of the text; the account's user metadata keeps `privacy_policy` (the version, a date)
   and `privacy_accepted_at`. When the app starts keeping new kinds of personal data, or shows
-  them to someone new, update the text and `privacyPolicyVersion`. The `[PREENCHER]` and
-  `[A CONFIRMAR]` parts are for the owner of the app to fill in.
+  them to someone new, update the text and `privacyPolicyVersion`.
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.

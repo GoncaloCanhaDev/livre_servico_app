@@ -58,9 +58,9 @@ const privacyPolicy = <PolicySection>[
           'de folga ou ausente, distribuir e registar tarefas e listas, e '
           'contactar a equipa. Os dados não são vendidos nem cedidos a '
           'terceiros, nem usados para publicidade.',
-      'Fundamento: [A CONFIRMAR: por exemplo, o interesse legítimo na '
-          'organização do trabalho da equipa, e o seu consentimento ao criar a '
-          'conta].',
+      'Fundamento: o interesse legítimo na organização do trabalho da '
+          'equipa da loja. Pode opor-se a este uso através do contacto '
+          'indicado em "Responsável pelos dados".',
     ],
   ),
   (
@@ -85,7 +85,8 @@ const privacyPolicy = <PolicySection>[
     paragraphs: [
       'Numa base de dados no seu aparelho (no telemóvel ou no navegador) e, com '
           'a conta iniciada, numa base de dados online no Supabase, na região '
-          '[PREENCHER: região do projeto Supabase], com as fotografias num '
+          'da Europa Ocidental (Irlanda), dentro da União Europeia, com as '
+          'fotografias num '
           'espaço privado. A ligação é sempre cifrada (HTTPS) e o servidor só '
           'entrega a cada conta o que ela pode ver.',
       'As mensagens que a aplicação abre no WhatsApp ficam sujeitas à '
@@ -108,7 +109,7 @@ const privacyPolicy = <PolicySection>[
     paragraphs: [
       'Pode pedir acesso aos seus dados, corrigi-los, apagá-los, limitar ou '
           'opor-se ao seu uso e recebê-los num ficheiro, através do contacto '
-          'acima. Pode também apresentar queixa à Comissão Nacional de '
+          'indicado em "Responsável pelos dados". Pode também apresentar queixa à Comissão Nacional de '
           'Proteção de Dados (www.cnpd.pt).',
     ],
   ),
