@@ -262,8 +262,8 @@ files, WhatsApp links, hosting).
   Membros and a count on Home) and `approve_join` (a typed name becomes a new Person) or
   `refuse_join`. `store_members.person_id` holds the linked Person's `syncUuid` (unique per
   store, so one account per person); `claim_person` lets a member link themselves once, never
-  to a chefe or to Gerência (only the owner/admin link freely), and the owner unlinks by
-  setting it to null. `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
+  to a chefe or to Gerência (only the owner/admin link freely: Membros → "Ligar a uma pessoa",
+  `linkMember`), and the owner unlinks by setting it to null. `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
   holds the picker and `completeProfile`, which opens the person form once approved.
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): owner of

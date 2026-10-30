@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.62.4] — 2026-10-31
+
+### Fixed
+- An account not linked to its person (added by email) couldn't be linked to a chefe or to
+  Gerência at all: now the owner does it in Membros → "Ligar a uma pessoa", and the message a
+  member gets says so.
+
 ## [0.62.3] — 2026-10-31
 
 ### Changed

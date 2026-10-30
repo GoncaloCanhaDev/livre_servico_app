@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/account_service.dart';
 import '../services/person_service.dart';
 import '../theme.dart';
+import 'claim_person_screen.dart';
 
 /// Conta → Membros: who is in the store, and which person each account is.
 /// Chefes, Gerência and the owner approve or refuse requests to join. The
@@ -102,6 +103,35 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
     await _run(() => _account.setMember(email, StoreRole.editor));
   }
 
+  /// Picks, from the people without an account, who [m] is.
+  Future<void> _link(StoreMember m) async {
+    final List<UnlinkedPerson> people;
+    try {
+      people = await _account.unlinkedPeople();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(accountErrorText(e))));
+      return;
+    }
+    if (!mounted) return;
+    final choice = await Navigator.push<({String? personId, String? name})>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClaimPersonScreen(
+          storeName: _account.store!.name,
+          people: people,
+          canAddNew: false,
+        ),
+      ),
+    );
+    final id = choice?.personId;
+    if (id == null) return;
+    await _run(() => _account.linkMember(m.userId, id));
+    _loadNames();
+  }
+
   Future<void> _edit(StoreMember m) async {
     final choice = await showModalBottomSheet<Object>(
       context: context,
@@ -115,6 +145,13 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
+            if (m.personId == null)
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: const Text('Ligar a uma pessoa'),
+                subtitle: const Text('Quem é na lista de pessoas da loja.'),
+                onTap: () => Navigator.pop(ctx, 'link'),
+              ),
             if (m.personId != null)
               ListTile(
                 leading: const Icon(Icons.link_off),
@@ -137,7 +174,9 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
         ),
       ),
     );
-    if (choice == 'unlink') {
+    if (choice == 'link' && mounted) {
+      await _link(m);
+    } else if (choice == 'unlink') {
       await _run(() => _account.unlinkMember(m.userId));
     } else if (choice == 'remove' && mounted) {
       final ok = await showDialog<bool>(

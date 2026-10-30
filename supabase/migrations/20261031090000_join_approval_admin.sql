@@ -171,7 +171,8 @@ $$;
 -- another account has it. Access comes from that person (chefe, Gerência),
 -- so a member links themselves only once, and never to a chefe or to
 -- Gerência: for those, the request goes through an approver (join_store) or
--- the owner sets the link. The owner (and the admin) may link freely.
+-- the owner sets the link (Membros → Ligar a uma pessoa). The owner (and the
+-- admin) may link freely.
 create or replace function public.claim_person(p_store uuid, p_person text)
 returns void
 language plpgsql
@@ -199,7 +200,7 @@ begin
         using errcode = '42501';
     end if;
     if v_data ->> 'team' = 'gerencia' or public.person_chefe_team(v_data) is not null then
-      raise exception 'Para ser um chefe ou da gerência, peça a um chefe ou à gerência que aprove.'
+      raise exception 'Uma pessoa chefe ou da gerência só é ligada pelo dono da loja (Membros).'
         using errcode = '42501';
     end if;
   end if;

@@ -135,8 +135,8 @@ await throws('pending member cannot claim', () => as(D, 'select public.claim_per
 await throws('editor without chefe cannot list requests', () => as(B, 'select * from public.store_join_requests($1)', [store]), /aprovar/);
 await throws('editor without chefe cannot approve', () => as(B, 'select public.approve_join($1, $2)', [store, D]), /aprovar/);
 await push(A, [person('pc', '2026-10-30T12:00:00Z', { fullName: 'Chefe', team: 'talho', chefe: 'chefe' })]);
-await throws('member cannot claim a chefe', () => as(B, 'select public.claim_person($1, $2)', [store, 'pc']), /chefe ou à gerência/);
-await db.exec('reset role'); await db.query(`update store_members set person_id = 'pc' where user_id = $1`, [B]);
+await throws('member cannot claim a chefe', () => as(B, 'select public.claim_person($1, $2)', [store, 'pc']), /dono da loja/);
+ok('owner links a member to a chefe', (await as(A, `update store_members set person_id = 'pc' where user_id = $1 returning *`, [B])).length === 1);
 ok('chefe access', (await as(B, 'select public.my_access($1) a', [store]))[0].a.chefe_team === 'talho');
 let requests = await as(B, 'select * from public.store_join_requests($1)', [store]);
 ok('chefe sees the request', requests.length === 1 && requests[0].user_id === D && requests[0].email === 'stranger@x.pt' && requests[0].person_name === 'Zé');

@@ -527,6 +527,14 @@ class AccountService extends ChangeNotifier {
     },
   );
 
+  /// Links another member's account to the person [personId] (one without
+  /// an account). Owners only: the way to link a chefe or Gerência.
+  Future<void> linkMember(String userId, String personId) => _api
+      .from('store_members')
+      .update({'person_id': personId})
+      .eq('store_id', store!.id)
+      .eq('user_id', userId);
+
   /// Unlinks another member's account from their person, so it can be
   /// picked again. Owners only.
   Future<void> unlinkMember(String userId) => _api
