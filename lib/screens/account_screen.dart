@@ -506,11 +506,6 @@ class _Connected extends StatelessWidget {
             color: sync.lastError == null ? null : context.warningText,
           ),
           title: Text(_status()),
-          trailing: IconButton(
-            tooltip: 'Sincronizar agora',
-            icon: const Icon(Icons.sync),
-            onPressed: sync.isSyncing ? null : sync.syncNow,
-          ),
         ),
         const Divider(),
         _MyProfileTile(personId: store.personId),

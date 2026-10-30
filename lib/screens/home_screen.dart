@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../services/backup_service.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -22,49 +21,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptBackup());
-  }
-
-  Future<void> _maybePromptBackup() async {
-    if (!await BackupService.instance.isBackupOverdue()) return;
-    if (!mounted) return;
-    final choice = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cópia de Segurança'),
-        content: const Text(
-          'Ainda não fizeste uma cópia de segurança há mais de 7 dias. '
-          'Queres exportar os dados agora?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Mais tarde'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Agora'),
-          ),
-        ],
-      ),
-    );
-    if (choice == true) {
-      try {
-        await BackupService.instance.exportToFile();
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
-      }
-    } else {
-      await BackupService.instance.setLastPromptAt(DateTime.now());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

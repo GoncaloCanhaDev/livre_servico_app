@@ -23,11 +23,6 @@ class BackupService {
   /// (Backups from before 0.61.0 also have "horarios", now ignored.)
   List<LocalCollection<SyncedRow>> get _backedUp => _db.collections;
 
-  static const _lastBackupAtKey = 'last_backup_at';
-  static const _lastPromptAtKey = 'last_backup_prompt_at';
-  static const _overdueAfter = Duration(days: 7);
-  static const _rePromptAfter = Duration(days: 1);
-
   Future<ShareResult> exportToFile() async {
     final payload = await _buildPayload();
     final timestamp = DateTime.now()
@@ -41,41 +36,7 @@ class BackupService {
       name: 'livre_servico_backup_$timestamp.json',
       subject: 'Cópia de segurança - Livre Serviço',
     );
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastBackupAtKey, DateTime.now().toIso8601String());
     return result;
-  }
-
-  Future<DateTime?> lastBackupAt() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_lastBackupAtKey);
-    return raw == null ? null : DateTime.tryParse(raw);
-  }
-
-  Future<void> setLastPromptAt(DateTime time) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastPromptAtKey, time.toIso8601String());
-  }
-
-  Future<bool> isBackupOverdue() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastBackupRaw = prefs.getString(_lastBackupAtKey);
-    final lastBackup = lastBackupRaw == null
-        ? null
-        : DateTime.tryParse(lastBackupRaw);
-    if (lastBackup != null &&
-        DateTime.now().difference(lastBackup) < _overdueAfter) {
-      return false;
-    }
-    final lastPromptRaw = prefs.getString(_lastPromptAtKey);
-    final lastPrompt = lastPromptRaw == null
-        ? null
-        : DateTime.tryParse(lastPromptRaw);
-    if (lastPrompt != null &&
-        DateTime.now().difference(lastPrompt) < _rePromptAfter) {
-      return false;
-    }
-    return true;
   }
 
   /// Returns true if an import was performed.

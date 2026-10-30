@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.64.0] — 2026-10-31
+
+### Changed
+- **The website opens on Conta**: sign in and choose the store first; Home shows once connected
+  (and approved). Leaving the store or signing out goes back there. The phone still works
+  without an account.
+
+### Removed
+- The weekly reminder to export a backup, and the "Sincronizar agora" button: the data syncs on
+  its own. Exporting and importing the file stays in Definições.
+
 ## [0.63.2] — 2026-10-31
 
 ### Changed

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/start_screen.dart';
 import 'services/account_service.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
@@ -74,7 +74,7 @@ class LivreServicoApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         navigatorObservers: [_observer],
-        home: const HomeScreen(),
+        home: const StartScreen(),
       ),
     );
   }

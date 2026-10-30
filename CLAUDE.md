@@ -81,7 +81,7 @@ multi-tenant product.
   import. Compare dates kept as keys (`serviceDay`, `serviceWeek`, `periodKey`) with
   `isAtSameMomentAs`, not `==`.
 - `lib/services/backup_service.dart` implements manual JSON export/import (share a file /
-  pick a file) and a "clear all data" wipe, independent of the sync fields above. The export is
+  pick a file; never prompted for, since the data syncs on its own) and a "clear all data" wipe, independent of the sync fields above. The export is
   indented JSON with `vasilhame` and `settings` before `collections` (every `LocalDb`
   collection, keyed by its name); import replaces only the collections and
   sections the file has.
@@ -160,8 +160,10 @@ multi-tenant product.
   `truck_form_screen.dart` (`lib/screens/truck_form/`), `person_form_screen.dart`
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
   the ausência dialog).
-- `HomeScreen` (`lib/screens/home_screen.dart`) is the app's single entry route (set as
-  `MaterialApp.home` in `lib/main.dart`); other screens are pushed via `Navigator`. Its
+- `StartScreen` (`lib/screens/start_screen.dart`, `MaterialApp.home` in `lib/main.dart`)
+  shows `AccountScreen` on the website until signed in and connected to an approved store
+  (`needsAccountFirst`), then `HomeScreen` (`lib/screens/home_screen.dart`), the app's entry
+  page on the phone; other screens are pushed via `Navigator`. Its
   `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
