@@ -1,0 +1,11 @@
+{
+  "name": "livre-servico-supabase-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node sync_schema_test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.2.17"
+  }
+}

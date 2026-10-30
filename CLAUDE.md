@@ -47,10 +47,9 @@ multi-tenant product.
 - Every persisted model lives in `lib/models/*.dart` as an `@collection` class with a generated
   `*.g.dart` counterpart. After adding/editing a model, run the build_runner command above.
 - Models carry legacy sync-related fields (`syncUuid`, `syncUpdatedAt`, `syncDeletedAt`,
-  `synced`). These are **not** wired to any backend anymore — a prior Supabase-based sync/auth
-  layer was removed (see `lib/services/sync_meta.dart` docstring) — but the fields are kept
-  because on-device data already has them and the soft-delete pattern built on top of them is
-  still how deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` on
+  `synced`). They are not wired to a backend yet (a prior Supabase sync layer was removed; a new
+  one is in progress, see "Online database" below), but the soft-delete pattern built on top
+  of them is how deletes work: `SyncMeta.stamp(row)` on every save, `SyncMeta.softDelete(row)` on
   every delete. Reads must filter with `.syncDeletedAtIsNull()` to exclude tombstoned rows;
   `ShiftService.backfillSync()` fills in missing UUIDs on legacy rows: once at the first startup
   (then the `syncBackfilled` pref skips it) and after every backup import. Look rows up
@@ -173,9 +172,28 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   no CAMERA permission on purpose (declaring it would require a runtime grant before the camera
   intent works). Photos are copied into the app's documents folder (`people_photos/`,
   `info_photos/`); backups only carry their paths, not the files.
-- `.env.example` still references `SUPABASE_URL`/`SUPABASE_ANON_KEY` from the removed backend
-  integration; nothing in `lib/` reads env vars or calls Supabase today, so treat that file as
-  stale rather than as a sign of an active integration.
+- `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY` for the online database being added
+  (see "Online database" below); nothing in `lib/` reads them yet.
+
+### Online database (in progress)
+
+The app is moving to run on the web too, with an online Supabase database shared by several
+users, while staying offline-first on the phone. The plan, one version per phase: (1) Supabase
+schema, (2) replace Isar with Drift (SQLite, which also runs on the web), (3) a sync engine,
+(4) login and roles, (5) web fixes (photos to Supabase Storage, backup files, WhatsApp links,
+hosting). Only phase 1 is done: nothing in `lib/` talks to Supabase yet.
+
+- `supabase/migrations/*.sql` is the schema (run in the dashboard's SQL Editor or with
+  `supabase db push`); new changes go in a new, later-timestamped file. Every local row is one
+  JSON document in `records`, keyed by (`store_id`, `collection`, `id`): the model name and its
+  `syncUuid` (or a fixed key, like the month for `HorarioMes`), so model fields never need a
+  migration. Users belong to a store through `store_members` as viewer, editor or owner.
+- Push with the `push_records` RPC (last write wins on `updated_at` = `syncUpdatedAt`; it
+  returns the rows where the server's copy won). Pull by `server_updated_at`, the server's
+  clock, starting a minute before the last cursor. Rows are never deleted, only tombstoned
+  with `deleted_at` = `syncDeletedAt`.
+- `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
+  `auth` schema: `npm install` then `npm test` there.
 
 ## Versioning
 
