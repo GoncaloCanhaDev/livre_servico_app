@@ -282,6 +282,12 @@ files, WhatsApp links, hosting).
   membership and the Person go to the new store, the old store keeps a tombstone and the
   history). The moved phone follows on its next access check (`refreshStore`, which clears the
   old store's data with `force`).
+- The Política de Privacidade is `lib/models/privacy_policy.dart` (shown by
+  `PrivacyPolicyScreen`, from Definições). "Criar conta" opens it first, with "Li e aceito" at
+  the end of the text; the account's user metadata keeps `privacy_policy` (the version, a date)
+  and `privacy_accepted_at`. When the app starts keeping new kinds of personal data, or shows
+  them to someone new, update the text and `privacyPolicyVersion`. The `[PREENCHER]` and
+  `[A CONFIRMAR]` parts are for the owner of the app to fill in.
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.

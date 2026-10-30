@@ -4,6 +4,7 @@ import '../services/account_service.dart';
 import '../services/backup_service.dart';
 import '../services/settings_service.dart';
 import 'account_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -121,6 +122,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+            ListTile(
+              title: const Text(
+                'Política de Privacidade',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('Que dados são guardados e quem os vê.'),
+              trailing: const Icon(Icons.privacy_tip_outlined),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
               ),
             ),
             const Divider(),

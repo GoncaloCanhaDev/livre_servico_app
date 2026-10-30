@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
+import '../models/privacy_policy.dart';
 import '../models/store_access.dart';
 import 'local_db.dart';
 import 'photo_store.dart';
@@ -303,8 +304,17 @@ class AccountService extends ChangeNotifier {
 
   /// Creates an account; false when the project asks to confirm the email
   /// first (then sign in after following the link).
+  /// The account keeps which Política de Privacidade it accepted, and when
+  /// (the screen asks before this is called).
   Future<bool> signUp(String email, String password) async {
-    final r = await _api.auth.signUp(email: email.trim(), password: password);
+    final r = await _api.auth.signUp(
+      email: email.trim(),
+      password: password,
+      data: {
+        'privacy_policy': privacyPolicyVersion,
+        'privacy_accepted_at': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
     if (r.session == null) return false;
     await _signedIn();
     return true;

@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.66.0] — 2026-10-31
+
+### Added
+- **Política de Privacidade**: what the app keeps, why, who sees it, where, for how long and
+  how to exercise data rights. "Criar conta" opens it first and only goes on with "Li e
+  aceito" at the end of the text; the account records the version and when it was accepted.
+  Always available in Definições. (The responsible person, contact and Supabase region are to
+  be filled in.)
+
 ## [0.65.0] — 2026-10-31
 
 ### Added

@@ -7,6 +7,7 @@ import '../services/person_service.dart';
 import '../services/sync_service.dart';
 import '../theme.dart';
 import 'claim_person_screen.dart';
+import 'privacy_policy_screen.dart';
 import 'person_detail_screen.dart';
 import 'start_screen.dart';
 import 'store_members_screen.dart';
@@ -133,6 +134,24 @@ class _SignInFormState extends State<_SignInForm> {
     }
   }
 
+  /// Creates the account once the Política de Privacidade was read to its
+  /// end and accepted.
+  Future<void> _readPolicyThenSignUp() async {
+    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha o email e a palavra-passe.')),
+      );
+      return;
+    }
+    final accepted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PrivacyPolicyScreen(accept: true),
+      ),
+    );
+    if (accepted == true && mounted) await _run(_signUp);
+  }
+
   Future<void> _signUp() async {
     final signedIn = await AccountService.instance.signUp(
       _email.text,
@@ -201,8 +220,14 @@ class _SignInFormState extends State<_SignInForm> {
         ),
         const SizedBox(height: 8),
         OutlinedButton(
-          onPressed: () => _run(_signUp),
+          onPressed: _readPolicyThenSignUp,
           child: const Text('Criar conta'),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Ao criar a conta, lê e aceita a Política de Privacidade.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.muted, fontSize: 12),
         ),
       ],
     ],
