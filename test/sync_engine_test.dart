@@ -143,14 +143,14 @@ void main() {
   });
 
   group('people redacted by the server', () {
-    Map<String, dynamic> withoutPhone(SyncRecord r) => r.collection == 'Person'
-        ? (Map.of(r.data)..remove('phoneNumber'))
+    Map<String, dynamic> withoutNumber(SyncRecord r) => r.collection == 'Person'
+        ? (Map.of(r.data)..remove('collaboratorNumber'))
         : r.data;
 
     test('stale full copies are replaced by redacted ones', () async {
-      await a.db.persons.put(person('Ana')..phoneNumber = '900');
+      await a.db.persons.put(person('Ana')..collaboratorNumber = '900');
       await a.sync();
-      remote.redact = withoutPhone;
+      remote.redact = withoutNumber;
 
       await SyncEngine.forgetCursor(
         await SharedPreferences.getInstance(),
@@ -159,23 +159,23 @@ void main() {
       await a.sync();
 
       final ana = (await a.db.persons.all()).single;
-      expect(ana.phoneNumber, isNull);
+      expect(ana.collaboratorNumber, isEmpty);
       expect(ana.fullName, 'Ana');
-      expect(remote.of('Person').single.data['phoneNumber'], '900');
+      expect(remote.of('Person').single.data['collaboratorNumber'], '900');
     });
 
     test('pending local edit survives a redacted copy', () async {
-      final ana = person('Ana')..phoneNumber = '900';
+      final ana = person('Ana')..collaboratorNumber = '900';
       await a.db.persons.put(ana);
       final redacted = Map.of(a.db.persons.syncData(ana))
-        ..remove('phoneNumber');
+        ..remove('collaboratorNumber');
       expect(
         await a.db.persons.applyRemote([
           (key: ana.syncUuid, data: redacted, updatedAt: ana.syncUpdatedAt),
         ], replaceSynced: true),
         0,
       );
-      expect((await a.db.persons.all()).single.phoneNumber, '900');
+      expect((await a.db.persons.all()).single.collaboratorNumber, '900');
     });
 
     test('forgetCursor forgets one store only', () async {

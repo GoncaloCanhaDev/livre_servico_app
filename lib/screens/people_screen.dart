@@ -25,8 +25,7 @@ const _personFormMessage =
     '\n'
     'Primeiro e último nome:\n'
     'Nº de colaborador:\n'
-    'Data de nascimento (dd/mm/aaaa):\n'
-    'Telefone:\n'
+    'Aniversário (dia e mês, dd/mm):\n'
     'Género (M/F):\n'
     'Início no Pingo Doce (dd/mm/aaaa):\n'
     'Início nesta loja (dd/mm/aaaa):';

@@ -55,15 +55,15 @@ List<Ausencia> upcomingAusencias(Person p, DateTime today) {
 /// The tag shown on a person's birthday.
 const birthdayTag = '🎂 Faz anos';
 
-/// Whether [day] is [p]'s birthday ([Person.dateOfBirth]); a 29 February
-/// birthday falls on the 28th outside leap years.
+/// Whether [day] is [p]'s birthday ([Person.birthDay], [Person.birthMonth]);
+/// a 29 February birthday falls on the 28th outside leap years.
 bool isBirthdayOn(Person p, DateTime day) {
-  final dob = p.dateOfBirth;
-  if (dob == null || dob.month != day.month) return false;
-  if (dob.month == 2 && dob.day == 29 && DateTime(day.year, 2, 29).month == 3) {
+  final (d, m) = (p.birthDay, p.birthMonth);
+  if (d == null || m == null || m != day.month) return false;
+  if (m == 2 && d == 29 && DateTime(day.year, 2, 29).month == 3) {
     return day.day == 28;
   }
-  return dob.day == day.day;
+  return d == day.day;
 }
 
 /// The birthdays in [people] from [today] through the next [days] days,

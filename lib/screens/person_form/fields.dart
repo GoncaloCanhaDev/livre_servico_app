@@ -294,6 +294,70 @@ class _NotesField extends StatelessWidget {
   }
 }
 
+/// Aniversário: the day and the month, no year (none is kept).
+class _BirthdayField extends StatelessWidget {
+  const _BirthdayField({
+    required this.day,
+    required this.month,
+    required this.onDay,
+    required this.onMonth,
+  });
+
+  final int? day;
+  final int? month;
+  final ValueChanged<int?> onDay;
+  final ValueChanged<int?> onMonth;
+
+  static const _months = [
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', //
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  ];
+
+  @override
+  Widget build(BuildContext context) => InputDecorator(
+    decoration: const InputDecoration(
+      labelText: 'Aniversário (opcional)',
+      border: OutlineInputBorder(),
+    ),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 88,
+          child: DropdownButtonFormField<int?>(
+            initialValue: day,
+            decoration: const InputDecoration(labelText: 'Dia'),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('—')),
+              for (var d = 1; d <= 31; d++)
+                DropdownMenuItem(value: d, child: Text('$d')),
+            ],
+            onChanged: onDay,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: DropdownButtonFormField<int?>(
+            initialValue: month,
+            decoration: const InputDecoration(labelText: 'Mês'),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('—')),
+              for (var m = 1; m <= 12; m++)
+                DropdownMenuItem(value: m, child: Text(_months[m - 1])),
+            ],
+            onChanged: onMonth,
+            validator: (m) {
+              final d = day;
+              if (d == null || m == null) return null;
+              // 29 February is fine (on the 28th outside leap years).
+              return d > DateTime(2024, m + 1, 0).day ? 'Dia inválido' : null;
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _DateRow extends StatelessWidget {
   const _DateRow({
     required this.label,

@@ -34,10 +34,10 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _numberCtrl;
-  late final TextEditingController _phoneCtrl;
   late final TextEditingController _weeklyHoursCtrl;
 
-  DateTime? _dob;
+  int? _birthDay;
+  int? _birthMonth;
   Genero? _genero;
   DateTime? _hireDate;
   DateTime? _storeStart;
@@ -84,11 +84,11 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     final e = widget.existing;
     _nameCtrl = TextEditingController(text: e?.fullName ?? '');
     _numberCtrl = TextEditingController(text: e?.collaboratorNumber ?? '');
-    _phoneCtrl = TextEditingController(text: e?.phoneNumber ?? '');
     _weeklyHoursCtrl = TextEditingController(
       text: e?.weeklyHours?.toString() ?? '',
     );
-    _dob = e?.dateOfBirth;
+    _birthDay = e?.birthDay;
+    _birthMonth = e?.birthMonth;
     _genero = e?.genero;
     _hireDate = e?.hireDate;
     _storeStart = e?.storeStartDate;
@@ -130,7 +130,6 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _numberCtrl.dispose();
-    _phoneCtrl.dispose();
     _weeklyHoursCtrl.dispose();
     for (final c in _noteCtrls) {
       c.dispose();
@@ -302,10 +301,10 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     setState(() => _saving = true);
     person.fullName = _nameCtrl.text.trim();
     person.collaboratorNumber = _numberCtrl.text.trim();
-    person.phoneNumber = _phoneCtrl.text.trim().isEmpty
-        ? null
-        : _phoneCtrl.text.trim();
-    person.dateOfBirth = _dob;
+    // Both or neither: half a birthday says nothing.
+    final hasBirthday = _birthDay != null && _birthMonth != null;
+    person.birthDay = hasBirthday ? _birthDay : null;
+    person.birthMonth = hasBirthday ? _birthMonth : null;
     person.genero = _genero;
     person.hireDate = _hireDate;
     person.storeStartDate = _storeStart;
@@ -411,29 +410,15 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                EditLock(
-                  enabled: self,
-                  child: TextFormField(
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Telefone (opcional)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
               ],
               const SizedBox(height: 12),
               EditLock(
                 enabled: self,
-                child: _DateRow(
-                  label: 'Data de nascimento',
-                  value: _dob,
-                  formatted: _dob == null ? null : dateFmt.format(_dob!),
-                  onTap: () =>
-                      _pickDate('Data de nascimento', _dob, (d) => _dob = d),
-                  onClear: () => setState(() => _dob = null),
+                child: _BirthdayField(
+                  day: _birthDay,
+                  month: _birthMonth,
+                  onDay: (d) => setState(() => _birthDay = d),
+                  onMonth: (m) => setState(() => _birthMonth = m),
                 ),
               ),
               const SizedBox(height: 12),

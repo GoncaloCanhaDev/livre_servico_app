@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
@@ -537,18 +536,14 @@ class _DetailsTab extends StatelessWidget {
             label: 'Nº colaborador',
             value: p.collaboratorNumber,
           ),
-        if (p.phoneNumber case final phone?)
-          _InfoRow(
-            icon: Icons.phone,
-            label: 'Telefone',
-            value: phone,
-            onTap: () => launchUrl(Uri(scheme: 'tel', path: phone)),
-          ),
-        if (p.dateOfBirth case final dob?)
+        if ((p.birthDay, p.birthMonth) case (final d?, final m?))
           _InfoRow(
             icon: Icons.cake_outlined,
-            label: 'Data de nascimento',
-            value: dateFmt.format(dob),
+            label: 'Aniversário',
+            value: DateFormat(
+              "d 'de' MMMM",
+              'pt_PT',
+            ).format(DateTime(2024, m, d)),
           ),
         const _DetailHeading('Planeamento'),
         _InfoRow(
@@ -623,21 +618,18 @@ class _DetailHeading extends StatelessWidget {
   }
 }
 
-/// One labeled field on the Detalhes tab; tappable (e.g. to call) when
-/// [onTap] is set.
+/// One labeled field on the Detalhes tab.
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
     required this.label,
     required this.value,
-    this.onTap,
     this.highlight = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
-  final VoidCallback? onTap;
 
   /// Drawn in orange, for the person being off today.
   final bool highlight;
@@ -655,10 +647,6 @@ class _InfoRow extends StatelessWidget {
         ),
       ),
       subtitle: Text(label),
-      trailing: onTap == null
-          ? null
-          : Icon(Icons.call, color: context.colors.secondary),
-      onTap: onTap,
     );
   }
 }

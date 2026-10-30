@@ -202,10 +202,13 @@ void main() {
   });
 
   group('birthdays', () {
+    // The year is only there to read like a date: birthdays keep day and
+    // month.
     Person born(String name, DateTime dob) => Person()
       ..fullName = name
       ..createdAt = DateTime(2026)
-      ..dateOfBirth = dob;
+      ..birthDay = dob.day
+      ..birthMonth = dob.month;
 
     test('on the day of the month, any year', () {
       final ana = born('Ana', DateTime(1990, 10, 8));

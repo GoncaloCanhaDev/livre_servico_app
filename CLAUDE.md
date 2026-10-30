@@ -108,7 +108,10 @@ multi-tenant product.
   `hireDate` is the company (Pingo Doce) start; `storeStartDate` is the start at this store.
   `tenureTagOf` derives the blue "Em formação" (first month at Pingo Doce) / "Novo" / "Nova"
   (until six months; `Person.genero` picks the form) tag from `hireDate`. `isBirthdayOn` /
-  `upcomingBirthdays` read `dateOfBirth` for the "🎂 Faz anos" tag and the "Hoje" card.
+  `upcomingBirthdays` read `birthDay`/`birthMonth` for the "🎂 Faz anos" tag and the "Hoje" card.
+  People keep no phone number and no year of birth: a trigger on `records`
+  (`person_without_removed_fields`) strips `phoneNumber` and turns an old `dateOfBirth` into
+  the birthday, and `Person.fromJson` does the same for rows saved before 0.67.0.
 - `TruckReception` (Receção de Camião) has a `TruckType`, paletes per departamento
   (`PalletCount.department` holds a `truckDepartments` id; read the name through
   `PalletCount.label`, which falls back to the legacy, index-stored `PalletCategory` on older
@@ -291,11 +294,11 @@ files, WhatsApp links, hosting).
   `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.
 - Personal data: every member reads the others' public fields (`person_public_keys`: name,
-  photo, género, date of birth, team and roles); the whole Person is read by the person, the
+  photo, género, birthday, team and roles); the whole Person is read by the person, the
   chefe de secção of their team, Gerência and the admin (`person_access`). The
   server redacts in `pull_records` and the `records` select policy hides the rest (so Realtime
   too); `push_records` keeps only the fields the caller may edit (`person_edit_keys`: the
-  person their name, photo, phone, birth date, género, notes; their chefe folgas and
+  person their name, photo, birthday, género, notes; their chefe folgas and
   ausências; Gerência those plus team, chefe, turno and tags; the admin everything), so a
   redacted copy pushed back wipes nothing. Only Gerência and the admin add people;
   only the admin deletes. The app mirrors this in `StoreAccess`

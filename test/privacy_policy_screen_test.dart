@@ -42,10 +42,7 @@ void main() {
 
   testWidgets('reading it later: nothing to accept', (tester) async {
     await open(tester, accept: false);
-    await tester.scrollUntilVisible(
-      find.text(privacyPolicy.last.title),
-      400,
-    );
+    await tester.scrollUntilVisible(find.text(privacyPolicy.last.title), 400);
     expect(find.text('Li e aceito'), findsNothing);
   });
 

@@ -117,7 +117,7 @@ await throws('editor cannot promote self', () => as(B, `update store_members set
 ok('pull query works', (await as(B, `select id from records where store_id = $1 and server_updated_at > $2 order by server_updated_at`, [store, '2000-01-01'])).length === 2);
 
 // Joining with the store's code and linking an account to its person.
-await push(A, [person('p1', '2026-10-30T10:00:00Z', { name: 'Ana' }), person('p2', '2026-10-30T11:00:00Z', { name: 'Rui' }, '2026-10-30T11:00:00Z'), person('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', phoneNumber: '900' }), person('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
+await push(A, [person('p1', '2026-10-30T10:00:00Z', { name: 'Ana' }), person('p2', '2026-10-30T11:00:00Z', { name: 'Rui' }, '2026-10-30T11:00:00Z'), person('p4', '2026-10-30T12:00:00Z', { fullName: 'Zé', collaboratorNumber: '4321', team: 'livre', weeklyHours: '900' }), person('p5', '2026-10-30T12:00:00Z', { fullName: 'Bia' })]);
 await throws('editor cannot see the code', () => as(B, 'select public.store_join_code($1)', [store]), /gerência/);
 const [{ store_join_code: code }] = await as(A, 'select public.store_join_code($1)', [store]);
 ok('code has 8 plain characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
@@ -204,36 +204,36 @@ await throws('internal function hidden', () => as(D, `select public.store_by_cod
 // People's personal data by hierarchy. B: chefe of talho (pc); D: p4 in
 // talho; H: pn in peixaria; E: Gerência (pg); A and F: admins.
 await db.exec('reset role');
-await db.query(`update records set data = data || '{"team":"talho","folgas":[1],"notes":["x"],"phoneNumber":"900"}' where id = 'p4'`);
+await db.query(`update records set data = data || '{"team":"talho","folgas":[1],"notes":["x"],"weeklyHours":"900"}' where id = 'p4'`);
 await db.query(`update store_members set person_id = 'p4' where user_id = $1`, [D]);
-await push(A, [person('pn', '2026-10-30T12:00:00Z', { fullName: 'Nuno', team: 'peixaria', phoneNumber: '111', folgas: [3] })]);
+await push(A, [person('pn', '2026-10-30T12:00:00Z', { fullName: 'Nuno', team: 'peixaria', weeklyHours: '111', folgas: [3] })]);
 await as(H, 'select public.join_store($1, $2)', [code2, 'pn']);
 await as(A, 'select public.approve_join($1, $2)', [store, H]);
 const pulled = async (u, id) => (await as(u, 'select * from public.pull_records($1, $2, $3)', [store, null, 1000])).find((r) => r.id === id);
 const stored = async (id) => { await db.exec('reset role'); return (await db.query(`select * from records where collection = 'Person' and id = $1`, [id])).rows[0]; };
 let r4 = await pulled(H, 'p4');
-ok('member sees others redacted', r4.data.fullName === 'Zé' && r4.data.team === 'talho' && !('phoneNumber' in r4.data) && !('folgas' in r4.data) && !('notes' in r4.data) && !('collaboratorNumber' in r4.data));
-ok('member sees own full', (await pulled(H, 'pn')).data.phoneNumber === '111');
-ok('chefe sees own team full', (await pulled(B, 'p4')).data.phoneNumber === '900');
-ok('chefe does not see other team', !('phoneNumber' in (await pulled(B, 'pn')).data));
-ok('gerencia sees all full', (await pulled(E, 'pn')).data.phoneNumber === '111' && (await pulled(E, 'p4')).data.phoneNumber === '900');
-ok('admin sees all full', (await pulled(F, 'pn')).data.phoneNumber === '111');
-ok('a second admin sees all full', (await pulled(A, 'pn')).data.phoneNumber === '111');
+ok('member sees others redacted', r4.data.fullName === 'Zé' && r4.data.team === 'talho' && !('weeklyHours' in r4.data) && !('folgas' in r4.data) && !('notes' in r4.data) && !('collaboratorNumber' in r4.data));
+ok('member sees own full', (await pulled(H, 'pn')).data.weeklyHours === '111');
+ok('chefe sees own team full', (await pulled(B, 'p4')).data.weeklyHours === '900');
+ok('chefe does not see other team', !('weeklyHours' in (await pulled(B, 'pn')).data));
+ok('gerencia sees all full', (await pulled(E, 'pn')).data.weeklyHours === '111' && (await pulled(E, 'p4')).data.weeklyHours === '900');
+ok('admin sees all full', (await pulled(F, 'pn')).data.weeklyHours === '111');
+ok('a second admin sees all full', (await pulled(A, 'pn')).data.weeklyHours === '111');
 ok('pull_records keeps other rows whole', (await as(H, 'select * from public.pull_records($1, $2, $3)', [store, null, 1000])).some((r) => r.collection === 'Note'));
 await throws('stranger cannot pull', () => as(C, 'select * from public.pull_records($1, $2, $3)', [store, null, 10]), /Não pertence/);
 ok('select policy hides personal rows', !(await as(H, `select id from records where collection = 'Person'`)).some((r) => r.id === 'p4'));
 ok('select policy shows own row', (await as(H, `select id from records where collection = 'Person'`)).some((r) => r.id === 'pn'));
 
-back = await push(D, [person('p4', '2026-10-30T13:00:00Z', { ...(await stored('p4')).data, team: 'gerencia', chefe: 'chefe', phoneNumber: '911', collaboratorNumber: '0' })]);
+back = await push(D, [person('p4', '2026-10-30T13:00:00Z', { ...(await stored('p4')).data, team: 'gerencia', chefe: 'chefe', notes: ['911'], collaboratorNumber: '0' })]);
 let s4 = (await stored('p4')).data;
 ok('self cannot change own role', s4.team === 'talho' && !('chefe' in s4) && s4.collaboratorNumber === '4321');
-ok('self edits own phone', s4.phoneNumber === '911');
+ok('self edits own notes', s4.notes[0] === '911');
 ok('push returns the merged row', back.length === 1 && back[0].data.team === 'talho');
 ok('self is still not gerencia', (await as(D, 'select public.my_access($1) a', [store]))[0].a.gerencia === false);
 
-await push(B, [person('p4', '2026-10-30T14:00:00Z', { ...s4, folgas: [2], phoneNumber: '000' })]);
+await push(B, [person('p4', '2026-10-30T14:00:00Z', { ...s4, folgas: [2], notes: ['000'] })]);
 s4 = (await stored('p4')).data;
-ok('chefe edits team folgas only', JSON.stringify(s4.folgas) === '[2]' && s4.phoneNumber === '911');
+ok('chefe edits team folgas only', JSON.stringify(s4.folgas) === '[2]' && s4.notes[0] === '911');
 const sn = (await stored('pn')).data;
 await push(B, [person('pn', '2026-10-30T14:00:00Z', { ...sn, folgas: [5] })]);
 ok('chefe cannot edit other team', JSON.stringify((await stored('pn')).data.folgas) === '[3]');
@@ -246,7 +246,7 @@ s4 = (await stored('p4')).data;
 const redacted = (await pulled(H, 'p4')).data;
 await push(H, [person('p4', '2026-10-30T16:00:00Z', redacted)]);
 s4 = (await stored('p4')).data;
-ok('redacted push keeps hidden fields', s4.phoneNumber === '911' && JSON.stringify(s4.folgas) === '[6]' && s4.notes[0] === 'x');
+ok('redacted push keeps hidden fields', s4.weeklyHours === '900' && JSON.stringify(s4.folgas) === '[6]' && s4.notes[0] === '911');
 await push(H, [person('px', '2026-10-30T16:00:00Z', { fullName: 'Intruso' })]);
 ok('member cannot add people', (await stored('px')) === undefined);
 await push(H, [person('p4', '2026-10-30T17:00:00Z', redacted, '2026-10-30T17:00:00Z')]);
@@ -274,9 +274,9 @@ ok('member cannot ask others', !('profileUpdateRequestedAt' in (await stored('p4
 const before4 = (await stored('p4')).updated_at;
 await push(H, [person('p4', '2100-01-01T00:00:00Z', (await pulled(H, 'p4')).data)]);
 ok('a push with nothing allowed leaves the row alone', (await stored('p4')).updated_at.getTime() === before4.getTime());
-await push(D, [person('p4', '2100-01-01T00:00:00Z', { ...(await stored('p4')).data, phoneNumber: '922' })]);
+await push(D, [person('p4', '2100-01-01T00:00:00Z', { ...(await stored('p4')).data, notes: ['922'] })]);
 const future = await stored('p4');
-ok('a person is never saved in the future', future.data.phoneNumber === '922' && future.updated_at <= new Date());
+ok('a person is never saved in the future', future.data.notes[0] === '922' && future.updated_at <= new Date());
 await push(B, [person('p4', new Date(Date.now() + 1000).toISOString(), { ...future.data, folgas: [4] })]);
 ok('later edits still count after a future push', JSON.stringify((await stored('p4')).data.folgas) === '[4]');
 ok('gerencia sees the code', /^[A-HJ-NP-Z2-9]{8}$/.test((await as(E, 'select public.store_join_code($1) c', [store]))[0].c));
@@ -315,6 +315,17 @@ await throws('and not the old one', () => as(D, 'select * from public.pull_recor
 await as(D, 'select public.request_store_transfer($1, $2)', [store2, 'engano']);
 await as(D, 'select public.cancel_store_transfer()');
 ok('a request can be withdrawn', (await as(D, 'select * from public.my_store_transfer()')).length === 0);
+
+// No phone numbers, and birthdays without the year.
+const lisbon = (y, m, d) => new Date(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00+01:00`).getTime() * 1000;
+await push(A, [person('pb', '2026-10-31T10:00:00Z', { fullName: 'Bea', phoneNumber: '933', dateOfBirth: lisbon(1990, 5, 20) })]);
+let pb = (await stored('pb')).data;
+ok('a phone number is never kept', !('phoneNumber' in pb));
+ok('a date of birth becomes a birthday', !('dateOfBirth' in pb) && pb.birthDay === 20 && pb.birthMonth === 5);
+await push(A, [person('pb', '2026-10-31T11:00:00Z', { fullName: 'Bea', birthDay: 3, birthMonth: 12, dateOfBirth: lisbon(1990, 5, 20) })]);
+pb = (await stored('pb')).data;
+ok('a birthday set beats an old date of birth', pb.birthDay === 3 && pb.birthMonth === 12 && !('dateOfBirth' in pb));
+ok('everyone sees birthdays', (await pulled(B, 'pb')).data.birthMonth === 12);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);

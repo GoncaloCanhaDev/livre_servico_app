@@ -4,14 +4,16 @@ class Person with SyncFields {
   Person();
 
   factory Person.fromJson(Map<String, dynamic> j) {
+    // Before 0.67.0 a whole date of birth: only its day and month are kept.
+    final born = dateFromJson(j['dateOfBirth']);
     final p = Person()
       ..fullName = stringFromJson(j['fullName'])
       ..collaboratorNumber = stringFromJson(j['collaboratorNumber'])
       ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
-      ..dateOfBirth = dateFromJson(j['dateOfBirth'])
+      ..birthDay = intOrNull(j['birthDay']) ?? born?.day
+      ..birthMonth = intOrNull(j['birthMonth']) ?? born?.month
       ..hireDate = dateFromJson(j['hireDate'])
       ..photoPath = stringOrNull(j['photoPath'])
-      ..phoneNumber = stringOrNull(j['phoneNumber'])
       ..team = stringOrNull(j['team'])
       ..chefe = stringOrNull(j['chefe'])
       ..turno = stringOrNull(j['turno'])
@@ -39,10 +41,12 @@ class Person with SyncFields {
   String collaboratorNumber = '';
   late DateTime createdAt;
 
-  DateTime? dateOfBirth;
+  /// The birthday's day (1–31) and month (1–12); no year is kept.
+  int? birthDay;
+  int? birthMonth;
+
   DateTime? hireDate;
   String? photoPath;
-  String? phoneNumber;
 
   /// [Team.id] of the person's team (see `teams.dart`); null = Sem equipa.
   String? team;
@@ -111,10 +115,10 @@ class Person with SyncFields {
     'fullName': fullName,
     'collaboratorNumber': collaboratorNumber,
     'createdAt': dateToJson(createdAt),
-    'dateOfBirth': dateToJson(dateOfBirth),
+    'birthDay': birthDay,
+    'birthMonth': birthMonth,
     'hireDate': dateToJson(hireDate),
     'photoPath': photoPath,
-    'phoneNumber': phoneNumber,
     'team': team,
     'chefe': chefe,
     'turno': turno,

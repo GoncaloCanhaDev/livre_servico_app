@@ -61,13 +61,18 @@ void main() {
         ],
         'notes': ['Chaves'],
         'genero': 'feminino',
+        // Removed in 0.67.0: dropped.
+        'phoneNumber': '900',
         // A field removed since: ignored.
         'role': 'x',
       });
       expect(p.id, 7);
       expect(p.syncUuid, 'u-1');
       expect(p.syncUpdatedAt, DateTime(2026, 9, 1, 10));
-      expect(p.dateOfBirth, DateTime(1990, 5, 20));
+      // A date of birth from before 0.67.0 keeps only the birthday.
+      expect((p.birthDay, p.birthMonth), (20, 5));
+      expect(p.toJson().keys, isNot(contains('dateOfBirth')));
+      expect(p.toJson().keys, isNot(contains('phoneNumber')));
       expect(p.hireDate, isNull);
       expect(p.permanencia, isTrue);
       expect(p.partTime, isFalse);
@@ -203,6 +208,22 @@ void main() {
       );
       await db.persons.clear();
       expect(await db.persons.all(includeDeleted: true), isEmpty);
+    });
+
+    test('a backup holds only what the model keeps', () async {
+      final db = LocalDb.instance;
+      await db.persons.importJson([
+        {
+          ...(ana()..id = 5).toJson(),
+          'phoneNumber': '900',
+          'dateOfBirth': micros(DateTime(1990, 5, 20)),
+        },
+      ]);
+      final row = db.persons.exportJson().single;
+      expect(row.keys, isNot(contains('phoneNumber')));
+      expect(row.keys, isNot(contains('dateOfBirth')));
+      expect((row['birthDay'], row['birthMonth']), (20, 5));
+      expect(row['id'], 5);
     });
 
     test('importJson replaces the rows and keeps their ids', () async {

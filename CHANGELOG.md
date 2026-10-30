@@ -7,6 +7,20 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.67.0] — 2026-10-31
+
+### Removed
+- **People's phone numbers.** Gone from the person form, the person page (no more call
+  button), the WhatsApp registration form and the database: migration
+  `20261031200000_no_phone_birthday_only` erases the ones saved and a trigger keeps any from
+  coming back. (Contactos Úteis in Informações keep theirs.)
+
+### Changed
+- **Birthday instead of date of birth**: only the day and the month ("Aniversário"), no year.
+  Saved dates of birth become birthdays, on the phone, online and in backups; "Faz anos" and
+  the Hoje card work as before. Backups only carry what the app keeps.
+- The Política de Privacidade says so.
+
 ## [0.66.2] — 2026-10-31
 
 ### Changed

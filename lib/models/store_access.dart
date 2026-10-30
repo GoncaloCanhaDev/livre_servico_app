@@ -3,7 +3,7 @@ import 'person.dart';
 /// The parts of a profile, by who may edit them (the same lists as
 /// `person_edit_keys` in `supabase/migrations`).
 enum PersonFieldGroup {
-  /// Name, photo, phone, date of birth, género, notes: the person.
+  /// Name, photo, birthday (day and month), género, notes: the person.
   self,
 
   /// Folgas and ausências: the chefe of their team, Gerência.

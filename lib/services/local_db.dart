@@ -400,9 +400,11 @@ class LocalCollection<T extends SyncedRow> {
     ids.forEach(_rows.remove);
   }
 
-  /// Every row (tombstones included) as JSON, for a backup.
+  /// Every row (tombstones included) as JSON, for a backup, as its model
+  /// writes it: a field the model dropped (a phone number, a whole date of
+  /// birth) stays out, even from rows an older version stored.
   List<Map<String, dynamic>> exportJson() => [
-    for (final e in _rows.entries) {...e.value, 'id': e.key},
+    for (final e in _rows.entries) _read(e.key, e.value).toJson(),
   ];
 
   /// Replaces every row with [rows] from a backup (see [exportJson]). They

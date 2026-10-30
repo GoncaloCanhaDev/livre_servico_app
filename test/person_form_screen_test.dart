@@ -106,6 +106,32 @@ void main() {
     expect(p.team, isNull);
   });
 
+  testWidgets('a birthday is a day and a month, no year', (tester) async {
+    await openForm(tester);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nome completo'),
+      'Ana Silva',
+    );
+    expect(find.text('Data de nascimento'), findsNothing);
+    final birthday = find.byType(DropdownButtonFormField<int?>);
+    // Mid-screen, clear of the app bar.
+    await scrollTo(tester, birthday.first);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 250));
+    await settle(tester);
+    await tester.tap(birthday.first);
+    await settle(tester);
+    await tester.tap(find.text('9').last);
+    await settle(tester);
+    await tester.tap(birthday.last);
+    await settle(tester);
+    await tester.tap(find.text('março').last);
+    await settle(tester);
+    await tapAndSettle(tester, find.text('Adicionar'));
+
+    final p = (await people(tester)).single;
+    expect((p.birthDay, p.birthMonth), (9, 3));
+  });
+
   testWidgets('a name is required', (tester) async {
     await openForm(tester);
     await tapAndSettle(tester, find.text('Adicionar'));
@@ -147,7 +173,7 @@ void main() {
     Person talho(String name) => Person()
       ..fullName = name
       ..team = 'talho'
-      ..phoneNumber = '900'
+      ..collaboratorNumber = '900'
       ..createdAt = DateTime(2026);
 
     testWidgets('a member edits their own name and phone only', (tester) async {
@@ -157,7 +183,8 @@ void main() {
       );
       await openForm(tester, ana);
       expect(editable(tester, 'Nome completo'), isTrue);
-      expect(editable(tester, 'Telefone (opcional)'), isTrue);
+      expect(editable(tester, 'Aniversário (opcional)'), isTrue);
+      expect(find.text('Telefone (opcional)'), findsNothing);
       expect(editable(tester, 'Nº colaborador (opcional)'), isFalse);
       await scrollTo(tester, find.text('Talho'));
       expect(editable(tester, 'Talho'), isFalse);
