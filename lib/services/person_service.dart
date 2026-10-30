@@ -57,6 +57,10 @@ class PersonService extends ChangeNotifier {
     if (await _db.persons.softDelete(id)) notifyListeners();
   }
 
+  /// The person with the `syncUuid` [uuid] on this device, if here.
+  Future<Person?> bySyncUuid(String uuid) =>
+      _db.persons.firstWhere((p) => p.syncUuid == uuid);
+
   Future<List<Person>> all() async =>
       (await _db.persons.all())
         ..sort((a, b) => a.fullName.compareTo(b.fullName));

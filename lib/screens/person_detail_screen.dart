@@ -5,11 +5,13 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import '../models/person.dart';
+import '../models/store_access.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
 import '../models/truck_reception.dart';
 import '../models/validades.dart';
 import '../models/visual_list.dart';
+import '../services/account_service.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/inventory_service.dart';
@@ -67,7 +69,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   void _reload() {
     if (!mounted) return;
-    setState(() => _future = _load());
+    setState(() {
+      _future = _load();
+    });
   }
 
   DateTime _toServiceDay(DateTime dt) {
@@ -272,15 +276,69 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     }
   }
 
+  /// Asks the person to update their profile, in the name of this
+  /// account's person (or its email).
+  Future<void> _requestUpdate() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Pedir atualização'),
+        content: Text(
+          '${_person.fullName} vê no início da aplicação que deve rever e '
+          'atualizar o seu perfil.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Pedir'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final account = AccountService.instance;
+    final myId = account.access.personId;
+    final me = myId == null
+        ? null
+        : await PersonService.instance.bySyncUuid(myId);
+    await PersonService.instance.requestUpdate(
+      _person,
+      me?.fullName ?? account.email ?? 'Gerência',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Pedido enviado.')));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final access = AccountService.instance.access;
+    final canEdit = PersonFieldGroup.values.any(
+      (g) => access.canEdit(_person, g),
+    );
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text(_person.fullName),
           actions: [
-            IconButton(icon: const Icon(Icons.edit), onPressed: _openEditForm),
+            if (access.canRequestUpdate(_person))
+              IconButton(
+                tooltip: 'Pedir atualização',
+                icon: const Icon(Icons.notification_add_outlined),
+                onPressed: _requestUpdate,
+              ),
+            if (canEdit)
+              IconButton(
+                tooltip: 'Editar',
+                icon: const Icon(Icons.edit),
+                onPressed: _openEditForm,
+              ),
           ],
           bottom: const TabBar(
             labelColor: AppColors.white,

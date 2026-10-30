@@ -4,6 +4,8 @@ import '../models/opening_list.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
+import '../models/store_access.dart';
+import '../services/account_service.dart';
 import '../services/person_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -86,25 +88,30 @@ class _PeopleScreenState extends State<PeopleScreen> {
   }
 
   Future<void> _showActions(Person p) async {
+    final access = AccountService.instance.access;
+    final canEdit = PersonFieldGroup.values.any((g) => access.canEdit(p, g));
+    if (!canEdit && !access.canDeletePeople) return;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar'),
-              onTap: () => Navigator.of(ctx).pop('edit'),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Colors.redAccent,
+            if (canEdit)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Editar'),
+                onTap: () => Navigator.of(ctx).pop('edit'),
               ),
-              title: const Text('Remover'),
-              onTap: () => Navigator.of(ctx).pop('delete'),
-            ),
+            if (access.canDeletePeople)
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                ),
+                title: const Text('Remover'),
+                onTap: () => Navigator.of(ctx).pop('delete'),
+              ),
           ],
         ),
       ),
@@ -177,12 +184,17 @@ class _PeopleScreenState extends State<PeopleScreen> {
             onPressed: () =>
                 WhatsAppService.sendWithConfirm(context, _personFormMessage),
           ),
-          IconButton(icon: const Icon(Icons.add), onPressed: () => _openForm()),
-          IconButton(
-            tooltip: 'Remover todas as pessoas',
-            icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: _confirmDeleteAll,
-          ),
+          if (AccountService.instance.access.canAddPeople)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _openForm(),
+            ),
+          if (AccountService.instance.access.canDeletePeople)
+            IconButton(
+              tooltip: 'Remover todas as pessoas',
+              icon: const Icon(Icons.delete_sweep_outlined),
+              onPressed: _confirmDeleteAll,
+            ),
         ],
       ),
       body: SafeArea(

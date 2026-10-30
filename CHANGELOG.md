@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.62.3] — 2026-10-31
+
+### Changed
+- **Profiles follow who may see and edit them.** The person form locks what this account can't
+  change (each person their name, photo, phone, birth date, género and notes; chefes their
+  team's folgas and ausências; Gerência those, the team, chefe, turno and tags; the owner and
+  the admin everything) and hides personal fields it can't see. Editar only shows when
+  something can be changed; only Gerência, the owner and the admin add people, and only the
+  owner and the admin remove them. Signed out, nothing changes.
+- **Pedir atualização** on a person's page (their chefe, Gerência, the owner): they see
+  "Atualize o seu perfil" on Home, with who asked, until they save their profile.
+- Gerência can also set a person's turno (with the team).
+
+### Fixed
+- The person page threw an error when a person was saved while it was open.
+
 ## [0.62.2] — 2026-10-31
 
 ### Added

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/models/person.dart';
+import 'package:livre_servico_app/models/store_access.dart';
+import 'package:livre_servico_app/screens/person_detail_screen.dart';
 import 'package:livre_servico_app/screens/person_form_screen.dart';
+import 'package:livre_servico_app/screens/widgets/edit_lock.dart';
+import 'package:livre_servico_app/services/account_service.dart';
 import 'package:livre_servico_app/services/person_service.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
 
@@ -11,7 +15,36 @@ import 'helpers/pump.dart';
 
 void main() {
   setUp(openAppDb);
-  tearDown(closeAppDb);
+  tearDown(() async {
+    AccountService.instance.store = null;
+    await closeAppDb();
+  });
+
+  /// Connected to a store as [access] (no network: nothing syncs).
+  void signedInAs(StoreAccess access) => AccountService.instance.store = (
+    id: 's1',
+    name: 'Loja',
+    role: StoreRole.editor,
+    personId: access.personId,
+    pending: false,
+    access: access,
+  );
+
+  /// Whether the field showing [text] can be changed.
+  bool editable(WidgetTester tester, String text) => tester
+      .widget<EditLock>(
+        find.ancestor(
+          of: find.text(text).last,
+          matching: find.byType(EditLock),
+        ),
+      )
+      .enabled;
+
+  Future<Person> saved(WidgetTester tester, Person p) async {
+    SyncMeta.stamp(p);
+    await dbCall(tester, () => PersonService.instance.save(p));
+    return p;
+  }
 
   Future<void> openForm(WidgetTester tester, [Person? existing]) async {
     await pumpApp(tester, const LivreServicoApp());
@@ -107,5 +140,150 @@ void main() {
     final p = (await people(tester)).single;
     expect(p.notes, ['Segunda']);
     expect(p.folgas, [DateTime.tuesday]);
+  });
+
+  group('fields follow the account', () {
+    Person talho(String name) => Person()
+      ..fullName = name
+      ..team = 'talho'
+      ..phoneNumber = '900'
+      ..createdAt = DateTime(2026);
+
+    testWidgets('a member edits their own name and phone only', (tester) async {
+      final ana = await saved(tester, talho('Ana'));
+      signedInAs(
+        StoreAccess(
+          admin: false,
+          owner: false,
+          gerencia: false,
+          personId: ana.syncUuid,
+        ),
+      );
+      await openForm(tester, ana);
+      expect(editable(tester, 'Nome completo'), isTrue);
+      expect(editable(tester, 'Telefone (opcional)'), isTrue);
+      expect(editable(tester, 'Nº colaborador (opcional)'), isFalse);
+      await scrollTo(tester, find.text('Talho'));
+      expect(editable(tester, 'Talho'), isFalse);
+      await scrollTo(tester, find.text('Seg'));
+      expect(editable(tester, 'Seg'), isFalse);
+    });
+
+    testWidgets("a chefe edits their team's folgas, not the name", (
+      tester,
+    ) async {
+      final rui = await saved(tester, talho('Rui'));
+      signedInAs(
+        const StoreAccess(
+          admin: false,
+          owner: false,
+          gerencia: false,
+          chefeTeam: 'talho',
+          personId: 'chefe',
+        ),
+      );
+      await openForm(tester, rui);
+      expect(editable(tester, 'Nome completo'), isFalse);
+      await scrollTo(tester, find.text('Talho'));
+      expect(editable(tester, 'Talho'), isFalse);
+      await scrollTo(tester, find.text('Seg'));
+      expect(editable(tester, 'Seg'), isTrue);
+      await tapAndSettle(tester, find.text('Seg'));
+      await tapAndSettle(tester, find.text('Guardar'));
+      expect((await people(tester)).single.folgas, [DateTime.monday]);
+    });
+
+    testWidgets('no store: everything can be changed', (tester) async {
+      final rui = await saved(tester, talho('Rui'));
+      await openForm(tester, rui);
+      expect(editable(tester, 'Nome completo'), isTrue);
+      expect(editable(tester, 'Nº colaborador (opcional)'), isTrue);
+      await scrollTo(tester, find.text('Talho'));
+      expect(editable(tester, 'Talho'), isTrue);
+    });
+
+    testWidgets(
+      'a request to update shows on Home until the profile is saved',
+      (tester) async {
+        final ana = await saved(
+          tester,
+          talho('Ana')
+            ..profileUpdateRequestedAt = DateTime(2026, 10, 30)
+            ..profileUpdateRequestedBy = 'Chefe Rui',
+        );
+        signedInAs(
+          StoreAccess(
+            admin: false,
+            owner: false,
+            gerencia: false,
+            personId: ana.syncUuid,
+          ),
+        );
+        await pumpApp(tester, const LivreServicoApp());
+        expect(find.text('Atualize o seu perfil'), findsOneWidget);
+        expect(find.textContaining('Chefe Rui'), findsOneWidget);
+
+        await tapAndSettle(tester, find.text('Atualize o seu perfil'));
+        expect(find.byType(PersonFormScreen), findsOneWidget);
+        await tapAndSettle(tester, find.text('Guardar'));
+
+        expect(find.text('Atualize o seu perfil'), findsNothing);
+        expect((await people(tester)).single.profileUpdateRequestedAt, isNull);
+      },
+    );
+
+    testWidgets('a chefe asks a team member to update their profile', (
+      tester,
+    ) async {
+      final chefe = await saved(tester, talho('Rui Chefe')..chefe = 'chefe');
+      final ana = await saved(tester, talho('Ana'));
+      signedInAs(
+        StoreAccess(
+          admin: false,
+          owner: false,
+          gerencia: false,
+          chefeTeam: 'talho',
+          personId: chefe.syncUuid,
+        ),
+      );
+      await pumpApp(tester, const LivreServicoApp());
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .push(
+            MaterialPageRoute<void>(
+              builder: (_) => PersonDetailScreen(person: ana),
+            ),
+          );
+      await settle(tester);
+
+      await tapAndSettle(tester, find.byTooltip('Pedir atualização'));
+      await tapAndSettle(tester, find.text('Pedir'));
+
+      final asked = (await people(
+        tester,
+      )).firstWhere((p) => p.fullName == 'Ana');
+      expect(asked.profileUpdateRequestedBy, 'Rui Chefe');
+      expect(asked.profileUpdateRequestedAt, isNotNull);
+    });
+
+    testWidgets('a member cannot add, edit others or remove people', (
+      tester,
+    ) async {
+      final ana = await saved(tester, talho('Ana'));
+      signedInAs(
+        const StoreAccess(admin: false, owner: false, gerencia: false),
+      );
+      await pumpApp(tester, const LivreServicoApp());
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .push(
+            MaterialPageRoute<void>(
+              builder: (_) => PersonDetailScreen(person: ana),
+            ),
+          );
+      await settle(tester);
+      expect(find.byIcon(Icons.edit), findsNothing);
+      expect(find.byTooltip('Pedir atualização'), findsNothing);
+    });
   });
 }

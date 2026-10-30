@@ -123,8 +123,8 @@ begin
       'genero', 'notes'] || v_request;
   end if;
   if v_me ->> 'team' = 'gerencia' then
-    v_keys := v_keys || array['folgas', 'ausencias', 'team', 'chefe', 'supervisor',
-      'segundaLinha', 'permanencia'] || v_request;
+    v_keys := v_keys || array['folgas', 'ausencias', 'team', 'chefe', 'turno',
+      'supervisor', 'segundaLinha', 'permanencia'] || v_request;
   elsif public.person_chefe_team(v_me) = p_data ->> 'team' then
     v_keys := v_keys || array['folgas', 'ausencias'] || v_request;
   end if;

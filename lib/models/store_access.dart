@@ -9,10 +9,10 @@ enum PersonFieldGroup {
   /// Folgas and ausências: the chefe of their team, Gerência.
   schedule,
 
-  /// Team, chefe, Supervisor, Segunda Linha, Permanência: Gerência.
+  /// Team, chefe, turno, Supervisor, Segunda Linha, Permanência: Gerência.
   role,
 
-  /// Everything else (nº de colaborador, dates, turno, hours, shift).
+  /// Everything else (nº de colaborador, dates, hours, shift).
   other,
 }
 

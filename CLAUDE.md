@@ -31,7 +31,8 @@ multi-tenant product.
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
-  `lib/models/today.dart`, `lib/models/historico_search.dart` and `lib/theme.dart`, plus a
+  `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`
+  and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
@@ -267,6 +268,20 @@ files, WhatsApp links, hosting).
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.
+- Personal data: every member reads the others' public fields (`person_public_keys`: name,
+  photo, género, date of birth, team and roles); the whole Person is read by the person, the
+  chefe de secção of their team, Gerência, the owner and the admin (`person_access`). The
+  server redacts in `pull_records` and the `records` select policy hides the rest (so Realtime
+  too); `push_records` keeps only the fields the caller may edit (`person_edit_keys`: the
+  person their name, photo, phone, birth date, género, notes; their chefe folgas and
+  ausências; Gerência those plus team, chefe, turno and tags; owner/admin everything), so a
+  redacted copy pushed back wipes nothing. Only Gerência, the owner and the admin add people;
+  only the owner and the admin delete. The app mirrors this in `StoreAccess`
+  (`canSeePersonal`, `canEdit(person, PersonFieldGroup)`, `canRequestUpdate`, `canAddPeople`,
+  `canDeletePeople`): the person form locks fields with `EditLock`, and the person page,
+  Pessoas and Home hide what the account can't do. Keep the Dart groups and the SQL key lists
+  the same. "Pedir atualização" sets `Person.profileUpdateRequestedAt`/`By`; the person sees
+  `ProfileRequestCard` on Home until saving their own profile clears it (`PersonService.save`).
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

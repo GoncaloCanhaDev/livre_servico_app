@@ -230,9 +230,9 @@ ok('chefe edits team folgas only', JSON.stringify(s4.folgas) === '[2]' && s4.pho
 const sn = (await stored('pn')).data;
 await push(B, [person('pn', '2026-10-30T14:00:00Z', { ...sn, folgas: [5] })]);
 ok('chefe cannot edit other team', JSON.stringify((await stored('pn')).data.folgas) === '[3]');
-await push(E, [person('p4', '2026-10-30T15:00:00Z', { ...s4, chefe: 'chefe', folgas: [6] })]);
+await push(E, [person('p4', '2026-10-30T15:00:00Z', { ...s4, chefe: 'chefe', turno: 'noite', folgas: [6] })]);
 s4 = (await stored('p4')).data;
-ok('gerencia changes roles and folgas', s4.chefe === 'chefe' && JSON.stringify(s4.folgas) === '[6]');
+ok('gerencia changes roles, turno and folgas', s4.chefe === 'chefe' && s4.turno === 'noite' && JSON.stringify(s4.folgas) === '[6]');
 await push(E, [person('p4', '2026-10-30T15:30:00Z', { ...s4, chefe: null })]);
 s4 = (await stored('p4')).data;
 
