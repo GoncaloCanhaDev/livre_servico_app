@@ -32,7 +32,8 @@ await db.exec(`
     ('00000000-0000-0000-0000-00000000000b','Editor@x.pt'),
     ('00000000-0000-0000-0000-00000000000c','viewer@x.pt'),
     ('00000000-0000-0000-0000-00000000000d','stranger@x.pt'),
-    ('00000000-0000-0000-0000-00000000000e','new@x.pt');
+    ('00000000-0000-0000-0000-00000000000e','new@x.pt'),
+    ('00000000-0000-0000-0000-00000000000f','admin@x.pt');
 `);
 for (const m of migrations) await db.exec(m);
 await db.exec(`
@@ -42,7 +43,7 @@ await db.exec(`
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b',
   C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d',
-  E = '00000000-0000-0000-0000-00000000000e';
+  E = '00000000-0000-0000-0000-00000000000e', F = '00000000-0000-0000-0000-00000000000f';
 let fails = 0;
 const as = async (user, sql, params) => {
   await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${user}', false); set role authenticated;`);
@@ -119,19 +120,63 @@ ok('preview lists live people, by name', preview.people.map((p) => p.id).join() 
 ok('preview shows only name and number', Object.keys(preview.people[1]).sort().join() === 'collaborator_number,full_name,id');
 ok('preview joins nothing', (await as(D, 'select * from records')).length === 0);
 await as(D, 'select public.join_store($1, $2)', [code, 'p4']);
-ok('joined as editor', (await as(D, 'select role, person_id from store_members where user_id = $1', [D]))[0]?.role === 'editor');
-ok('joined member reads records', (await as(D, 'select * from records')).length > 0);
+let mine = await as(D, 'select user_id from store_members');
+ok('pending member sees only their own membership', mine.length === 1 && mine[0].user_id === D);
+mine = await as(D, 'select * from public.my_stores()');
+ok('join asks: pending with the person', mine.length === 1 && mine[0].status === 'pending' && mine[0].person_id === 'p4');
+ok('pending member reads no records', (await as(D, 'select * from records')).length === 0);
+ok('pending member sees no store', (await as(D, 'select * from stores')).length === 0);
+await throws('pending member cannot push', () => push(D, [row('p9', '2026-10-30T12:00:00Z', {})]), /permissão/);
+ok('pending member sees no photos', (await as(D, `select * from storage.objects`)).length === 0);
+await throws('pending member cannot claim', () => as(D, 'select public.claim_person($1, $2)', [store, 'p5']), /Não pertence/);
+await throws('editor without chefe cannot list requests', () => as(B, 'select * from public.store_join_requests($1)', [store]), /aprovar/);
+await throws('editor without chefe cannot approve', () => as(B, 'select public.approve_join($1, $2)', [store, D]), /aprovar/);
+await push(B, [row('pc', '2026-10-30T12:00:00Z', { fullName: 'Chefe', team: 'talho', chefe: 'chefe' })]);
+await as(B, 'select public.claim_person($1, $2)', [store, 'pc']);
+ok('chefe access', (await as(B, 'select public.my_access($1) a', [store]))[0].a.chefe_team === 'talho');
+let requests = await as(B, 'select * from public.store_join_requests($1)', [store]);
+ok('chefe sees the request', requests.length === 1 && requests[0].user_id === D && requests[0].email === 'stranger@x.pt' && requests[0].person_name === 'Zé');
+await as(B, 'select public.approve_join($1, $2)', [store, D]);
+ok('approved member reads records', (await as(D, 'select * from records')).length > 0);
+ok('approved as editor, linked', (await as(D, 'select role, status, person_id from store_members where user_id = $1', [D]))[0]?.status === 'approved');
 [{ join_store_preview: preview }] = await as(E, 'select public.join_store_preview($1)', [code]);
 ok('linked person leaves the list', !preview.people.some((p) => p.id === 'p4'));
 await throws('nobody else takes a linked person', () => as(E, 'select public.join_store($1, $2)', [code, 'p4']), /já tem conta/);
-ok('failed join adds nothing', (await as(E, 'select * from stores')).length === 0);
-await as(E, 'select public.join_store($1)', [code]);
-ok('join without a person', (await as(E, 'select * from stores')).length === 1);
+await throws('join needs a person or a name', () => as(E, 'select public.join_store($1)', [code]), /nome/);
+ok('failed join adds nothing', (await as(E, 'select * from public.my_stores()')).length === 0);
+await as(E, 'select public.join_store($1, null, $2)', [code, '  Nova ']);
+requests = await as(A, 'select * from public.store_join_requests($1)', [store]);
+ok('owner sees the typed name', requests.length === 1 && requests[0].requested_name === 'Nova' && requests[0].person_id === null);
+await as(A, 'select public.approve_join($1, $2)', [store, E]);
+const [nova] = await as(E, `select r.id, r.data, s.person_id from records r join store_members s on s.person_id = r.id where s.user_id = $1`, [E]);
+ok('typed name creates the person', nova?.data.fullName === 'Nova' && nova.data.syncUuid === nova.id && typeof nova.data.syncUpdatedAt === 'number');
+await as(C, 'select public.join_store($1, null, $2)', [code, 'Xa']);
+await as(A, 'select public.refuse_join($1, $2)', [store, C]);
+ok('refuse deletes the request', (await as(C, 'select * from public.my_stores()')).length === 0);
+await as(C, 'select public.join_store($1, null, $2)', [code, 'Xa']);
+ok('pending member cancels own request', (await as(C, 'delete from store_members where user_id = $1 returning *', [C])).length === 1);
+ok('approved member cannot delete self', (await as(D, 'delete from store_members where user_id = $1 returning *', [D])).length === 0);
 await throws('deleted person', () => as(E, 'select public.claim_person($1, $2)', [store, 'p2']), /apagada/);
 await as(E, 'select public.claim_person($1, $2)', [store, 'p5']);
-ok('members see who is unlinked', (await as(E, 'select id from public.store_unlinked_people($1)', [store])).map((p) => p.id).join() === 'p1');
+ok('members see who is unlinked', (await as(E, 'select id from public.store_unlinked_people($1)', [store])).map((p) => p.id).join() === nova.id + ',p1');
 members = await as(A, 'select * from public.store_member_list($1)', [store]);
 ok('members list has the persons', members.find((m) => m.user_id === D).person_id === 'p4' && members.find((m) => m.user_id === A).person_id === null);
+await push(B, [row('pg', '2026-10-30T12:00:00Z', { fullName: 'Gerente', team: 'gerencia' })]);
+await as(E, 'select public.claim_person($1, $2)', [store, 'pg']);
+ok('gerencia access', (await as(E, 'select public.my_access($1) a', [store]))[0].a.gerencia === true);
+const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
+ok('member access', sorted((await as(D, 'select public.my_access($1) a', [store]))[0].a) === sorted({ admin: false, owner: false, gerencia: false, chefe_team: null, person_id: 'p4', status: 'approved' }));
+await db.exec('reset role');
+const chefeTeam = async (d) => (await db.query('select public.person_chefe_team($1) t', [JSON.stringify(d)])).rows[0].t;
+ok('chefe de dia is chefe of livre servico', await chefeTeam({ team: 'livre_servico', chefe: 'dia' }) === 'livre_servico');
+ok('frente de loja has no chefe', await chefeTeam({ team: 'frente_de_loja', chefe: 'chefe' }) === null);
+ok('no slot, no chefe', await chefeTeam({ team: 'talho' }) === null);
+await db.query(`insert into app_admins values ($1)`, [F]);
+const fStores = await as(F, 'select * from public.my_stores()');
+ok('admin sees every store as owner', fStores.length === 1 && fStores[0].role === 'owner' && fStores[0].status === 'approved');
+ok('admin reads records', (await as(F, 'select * from records')).length > 0);
+ok('admin access', (await as(F, 'select public.my_access($1) a', [store]))[0].a.admin === true);
+ok('admin approves', (await as(F, 'select public.can_approve($1) c', [store]))[0].c === true);
 await as(A, 'select public.join_store($1, $2)', [code, 'p1']);
 ok('owner joining keeps owner', (await as(A, 'select role, person_id from store_members where user_id = $1', [A]))[0].role === 'owner');
 ok('editor cannot unlink others', (await as(B, 'update store_members set person_id = null where user_id = $1 returning *', [D])).length === 0);

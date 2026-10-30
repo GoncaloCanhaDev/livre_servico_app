@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.60.0] — 2026-10-31
+
+### Added
+- **Joining a store waits for approval** (database). Joining with the code now sends a request
+  (with the person picked, or a typed name for someone not in the list); until a chefe de
+  secção, a member of Gerência, the owner or the app admin approves it, the requester sees
+  nothing of the store. Approving a typed name creates that person. Requests can be refused,
+  or cancelled by whoever sent them.
+- **App admin**: accounts in `app_admins` own every store. "Só leitura" members become normal
+  members. Migration `20261031090000_join_approval_admin`; the app follows in the next version.
+
 ## [0.59.2] — 2026-10-30
 
 ### Docs
