@@ -14,8 +14,8 @@ class SettingsService extends ChangeNotifier {
   int _visualGoal = 200;
   int get visualGoal => _visualGoal;
 
-  /// Automático (follows the phone), Claro or Escuro.
-  ThemeMode _themeMode = ThemeMode.system;
+  /// Claro (the default), Escuro or Automático (follows the device).
+  ThemeMode _themeMode = ThemeMode.light;
   ThemeMode get themeMode => _themeMode;
 
   /// The vasilhame list offered on a camião, edited through the backup
@@ -30,7 +30,7 @@ class SettingsService extends ChangeNotifier {
     _visualGoal = _prefs.getInt('visualGoal') ?? 200;
     _themeMode =
         ThemeMode.values.asNameMap()[_prefs.getString('themeMode')] ??
-        ThemeMode.system;
+        ThemeMode.light;
     try {
       _vasilhame = vasilhameFromJson(
         jsonDecode(_prefs.getString('vasilhame') ?? '[]'),

@@ -178,11 +178,16 @@ multi-tenant product.
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
   the ausência dialog).
 - `StartScreen` (`lib/screens/start_screen.dart`, `MaterialApp.home` in `lib/main.dart`)
-  picks the first page with `firstPage`: on the website, `PresentationScreen` (what the app
-  does, "Experimentar a demo", Criar conta / Entrar) for a visitor who isn't signed in,
+  picks the first page with `firstPage`: on the website, `PresentationScreen` (a landing page
+  using the whole width: a hero with the "Hoje na loja" day timeline, features, "Como
+  começar", a closing band; headlines in Roboto Condensed Bold, bundled in `assets/fonts`) for
+  a visitor who isn't signed in,
   `AccountScreen` while signed in without an approved store (`needsAccountFirst`), then
   `HomeScreen` (`lib/screens/home_screen.dart`), the app's entry page on the phone and in the
-  demo; other screens are pushed via `Navigator`.
+  demo; other screens are pushed via `Navigator`. On a wide screen every other page sits in a
+  centred 840 px column (`AppFrame`, `widgets/app_frame.dart`, put around the navigator by
+  `MaterialApp.builder`; pages pushed from the presentation page wrap themselves in it), and
+  Home's buttons go four across; lay out new screens for both widths.
 - The demo (`lib/services/demo_mode.dart`): the website at `?demo` (`isDemoUrl`,
   `DemoMode.enter`/`leave` reload the page) starts with `DemoMode.active`: an in-memory
   SQLite (`demo_db_web.dart` / `demo_db_io.dart`, conditional import) and in-memory
@@ -195,7 +200,8 @@ multi-tenant product.
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
 - `lib/theme.dart` defines `buildAppTheme(brightness)`, the light and dark `ThemeData`;
-  `MaterialApp.themeMode` comes from `SettingsService.themeMode` (Definições → Aparência).
+  `MaterialApp.themeMode` comes from `SettingsService.themeMode` (Definições → Aparência;
+  light unless chosen otherwise). `context.backdrop` is the colour beside `AppFrame`.
   Don't hard-code greys or light tints in widgets: use the `BuildContext` helpers there
   (`context.colors`, `muted`, `faint`, `faintest`, `hairline`, `greyedFill`, `tint(...)`,
   `warningText`), which keep the light theme's original colours and adapt in the dark one.

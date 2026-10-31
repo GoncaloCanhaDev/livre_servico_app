@@ -66,7 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const TransferRequestsCard(),
               const TodayCard(),
               GridView.count(
-                crossAxisCount: 2,
+                // Four across on a computer's wider column.
+                crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
                 mainAxisExtent: 76,

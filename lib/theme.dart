@@ -100,6 +100,11 @@ extension AppThemeColors on BuildContext {
       ? Color.alphaBlend(color.withValues(alpha: 0.22), colors.surface)
       : color[shade]!;
 
+  /// Behind the app's column on a wide screen (see `AppFrame`).
+  Color get backdrop => isDark
+      ? Color.alphaBlend(Colors.black.withValues(alpha: 0.45), colors.surface)
+      : const Color(0xFFF0F2F0);
+
   /// Text on an orange [tint].
   Color get warningText =>
       isDark ? Colors.orange.shade200 : Colors.orange.shade900;

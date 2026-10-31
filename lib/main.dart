@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/start_screen.dart';
+import 'screens/widgets/app_frame.dart';
 import 'screens/widgets/demo_banner.dart';
 import 'services/account_service.dart';
 import 'services/demo_data.dart';
@@ -64,6 +65,33 @@ void main() async {
   runApp(const LivreServicoApp());
 }
 
+/// Every page in [AppFrame], but the website's presentation page, which
+/// uses the whole width.
+class _FramedUnlessPresentation extends StatelessWidget {
+  const _FramedUnlessPresentation({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final account = AccountService.instance;
+    return ListenableBuilder(
+      listenable: account,
+      builder: (_, _) =>
+          firstPage(
+                web: kIsWeb,
+                configured: account.isConfigured,
+                signedIn: account.isSignedIn,
+                store: account.store,
+                demo: DemoMode.active,
+              ) ==
+              FirstPage.presentation
+          ? child
+          : AppFrame(child: child),
+    );
+  }
+}
+
 class LivreServicoApp extends StatelessWidget {
   const LivreServicoApp({super.key});
 
@@ -88,9 +116,10 @@ class LivreServicoApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         navigatorObservers: [_observer],
-        builder: DemoMode.active
-            ? (_, child) => DemoBanner(child: child ?? const SizedBox())
-            : null,
+        builder: (_, child) {
+          final page = _FramedUnlessPresentation(child: child!);
+          return DemoMode.active ? DemoBanner(child: page) : page;
+        },
         home: const StartScreen(),
       ),
     );
