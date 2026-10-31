@@ -10,7 +10,7 @@ void main() {
     role: StoreRole.editor,
     personId: null,
     pending: pending,
-    access: const StoreAccess(admin: false, gerencia: false),
+    access: const StoreAccess(admin: false),
   );
 
   bool first({

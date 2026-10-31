@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/person.dart';
+import '../models/teams.dart';
 import '../services/account_service.dart';
 import '../services/person_service.dart';
 import '../services/sync_service.dart';
@@ -316,7 +317,7 @@ class _StorePickerState extends State<_StorePicker> {
 
   /// Asks to join a store with the code Gerência shares: the person says
   /// who they are in its list of people (or types their name), then waits
-  /// for a chefe or Gerência to approve.
+  /// for a Chefe de Secção or Gerência to approve.
   Future<void> _join() async {
     final ctrl = TextEditingController();
     final code = await showDialog<String>(
@@ -687,7 +688,7 @@ class _PendingState extends State<_Pending> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Aguarde que um chefe de secção ou a gerência da loja '
+          'Aguarde que um Chefe de Secção ou a gerência da loja '
           'aprove o pedido. Até lá, nada da loja chega a este aparelho.',
           textAlign: TextAlign.center,
           style: TextStyle(color: context.muted),
@@ -884,7 +885,9 @@ class _MyProfileTileState extends State<_MyProfileTile> {
       leading: const Icon(Icons.badge),
       title: const Text('O meu perfil'),
       subtitle: Text(
-        person?.fullName ?? 'Os seus dados ainda não chegaram a este aparelho.',
+        person == null
+            ? 'Os seus dados ainda não chegaram a este aparelho.'
+            : '${person.fullName}\n${roleLineOf(person)}',
       ),
       onTap: person == null
           ? SyncService.instance.syncNow

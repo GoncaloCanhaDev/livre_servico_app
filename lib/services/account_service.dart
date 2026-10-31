@@ -80,7 +80,7 @@ StoreInfo? storeInfoFromJson(String? raw) {
             final Map<String, dynamic> a => StoreAccess.fromJson(a),
             // An older version's owner was a store owner, not the admin:
             // nothing until `my_access` answers.
-            _ => const StoreAccess(admin: false, gerencia: false),
+            _ => const StoreAccess(admin: false),
           },
         );
       }
@@ -94,7 +94,7 @@ StoreInfo? storeInfoFromJson(String? raw) {
 /// What a store's role alone says, until `my_access` answers: `my_stores`
 /// gives the app's admin the owner role.
 StoreAccess _accessOfRole(StoreRole r) =>
-    StoreAccess(admin: r == StoreRole.owner, gerencia: false);
+    StoreAccess(admin: r == StoreRole.owner);
 
 /// A request to move an account (and its person [personName]) out of the
 /// store [fromStore], with the [note] saying where to.
@@ -432,7 +432,7 @@ class AccountService extends ChangeNotifier {
       role: StoreRole.owner,
       personId: null,
       pending: false,
-      access: const StoreAccess(admin: true, gerencia: false),
+      access: const StoreAccess(admin: true),
     ));
   }
 

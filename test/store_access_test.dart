@@ -1,123 +1,161 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/store_access.dart';
+import 'package:livre_servico_app/models/teams.dart';
 
 void main() {
-  StoreAccess read(Map<String, dynamic> j) => StoreAccess.fromJson({
-    'admin': false,
-    'gerencia': false,
-    'chefe_team': null,
-    'person_id': null,
-    ...j,
+  Person person(String uuid, String? team, [Role role = Role.operador]) =>
+      Person()
+        ..fullName = uuid
+        ..team = team
+        ..role = role.name
+        ..createdAt = DateTime(2026)
+        ..syncUuid = uuid;
+
+  final talho1 = person('t1', 'talho');
+  final peixe = person('px', 'peixaria');
+  final talhoChefe = person('tc', 'talho', Role.chefeSeccao);
+  final ger = person('ger', 'gerencia', Role.gestorArea);
+  final gerente = person('gte', 'gerencia', Role.gerente);
+  final semEquipa = person('se', null);
+
+  const member = StoreAccess(admin: false, team: 'talho', personId: 't1');
+  const seg = StoreAccess(admin: false, level: 2, team: 'talho');
+  const chefe = StoreAccess(
+    admin: false,
+    level: 3,
+    team: 'talho',
+    personId: 'c',
+  );
+  const gestor = StoreAccess(admin: false, level: 4, team: 'gerencia');
+  const gerenteAcc = StoreAccess(admin: false, level: 5, team: 'gerencia');
+  const admin = StoreAccess(admin: true);
+
+  test('reach', () {
+    expect(member.reaches(talho1), isFalse);
+    expect(seg.reaches(talho1), isTrue);
+    expect(seg.reaches(semEquipa), isFalse);
+    expect(chefe.reaches(talho1), isTrue);
+    expect(chefe.reaches(peixe), isFalse);
+    expect(chefe.reaches(ger), isFalse);
+    expect(chefe.reaches(semEquipa), isTrue);
+    expect(gestor.reaches(talho1), isTrue);
+    expect(gestor.reaches(semEquipa), isTrue);
+    expect(gestor.reaches(ger), isFalse);
+    expect(gerenteAcc.reaches(ger), isTrue);
+    expect(admin.reaches(gerente), isTrue);
   });
 
-  test('chefes, Gerência and the admin approve requests', () {
-    expect(read({'chefe_team': 'talho', 'person_id': 'p1'}).canApprove, isTrue);
-    expect(read({'gerencia': true}).canApprove, isTrue);
-    expect(read({'admin': true}).canApprove, isTrue);
-    expect(read({'person_id': 'p1'}).canApprove, isFalse);
-    expect(StoreAccess.full.canApprove, isTrue);
+  test('a member: their own profile only', () {
+    expect(member.canSeePersonal(talho1), isTrue);
+    expect(member.canSeePersonal(peixe), isFalse);
+    expect(member.canEdit(talho1, PersonFieldGroup.self), isTrue);
+    expect(member.canEdit(talho1, PersonFieldGroup.schedule), isFalse);
+    expect(member.canEdit(talho1, PersonFieldGroup.role), isFalse);
+    expect(member.canEdit(peixe, PersonFieldGroup.self), isFalse);
+    expect(member.canRequestUpdate(talho1), isFalse);
+    expect(member.canAddPeople, isFalse);
+    expect(member.canDeletePerson(talho1), isFalse);
   });
 
-  test('round trip through JSON', () {
-    final a = read({
-      'chefe_team': 'talho',
-      'person_id': 'p1',
-      'gerencia': true,
-    });
-    final b = StoreAccess.fromJson(a.toJson());
-    expect(b.chefeTeam, 'talho');
-    expect(b.personId, 'p1');
-    expect(b.gerencia, isTrue);
-    expect(b.admin, isFalse);
-    expect(b, a);
+  test('only above: no edits at the same level, the Gerente hands over', () {
+    expect(chefe.canEdit(talho1, PersonFieldGroup.role), isTrue);
+    expect(chefe.canEdit(talhoChefe, PersonFieldGroup.role), isFalse);
+    expect(chefe.canEdit(talhoChefe, PersonFieldGroup.schedule), isTrue);
+    expect(gestor.canEdit(talhoChefe, PersonFieldGroup.role), isTrue);
+    expect(gerenteAcc.canEdit(gerente, PersonFieldGroup.role), isTrue);
+    expect(seg.canEdit(talho1, PersonFieldGroup.schedule), isFalse);
+    expect(chefe.canEdit(talho1, PersonFieldGroup.other), isFalse);
+    expect(admin.canEdit(talho1, PersonFieldGroup.other), isTrue);
   });
 
-  test('missing keys read as no access', () {
-    final a = StoreAccess.fromJson(const {});
-    expect(a.canApprove, isFalse);
-    expect(a.personId, isNull);
+  test('level 3 and up may lower their own role', () {
+    final me = person('c', 'talho', Role.chefeSeccao);
+    expect(chefe.canEdit(me, PersonFieldGroup.role), isTrue);
+    expect(chefe.canDeletePerson(me), isFalse);
+    expect(
+      const StoreAccess(
+        admin: false,
+        level: 2,
+        team: 'talho',
+        personId: 's',
+      ).canEdit(person('s', 'talho', Role.segundaLinha), PersonFieldGroup.role),
+      isFalse,
+    );
   });
 
-  group('who sees and edits each part of a profile', () {
-    Person person(String uuid, String team) => Person()
-      ..fullName = uuid
-      ..team = team
-      ..createdAt = DateTime(2026)
-      ..syncUuid = uuid;
-    final ana = person('ana', 'talho');
-    final rui = person('rui', 'peixaria');
-
-    test('a member: their own profile only', () {
-      final a = read({'person_id': 'ana'});
-      expect(a.canSeePersonal(ana), isTrue);
-      expect(a.canSeePersonal(rui), isFalse);
-      expect(a.canEdit(ana, PersonFieldGroup.self), isTrue);
-      expect(a.canEdit(ana, PersonFieldGroup.schedule), isFalse);
-      expect(a.canEdit(ana, PersonFieldGroup.role), isFalse);
-      expect(a.canEdit(ana, PersonFieldGroup.other), isFalse);
-      expect(a.canEdit(rui, PersonFieldGroup.self), isFalse);
-      expect(a.canRequestUpdate(ana), isFalse);
-      expect(a.canRequestUpdate(rui), isFalse);
-      expect(a.canAddPeople, isFalse);
-      expect(a.canDeletePeople, isFalse);
-    });
-
-    test("a chefe: their team's folgas and ausências", () {
-      final a = read({'chefe_team': 'talho', 'person_id': 'chefe'});
-      expect(a.canSeePersonal(ana), isTrue);
-      expect(a.canSeePersonal(rui), isFalse);
-      expect(a.canEdit(ana, PersonFieldGroup.schedule), isTrue);
-      expect(a.canEdit(ana, PersonFieldGroup.role), isFalse);
-      expect(a.canEdit(ana, PersonFieldGroup.self), isFalse);
-      expect(a.canEdit(rui, PersonFieldGroup.schedule), isFalse);
-      expect(a.canRequestUpdate(ana), isTrue);
-      expect(a.canRequestUpdate(rui), isFalse);
-      expect(a.canAddPeople, isFalse);
-    });
-
-    test('Gerência: everyone, folgas, ausências and roles', () {
-      final a = read({'gerencia': true, 'person_id': 'g'});
-      expect(a.canSeePersonal(rui), isTrue);
-      expect(a.canEdit(rui, PersonFieldGroup.schedule), isTrue);
-      expect(a.canEdit(rui, PersonFieldGroup.role), isTrue);
-      expect(a.canEdit(rui, PersonFieldGroup.self), isFalse);
-      expect(a.canEdit(rui, PersonFieldGroup.other), isFalse);
-      expect(a.canRequestUpdate(rui), isTrue);
-      expect(a.canAddPeople, isTrue);
-      expect(a.canDeletePeople, isFalse);
-    });
-
-    test('the admin and no store: everything', () {
-      for (final a in [
-        read({'admin': true}),
-        StoreAccess.full,
-      ]) {
-        expect(a.canSeePersonal(rui), isTrue);
-        for (final g in PersonFieldGroup.values) {
-          expect(a.canEdit(rui, g), isTrue);
-        }
-        expect(a.canRequestUpdate(rui), isTrue);
-        expect(a.canAddPeople, isTrue);
-        expect(a.canDeletePeople, isTrue);
-      }
-    });
-
-    test('nobody asks themselves for an update', () {
-      expect(
-        read({'gerencia': true, 'person_id': 'rui'}).canRequestUpdate(rui),
-        isFalse,
-      );
-    });
+  test('delete, add, approve, members', () {
+    expect(chefe.canDeletePerson(talho1), isTrue);
+    expect(chefe.canDeletePerson(peixe), isFalse);
+    expect(chefe.canDeletePerson(talhoChefe), isFalse);
+    expect(gestor.canDeletePerson(ger), isFalse);
+    expect(gerenteAcc.canDeletePerson(ger), isTrue);
+    expect(seg.canAddPeople, isFalse);
+    expect(chefe.canAddPeople, isTrue);
+    expect(chefe.canApprove, isTrue);
+    expect(seg.canApprove, isFalse);
+    expect(chefe.canManageMembers, isFalse);
+    expect(gestor.canManageMembers, isTrue);
+    expect(gerenteAcc.canDeleteAll, isFalse);
+    expect(admin.canDeleteAll, isTrue);
+    expect(gerenteAcc.canWipeAll, isFalse);
   });
 
-  test('Gerência and the admin manage members; only the admin wipes', () {
-    expect(read({'gerencia': true}).canManageMembers, isTrue);
-    expect(read({'admin': true}).canManageMembers, isTrue);
-    expect(read({'chefe_team': 'talho'}).canManageMembers, isFalse);
-    expect(read({}).canManageMembers, isFalse);
-    expect(read({'gerencia': true}).canWipeAll, isFalse);
-    expect(read({'admin': true}).canWipeAll, isTrue);
-    expect(StoreAccess.full.canWipeAll, isTrue);
+  test('assignable roles and teams', () {
+    expect(chefe.assignableRoles('talho'), [
+      Role.operador,
+      Role.segundaLinha,
+      Role.supervisor,
+    ]);
+    expect(gestor.assignableRoles('gerencia'), [
+      Role.operador,
+      Role.segundaLinha,
+      Role.supervisor,
+      Role.chefeSeccao,
+    ]);
+    expect(gerenteAcc.assignableRoles('gerencia'), Role.values);
+    expect(admin.assignableRoles('talho'), rolesIn('talho'));
+    expect(chefe.assignableTeams, ['talho', null]);
+    expect(gestor.assignableTeams, [
+      for (final t in teams)
+        if (t.id != gerenciaId) t.id,
+      null,
+    ]);
+    expect(gerenteAcc.assignableTeams, [for (final t in teams) t.id, null]);
+    expect(member.assignableTeams, isEmpty);
+  });
+
+  test('personal data and update requests by reach from level 3', () {
+    expect(chefe.canSeePersonal(talho1), isTrue);
+    expect(seg.canSeePersonal(talho1), isFalse);
+    expect(chefe.canSeePersonal(ger), isFalse);
+    expect(gestor.canSeePersonal(talho1), isTrue);
+    expect(chefe.canRequestUpdate(talho1), isTrue);
+    expect(chefe.canRequestUpdate(peixe), isFalse);
+  });
+
+  test('signed out: everything', () {
+    expect(StoreAccess.full.canEdit(gerente, PersonFieldGroup.role), isTrue);
+    expect(StoreAccess.full.canDeleteAll, isTrue);
+    expect(StoreAccess.full.assignableRoles('gerencia'), Role.values);
+  });
+
+  test('fromJson reads levels and old cached access', () {
+    expect(
+      StoreAccess.fromJson({'admin': false, 'level': 4, 'team': 'gerencia'}),
+      gestor,
+    );
+    final old = StoreAccess.fromJson({'admin': false, 'gerencia': true});
+    expect((old.level, old.team), (4, 'gerencia'));
+    expect(
+      StoreAccess.fromJson({
+        'admin': false,
+        'chefe_team': 'talho',
+        'person_id': 'c',
+      }),
+      chefe,
+    );
+    expect(StoreAccess.fromJson(chefe.toJson()), chefe);
+    expect(StoreAccess.fromJson(const {}).level, 1);
   });
 }

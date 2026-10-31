@@ -31,8 +31,8 @@ multi-tenant product.
 - Tests: `flutter test` (in `test/`: mostly pure logic such as
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
-  `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`
-  and `lib/theme.dart`, plus a
+  `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
+  `lib/models/teams.dart` and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
@@ -86,19 +86,23 @@ multi-tenant product.
   collection, keyed by its name); import replaces only the collections and
   sections the file has.
 - People belong to one of the fixed teams in `lib/models/teams.dart` (`Person.team` stores the
-  `Team.id`; null or unknown = "Sem equipa"). `Person.chefe` stores a `ChefeSlot.name`; read it
-  through `chefeSlotOf`, which ignores slots the team doesn't have. `PersonService.save` keeps
-  one holder per (team, slot) by clearing the previous holder in the same transaction.
-  Livre Serviço is split into a day and a night turno (`Team.hasTurnos`): `Person.turno`
-  stores a `Turno.name`; read it through `turnoOf`, which takes a chefe's turno from their slot
-  (Chefe de dia / Chefe de noite). `Person.permanencia` is an independent tag ("Permanência":
-  can stand in for management when no chefia is present). `Person.partTime` is false for full
-  time ("Tempo inteiro", the default) and true for "Tempo parcial". Frente de Loja and Bem
-  Estar have no chefe (empty `chefeSlots`). Besides the chefe slot, roles are combinable tags:
-  Supervisor (`Team.hasSupervisors`, Frente de Loja), Segunda Linha (`Team.hasSegundaLinha`,
-  the production teams) and Permanência (anyone). Read them through `isSupervisor` /
-  `isSegundaLinha` (which ignore the flag outside such teams and for chefes); `roleTagsOf`
-  gives the badge labels the UI shows.
+  `Team.id`; null or unknown = "Sem equipa") and have one role: `Person.role` stores a
+  `Role.name` (never an index), each with a level: Operador 1, Segunda Linha and Supervisor 2,
+  Chefe de Secção 3, Gestor de Área and Secretária de Loja 4, Gerente de Loja 5. Levels 1–3
+  exist in every team, 4–5 only in Gerência (`rolesIn`). Read it through `roleOf` / `levelOf`,
+  which read a role the team doesn't allow as Operador and, on rows saved before 0.68.0 (no
+  `role`), derive it from the old `chefe` slot (`ChefeSlot`), `supervisor` and `segundaLinha`
+  fields (Gerência's chefe → Gerente, the rest of Gerência → Gestor de Área, other chefes →
+  Chefe de Secção); `person_role` in the migrations does the same. The form clears those old
+  fields on save; never rename them. `PersonService.save` keeps one Chefe de Secção per team
+  (per turno in Livre Serviço) and one Gerente (`roleConflicts`) by making the previous holder
+  Operador in the same transaction. Livre Serviço is split into a day and a night turno
+  (`Team.hasTurnos`): `Person.turno` stores a `Turno.name`; read it through `turnoOf` (an old
+  chefe without a role is on their slot's turno). `Person.permanencia` is an independent tag
+  ("Permanência": can stand in for management when no chefia is present; no permissions).
+  `Person.partTime` is false for full time ("Tempo inteiro", the default) and true for "Tempo
+  parcial". `roleTagsOf` gives the badge labels the UI shows (the role from level 2, then
+  Permanência), `roleLineOf` the "role · team · turno" line in Conta.
 - Planning data on `Person` (`folgas` weekdays, `weeklyHours`, `shiftStart`/`shiftEnd` in
   minutes after midnight, embedded `Ausencia` list) is read through the pure helpers in
   `lib/models/planning.dart`: `offLabelOn(p, day)` says why someone isn't working that day (an
@@ -255,9 +259,9 @@ files, WhatsApp links, hosting).
   and its members (`store_member_list`, `add_store_member`). Choosing a store starts
   `SyncService` (`my_stores` lists them). `StoreInfo.access` (`lib/models/store_access.dart`,
   from the server's `my_access`; `AccountService.access` is `StoreAccess.full` with no store)
-  says whether this account is the admin, in Gerência or chefe of a team, the last two
-  derived from the Person it is linked to. Gerência manages members (`can_manage_members`:
-  join code, adding by email, linking, removing; `canManageMembers`); only the admin creates
+  says whether this account is the admin, and the level and team of the Person it is linked
+  to. Level 4 and up manages members (`can_manage_members`: join code, adding by email,
+  linking, removing; `canManageMembers`); only the admin creates
   stores (`create_store`, "Criar loja" via `isAppAdmin`). While syncing, only the admin may
   "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every device. The old
   viewer role ("Só leitura") is gone: every approved member edits the everyday data. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
@@ -268,12 +272,12 @@ files, WhatsApp links, hosting).
   stranger the store's name and its people with no account yet (name and collaborator number
   only), and `join_store` records a *pending* request (`store_members.status`) for the person
   they picked or the name they typed (`requested_name`). A pending member sees nothing of the
-  store and doesn't sync (`StoreInfo.pending`; Conta shows "Pedido enviado"). Chefes,
-  Gerência and the admin (`can_approve`) list requests (`store_join_requests`, in
+  store and doesn't sync (`StoreInfo.pending`; Conta shows "Pedido enviado"). Level 3 and
+  up and the admin (`can_approve`) list requests (`store_join_requests`, in
   Membros and a count on Home) and `approve_join` (a typed name becomes a new Person) or
   `refuse_join`. `store_members.person_id` holds the linked Person's `syncUuid` (unique per
   store, so one account per person); `claim_person` lets a member link themselves once, never
-  to a chefe or to Gerência (only the admin links freely; Gerência links others in Membros → "Ligar a uma pessoa",
+  to someone at level 3 or up (only the admin links freely; level 4+ links others in Membros → "Ligar a uma pessoa",
   `linkMember`, and unlinks by setting it to null; members may update only `person_id`). `StoreInfo.personId` is this account's person; `claim_person_screen.dart`
   holds the picker and `completeProfile`, which opens the person form once approved.
 - One store per person: everyone but the admin belongs to one store (`in_other_store`:
@@ -293,20 +297,29 @@ files, WhatsApp links, hosting).
 - The app's admin is a row in `app_admins` (no UI; in the SQL Editor:
   `insert into public.app_admins select id from auth.users where email = '...';`): it is owner of
   every store (`my_store_role`, `my_store_ids`), all listed in Conta.
+- Authority: two rules decide who does what to whom, the same in SQL
+  (`20261031220000_authority_levels.sql`: `reaches`, `is_above`, `can_assign`, `my_level`) and
+  in `StoreAccess` (`reaches`, `isAbove`, `assignableRoles`, `assignableTeams`). An account
+  *reaches* a person when its level covers their team: 5 every team, 4 every team but
+  Gerência, 2 and 3 their own (3 also people with no team), 1 nobody; it is *above* a person
+  it reaches with a lower level (level 5: anyone). Level 2 adds nothing yet (Avisos will).
 - Personal data: every member reads the others' public fields (`person_public_keys`: name,
-  photo, género, birthday, team and roles); the whole Person is read by the person, the
-  chefe de secção of their team, Gerência and the admin (`person_access`). The
-  server redacts in `pull_records` and the `records` select policy hides the rest (so Realtime
-  too); `push_records` keeps only the fields the caller may edit (`person_edit_keys`: the
-  person their name, photo, birthday, género, notes; their chefe folgas and
-  ausências; Gerência those plus team, chefe, turno and tags; the admin everything), so a
-  redacted copy pushed back wipes nothing. Only Gerência and the admin add people;
-  only the admin deletes. The app mirrors this in `StoreAccess`
-  (`canSeePersonal`, `canEdit(person, PersonFieldGroup)`, `canRequestUpdate`, `canAddPeople`,
-  `canDeletePeople`): the person form locks fields with `EditLock`, and the person page,
-  Pessoas and Home hide what the account can't do. Keep the Dart groups and the SQL key lists
-  the same. "Pedir atualização" sets `Person.profileUpdateRequestedAt`/`By`; the person sees
-  `ProfileRequestCard` on Home until saving their own profile clears it (`PersonService.save`).
+  photo, género, birthday, team, role and the old role fields); the whole Person is read by
+  the person, level 3+ reaching them and the admin (`person_access`). The server redacts in
+  `pull_records` and the `records` select policy hides the rest (so Realtime too);
+  `push_records` keeps only the fields the caller may edit (`person_edit_keys`: the person
+  their name, photo, birthday, género, notes; level 3+ reaching them folgas and ausências;
+  level 3+ above them (or themselves) team, role, turno and Permanência, kept only when
+  `can_assign` allows the result; the admin everything), so a redacted copy pushed back wipes
+  nothing. Level 3+ adds people into teams they reach with a role below their own and removes
+  those they are above (their account leaves the store); "Remover todas as pessoas" is the
+  admin's. The app mirrors this in `StoreAccess` (`canSeePersonal`, `canEdit(person,
+  PersonFieldGroup)`, `canRequestUpdate`, `canAddPeople`, `canDeletePerson`,
+  `canDeleteAll`): the person form locks fields with `EditLock` and offers only assignable
+  teams and roles ("Função"), and the person page, Pessoas and Home hide what the account
+  can't do. Keep the Dart groups and the SQL key lists the same. "Pedir atualização" sets
+  `Person.profileUpdateRequestedAt`/`By`; the person sees `ProfileRequestCard` on Home until
+  saving their own profile clears it (`PersonService.save`).
 - `supabase/tests` checks the migrations on an in-memory Postgres (PGlite) with a stand-in
   `auth` schema: `npm install` then `npm test` there.
 

@@ -7,6 +7,32 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.68.0] — 2026-10-31
+
+### Changed
+- **Roles on five levels of authority** instead of "Chefe"/"Membro" and the Gerência team:
+  Operador (1), Segunda Linha and Supervisor (2), Chefe de Secção (3), Gestor de Área and
+  Secretária de Loja (4, Gerência only), Gerente de Loja (5, Gerência only). Each person has
+  one role, chosen in the person form ("Função"), shown as their badge and in Conta. Pessoas
+  lists each team from the highest level down; search finds a role.
+- **Who does what follows the level.** A Chefe de Secção sees the whole profile of, plans the
+  folgas of and asks for updates from their team; a Gestor de Área or Secretária de Loja does
+  that for every team but Gerência; the Gerente de Loja for everyone. Changing someone's team
+  or role needs a higher level than theirs, and only roles below one's own can be given (the
+  Gerente can hand over theirs). Join requests are approved from level 3, members managed
+  from level 4.
+- People saved before this version keep what they had: Gerência's chefe becomes Gerente de
+  Loja, the rest of Gerência Gestor de Área, the other chefes Chefe de Secção (Livre Serviço:
+  on their turno), and Supervisor / Segunda Linha keep their tag as their role.
+- The Política de Privacidade says who sees the whole profile now.
+
+### Added
+- **A Chefe de Secção (and up) adds and removes people** in the teams they reach; a removed
+  person's account leaves the store. Removing everyone at once stays the admin's.
+
+Run migration `20261031220000_authority_levels` in Supabase before using this version with a
+store.
+
 ## [0.67.1] — 2026-10-31
 
 ### Added

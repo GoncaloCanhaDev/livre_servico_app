@@ -178,7 +178,9 @@ await push(A, [person('pg', '2026-10-30T12:00:00Z', { fullName: 'Gerente', team:
 await db.exec('reset role'); await db.query(`update store_members set person_id = 'pg' where user_id = $1`, [E]);
 ok('gerencia access', (await as(E, 'select public.my_access($1) a', [store]))[0].a.gerencia === true);
 const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
-ok('member access', sorted((await as(D, 'select public.my_access($1) a', [store]))[0].a) === sorted({ admin: false, gerencia: false, chefe_team: null, person_id: 'p4', status: 'approved' }));
+await db.exec('reset role');
+const p4team = (await db.query(`select data ->> 'team' t from records where collection = 'Person' and id = 'p4'`)).rows[0].t;
+ok('member access', sorted((await as(D, 'select public.my_access($1) a', [store]))[0].a) === sorted({ admin: false, level: 1, team: p4team, gerencia: false, chefe_team: null, person_id: 'p4', status: 'approved' }));
 await db.exec('reset role');
 const chefeTeam = async (d) => (await db.query('select public.person_chefe_team($1) t', [JSON.stringify(d)])).rows[0].t;
 ok('chefe de dia is chefe of livre servico', await chefeTeam({ team: 'livre_servico', chefe: 'dia' }) === 'livre_servico');
@@ -254,7 +256,7 @@ ok('member cannot delete people', (await stored('p4')).deleted_at === null);
 await push(E, [person('py', '2026-10-30T16:00:00Z', { fullName: 'Novo' })]);
 ok('gerencia adds people', (await stored('py'))?.data.fullName === 'Novo');
 await push(E, [person('py', '2026-10-30T17:00:00Z', { fullName: 'Novo' }, '2026-10-30T17:00:00Z')]);
-ok('gerencia cannot delete people', (await stored('py')).deleted_at === null);
+ok('a Gestor de Área deletes an Operador', (await stored('py')).deleted_at !== null);
 await push(F, [person('py', '2026-10-30T18:00:00Z', { fullName: 'Novo' }, '2026-10-30T18:00:00Z')]);
 ok('admin deletes people', (await stored('py')).deleted_at !== null);
 
@@ -326,6 +328,80 @@ await push(A, [person('pb', '2026-10-31T11:00:00Z', { fullName: 'Bea', birthDay:
 pb = (await stored('pb')).data;
 ok('a birthday set beats an old date of birth', pb.birthDay === 3 && pb.birthMonth === 12 && !('dateOfBirth' in pb));
 ok('everyone sees birthdays', (await pulled(B, 'pb')).data.birthMonth === 12);
+
+// Authority levels. B: Chefe de Secção of talho (pc, old chefe slot); E:
+// Gerência (pg, no role: Gestor de Área); I: Operador of talho (pi); J:
+// Segunda Linha of talho (pj).
+await db.exec('reset role');
+const level = async (d) => (await db.query('select public.person_level($1) l', [JSON.stringify(d)])).rows[0].l;
+ok('old Gerência row is level 4', await level({ team: 'gerencia' }) === 4);
+ok('old Gerência chefe is level 5', await level({ team: 'gerencia', chefe: 'chefe' }) === 5);
+ok('old Livre Serviço chefe is level 3', await level({ team: 'livre_servico', chefe: 'noite' }) === 3);
+ok('old Frente de Loja supervisor is level 2', await level({ team: 'frente_de_loja', supervisor: true }) === 2);
+ok('a role set beats the old fields', await level({ team: 'talho', chefe: 'chefe', role: 'operador' }) === 1);
+ok('a role the team does not allow is Operador', await level({ team: 'talho', role: 'gestorArea' }) === 1);
+ok('no team is Operador', await level({ role: 'chefeSeccao' }) === 1);
+await db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000012', 'i@x.pt'), ('00000000-0000-0000-0000-000000000013', 'j@x.pt')`);
+const I = '00000000-0000-0000-0000-000000000012', J = '00000000-0000-0000-0000-000000000013';
+await push(A, [
+  person('pi', '2026-10-31T12:00:00Z', { fullName: 'Inês', team: 'talho', role: 'operador', weeklyHours: 40 }),
+  person('pj', '2026-10-31T12:00:00Z', { fullName: 'João', team: 'talho', role: 'segundaLinha' }),
+  person('pt', '2026-10-31T12:00:00Z', { fullName: 'Tó', team: 'talho', weeklyHours: 20, folgas: [1] }),
+  person('pc2', '2026-10-31T12:00:00Z', { fullName: 'Outro Chefe', team: 'talho', role: 'chefeSeccao' }),
+  person('ps', '2026-10-31T12:00:00Z', { fullName: 'Sara', team: 'gerencia', role: 'secretaria', folgas: [1] }),
+]);
+await as(A, `select public.add_store_member($1, 'i@x.pt')`, [store]);
+await as(A, `select public.add_store_member($1, 'j@x.pt')`, [store]);
+await as(A, `update store_members set person_id = 'pi' where user_id = $1`, [I]);
+await as(A, `update store_members set person_id = 'pj' where user_id = $1`, [J]);
+const accB = (await as(B, 'select public.my_access($1) a', [store]))[0].a;
+ok('my_access has level and team', accB.level === 3 && accB.team === 'talho' && accB.chefe_team === 'talho' && accB.gerencia === false);
+ok('a Gestor de Área still reads as gerencia for older apps', (await as(E, 'select public.my_access($1) a', [store]))[0].a.gerencia === true);
+let st = (await stored('pt')).data;
+await push(B, [person('pt', '2026-10-31T13:00:00Z', { ...st, role: 'chefeSeccao' })]);
+ok('a chefe cannot promote to their own level', !('role' in (await stored('pt')).data));
+await push(B, [person('pt', '2026-10-31T13:10:00Z', { ...st, role: 'segundaLinha' })]);
+ok('a chefe gives a lower role', (await stored('pt')).data.role === 'segundaLinha');
+st = (await stored('pt')).data;
+await push(B, [person('pt', '2026-10-31T13:20:00Z', { ...st, team: 'peixaria' })]);
+ok('a chefe cannot move someone out of their team', (await stored('pt')).data.team === 'talho');
+const { weeklyHours: _w, ...noHours } = (await stored('pt')).data;
+await push(B, [person('pt', '2026-10-31T13:30:00Z', { ...noHours, folgas: [2] })]);
+st = (await stored('pt')).data;
+ok('a chefe\'s push without a field wipes nothing', st.weeklyHours === 20 && JSON.stringify(st.folgas) === '[2]');
+await push(B, [person('pc2', '2026-10-31T13:40:00Z', { ...(await stored('pc2')).data, role: 'operador', folgas: [4] })]);
+const pc2 = (await stored('pc2')).data;
+ok('a chefe cannot change a peer\'s role, but plans their folgas', pc2.role === 'chefeSeccao' && JSON.stringify(pc2.folgas) === '[4]');
+await push(B, [
+  person('pa1', '2026-10-31T14:00:00Z', { fullName: 'Novo Talho', team: 'talho', role: 'operador' }),
+  person('pa2', '2026-10-31T14:00:00Z', { fullName: 'Novo Peixe', team: 'peixaria' }),
+  person('pa3', '2026-10-31T14:00:00Z', { fullName: 'Novo Chefe', team: 'talho', role: 'chefeSeccao' }),
+]);
+ok('a chefe adds into their own team only, below their level', (await stored('pa1')) !== undefined && (await stored('pa2')) === undefined && (await stored('pa3')) === undefined);
+await push(J, [person('pa4', '2026-10-31T14:00:00Z', { fullName: 'Por J', team: 'talho' })]);
+ok('a Segunda Linha does not add people', (await stored('pa4')) === undefined);
+ok('a Segunda Linha sees only public fields', !('weeklyHours' in (await pulled(J, 'pi')).data));
+ok('a Segunda Linha does not approve', (await as(J, 'select public.can_approve($1) c', [store]))[0].c === false);
+await push(B, [person('pi', '2026-10-31T15:00:00Z', (await stored('pi')).data, '2026-10-31T15:00:00Z')]);
+ok('a chefe removes someone in their team', (await stored('pi')).deleted_at !== null);
+ok('and their account leaves the store', (await as(A, 'select * from store_members where user_id = $1', [I])).length === 0);
+await push(B, [person('pc2', '2026-10-31T15:10:00Z', (await stored('pc2')).data, '2026-10-31T15:10:00Z')]);
+ok('a chefe cannot remove a peer', (await stored('pc2')).deleted_at === null);
+await push(E, [person('ps', '2026-10-31T16:00:00Z', { ...(await stored('ps')).data, folgas: [5] })]);
+ok('a Gestor de Área does not reach Gerência', JSON.stringify((await stored('ps')).data.folgas) === '[1]');
+await push(E, [person('pt', '2026-10-31T16:00:00Z', { ...(await stored('pt')).data, team: 'peixaria', role: 'chefeSeccao' })]);
+ok('a Gestor de Área moves and promotes below their level', (await stored('pt')).data.team === 'peixaria' && (await stored('pt')).data.role === 'chefeSeccao');
+await push(E, [person('ps', '2026-10-31T16:10:00Z', { ...(await stored('ps')).data, role: 'gestorArea' })]);
+ok('a Gestor de Área cannot give their own level', (await stored('ps')).data.role === 'secretaria');
+await push(A, [person('pg', '2026-10-31T17:00:00Z', { ...(await stored('pg')).data, role: 'gerente' })]);
+await push(E, [person('ps', '2026-10-31T17:10:00Z', { ...(await stored('ps')).data, folgas: [6] })]);
+ok('the Gerente reaches Gerência', JSON.stringify((await stored('ps')).data.folgas) === '[6]');
+await push(E, [
+  person('ps', '2026-10-31T17:20:00Z', { ...(await stored('ps')).data, role: 'gerente' }),
+  person('pg', '2026-10-31T17:20:00Z', { ...(await stored('pg')).data, role: 'operador' }),
+]);
+ok('the Gerente hands over and steps down', (await stored('ps')).data.role === 'gerente' && (await stored('pg')).data.role === 'operador');
+await throws('a chefe is only linked by Gerência', () => as(C, 'select public.claim_person($1, $2)', [store, 'pc2']), /Não pertence|chefia/);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);

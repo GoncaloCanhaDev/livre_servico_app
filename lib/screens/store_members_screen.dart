@@ -7,8 +7,8 @@ import '../theme.dart';
 import 'claim_person_screen.dart';
 
 /// Conta → Membros: who is in the store, and which person each account is.
-/// Chefes, Gerência and the admin approve or refuse requests to join.
-/// Gerência shares the store's code (anyone with it can ask to join), adds
+/// Level 3 and up (Chefe de Secção, Gerência) and the admin approve or
+/// refuse requests to join. Level 4 and up (Gerência) shares the store's code (anyone with it can ask to join), adds
 /// people by the email of their account, unlinks them from a person and
 /// removes them.
 class StoreMembersScreen extends StatefulWidget {
@@ -387,7 +387,7 @@ class _JoinCodeCardState extends State<_JoinCodeCard> {
               const SizedBox(height: 4),
               Text(
                 'Quem tiver o código pede para entrar e diz quem é na lista '
-                'de pessoas; um chefe ou a gerência aprova. '
+                'de pessoas; um Chefe de Secção ou a gerência aprova. '
                 'Partilhe-o só com a equipa.',
                 style: TextStyle(color: context.muted),
               ),

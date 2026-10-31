@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/account_service.dart';
 import '../store_members_screen.dart';
 
-/// On Home, for those who approve them (chefes, Gerência, the admin): how
+/// On Home, for those who approve them (level 3 and up, the admin): how
 /// many requests to join the store are waiting; opens Membros. Nothing when
 /// there are none, offline, or not connected to a store.
 class JoinRequestsCard extends StatefulWidget {

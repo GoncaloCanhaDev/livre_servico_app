@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/store_access.dart';
+import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/screens/people_screen.dart';
 import 'package:livre_servico_app/screens/person_detail_screen.dart';
 import 'package:livre_servico_app/screens/person_form_screen.dart';
@@ -106,6 +107,75 @@ void main() {
     expect(p.team, isNull);
   });
 
+  group('Função', () {
+    /// Opens the dropdown showing [current] (mid-screen, clear of the app
+    /// bar).
+    Future<void> open(WidgetTester tester, String current) async {
+      // "Equipa" is both the heading and the field's label.
+      await scrollTo(
+        tester,
+        Role.values.any((r) => r.label == current)
+            ? find.text('Função')
+            : find.text('Equipa').last,
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 250));
+      await settle(tester);
+      await tester.tap(find.text(current).last);
+      await settle(tester);
+    }
+
+    Future<void> pick(
+      WidgetTester tester,
+      String current,
+      String choice,
+    ) async {
+      await open(tester, current);
+      await tester.tap(find.text(choice).last);
+      await settle(tester);
+    }
+
+    testWidgets('saves the chosen Função', (tester) async {
+      await openForm(tester);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome completo'),
+        'Zé',
+      );
+      await pick(tester, 'Sem equipa', 'Talho');
+      await pick(tester, 'Operador', 'Chefe de Secção');
+      await tapAndSettle(tester, find.text('Adicionar'));
+
+      final p = (await people(tester)).single;
+      expect((p.team, p.role, p.chefe), ('talho', 'chefeSeccao', null));
+    });
+
+    testWidgets('Gestor de Área only offered in Gerência', (tester) async {
+      await openForm(tester);
+      await pick(tester, 'Sem equipa', 'Talho');
+      await pick(tester, 'Operador', 'Supervisor');
+      expect(find.text('Gestor de Área'), findsNothing);
+      await pick(tester, 'Talho', 'Gerência');
+      await open(tester, 'Supervisor');
+      expect(find.text('Gestor de Área'), findsWidgets);
+    });
+
+    testWidgets('a chefe only gives roles below their own', (tester) async {
+      final rui = await saved(
+        tester,
+        Person()
+          ..fullName = 'Rui'
+          ..team = 'talho'
+          ..createdAt = DateTime(2026),
+      );
+      signedInAs(
+        const StoreAccess(admin: false, level: 3, team: 'talho', personId: 'c'),
+      );
+      await openForm(tester, rui);
+      await open(tester, 'Operador');
+      expect(find.text('Supervisor'), findsWidgets);
+      expect(find.text('Chefe de Secção'), findsNothing);
+    });
+  });
+
   testWidgets('a birthday is a day and a month, no year', (tester) async {
     await openForm(tester);
     await tester.enterText(
@@ -178,9 +248,7 @@ void main() {
 
     testWidgets('a member edits their own name and phone only', (tester) async {
       final ana = await saved(tester, talho('Ana'));
-      signedInAs(
-        StoreAccess(admin: false, gerencia: false, personId: ana.syncUuid),
-      );
+      signedInAs(StoreAccess(admin: false, personId: ana.syncUuid));
       await openForm(tester, ana);
       expect(editable(tester, 'Nome completo'), isTrue);
       expect(editable(tester, 'Aniversário (opcional)'), isTrue);
@@ -192,22 +260,22 @@ void main() {
       expect(editable(tester, 'Seg'), isFalse);
     });
 
-    testWidgets("a chefe edits their team's folgas, not the name", (
+    testWidgets("a chefe edits their team's folgas and roles, not the name", (
       tester,
     ) async {
       final rui = await saved(tester, talho('Rui'));
       signedInAs(
         const StoreAccess(
           admin: false,
-          gerencia: false,
-          chefeTeam: 'talho',
+          level: 3,
+          team: 'talho',
           personId: 'chefe',
         ),
       );
       await openForm(tester, rui);
       expect(editable(tester, 'Nome completo'), isFalse);
       await scrollTo(tester, find.text('Talho'));
-      expect(editable(tester, 'Talho'), isFalse);
+      expect(editable(tester, 'Talho'), isTrue);
       await scrollTo(tester, find.text('Seg'));
       expect(editable(tester, 'Seg'), isTrue);
       await tapAndSettle(tester, find.text('Seg'));
@@ -233,9 +301,7 @@ void main() {
             ..profileUpdateRequestedAt = DateTime(2026, 10, 30)
             ..profileUpdateRequestedBy = 'Chefe Rui',
         );
-        signedInAs(
-          StoreAccess(admin: false, gerencia: false, personId: ana.syncUuid),
-        );
+        signedInAs(StoreAccess(admin: false, personId: ana.syncUuid));
         await pumpApp(tester, const LivreServicoApp());
         expect(find.text('Atualize o seu perfil'), findsOneWidget);
         expect(find.textContaining('Chefe Rui'), findsOneWidget);
@@ -257,8 +323,8 @@ void main() {
       signedInAs(
         StoreAccess(
           admin: false,
-          gerencia: false,
-          chefeTeam: 'talho',
+          level: 3,
+          team: 'talho',
           personId: chefe.syncUuid,
         ),
       );
@@ -286,7 +352,7 @@ void main() {
       tester,
     ) async {
       final ana = await saved(tester, talho('Ana'));
-      signedInAs(const StoreAccess(admin: false, gerencia: false));
+      signedInAs(const StoreAccess(admin: false));
       await pumpApp(tester, const LivreServicoApp());
       tester
           .state<NavigatorState>(find.byType(Navigator))
@@ -317,7 +383,7 @@ void main() {
           ..team = 'livre_servico'
           ..turno = 'dia',
       );
-      signedInAs(const StoreAccess(admin: true, gerencia: false));
+      signedInAs(const StoreAccess(admin: true));
       await openPessoas(tester);
       await scrollTo(tester, find.text('Ana'));
       expect(find.textContaining('Loja'), findsOneWidget);
@@ -330,7 +396,7 @@ void main() {
           ..team = 'livre_servico'
           ..turno = 'dia',
       );
-      signedInAs(const StoreAccess(admin: false, gerencia: true));
+      signedInAs(const StoreAccess(admin: false, level: 4, team: 'gerencia'));
       await openPessoas(tester);
       await scrollTo(tester, find.text('Ana'));
       expect(find.textContaining('Loja'), findsNothing);

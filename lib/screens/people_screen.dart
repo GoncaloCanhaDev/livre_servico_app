@@ -89,7 +89,8 @@ class _PeopleScreenState extends State<PeopleScreen> {
   Future<void> _showActions(Person p) async {
     final access = AccountService.instance.access;
     final canEdit = PersonFieldGroup.values.any((g) => access.canEdit(p, g));
-    if (!canEdit && !access.canDeletePeople) return;
+    final canDelete = access.canDeletePerson(p);
+    if (!canEdit && !canDelete) return;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -102,7 +103,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 title: const Text('Editar'),
                 onTap: () => Navigator.of(ctx).pop('edit'),
               ),
-            if (access.canDeletePeople)
+            if (canDelete)
               ListTile(
                 leading: const Icon(
                   Icons.delete_outline,
@@ -188,7 +189,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
               icon: const Icon(Icons.add),
               onPressed: () => _openForm(),
             ),
-          if (AccountService.instance.access.canDeletePeople)
+          if (AccountService.instance.access.canDeleteAll)
             IconButton(
               tooltip: 'Remover todas as pessoas',
               icon: const Icon(Icons.delete_sweep_outlined),

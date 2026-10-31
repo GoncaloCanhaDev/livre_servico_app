@@ -54,8 +54,8 @@ void main() {
       pending: true,
       access: StoreAccess(
         admin: false,
-        gerencia: false,
-        chefeTeam: 'talho',
+        level: 3,
+        team: 'talho',
         personId: 'p1',
       ),
     );

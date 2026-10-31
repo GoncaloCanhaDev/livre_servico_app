@@ -6,6 +6,7 @@ import 'package:livre_servico_app/screens/people_sections.dart';
 Person _p(
   String name, {
   String? team,
+  String? role,
   String? chefe,
   String? turno,
   String number = '',
@@ -20,6 +21,7 @@ Person _p(
   ..fullName = name
   ..createdAt = DateTime(2026)
   ..team = team
+  ..role = role
   ..chefe = chefe
   ..turno = turno
   ..collaboratorNumber = number
@@ -108,6 +110,49 @@ void main() {
         ).expand(_names).toList(),
         ['Bruno', 'Rita'],
       );
+    });
+  });
+
+  group('roles', () {
+    final people = [
+      _p('Ana', team: 'talho'),
+      _p('Bruno', team: 'talho', role: 'segundaLinha'),
+      _p('Zé', team: 'talho', role: 'chefeSeccao'),
+      _p('Carla', team: 'talho', role: 'supervisor'),
+    ];
+
+    test('a team lists by level, highest first', () {
+      expect(_names(buildPeopleSections(people).single), [
+        'Zé',
+        'Bruno',
+        'Carla',
+        'Ana',
+      ]);
+    });
+
+    test('search finds a role, ignoring case and accents', () {
+      expect(
+        buildPeopleSections(
+          people,
+          query: 'chefe de seccao',
+        ).expand(_names).toList(),
+        ['Zé'],
+      );
+    });
+
+    test('Gerência from the Gerente down', () {
+      final g = [
+        _p('Ana', team: 'gerencia', role: 'secretaria'),
+        _p('Rui', team: 'gerencia', role: 'gerente'),
+        _p('Bia', team: 'gerencia', role: 'gestorArea'),
+        _p('Zé', team: 'gerencia', role: 'operador'),
+      ];
+      expect(_names(buildPeopleSections(g).single), [
+        'Rui',
+        'Bia',
+        'Ana',
+        'Zé',
+      ]);
     });
   });
 

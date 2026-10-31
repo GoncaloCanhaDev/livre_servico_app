@@ -18,8 +18,9 @@ class PersonService extends ChangeNotifier {
   /// data changed after they mutated it directly.
   void notifyExternal() => notifyListeners();
 
-  /// Saves [p]. If [p] is now a chefe, whoever else held that team's slot
-  /// loses it in the same transaction (one holder per slot). Someone saving
+  /// Saves [p]. If [p] now holds a single-holder role (Chefe de Secção,
+  /// Gerente de Loja), whoever else held it becomes Operador in the same
+  /// transaction. Someone saving
   /// their own profile answers a request to update it.
   Future<int> save(Person p) async {
     if (AccountService.instance.access.isSelf(p)) {
@@ -29,9 +30,13 @@ class PersonService extends ChangeNotifier {
     }
     SyncMeta.stamp(p);
     final others = await _db.persons.all();
-    final demoted = chefeConflicts(p, others);
+    final demoted = roleConflicts(p, others);
     for (final d in demoted) {
-      d.chefe = null;
+      d
+        ..role = Role.operador.name
+        ..chefe = null
+        ..supervisor = false
+        ..segundaLinha = false;
       SyncMeta.stamp(d);
     }
     final id = await _db.transaction(() async {

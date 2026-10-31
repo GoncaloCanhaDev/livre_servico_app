@@ -45,32 +45,15 @@ class _PhotoButton extends StatelessWidget {
   }
 }
 
-/// Tick-chips for the tags the chosen team allows (a chefe can only have
-/// Permanência).
+/// The Permanência tick-chip (a tag anyone can have, with no permissions).
 class _TagsField extends StatelessWidget {
-  const _TagsField({
-    required this.team,
-    required this.isChefe,
-    required this.supervisor,
-    required this.segundaLinha,
-    required this.permanencia,
-    required this.onSupervisor,
-    required this.onSegundaLinha,
-    required this.onPermanencia,
-  });
+  const _TagsField({required this.permanencia, required this.onPermanencia});
 
-  final Team? team;
-  final bool isChefe;
-  final bool supervisor;
-  final bool segundaLinha;
   final bool permanencia;
-  final ValueChanged<bool> onSupervisor;
-  final ValueChanged<bool> onSegundaLinha;
   final ValueChanged<bool> onPermanencia;
 
   @override
   Widget build(BuildContext context) {
-    final canTag = !isChefe;
     return InputDecorator(
       decoration: const InputDecoration(
         labelText: 'Tags',
@@ -81,18 +64,6 @@ class _TagsField extends StatelessWidget {
         spacing: 8,
         runSpacing: 4,
         children: [
-          if (canTag && team?.hasSupervisors == true)
-            FilterChip(
-              label: const Text('Supervisor'),
-              selected: supervisor,
-              onSelected: onSupervisor,
-            ),
-          if (canTag && team?.hasSegundaLinha == true)
-            FilterChip(
-              label: const Text('Segunda Linha'),
-              selected: segundaLinha,
-              onSelected: onSegundaLinha,
-            ),
           FilterChip(
             label: const Text('Permanência'),
             selected: permanencia,

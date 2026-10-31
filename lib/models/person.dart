@@ -15,6 +15,7 @@ class Person with SyncFields {
       ..hireDate = dateFromJson(j['hireDate'])
       ..photoPath = stringOrNull(j['photoPath'])
       ..team = stringOrNull(j['team'])
+      ..role = stringOrNull(j['role'])
       ..chefe = stringOrNull(j['chefe'])
       ..turno = stringOrNull(j['turno'])
       ..permanencia = boolFromJson(j['permanencia'])
@@ -51,14 +52,19 @@ class Person with SyncFields {
   /// [Team.id] of the person's team (see `teams.dart`); null = Sem equipa.
   String? team;
 
-  /// [ChefeSlot.name] if the person is a chefe of their team, else null.
-  /// Only meaningful when it is one of the team's slots — read it through
-  /// `chefeSlotOf`.
+  /// The person's `Role.name` (Operador... Gerente de Loja); read it through
+  /// `roleOf`, which ignores a role the team doesn't allow. Null on rows
+  /// saved before 0.68.0: `roleOf` derives it from [chefe], [supervisor] and
+  /// [segundaLinha].
+  String? role;
+
+  /// Before 0.68.0: a [ChefeSlot.name] if the person was a chefe of their
+  /// team. Only read for rows without a [role]; the form clears it.
   String? chefe;
 
   /// [Turno.name] for Livre Serviço members; ignored for other teams. A
-  /// Livre Serviço chefe's turno comes from their slot — read it through
-  /// `turnoOf`.
+  /// chefe from before 0.68.0 without a [role] has their slot's turno —
+  /// read it through `turnoOf`.
   String? turno;
 
   /// Tagged "Permanência": can stand in for management when no chefia is
@@ -69,12 +75,12 @@ class Person with SyncFields {
   /// ("Tempo inteiro").
   bool partTime = false;
 
-  /// Supervisor in a team that has them (only Frente de Loja): between chefe
-  /// and member, any number per team. Read it through `isSupervisor`.
+  /// Before 0.68.0: tagged Supervisor (only Frente de Loja). Only read for
+  /// rows without a [role]; the form clears it.
   bool supervisor = false;
 
-  /// Segunda Linha (second in line after the chefe) in a team that has it.
-  /// Read it through `isSegundaLinha`.
+  /// Before 0.68.0: tagged Segunda Linha (the production teams). Only read
+  /// for rows without a [role]; the form clears it.
   bool segundaLinha = false;
 
   /// Fixed weekly days off, as [DateTime.weekday] values (1 = Monday).
@@ -120,6 +126,7 @@ class Person with SyncFields {
     'hireDate': dateToJson(hireDate),
     'photoPath': photoPath,
     'team': team,
+    'role': role,
     'chefe': chefe,
     'turno': turno,
     'permanencia': permanencia,

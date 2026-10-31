@@ -35,8 +35,9 @@ const privacyPolicy = <PolicySection>[
           'autenticação; ninguém, nem o administrador, a consegue ler), a loja '
           'a que pertence e a pessoa da lista da loja que é.',
       'Perfil de cada pessoa da loja: nome, fotografia, género, aniversário '
-          '(só o dia e o mês), equipa e funções (chefe, supervisor, segunda '
-          'linha, permanência), turno, número de colaborador, datas de '
+          '(só o dia e o mês), equipa, função (operador, segunda linha, '
+          'supervisor, chefe de secção, gestor de área, secretária de loja, '
+          'gerente de loja) e permanência, turno, número de colaborador, datas de '
           'início no Pingo Doce e na loja, tempo inteiro ou parcial, horas por '
           'semana, horário de entrada e saída, folgas, ausências (o tipo, por '
           'exemplo férias ou baixa, e as datas, sem outros pormenores) e '
@@ -68,16 +69,19 @@ const privacyPolicy = <PolicySection>[
     title: 'Quem vê os seus dados',
     paragraphs: [
       'Toda a gente da sua loja vê o nome, a fotografia, o género, o '
-          'aniversário (dia e mês), a equipa e as funções de cada pessoa, e os '
+          'aniversário (dia e mês), a equipa e a função de cada pessoa, e os '
           'registos de trabalho.',
-      'O resto do perfil vê-o só a própria pessoa, o chefe de secção da sua '
-          'equipa, a gerência da loja e o administrador da aplicação. Os '
-          'outros aparelhos nem chegam a receber esses dados.',
-      'Pode editar o seu nome, fotografia, aniversário, género e notas; as folgas e ausências são editadas pelo seu chefe '
-          'ou pela gerência, e a equipa e as funções pela gerência.',
+      'O resto do perfil vê-o só a própria pessoa, a chefia da sua equipa '
+          '(o chefe de secção da equipa; os gestores de área e a secretária de '
+          'loja, para todas as equipas menos a gerência; o gerente de loja, '
+          'para todas) e o administrador da aplicação. Os outros aparelhos '
+          'nem chegam a receber esses dados.',
+      'Pode editar o seu nome, fotografia, aniversário, género e notas; as '
+          'folgas e ausências são editadas pela chefia da sua equipa, e a '
+          'equipa e a função por quem tiver uma função acima da sua.',
       'Ninguém de outra loja vê os dados da sua loja. Só entra na loja quem '
-          'tiver o código da loja e for aprovado por um chefe ou pela '
-          'gerência.',
+          'tiver o código da loja e for aprovado por um chefe de secção ou '
+          'pela gerência.',
     ],
   ),
   (

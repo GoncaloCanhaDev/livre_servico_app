@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../models/person.dart';
+import '../../models/teams.dart';
 import '../../theme.dart';
 
-/// Small pill for one of a person's roles (see `roleTagsOf`): filled for
-/// "Chefe", outlined for tags such as Supervisor or Permanência. With [away]
+/// Small pill for one of a person's roles (see `roleTagsOf`): filled for a
+/// role from level 3 (Chefe de Secção up), outlined for the rest, such as
+/// Supervisor or Permanência. With [away]
 /// it is a filled orange pill for an ausência (see `awayTagOn`); with
 /// [tenure] an outlined blue one for Em formação / Novo (see `tenureTagOf`);
 /// with [birthday] a filled pink one (see `isBirthdayOn`).
@@ -24,7 +26,10 @@ class RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filled = away || birthday || label == 'Chefe';
+    final filled =
+        away ||
+        birthday ||
+        Role.values.any((r) => r.level >= 3 && r.label == label);
     final color = away
         ? Colors.orange.shade800
         : birthday

@@ -7,7 +7,7 @@ import '../../services/local_db.dart';
 import '../../services/person_service.dart';
 import '../person_form_screen.dart';
 
-/// On Home, while a chefe or Gerência asks this account's person to update
+/// On Home, while someone at level 3 or up asks this account's person to update
 /// their profile: who asked and when; opens the form, and saving it answers
 /// the request.
 class ProfileRequestCard extends StatefulWidget {

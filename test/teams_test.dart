@@ -5,6 +5,7 @@ import 'package:livre_servico_app/models/teams.dart';
 Person _p(
   String name, {
   String? team,
+  String? role,
   String? chefe,
   String? turno,
   bool supervisor = false,
@@ -16,6 +17,7 @@ Person _p(
   ..createdAt = DateTime(2026)
   ..syncUuid = uuid
   ..team = team
+  ..role = role
   ..chefe = chefe
   ..turno = turno
   ..supervisor = supervisor
@@ -57,14 +59,6 @@ void main() {
       }
     });
 
-    test('a chefe value in a team without chefes counts as member', () {
-      expect(
-        chefeSlotOf(_p('A', team: 'frente_de_loja', chefe: 'chefe')),
-        isNull,
-      );
-      expect(chefeSlotOf(_p('B', team: 'bem_estar', chefe: 'chefe')), isNull);
-    });
-
     test('teamById returns null for null or unknown ids', () {
       expect(teamById('talho')!.name, 'Talho');
       expect(teamById(null), isNull);
@@ -78,189 +72,202 @@ void main() {
     });
   });
 
-  group('chefeSlotOf', () {
-    test('returns the slot when it belongs to the team', () {
+  group('roles', () {
+    test('role by name, level from the role', () {
       expect(
-        chefeSlotOf(_p('A', team: 'talho', chefe: 'chefe')),
-        ChefeSlot.chefe,
+        roleOf(_p('A', team: 'talho', role: 'chefeSeccao')),
+        Role.chefeSeccao,
+      );
+      expect(levelOf(_p('B', team: 'gerencia', role: 'gerente')), 5);
+      expect(Role.secretaria.label, 'Secretária de Loja');
+      expect(Role.values.map((r) => r.level), [1, 2, 2, 3, 4, 4, 5]);
+    });
+
+    test('a role not allowed in the team reads as Operador', () {
+      expect(roleOf(_p('A', team: 'talho', role: 'gestorArea')), Role.operador);
+      expect(roleOf(_p('B', role: 'chefeSeccao')), Role.operador);
+      expect(
+        roleOf(_p('C', team: 'caixas', role: 'chefeSeccao')),
+        Role.operador,
+      );
+      expect(roleOf(_p('D', team: 'talho', role: 'rei')), Role.operador);
+    });
+
+    test('old rows: the role comes from chefe, Gerência and tags', () {
+      expect(roleOf(_p('A', team: 'gerencia', chefe: 'chefe')), Role.gerente);
+      expect(roleOf(_p('B', team: 'gerencia')), Role.gestorArea);
+      expect(
+        roleOf(_p('C', team: 'livre_servico', chefe: 'noite')),
+        Role.chefeSeccao,
+      );
+      expect(roleOf(_p('D', team: 'talho', chefe: 'chefe')), Role.chefeSeccao);
+      expect(
+        roleOf(_p('E', team: 'frente_de_loja', supervisor: true)),
+        Role.supervisor,
       );
       expect(
-        chefeSlotOf(_p('B', team: 'livre_servico', chefe: 'noite')),
-        ChefeSlot.noite,
+        roleOf(_p('F', team: 'talho', segundaLinha: true)),
+        Role.segundaLinha,
+      );
+      expect(
+        roleOf(_p('G', team: 'frente_de_loja', chefe: 'chefe')),
+        Role.operador,
+      );
+      expect(roleOf(_p('H', team: 'talho', supervisor: true)), Role.operador);
+      expect(
+        roleOf(_p('I', team: 'livre_servico', chefe: 'chefe')),
+        Role.operador,
+      );
+      expect(roleOf(_p('J', chefe: 'chefe')), Role.operador);
+    });
+
+    test('a role set wins over the old fields', () {
+      expect(
+        roleOf(_p('A', team: 'talho', segundaLinha: true, role: 'operador')),
+        Role.operador,
+      );
+      expect(
+        roleOf(_p('B', team: 'gerencia', chefe: 'chefe', role: 'secretaria')),
+        Role.secretaria,
       );
     });
 
-    test('is null for members, wrong slots, unknown teams and no team', () {
-      expect(chefeSlotOf(_p('A', team: 'talho')), isNull);
-      expect(chefeSlotOf(_p('B', team: 'talho', chefe: 'dia')), isNull);
-      expect(
-        chefeSlotOf(_p('C', team: 'livre_servico', chefe: 'chefe')),
-        isNull,
-      );
-      expect(chefeSlotOf(_p('D', team: 'caixas', chefe: 'chefe')), isNull);
-      expect(chefeSlotOf(_p('E', chefe: 'chefe')), isNull);
+    test('every team allows levels 1 to 3; only Gerência 4 and 5', () {
+      const lower = [
+        Role.operador,
+        Role.segundaLinha,
+        Role.supervisor,
+        Role.chefeSeccao,
+      ];
+      for (final t in teams) {
+        expect(
+          rolesIn(t.id),
+          t.id == gerenciaId ? Role.values : lower,
+          reason: t.name,
+        );
+      }
+      expect(rolesIn(null), [Role.operador]);
+      expect(rolesIn('caixas'), [Role.operador]);
+    });
+
+    test('only Chefe de Secção and Gerente have a single holder', () {
+      expect(Role.values.where(isSingleHolder), [
+        Role.chefeSeccao,
+        Role.gerente,
+      ]);
     });
   });
 
-  group('chefeHolder', () {
-    final ana = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
-    final rui = _p('Rui', team: 'talho', uuid: 'r');
-
-    test('finds the current holder', () {
-      expect(
-        chefeHolder([ana, rui], 'talho', ChefeSlot.chefe, except: rui),
-        same(ana),
-      );
+  group('roleConflicts', () {
+    test('one Chefe de Secção per team', () {
+      final ana = _p('Ana', team: 'talho', role: 'chefeSeccao', uuid: 'a');
+      final rui = _p('Rui', team: 'talho', role: 'chefeSeccao', uuid: 'r');
+      final pei = _p('Pê', team: 'peixaria', role: 'chefeSeccao', uuid: 'p');
+      expect(roleConflicts(rui, [ana, rui, pei]), [ana]);
+      expect(roleHolder([ana, rui, pei], rui), same(ana));
     });
 
-    test('ignores the person themself, by identity or by uuid', () {
-      expect(chefeHolder([ana], 'talho', ChefeSlot.chefe, except: ana), isNull);
-      final anaCopy = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
-      expect(
-        chefeHolder([ana], 'talho', ChefeSlot.chefe, except: anaCopy),
-        isNull,
+    test('one Chefe de Secção per turno in Livre Serviço', () {
+      final day = _p(
+        'Ana',
+        team: 'livre_servico',
+        role: 'chefeSeccao',
+        turno: 'dia',
+        uuid: 'a',
       );
+      final night = _p(
+        'Rui',
+        team: 'livre_servico',
+        role: 'chefeSeccao',
+        turno: 'noite',
+        uuid: 'r',
+      );
+      final day2 = _p(
+        'Bia',
+        team: 'livre_servico',
+        role: 'chefeSeccao',
+        turno: 'dia',
+        uuid: 'b',
+      );
+      expect(roleConflicts(day2, [day, night]), [day]);
+      expect(roleConflicts(night, [day]), isEmpty);
     });
 
-    test('ignores deleted people and other slots/teams', () {
-      final gone = _p('Zé', team: 'talho', chefe: 'chefe', deleted: true);
-      final night = _p('Bia', team: 'livre_servico', chefe: 'noite');
-      expect(
-        chefeHolder([gone], 'talho', ChefeSlot.chefe, except: rui),
-        isNull,
+    test('an old Livre Serviço chefe conflicts by their slot\'s turno', () {
+      final old = _p('Ana', team: 'livre_servico', chefe: 'dia', uuid: 'a');
+      final nova = _p(
+        'Bia',
+        team: 'livre_servico',
+        role: 'chefeSeccao',
+        turno: 'dia',
+        uuid: 'b',
       );
-      expect(
-        chefeHolder([night], 'livre_servico', ChefeSlot.dia, except: rui),
-        isNull,
-      );
-      expect(
-        chefeHolder([ana], 'peixaria', ChefeSlot.chefe, except: rui),
-        isNull,
-      );
+      expect(roleConflicts(nova, [old]), [old]);
     });
 
-    test('a new person (no uuid yet) is not mistaken for others', () {
-      final newbie = _p('Novo', team: 'talho', chefe: 'chefe');
-      final oldNoUuid = _p('Velho', team: 'talho', chefe: 'chefe');
-      expect(
-        chefeHolder([oldNoUuid], 'talho', ChefeSlot.chefe, except: newbie),
-        same(oldNoUuid),
+    test('one Gerente de Loja', () {
+      final g1 = _p('Ana', team: 'gerencia', role: 'gerente', uuid: 'a');
+      final g2 = _p('Rui', team: 'gerencia', role: 'gerente', uuid: 'r');
+      expect(roleConflicts(g2, [g1]), [g1]);
+    });
+
+    test('other roles have no limit', () {
+      final a = _p('Ana', team: 'talho', role: 'supervisor', uuid: 'a');
+      final b = _p('Rui', team: 'talho', role: 'supervisor', uuid: 'r');
+      expect(roleConflicts(b, [a]), isEmpty);
+      expect(roleHolder([a], b), isNull);
+    });
+
+    test('skips the person themself, by uuid, and deleted people', () {
+      final ana = _p('Ana', team: 'talho', role: 'chefeSeccao', uuid: 'a');
+      final anaFromDb = _p(
+        'Ana',
+        team: 'talho',
+        role: 'chefeSeccao',
+        uuid: 'a',
       );
-    });
-  });
-
-  group('chefeConflicts', () {
-    test('returns whoever else holds the same team and slot', () {
-      final ana = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
-      final rui = _p('Rui', team: 'talho', chefe: 'chefe', uuid: 'r');
-      expect(chefeConflicts(rui, [ana, rui]), [ana]);
-    });
-
-    test('is empty for members and for invalid slots', () {
-      final ana = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
-      expect(chefeConflicts(_p('Rui', team: 'talho'), [ana]), isEmpty);
-      expect(
-        chefeConflicts(_p('Rui', team: 'talho', chefe: 'dia'), [ana]),
-        isEmpty,
-      );
-    });
-
-    test('day and night chefes of Livre Serviço do not conflict', () {
-      final day = _p('Ana', team: 'livre_servico', chefe: 'dia', uuid: 'a');
-      final night = _p('Rui', team: 'livre_servico', chefe: 'noite', uuid: 'r');
-      expect(chefeConflicts(night, [day]), isEmpty);
-    });
-
-    test('skips the person themself and deleted people', () {
-      final ana = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
-      final anaFromDb = _p('Ana', team: 'talho', chefe: 'chefe', uuid: 'a');
       final gone = _p(
         'Zé',
         team: 'talho',
-        chefe: 'chefe',
+        role: 'chefeSeccao',
         uuid: 'z',
         deleted: true,
       );
-      expect(chefeConflicts(ana, [anaFromDb, gone]), isEmpty);
+      expect(roleConflicts(ana, [anaFromDb, gone]), isEmpty);
+    });
+
+    test('a new person (no uuid yet) is not mistaken for others', () {
+      final newbie = _p('Novo', team: 'talho', role: 'chefeSeccao');
+      final old = _p('Velho', team: 'talho', chefe: 'chefe');
+      expect(roleConflicts(newbie, [old]), [old]);
     });
   });
 
-  group('supervisors', () {
-    test('only Frente de Loja has supervisors', () {
-      expect(teamById('frente_de_loja')!.hasSupervisors, isTrue);
-      for (final t in teams.where((t) => t.id != 'frente_de_loja')) {
-        expect(t.hasSupervisors, isFalse, reason: t.name);
-      }
-    });
-
-    test('isSupervisor needs the flag, Frente de Loja and no chefe slot', () {
+  group('roleLineOf', () {
+    test('role and team, with the turno in Livre Serviço', () {
       expect(
-        isSupervisor(_p('A', team: 'frente_de_loja', supervisor: true)),
-        isTrue,
+        roleLineOf(_p('A', team: 'talho', role: 'chefeSeccao')),
+        'Chefe de Secção · Talho',
       );
-      expect(isSupervisor(_p('B', team: 'frente_de_loja')), isFalse);
-      expect(isSupervisor(_p('C', team: 'talho', supervisor: true)), isFalse);
-      expect(isSupervisor(_p('D', supervisor: true)), isFalse);
       expect(
-        isSupervisor(
-          _p('E', team: 'frente_de_loja', chefe: 'chefe', supervisor: true),
-        ),
-        isTrue,
-        reason: 'Frente de Loja has no chefe, so a stale chefe value is moot',
+        roleLineOf(_p('B', team: 'livre_servico', turno: 'noite')),
+        'Operador · Livre Serviço · Noite',
       );
-    });
-  });
-
-  group('segunda linha', () {
-    test('only the production teams have Segunda Linha', () {
-      expect(teams.where((t) => t.hasSegundaLinha).map((t) => t.id).toList(), [
-        'charcutaria',
-        'meal_solutions',
-        'talho',
-        'peixaria',
-        'padaria',
-        'fruta',
-      ]);
-    });
-
-    test('isSegundaLinha needs the flag, such a team and no chefe slot', () {
-      expect(
-        isSegundaLinha(_p('A', team: 'talho', segundaLinha: true)),
-        isTrue,
-      );
-      expect(isSegundaLinha(_p('B', team: 'talho')), isFalse);
-      expect(
-        isSegundaLinha(_p('C', team: 'gerencia', segundaLinha: true)),
-        isFalse,
-      );
-      expect(isSegundaLinha(_p('D', segundaLinha: true)), isFalse);
-      expect(
-        isSegundaLinha(
-          _p('E', team: 'talho', chefe: 'chefe', segundaLinha: true),
-        ),
-        isFalse,
-      );
+      expect(roleLineOf(_p('C')), 'Operador · Sem equipa');
     });
   });
 
   group('roleTagsOf', () {
-    test('Chefe first, then the tags the team allows', () {
-      final p = _p('A', team: 'talho', chefe: 'chefe')..permanencia = true;
-      expect(roleTagsOf(p), ['Chefe', 'Permanência']);
-      final q = _p('B', team: 'talho', segundaLinha: true)..permanencia = true;
-      expect(roleTagsOf(q), ['Segunda Linha', 'Permanência']);
+    test('the role from level 2, then Permanência', () {
+      expect(roleTagsOf(_p('A', team: 'talho')), isEmpty);
+      final p = _p('B', team: 'talho', role: 'chefeSeccao')..permanencia = true;
+      expect(roleTagsOf(p), ['Chefe de Secção', 'Permanência']);
       expect(roleTagsOf(_p('C', team: 'frente_de_loja', supervisor: true)), [
         'Supervisor',
       ]);
-    });
-
-    test('drops tags the team does not allow', () {
-      expect(
-        roleTagsOf(
-          _p('D', team: 'gerencia', supervisor: true, segundaLinha: true),
-        ),
-        isEmpty,
-      );
+      expect(roleTagsOf(_p('D', team: 'talho')..permanencia = true), [
+        'Permanência',
+      ]);
     });
   });
 
@@ -287,10 +294,31 @@ void main() {
       expect(turnoOf(_p('B', team: 'livre_servico', turno: 'dia')), Turno.dia);
     });
 
-    test('a Livre Serviço chefe is on their slot\'s turno', () {
+    test('an old Livre Serviço chefe is on their slot\'s turno', () {
       expect(turnoOf(_p('A', team: 'livre_servico', chefe: 'dia')), Turno.dia);
       expect(
         turnoOf(_p('B', team: 'livre_servico', chefe: 'noite', turno: 'dia')),
+        Turno.noite,
+      );
+    });
+
+    test('a Chefe de Secção of Livre Serviço has their own turno', () {
+      expect(
+        turnoOf(
+          _p('A', team: 'livre_servico', role: 'chefeSeccao', turno: 'noite'),
+        ),
+        Turno.noite,
+      );
+      expect(
+        turnoOf(
+          _p(
+            'B',
+            team: 'livre_servico',
+            role: 'chefeSeccao',
+            chefe: 'dia',
+            turno: 'noite',
+          ),
+        ),
         Turno.noite,
       );
     });

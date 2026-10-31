@@ -56,18 +56,18 @@ bool _matches(Person p, String foldedQuery, DateTime today) =>
     foldText(p.collaboratorNumber).contains(foldedQuery) ||
     (p.permanencia && 'permanencia'.contains(foldedQuery)) ||
     (p.partTime && 'tempo parcial'.contains(foldedQuery)) ||
-    (isSupervisor(p) && 'supervisor'.contains(foldedQuery)) ||
-    (isSegundaLinha(p) && 'segunda linha'.contains(foldedQuery)) ||
+    (levelOf(p) >= 2 && foldText(roleOf(p).label).contains(foldedQuery)) ||
     foldText(tenureTagOf(p, today) ?? '').contains(foldedQuery);
 
 /// Filters [people] by [query] (name, section title — team and turno —, nº
-/// de colaborador, a tag — Permanência, Supervisor, Segunda Linha, Em
+/// de colaborador, a role from level 2 — Segunda Linha, Chefe de Secção... —,
+/// a tag — Permanência, Em
 /// formação / Novo / Nova on [today] (default now) — or
 /// "tempo parcial", ignoring case and accents) and groups them into sections
 /// in [teams] order (Livre Serviço split into Dia, Noite and Sem turno), with
 /// people without a (known) team in a final "Sem equipa" section. Within a
-/// section, chefes come first in the team's slot order, then Supervisores,
-/// then Segunda Linha, then members, each A–Z. With [offDay], people not
+/// section, people go by level, highest first (the same level in [Role]
+/// order), each A–Z. With [offDay], people not
 /// working that day (see [offLabelOn]) go last in their section, in the same
 /// order. Empty sections are left out.
 List<PeopleSection> buildPeopleSections(
@@ -91,15 +91,9 @@ List<PeopleSection> buildPeopleSections(
       if (off != 0) return off;
     }
 
-    int rank(Person p) {
-      final slot = chefeSlotOf(p);
-      if (team != null && slot != null) return team.chefeSlots.indexOf(slot);
-      if (isSupervisor(p)) return 100;
-      if (isSegundaLinha(p)) return 101;
-      return 102;
-    }
-
-    final r = rank(a).compareTo(rank(b));
+    final level = levelOf(b).compareTo(levelOf(a));
+    if (level != 0) return level;
+    final r = roleOf(a).index.compareTo(roleOf(b).index);
     return r != 0 ? r : _byName(a, b);
   }
 

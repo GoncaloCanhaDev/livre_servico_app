@@ -1,6 +1,28 @@
 import 'person.dart';
 
-/// A chefe position within a team. Stored on [Person.chefe] by name.
+/// A person's role, from Operador (level 1) to Gerente de Loja (level 5).
+/// Stored on [Person.role] by name — never by index. Each level can do
+/// everything the levels below it can (see `StoreAccess`).
+enum Role {
+  operador('Operador', 1),
+  segundaLinha('Segunda Linha', 2),
+  supervisor('Supervisor', 2),
+  chefeSeccao('Chefe de Secção', 3),
+  gestorArea('Gestor de Área', 4),
+  secretaria('Secretária de Loja', 4),
+  gerente('Gerente de Loja', 5);
+
+  const Role(this.label, this.level);
+  final String label;
+  final int level;
+}
+
+/// Whether at most one (non-deleted) person holds [r]: one Chefe de Secção
+/// per team (per turno in Livre Serviço), one Gerente de Loja per store.
+bool isSingleHolder(Role r) => r == Role.chefeSeccao || r == Role.gerente;
+
+/// Before 0.68.0, a chefe position within a team, stored on [Person.chefe]
+/// by name. Only read to derive the [Role] of rows saved before then.
 enum ChefeSlot {
   chefe('Chefe'),
   dia('Chefe de dia'),
@@ -42,22 +64,27 @@ class Team {
   /// Whether members are split into [Turno]s (only Livre Serviço).
   final bool hasTurnos;
 
-  /// Whether members can be tagged Supervisor (only Frente de Loja).
+  /// Before 0.68.0, whether members could be tagged Supervisor (only Frente
+  /// de Loja): read for rows without a [Person.role].
   final bool hasSupervisors;
 
-  /// Whether members can be tagged Segunda Linha.
+  /// Before 0.68.0, whether members could be tagged Segunda Linha: read for
+  /// rows without a [Person.role].
   final bool hasSegundaLinha;
 
   /// Whether the team's Pessoas section(s) start expanded.
   final bool openByDefault;
 
-  /// The team's chefe positions, in display order (empty for teams without
-  /// a chefe). Each is held by at most one (non-deleted) member.
+  /// Before 0.68.0, the team's chefe positions (empty for teams without a
+  /// chefe): read for rows without a [Person.role].
   final List<ChefeSlot> chefeSlots;
 }
 
 /// The Livre Serviço team's id; the horários are only for this team.
 const livreServicoId = 'livre_servico';
+
+/// The Gerência team's id: the only team with levels 4 and 5.
+const gerenciaId = 'gerencia';
 
 /// Every team, in the order the Pessoas list shows them.
 const teams = [
@@ -89,9 +116,9 @@ Team? teamById(String? id) {
   return null;
 }
 
-/// [p]'s chefe slot, or null if they're a member, have no (known) team, or
-/// [Person.chefe] isn't one of their team's slots.
-ChefeSlot? chefeSlotOf(Person p) {
+/// [p]'s chefe slot before 0.68.0, or null if they were a member, have no
+/// (known) team, or [Person.chefe] isn't one of their team's slots.
+ChefeSlot? _legacyChefeSlot(Person p) {
   final team = teamById(p.team);
   if (team == null) return null;
   for (final s in team.chefeSlots) {
@@ -100,42 +127,74 @@ ChefeSlot? chefeSlotOf(Person p) {
   return null;
 }
 
-/// Whether [p] is tagged Supervisor: flagged, in a team that has
-/// supervisors, and not a chefe.
-bool isSupervisor(Person p) =>
-    p.supervisor &&
-    teamById(p.team)?.hasSupervisors == true &&
-    chefeSlotOf(p) == null;
+/// The roles a person in team [teamId] may have, lowest first: levels 1–3
+/// in every team, all of them in Gerência, only Operador with no (known)
+/// team.
+List<Role> rolesIn(String? teamId) {
+  if (teamById(teamId) == null) return const [Role.operador];
+  if (teamId == gerenciaId) return Role.values;
+  return [
+    for (final r in Role.values)
+      if (r.level <= 3) r,
+  ];
+}
 
-/// Whether [p] is tagged Segunda Linha: flagged, in a team that has it, and
-/// not a chefe.
-bool isSegundaLinha(Person p) =>
-    p.segundaLinha &&
-    teamById(p.team)?.hasSegundaLinha == true &&
-    chefeSlotOf(p) == null;
+/// [p]'s role: [Person.role] when their team allows it, Operador when it
+/// doesn't. Rows saved before 0.68.0 (no role) take it from the old fields:
+/// Gerência's chefe is Gerente de Loja and the rest of Gerência Gestor de
+/// Área, another team's chefe Chefe de Secção, then Supervisor and Segunda
+/// Linha where the team had them. `person_role` in `supabase/migrations`
+/// does the same.
+Role roleOf(Person p) {
+  final allowed = rolesIn(p.team);
+  if (p.role case final name?) {
+    final r = Role.values.asNameMap()[name];
+    return r != null && allowed.contains(r) ? r : Role.operador;
+  }
+  final team = teamById(p.team);
+  if (team == null) return Role.operador;
+  if (team.id == gerenciaId) {
+    return _legacyChefeSlot(p) != null ? Role.gerente : Role.gestorArea;
+  }
+  if (_legacyChefeSlot(p) != null) return Role.chefeSeccao;
+  if (p.supervisor && team.hasSupervisors) return Role.supervisor;
+  if (p.segundaLinha && team.hasSegundaLinha) return Role.segundaLinha;
+  return Role.operador;
+}
 
-/// [p]'s badge labels in display order: "Chefe" if they hold a chefe slot,
-/// then the tags their team allows (Supervisor, Segunda Linha) and
+/// [p]'s authority level, 1 (Operador) to 5 (Gerente de Loja).
+int levelOf(Person p) => roleOf(p).level;
+
+/// [p]'s role, team and turno, as Conta shows them: "Chefe de Secção ·
+/// Talho", "Operador · Livre Serviço · Noite", "Operador · Sem equipa".
+String roleLineOf(Person p) => [
+  roleOf(p).label,
+  teamById(p.team)?.name ?? 'Sem equipa',
+  ?turnoOf(p)?.label,
+].join(' · ');
+
+/// [p]'s badge labels in display order: their role from level 2 up, then
 /// Permanência.
 List<String> roleTagsOf(Person p) => [
-  if (chefeSlotOf(p) != null) 'Chefe',
-  if (isSupervisor(p)) 'Supervisor',
-  if (isSegundaLinha(p)) 'Segunda Linha',
+  if (roleOf(p) case final r when r.level >= 2) r.label,
   if (p.permanencia) 'Permanência',
 ];
 
 /// [p]'s turno, or null if their team isn't split by turno or they have no
-/// valid one. A chefe's turno is their slot's, whatever [Person.turno] says.
+/// valid one. A chefe from before 0.68.0 (no [Person.role]) is on their
+/// slot's turno, whatever [Person.turno] says.
 Turno? turnoOf(Person p) {
   if (teamById(p.team)?.hasTurnos != true) return null;
-  switch (chefeSlotOf(p)) {
-    case ChefeSlot.dia:
-      return Turno.dia;
-    case ChefeSlot.noite:
-      return Turno.noite;
-    case ChefeSlot.chefe || null:
-      return Turno.values.asNameMap()[p.turno];
+  if (p.role == null) {
+    switch (_legacyChefeSlot(p)) {
+      case ChefeSlot.dia:
+        return Turno.dia;
+      case ChefeSlot.noite:
+        return Turno.noite;
+      case ChefeSlot.chefe || null:
+    }
   }
+  return Turno.values.asNameMap()[p.turno];
 }
 
 /// Whether [a] and [b] are the same person: the same object, or the same
@@ -143,32 +202,27 @@ Turno? turnoOf(Person p) {
 bool _same(Person a, Person b) =>
     identical(a, b) || (a.syncUuid.isNotEmpty && a.syncUuid == b.syncUuid);
 
-/// The non-deleted person in [all] other than [except] who holds [slot] in
-/// team [teamId], if any.
-Person? chefeHolder(
-  List<Person> all,
-  String teamId,
-  ChefeSlot slot, {
-  required Person except,
-}) {
-  for (final p in all) {
-    if (p.syncDeletedAt != null || _same(p, except)) continue;
-    if (p.team == teamId && chefeSlotOf(p) == slot) return p;
-  }
-  return null;
-}
-
-/// People in [all] who must lose their chefe slot when [saving] is saved:
-/// anyone else (non-deleted) holding [saving]'s team and slot.
-List<Person> chefeConflicts(Person saving, List<Person> all) {
-  final slot = chefeSlotOf(saving);
-  if (slot == null) return const [];
+/// People in [all] who must lose their role when [saving] is saved: anyone
+/// else (non-deleted) holding the same single-holder role — Gerente de Loja
+/// anywhere, Chefe de Secção in the same team (and turno, in Livre
+/// Serviço).
+List<Person> roleConflicts(Person saving, List<Person> all) {
+  final role = roleOf(saving);
+  if (!isSingleHolder(role)) return const [];
+  final byTurno = teamById(saving.team)?.hasTurnos == true;
   return [
     for (final p in all)
       if (p.syncDeletedAt == null &&
           !_same(p, saving) &&
-          p.team == saving.team &&
-          chefeSlotOf(p) == slot)
+          roleOf(p) == role &&
+          (role == Role.gerente ||
+              (p.team == saving.team &&
+                  (!byTurno || turnoOf(p) == turnoOf(saving)))))
         p,
   ];
 }
+
+/// Whoever else holds [saving]'s single-holder role, if anyone (see
+/// [roleConflicts]).
+Person? roleHolder(List<Person> all, Person saving) =>
+    roleConflicts(saving, all).firstOrNull;

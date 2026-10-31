@@ -58,21 +58,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
   String? _team; // Team.id, null = Sem equipa
   Turno? _turno; // only for teams split by turno
-  bool _isChefe = false;
-  bool _supervisor = false;
-  bool _segundaLinha = false;
+  Role _role = Role.operador;
   bool _permanencia = false;
   bool _partTime = false;
-
-  /// The chefe slot the form would assign, or null for Membro (or a
-  /// Livre Serviço chefe with no turno picked yet).
-  ChefeSlot? get _chefeSlot {
-    final team = teamById(_team);
-    if (team == null || !_isChefe) return null;
-    if (!team.hasTurnos) return team.chefeSlots.first;
-    final turno = _turno;
-    return turno == null ? null : chefeSlotForTurno(turno);
-  }
 
   List<Person> _allPeople = const [];
   bool _loadingPeople = true;
@@ -108,9 +96,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     ];
     _photoPath = e?.photoPath;
     _team = teamById(e?.team)?.id;
-    _isChefe = e != null && chefeSlotOf(e) != null;
-    _supervisor = e != null && isSupervisor(e);
-    _segundaLinha = e != null && isSegundaLinha(e);
+    _role = e == null ? Role.operador : roleOf(e);
     _turno = e == null ? null : turnoOf(e);
     _permanencia = e?.permanencia ?? false;
     _partTime = e?.partTime ?? false;
@@ -271,33 +257,35 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final person = widget.existing ?? (Person()..createdAt = DateTime.now());
-    final slot = _chefeSlot;
-    if (_team != null && slot != null) {
-      final holder = chefeHolder(_allPeople, _team!, slot, except: person);
-      if (holder != null) {
-        final team = teamById(_team)!;
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            content: Text(
-              '${holder.fullName} é ${slot.label} de ${team.name}. '
-              'Substituir?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Substituir'),
-              ),
-            ],
-          ),
-        );
-        if (ok != true || !mounted) return;
+    final previous = widget.existing == null ? null : roleOf(widget.existing!);
+    if (previous != null &&
+        AccountService.instance.access.isSelf(widget.existing!) &&
+        _role.level < previous.level &&
+        !await _confirm(
+          'Vai deixar de ter as permissões de ${previous.label}. Continuar?',
+          'Continuar',
+        )) {
+      return;
+    }
+    if (isSingleHolder(_role)) {
+      final candidate = Person()
+        ..syncUuid = person.syncUuid
+        ..team = _team
+        ..role = _role.name
+        ..turno = _turno?.name;
+      if (roleHolder(_allPeople, candidate) case final holder?) {
+        final where = _role == Role.gerente
+            ? ''
+            : ' de ${teamById(_team)?.name ?? ''}';
+        if (!await _confirm(
+          '${holder.fullName} é ${_role.label}$where. Substituir?',
+          'Substituir',
+        )) {
+          return;
+        }
       }
     }
+    if (!mounted) return;
     setState(() => _saving = true);
     person.fullName = _nameCtrl.text.trim();
     person.collaboratorNumber = _numberCtrl.text.trim();
@@ -319,12 +307,10 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     ];
     person.team = _team;
     person.turno = teamById(_team)?.hasTurnos == true ? _turno?.name : null;
-    person.chefe = slot?.name;
-    final team = teamById(_team);
-    person.supervisor =
-        _supervisor && slot == null && team?.hasSupervisors == true;
-    person.segundaLinha =
-        _segundaLinha && slot == null && team?.hasSegundaLinha == true;
+    person.role = _role.name;
+    person.chefe = null;
+    person.supervisor = false;
+    person.segundaLinha = false;
     person.permanencia = _permanencia;
     person.partTime = _partTime;
     SyncMeta.stamp(person);
@@ -343,12 +329,53 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     if (mounted) Navigator.of(context).pop(person);
   }
 
+  /// Asks [question], with a Cancelar button and [action]; true if confirmed.
+  Future<bool> _confirm(String question, String action) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(question),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    return ok == true && mounted;
+  }
+
   /// Whether this account changes [group] of the person: everything for a
   /// new one (only those who may add people get here).
   bool _can(PersonFieldGroup group) => switch (widget.existing) {
     null => true,
     final p => AccountService.instance.access.canEdit(p, group),
   };
+
+  /// The teams the Equipa field offers: those this account puts people in,
+  /// plus the person's own (so it always shows).
+  List<String?> get _teamChoices {
+    final teamIds = AccountService.instance.access.assignableTeams;
+    return [
+      for (final t in [...teams.map((t) => t.id), null])
+        if (teamIds.contains(t) || t == _team) t,
+    ];
+  }
+
+  /// The roles the Função field offers for the chosen team: those this
+  /// account gives, plus the person's current one (so it always shows).
+  List<Role> get _roleChoices {
+    final given = AccountService.instance.access.assignableRoles(_team);
+    return [
+      for (final r in rolesIn(_team))
+        if (given.contains(r) || r == _role) r,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,18 +483,15 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: [
-                    for (final t in teams)
-                      DropdownMenuItem(value: t.id, child: Text(t.name)),
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Sem equipa'),
-                    ),
+                    for (final t in _teamChoices)
+                      DropdownMenuItem(
+                        value: t,
+                        child: Text(teamById(t)?.name ?? 'Sem equipa'),
+                      ),
                   ],
                   onChanged: (v) => setState(() {
                     _team = v;
-                    _isChefe = false;
-                    _supervisor = false;
-                    _segundaLinha = false;
+                    if (!rolesIn(v).contains(_role)) _role = Role.operador;
                     _turno = teamById(v)?.hasTurnos == true ? Turno.dia : null;
                   }),
                 ),
@@ -493,43 +517,30 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                     ),
                   ),
                 ],
-                if (team.chefeSlots.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  EditLock(
-                    enabled: role,
-                    child: DropdownButtonFormField<bool>(
-                      key: ValueKey(team.id),
-                      initialValue: _isChefe,
-                      decoration: const InputDecoration(
-                        labelText: 'Função na equipa',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: false, child: Text('Membro')),
-                        DropdownMenuItem(value: true, child: Text('Chefe')),
-                      ],
-                      onChanged: (v) => setState(() {
-                        _isChefe = v ?? false;
-                        if (_isChefe) {
-                          _supervisor = false;
-                          _segundaLinha = false;
-                        }
-                      }),
-                    ),
-                  ),
-                ],
               ],
               const SizedBox(height: 12),
               EditLock(
                 enabled: role,
+                child: DropdownButtonFormField<Role>(
+                  key: ValueKey('role-$_team'),
+                  initialValue: _role,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Função',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    for (final r in _roleChoices)
+                      DropdownMenuItem(value: r, child: Text(r.label)),
+                  ],
+                  onChanged: (v) => setState(() => _role = v ?? _role),
+                ),
+              ),
+              const SizedBox(height: 12),
+              EditLock(
+                enabled: role,
                 child: _TagsField(
-                  team: teamById(_team),
-                  isChefe: _isChefe,
-                  supervisor: _supervisor,
-                  segundaLinha: _segundaLinha,
                   permanencia: _permanencia,
-                  onSupervisor: (v) => setState(() => _supervisor = v),
-                  onSegundaLinha: (v) => setState(() => _segundaLinha = v),
                   onPermanencia: (v) => setState(() => _permanencia = v),
                 ),
               ),
