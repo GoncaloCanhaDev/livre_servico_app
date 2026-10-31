@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.67.1] — 2026-10-31
+
+### Added
+- **Design for authority levels** (`docs/superpowers/specs/2026-10-31-authority-levels-design.md`):
+  one role per person (Operador, Segunda Linha, Supervisor, Chefe de Secção, Gestor de Área,
+  Secretária de Loja, Gerente de Loja) on five levels, replacing chefe slots and Gerência as
+  the source of permissions. No app change yet.
+
 ## [0.67.0] — 2026-10-31
 
 ### Removed
