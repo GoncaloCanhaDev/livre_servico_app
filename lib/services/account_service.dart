@@ -7,6 +7,7 @@ import 'package:supabase/supabase.dart';
 
 import '../models/privacy_policy.dart';
 import '../models/store_access.dart';
+import 'demo_mode.dart';
 import 'local_db.dart';
 import 'photo_store.dart';
 import 'store_data.dart';
@@ -160,7 +161,9 @@ class AccountService extends ChangeNotifier {
   Timer? _retry;
   DateTime? _accessCheckedAt;
 
-  bool get isConfigured => _url.isNotEmpty && _anonKey.isNotEmpty;
+  /// Whether this build has an online database to use (never in the demo).
+  bool get isConfigured =>
+      !DemoMode.active && _url.isNotEmpty && _anonKey.isNotEmpty;
 
   /// The signed-in account's email; null when signed out.
   String? email;

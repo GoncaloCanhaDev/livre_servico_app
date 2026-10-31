@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/account_service.dart';
 import '../services/backup_service.dart';
+import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -112,18 +113,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _sectionHeader('Conta'),
-            ListTile(
-              title: const Text(
-                'Conta e Sincronização',
-                style: TextStyle(fontWeight: FontWeight.w600),
+            if (!DemoMode.active)
+              ListTile(
+                title: const Text(
+                  'Conta e Sincronização',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(_accountSubtitle()),
+                trailing: const Icon(Icons.cloud_sync),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AccountScreen()),
+                ),
               ),
-              subtitle: Text(_accountSubtitle()),
-              trailing: const Icon(Icons.cloud_sync),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AccountScreen()),
-              ),
-            ),
             ListTile(
               title: const Text(
                 'Política de Privacidade',
@@ -175,51 +177,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
             ),
-            const Divider(),
-            _sectionHeader('Dados'),
-            ListTile(
-              title: const Text(
-                'Exportar Dados',
-                style: TextStyle(fontWeight: FontWeight.w600),
+            // The demo keeps nothing: no copies in or out, nothing to wipe.
+            if (!DemoMode.active) ...[
+              const Divider(),
+              _sectionHeader('Dados'),
+              ListTile(
+                title: const Text(
+                  'Exportar Dados',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Guarda uma cópia de segurança da base de dados.',
+                ),
+                trailing: const Icon(Icons.upload_file),
+                onTap: _onExport,
               ),
-              subtitle: const Text(
-                'Guarda uma cópia de segurança da base de dados.',
+              ListTile(
+                title: const Text(
+                  'Importar Dados',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Substitui todos os dados atuais por uma cópia de segurança.',
+                ),
+                trailing: const Icon(Icons.download),
+                onTap: _onImport,
               ),
-              trailing: const Icon(Icons.upload_file),
-              onTap: _onExport,
-            ),
-            ListTile(
-              title: const Text(
-                'Importar Dados',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text(
-                'Substitui todos os dados atuais por uma cópia de segurança.',
-              ),
-              trailing: const Icon(Icons.download),
-              onTap: _onImport,
-            ),
-            ListTile(
-              enabled: canWipeAll,
-              title: Text(
-                'Apagar Todos os Dados',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
+              ListTile(
+                enabled: canWipeAll,
+                title: Text(
+                  'Apagar Todos os Dados',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: canWipeAll ? Colors.red : null,
+                  ),
+                ),
+                subtitle: Text(
+                  canWipeAll
+                      ? 'Remove permanentemente todos os dados da aplicação.'
+                      : 'Só o administrador: apagaria os dados de todos os '
+                            'aparelhos.',
+                ),
+                trailing: Icon(
+                  Icons.delete_forever,
                   color: canWipeAll ? Colors.red : null,
                 ),
+                onTap: _onDeleteAll,
               ),
-              subtitle: Text(
-                canWipeAll
-                    ? 'Remove permanentemente todos os dados da aplicação.'
-                    : 'Só o administrador: apagaria os dados de todos os '
-                          'aparelhos.',
-              ),
-              trailing: Icon(
-                Icons.delete_forever,
-                color: canWipeAll ? Colors.red : null,
-              ),
-              onTap: _onDeleteAll,
-            ),
+            ],
           ],
         ),
       ),

@@ -38,7 +38,8 @@ multi-tenant product.
   `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
-  `test/sync_engine_test.dart` the sync engine between two devices).
+  `test/sync_engine_test.dart` the sync engine between two devices, `test/demo_data_test.dart`
+  and `test/demo_mode_test.dart` the demo).
   Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
   `closeAppDb` in `test/helpers/app_db.dart` start the services like `main()` does, with
   `NativeDatabase.memory()` (needs the host's SQLite library; on Linux
@@ -177,10 +178,20 @@ multi-tenant product.
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
   the ausência dialog).
 - `StartScreen` (`lib/screens/start_screen.dart`, `MaterialApp.home` in `lib/main.dart`)
-  shows `AccountScreen` on the website until signed in and connected to an approved store
-  (`needsAccountFirst`), then `HomeScreen` (`lib/screens/home_screen.dart`), the app's entry
-  page on the phone; other screens are pushed via `Navigator`. Its
-  `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
+  picks the first page with `firstPage`: on the website, `PresentationScreen` (what the app
+  does, "Experimentar a demo", Criar conta / Entrar) for a visitor who isn't signed in,
+  `AccountScreen` while signed in without an approved store (`needsAccountFirst`), then
+  `HomeScreen` (`lib/screens/home_screen.dart`), the app's entry page on the phone and in the
+  demo; other screens are pushed via `Navigator`.
+- The demo (`lib/services/demo_mode.dart`): the website at `?demo` (`isDemoUrl`,
+  `DemoMode.enter`/`leave` reload the page) starts with `DemoMode.active`: an in-memory
+  SQLite (`demo_db_web.dart` / `demo_db_io.dart`, conditional import) and in-memory
+  preferences, never the browser's saved ones; `AccountService.isConfigured` is false, so
+  nothing goes online. `seedDemo` (`lib/services/demo_data.dart`) writes an invented store
+  around today and signs in locally as its Livre Serviço Chefe de Secção (dia). `DemoBanner`
+  (`MaterialApp.builder`) says nothing is kept; Definições hides Conta and the Dados
+  section. A new feature worth showing gets example rows in `seedDemo`.
+- Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
 - `lib/theme.dart` defines `buildAppTheme(brightness)`, the light and dark `ThemeData`;

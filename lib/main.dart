@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/start_screen.dart';
+import 'screens/widgets/demo_banner.dart';
 import 'services/account_service.dart';
+import 'services/demo_data.dart';
+import 'services/demo_mode.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
 import 'services/settings_service.dart';
@@ -15,16 +19,26 @@ void main() async {
 
   String? bootError;
   try {
-    await SettingsService.instance.init();
-    await LocalDb.init();
-    try {
-      // Once: photo files from earlier versions into the database.
-      await PhotoStore.instance.migrateLegacy();
-    } catch (_) {
-      // Not worth stopping the app over: tried again at the next start.
+    if (kIsWeb && isDemoUrl(Uri.base)) {
+      // The demo: an example store in memory, nothing saved, no network.
+      DemoMode.active = true;
+      DemoMode.useInMemoryPrefs();
+      await SettingsService.instance.init();
+      await LocalDb.init(executor: await DemoMode.inMemoryDatabase());
+      await AccountService.instance.init();
+      await seedDemo();
+    } else {
+      await SettingsService.instance.init();
+      await LocalDb.init();
+      try {
+        // Once: photo files from earlier versions into the database.
+        await PhotoStore.instance.migrateLegacy();
+      } catch (_) {
+        // Not worth stopping the app over: tried again at the next start.
+      }
+      // Restores the session in the background: never waits for the network.
+      await AccountService.instance.init();
     }
-    // Restores the session in the background: never waits for the network.
-    await AccountService.instance.init();
   } catch (e) {
     bootError = '$e';
   }
@@ -74,6 +88,9 @@ class LivreServicoApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         navigatorObservers: [_observer],
+        builder: DemoMode.active
+            ? (_, child) => DemoBanner(child: child ?? const SizedBox())
+            : null,
         home: const StartScreen(),
       ),
     );

@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.70.0] — 2026-10-31
+
+### Added
+- **Presentation page on the website**: a visitor who isn't signed in first sees what the app
+  does, how to start (account, store code, approval), and three ways in: Experimentar a demo,
+  Criar conta, Entrar. Signed in without a store still opens Conta; the phone app is unchanged.
+- **Demo**: the real app on an invented example store (people in every role and team, today's
+  tasks half done, camiões, inventários, pedidos, Informações, avisos), with dates around
+  today. Everything works, but it lives only in the browser's memory: nothing is saved,
+  nothing goes online, reloading starts afresh. A bar at the top says so, with Sair and Criar
+  conta; Definições hides the account and data copies.
+
+### Changed
+- `sqlite3` is now a regular dependency (the demo's in-memory database on the web), and
+  `shared_preferences_platform_interface` is added (its in-memory preferences).
+
 ## [0.69.1] — 2026-10-31
 
 ### Fixed
