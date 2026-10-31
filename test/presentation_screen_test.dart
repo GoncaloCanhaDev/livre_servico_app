@@ -30,6 +30,11 @@ void main() {
     expect(find.textContaining('não oficial'), findsOneWidget);
   });
 
+  test('the copyright line follows the year', () {
+    expect(copyrightLine(DateTime(2026, 10, 31)), '© 2026 Gonçalo Canha');
+    expect(copyrightLine(DateTime(2028, 1, 2)), '© 2026–2028 Gonçalo Canha');
+  });
+
   testWidgets('Entrar opens Conta', (tester) async {
     await open(tester);
     await tapAndSettle(tester, find.text('Entrar').first);

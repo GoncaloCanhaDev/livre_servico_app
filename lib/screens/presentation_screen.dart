@@ -13,6 +13,11 @@ const _display = 'RobotoCondensed';
 /// The widest the page's content gets on a computer.
 const _contentWidth = 1120.0;
 
+/// The footer's copyright line: from 2026 to [now]'s year.
+String copyrightLine(DateTime now) => now.year > 2026
+    ? '© 2026–${now.year} Gonçalo Canha'
+    : '© 2026 Gonçalo Canha';
+
 /// The website's first page for a visitor who isn't signed in: a landing
 /// page with what the app does, the demo, and the way in (Criar conta /
 /// Entrar open Conta, closed again once signed in, when the first page
@@ -630,6 +635,7 @@ class _Footer extends StatelessWidget {
       spacing: 16,
       runSpacing: 4,
       children: [
+        Text(copyrightLine(DateTime.now()), style: style),
         Text(
           'Aplicação independente, não oficial do Pingo Doce nem da '
           'Jerónimo Martins.',
