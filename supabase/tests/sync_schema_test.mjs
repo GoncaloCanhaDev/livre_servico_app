@@ -440,6 +440,12 @@ await push(J, [aviso('av1', '2026-10-31T19:05:00Z', { ...av1, text: 'mudado' })]
 ok('nobody edits it', (await stored2('Aviso', 'av1')).data.text === 'Validades');
 await push(B, [aviso('av1', '2026-10-31T19:10:00Z', av1, '2026-10-31T19:10:00Z')]);
 ok('the sender deletes it', (await stored2('Aviso', 'av1')).deleted_at !== null);
+await push(B, [aviso('av7', '2026-10-31T20:00:00Z', { text: 'y', fromPersonId: 'pc', fromName: 'C', toPersonIds: ['pj', 'pa1'] })]);
+await push(A, [visto('av7/pa1', '2026-10-31T20:01:00Z', { avisoId: 'av7', personId: 'pa1', seenAt: 1 })]);
+await push(J, [visto('av7/pa1', '2026-10-31T20:02:00Z', { avisoId: 'av7', personId: 'pj', seenAt: 2 })]);
+ok('a Visto cannot overwrite someone else\'s', (await stored2('AvisoVisto', 'av7/pa1')).data.personId === 'pa1');
+await push(J, [visto('whatever', '2026-10-31T20:03:00Z', { avisoId: 'av7', personId: 'pj', seenAt: 3 })]);
+ok('a Visto is keyed by its aviso and person', (await stored2('AvisoVisto', 'whatever')) === undefined);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);

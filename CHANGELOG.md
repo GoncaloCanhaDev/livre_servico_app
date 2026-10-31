@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.69.1] — 2026-10-31
+
+### Fixed
+- **A "Visto" could overwrite someone else's**: the server took an AvisoVisto's key from the
+  app without checking it against its aviso and person. Migration
+  `20261031233000_aviso_visto_key` binds the key to them and never replaces another person's
+  row. Run it in Supabase after `20261031230000_avisos`.
+
 ## [0.69.0] — 2026-10-31
 
 ### Added
