@@ -134,6 +134,17 @@ void main() {
     expect(chefe.canRequestUpdate(peixe), isFalse);
   });
 
+  test('avisos from level 2, linked to a person', () {
+    expect(member.canSendAvisos, isFalse);
+    expect(
+      const StoreAccess(admin: false, level: 2, personId: 's').canSendAvisos,
+      isTrue,
+    );
+    expect(seg.canSendAvisos, isFalse); // not linked
+    expect(chefe.canSendAvisos, isTrue);
+    expect(StoreAccess.full.canSendAvisos, isFalse);
+  });
+
   test('signed out: everything', () {
     expect(StoreAccess.full.canEdit(gerente, PersonFieldGroup.role), isTrue);
     expect(StoreAccess.full.canDeleteAll, isTrue);

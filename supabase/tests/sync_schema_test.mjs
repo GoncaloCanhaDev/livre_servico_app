@@ -403,6 +403,44 @@ await push(E, [
 ok('the Gerente hands over and steps down', (await stored('ps')).data.role === 'gerente' && (await stored('pg')).data.role === 'operador');
 await throws('a chefe is only linked by Gerência', () => as(C, 'select public.claim_person($1, $2)', [store, 'pc2']), /Não pertence|chefia/);
 
+// Avisos. B: Chefe de Secção of talho (pc); J: Segunda Linha of talho (pj);
+// E: now Operador in Gerência (pg).
+const aviso = (id, t, data, del = null) => row(id, t, { syncUuid: id, ...data }, del, 'Aviso');
+const visto = (id, t, data) => row(id, t, data, null, 'AvisoVisto');
+const stored2 = async (collection, id) => { await db.exec('reset role'); return (await db.query('select * from records where collection = $1 and id = $2', [collection, id])).rows[0]; };
+await push(B, [aviso('av1', '2026-10-31T18:00:00Z', { text: 'Validades', fromPersonId: 'pc', fromName: 'Chefe', toPersonIds: ['pj'] })]);
+ok('a chefe sends an aviso to their team', (await stored2('Aviso', 'av1')) !== undefined);
+ok('the sender reads it', (await pulled(B, 'av1')) !== undefined);
+ok('the recipient reads it', (await pulled(J, 'av1'))?.data.text === 'Validades');
+ok('someone else does not pull it', (await pulled(E, 'av1')) === undefined);
+ok('nor select it', (await as(E, `select id from records where collection = 'Aviso'`)).length === 0);
+await push(E, [aviso('av2', '2026-10-31T18:00:00Z', { text: 'x', fromPersonId: 'pg', fromName: 'G', toPersonIds: ['pj'] })]);
+ok('level 1 cannot send', (await stored2('Aviso', 'av2')) === undefined);
+await push(B, [aviso('av3', '2026-10-31T18:00:00Z', { text: 'x', fromPersonId: 'pc', fromName: 'C', toPersonIds: ['pj', 'pn'] })]);
+ok('an aviso to someone not reached is dropped', (await stored2('Aviso', 'av3')) === undefined);
+await push(J, [aviso('av4', '2026-10-31T18:00:00Z', { text: 'x', fromPersonId: 'pc', fromName: 'C', toPersonIds: ['pa1'] })]);
+ok('an aviso in someone else\'s name is dropped', (await stored2('Aviso', 'av4')) === undefined);
+await push(J, [aviso('av5', '2026-10-31T18:00:00Z', { text: 'x', fromPersonId: 'pj', fromName: 'J', toPersonIds: ['pa1'] })]);
+ok('a Segunda Linha sends to their team', (await stored2('Aviso', 'av5')) !== undefined);
+await push(B, [aviso('av6', '2026-10-31T18:00:00Z', { text: 'x', fromPersonId: 'pc', fromName: 'C', toPersonIds: [] })]);
+ok('an aviso to nobody is dropped', (await stored2('Aviso', 'av6')) === undefined);
+await throws('a direct aviso insert is blocked', () => as(B, `insert into records (store_id, collection, id, data, updated_at) values ($1, 'Aviso', 'avx', '{}', now())`, [store]), /row-level security/);
+await push(J, [visto('av1/pj', '2026-10-31T18:10:00Z', { avisoId: 'av1', personId: 'pj', seenAt: 1 })]);
+ok('the recipient marks it seen', (await stored2('AvisoVisto', 'av1/pj')) !== undefined);
+ok('the sender reads the Visto', (await pulled(B, 'av1/pj')) !== undefined);
+ok('someone else does not', (await pulled(E, 'av1/pj')) === undefined);
+await push(E, [visto('av1/pg', '2026-10-31T18:10:00Z', { avisoId: 'av1', personId: 'pg', seenAt: 1 })]);
+ok('no Visto on an aviso not received', (await stored2('AvisoVisto', 'av1/pg')) === undefined);
+await push(J, [visto('av1/pc', '2026-10-31T18:10:00Z', { avisoId: 'av1', personId: 'pc', seenAt: 1 })]);
+ok('no Visto for someone else', (await stored2('AvisoVisto', 'av1/pc')) === undefined);
+const av1 = (await stored2('Aviso', 'av1')).data;
+await push(J, [aviso('av1', '2026-10-31T19:00:00Z', av1, '2026-10-31T19:00:00Z')]);
+ok('a recipient cannot delete it', (await stored2('Aviso', 'av1')).deleted_at === null);
+await push(J, [aviso('av1', '2026-10-31T19:05:00Z', { ...av1, text: 'mudado' })]);
+ok('nobody edits it', (await stored2('Aviso', 'av1')).data.text === 'Validades');
+await push(B, [aviso('av1', '2026-10-31T19:10:00Z', av1, '2026-10-31T19:10:00Z')]);
+ok('the sender deletes it', (await stored2('Aviso', 'av1')).deleted_at !== null);
+
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
 

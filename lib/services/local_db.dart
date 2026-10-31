@@ -6,6 +6,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auto_list.dart';
+import '../models/aviso.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
 import '../models/info_entry.dart';
@@ -87,6 +88,13 @@ class LocalDb {
     syncKey: (e) => '${e.taskUuid}/${dayKey(e.periodKey)}',
   );
 
+  final avisos = LocalCollection<Aviso>._('Aviso', Aviso.fromJson);
+  final avisoVistos = LocalCollection<AvisoVisto>._(
+    'AvisoVisto',
+    AvisoVisto.fromJson,
+    syncKey: (v) => '${v.avisoId}/${v.personId}',
+  );
+
   late final List<LocalCollection<SyncedRow>> collections = [
     truckReceptions,
     openingLists,
@@ -101,6 +109,8 @@ class LocalDb {
     persons,
     customTasks,
     customTaskEntries,
+    avisos,
+    avisoVistos,
   ];
 
   /// Set once [backfillSync] has run at startup: rows saved since are

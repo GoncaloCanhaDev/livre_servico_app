@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.69.0] — 2026-10-31
+
+### Added
+- **Avisos**: short notices inside the app (no phone notifications). From Segunda Linha /
+  Supervisor up, "Novo aviso" sends one to whole teams or chosen people among those one is
+  responsible for. Recipients see it at the top of Home until they tap "Visto" (7 days at
+  most); the Avisos screen keeps 30 days of received and sent avisos, and the sender sees who
+  has seen each and can delete it. Only the sender, the recipients and the admin can read an
+  aviso. The Política de Privacidade lists them.
+
+Run migration `20261031230000_avisos` in Supabase before using this version with a store.
+
 ## [0.68.0] — 2026-10-31
 
 ### Changed

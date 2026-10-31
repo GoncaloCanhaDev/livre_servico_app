@@ -32,7 +32,7 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/teams.dart` and `lib/theme.dart`, plus a
+  `lib/models/teams.dart`, `lib/models/aviso.dart` and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
@@ -132,6 +132,14 @@ multi-tenant product.
   everyone's folgas and absences): who works when comes from each person's `folgas`,
   `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`
   (`lib/models/today.dart`) read those for the "A trabalhar agora" line and the picker.
+- Avisos (`lib/models/aviso.dart`, `AvisoService`): a short notice from level 2 and up
+  (`StoreAccess.canSendAvisos`, linked to a person) to people they reach, resolved to person
+  uuids when sent (`recipientsFor`); each recipient's "Visto" is its own `AvisoVisto` row
+  (keyed online `'<aviso>/<person>'`). `AvisosCard` on Home shows the unseen ones under 7 days
+  (`avisosOnHome`); `AvisosScreen` (Recebidos / Enviados with who saw it) keeps 30 days;
+  `AvisoFormScreen` sends. The server (`20261031230000_avisos.sql`, `aviso_visible`) lets only
+  the sender, the recipients and the admin read them, and `push_records` checks the sender's
+  level, name and reach.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in
@@ -146,7 +154,8 @@ multi-tenant product.
   subscribe via `addListener`/`removeListener` in `initState`/`dispose` rather than a state
   management package — there is no Provider/Riverpod/Bloc in this codebase.
 - `SettingsService` wraps `shared_preferences` for simple user prefs (goals) and is initialized
-  in `main()` before the app runs. There are no notifications/reminders of any kind.
+  in `main()` before the app runs. There are no phone notifications or reminders; avisos (below)
+  live inside the app.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
   then an HTTPS fallback, then the `whatsapp://` scheme; on the web only the HTTPS link, in a
   new tab.

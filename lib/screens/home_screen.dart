@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/account_service.dart';
+import 'avisos_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -9,6 +11,7 @@ import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
 import 'tasks_screen.dart';
 import 'truck_form_screen.dart';
+import 'widgets/avisos_card.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/today_card.dart';
@@ -28,6 +31,19 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Livre Serviço Companion'),
         actions: [
+          ListenableBuilder(
+            listenable: AccountService.instance,
+            builder: (context, _) =>
+                AccountService.instance.store?.personId == null
+                ? const SizedBox.shrink()
+                : IconButton(
+                    tooltip: 'Avisos',
+                    icon: const Icon(Icons.campaign_outlined),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AvisosScreen()),
+                    ),
+                  ),
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -44,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const AvisosCard(),
               const ProfileRequestCard(),
               const JoinRequestsCard(),
               const TransferRequestsCard(),

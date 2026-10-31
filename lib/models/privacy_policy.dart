@@ -45,6 +45,8 @@ const privacyPolicy = <PolicySection>[
       'Registos de trabalho: o que é feito na aplicação (listas, tarefas, '
           'camiões, inventários, pedidos, informações da loja e contactos '
           'úteis), com quem o fez e quando.',
+      'Avisos: o texto, quem o enviou, a quem e quando, e quem o viu e '
+          'quando.',
       'Dados técnicos: a sessão iniciada neste aparelho, a data de cada '
           'alteração e a conta que a gravou. Não há publicidade, estatísticas '
           'de utilização nem qualquer seguimento da sua atividade.',
@@ -79,6 +81,8 @@ const privacyPolicy = <PolicySection>[
       'Pode editar o seu nome, fotografia, aniversário, género e notas; as '
           'folgas e ausências são editadas pela chefia da sua equipa, e a '
           'equipa e a função por quem tiver uma função acima da sua.',
+      'Um aviso só o vêem quem o enviou, as pessoas a quem foi enviado e o '
+          'administrador da aplicação.',
       'Ninguém de outra loja vê os dados da sua loja. Só entra na loja quem '
           'tiver o código da loja e for aprovado por um chefe de secção ou '
           'pela gerência.',

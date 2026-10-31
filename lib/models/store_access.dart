@@ -80,6 +80,10 @@ class StoreAccess {
   /// device).
   bool get canWipeAll => admin;
 
+  /// Whether this account sends avisos: level 2 and up (or the admin),
+  /// linked to a person. Signed out ([full]), nobody does.
+  bool get canSendAvisos => personId != null && (admin || level >= 2);
+
   /// Whether this account removes every person at once.
   bool get canDeleteAll => admin;
 
