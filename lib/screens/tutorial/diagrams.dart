@@ -452,7 +452,7 @@ class _HomeDiagram extends StatelessWidget {
     const buttons = [
       (Icons.local_shipping, 'Camiões'),
       (Icons.checklist, 'Listas 2.0'),
-      (Icons.archive_outlined, 'Listas Legacy'),
+      (Icons.archive_outlined, 'Listas 1.0'),
       (Icons.assignment, 'Inventários'),
       (Icons.task_alt, 'Tarefas'),
       (Icons.receipt_long, 'Pedidos'),
@@ -721,7 +721,7 @@ class _AberturaDiagram extends StatelessWidget {
           ),
         );
     return _Screen(
-      title: 'Listas Legacy',
+      title: 'Listas 1.0',
       children: [
         const Row(
           children: [
@@ -777,7 +777,7 @@ class _Listas2Diagram extends StatelessWidget {
         const _Box(
           marker: 2,
           child: _Line(
-            'Listas Legacy: Abertura, Automáticas…',
+            'Listas 1.0: Abertura, Automáticas…',
             icon: Icons.archive_outlined,
           ),
         ),

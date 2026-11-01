@@ -70,7 +70,7 @@ const tutorialSections = [
           'Cartões que pedem atenção: avisos novos, pedidos de atualização do '
               'perfil, pedidos para entrar na loja.',
           'O cartão Hoje, com o resumo do dia.',
-          'Os botões de cada área: Camiões, Listas 2.0, Listas Legacy, '
+          'Os botões de cada área: Camiões, Listas 2.0, Listas 1.0, '
               'Inventários, Tarefas, Pedidos, Informações, Documentos, Histórico '
               'e Pessoas.',
         ],
@@ -141,7 +141,7 @@ const tutorialSections = [
         diagram: _Listas2Diagram(),
         steps: [
           'Listas 2.0: as novas listas, que vão aparecer aqui em breve.',
-          'Listas Legacy: as listas antigas (Abertura, Automáticas, Relatório '
+          'Listas 1.0: as listas antigas (Abertura, Automáticas, Relatório '
               'e Visual), para as lojas que ainda as usam.',
         ],
         tip:
@@ -152,18 +152,18 @@ const tutorialSections = [
   ),
   TutorialSection(
     id: 'listas',
-    title: 'Listas Legacy',
-    version: 2,
+    title: 'Listas 1.0',
+    version: 3,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
         title: 'Abertura e Automáticas',
         intro:
-            'Em Listas Legacy, a Abertura e as Automáticas enviam-se por secção: '
+            'Em Listas 1.0, a Abertura e as Automáticas enviam-se por secção: '
             'Congelados, OPLS e Não Perecíveis.',
         diagram: _AberturaDiagram(),
         steps: [
-          'Abra Listas Legacy → Abertura.',
+          'Abra Listas 1.0 → Abertura.',
           'Escreva o número de cada secção.',
           'Quando uma secção estiver feita, toque na seta de enviar ao lado '
               'dela.',
@@ -179,7 +179,7 @@ const tutorialSections = [
         icon: Icons.insights_outlined,
         title: 'Relatório e Lista Visual',
         intro:
-            'Os outros dois separadores de Listas Legacy fecham-se com '
+            'Os outros dois separadores de Listas 1.0 fecham-se com '
             '"Finalizar".',
         diagram: _ReportDiagram(),
         steps: [

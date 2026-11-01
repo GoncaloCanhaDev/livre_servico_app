@@ -7,6 +7,12 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.75.1] — 2026-11-01
+
+### Changed
+- **Listas Legacy is now Listas 1.0**: on Home, the side menu, the lists page, Listas 2.0's note
+  and the tutorial (whose Listas section shows again in "Novidades").
+
 ## [0.75.0] — 2026-11-01
 
 ### Added

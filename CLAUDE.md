@@ -181,7 +181,7 @@ multi-tenant product.
 
 - `lib/screens/*.dart` are mostly `StatefulWidget`s that read/write through the services above;
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
-  auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas Legacy": the old
+  auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas 1.0": the old
   lists, kept for the stores still using them; the new ones go in `Listas2Screen`, "Listas
   2.0", empty for now) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest

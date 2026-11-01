@@ -31,7 +31,7 @@ void main() {
   for (final (label, screen) in [
     ('Camiões', TruckFormScreen),
     ('Listas 2.0', Listas2Screen),
-    ('Listas Legacy', ReplenishmentListsScreen),
+    ('Listas 1.0', ReplenishmentListsScreen),
     ('Inventários', InventoryScreen),
     ('Tarefas', TasksScreen),
     ('Pedidos', PedidosScreen),

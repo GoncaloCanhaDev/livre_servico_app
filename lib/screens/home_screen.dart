@@ -155,7 +155,7 @@ class _Dashboard extends StatelessWidget {
               child: _Panel(
                 title: 'Lista de Abertura',
                 open: homeDestinations.firstWhere(
-                  (d) => d.label == 'Listas Legacy',
+                  (d) => d.label == 'Listas 1.0',
                 ),
                 child: const AberturaTab(),
               ),

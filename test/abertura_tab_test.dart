@@ -23,7 +23,7 @@ void main() {
     SyncMeta.stamp(ana);
     await dbCall(tester, () => PersonService.instance.save(ana));
     await pumpApp(tester, const LivreServicoApp());
-    await tapAndSettle(tester, find.text('Listas Legacy'));
+    await tapAndSettle(tester, find.text('Listas 1.0'));
   }
 
   /// Types [value] into [section], sends it as done by Ana and returns the

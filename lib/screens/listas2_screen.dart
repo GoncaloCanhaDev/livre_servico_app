@@ -5,7 +5,7 @@ import 'widgets/wide_layout.dart';
 
 /// The store's new lists. Empty for now: the new system's lists come here.
 /// The old ones (Abertura, Automáticas, Relatório, Visual) are in
-/// `ReplenishmentListsScreen` (Listas Legacy), still used by other stores.
+/// `ReplenishmentListsScreen` (Listas 1.0), still used by other stores.
 class Listas2Screen extends StatelessWidget {
   const Listas2Screen({super.key});
 
@@ -31,7 +31,7 @@ class Listas2Screen extends StatelessWidget {
                   Text(
                     'As novas listas da loja vão aparecer aqui. As antigas '
                     '(Abertura, Automáticas, Relatório e Visual) continuam '
-                    'em Listas Legacy.',
+                    'em Listas 1.0.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: context.muted, height: 1.4),
                   ),

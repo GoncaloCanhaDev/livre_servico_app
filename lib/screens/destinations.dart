@@ -36,7 +36,7 @@ final homeDestinations = [
   Destination(Icons.checklist, 'Listas 2.0', () => const Listas2Screen()),
   Destination(
     Icons.archive_outlined,
-    'Listas Legacy',
+    'Listas 1.0',
     () => const ReplenishmentListsScreen(),
   ),
   Destination(Icons.assignment, 'Inventários', () => const InventoryScreen()),
