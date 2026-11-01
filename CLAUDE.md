@@ -32,7 +32,7 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/services/document_service.dart` and
+  `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
@@ -234,6 +234,13 @@ multi-tenant product.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
+- After an update, Home shows the "Novidades" popup once (`showReleaseNotesIfNew`,
+  `widgets/release_notes_dialog.dart`): the entries of `releaseNotes`
+  (`lib/models/release_notes.dart`, plain Portuguese for the people using the app, not the
+  CHANGELOG) newer than the version last seen, which is the newer of the device's
+  `releaseNotesSeen` pref and the account's user metadata `release_notes_seen`, so it follows
+  the account across devices. A version with no entry shows nothing; a first install and the
+  demo show nothing.
 - `lib/theme.dart` defines `buildAppTheme(brightness)`, the light and dark `ThemeData`;
   `MaterialApp.themeMode` comes from `SettingsService.themeMode` (Definições → Aparência;
   light unless chosen otherwise). `context.backdrop` is the colour beside `AppFrame`.
@@ -398,5 +405,8 @@ files, WhatsApp links, hosting).
   any other commit (fix, improvement, refactor, docs, build change) bumps PATCH. BUILD (the
   Android `versionCode`) goes up by exactly one on every commit, never reset.
 - Add the version's entry at the top of `CHANGELOG.md` in the same commit.
+- A version everyone should hear about (a new feature, a visible change) also gets an entry at
+  the top of `releaseNotes` in `lib/models/release_notes.dart`, so the "Novidades" popup shows
+  it once after the update; small fixes get none.
 - History was renumbered under this scheme on 2026-10-07 (old v0.4.0 is now v0.27.1); the old
   v0.2.0–v0.4.0 release tags no longer exist.

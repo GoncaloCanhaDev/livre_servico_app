@@ -1,0 +1,64 @@
+/// What a version brought, in words for the people using the app (not the
+/// CHANGELOG's): shown once in the "Novidades" popup after an update.
+typedef ReleaseNote = ({String version, List<String> items});
+
+/// Newest first. Only versions worth telling everyone about get an entry
+/// (a small fix needs none, and then no popup shows for it); add one in the
+/// commit that bumps [appVersion] when it does.
+const releaseNotes = <ReleaseNote>[
+  (
+    version: '0.76.0',
+    items: [
+      'Novidades: depois de cada atualização aparece esta janela, uma vez, '
+          'com o que mudou. Fica marcada como vista na sua conta, em todos '
+          'os dispositivos.',
+      'Documentos (no Início): PDFs para todas as lojas, abertos na app, '
+          'também sem rede depois de abertos uma vez.',
+      'As listas antigas (Abertura, Automáticas, Relatório, Visual) estão '
+          'em Listas 1.0; as novas listas vão para Listas 2.0.',
+      'Cada tarefa tem agora ✓ Feita e ✗ Não feita (com o motivo).',
+    ],
+  ),
+];
+
+/// The version before the popup existed: an install that already used the
+/// app but never saw a popup counts as having seen up to this one.
+const releaseNotesBaseline = '0.75.1';
+
+/// Compares two `MAJOR.MINOR.PATCH` versions (a `+BUILD` is ignored; a
+/// missing or unreadable part counts as 0).
+int compareVersions(String a, String b) {
+  List<int> parts(String v) => [
+    for (final p in v.split('+').first.split('.')) int.tryParse(p) ?? 0,
+  ];
+  final pa = parts(a), pb = parts(b);
+  for (var i = 0; i < 3; i++) {
+    final x = i < pa.length ? pa[i] : 0, y = i < pb.length ? pb[i] : 0;
+    if (x != y) return x.compareTo(y);
+  }
+  return 0;
+}
+
+/// The newer of [a] and [b]; null when both are.
+String? newerVersion(String? a, String? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return compareVersions(a, b) >= 0 ? a : b;
+}
+
+/// The notes to show someone who last saw [seen] and now runs [current]:
+/// those after [seen] up to [current], newest first. None when [seen] is
+/// null (a first install: the tutorial is for that).
+List<ReleaseNote> unseenReleaseNotes(
+  String? seen,
+  String current, {
+  List<ReleaseNote> notes = releaseNotes,
+}) {
+  if (seen == null) return const [];
+  return [
+    for (final n in notes)
+      if (compareVersions(n.version, seen) > 0 &&
+          compareVersions(n.version, current) <= 0)
+        n,
+  ];
+}

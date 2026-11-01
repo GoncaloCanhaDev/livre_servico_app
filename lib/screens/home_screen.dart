@@ -13,6 +13,7 @@ import 'widgets/avisos_card.dart';
 import 'widgets/beta_badge.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
+import 'widgets/release_notes_dialog.dart';
 import 'widgets/today_card.dart';
 import 'widgets/transfer_requests_card.dart';
 import 'widgets/wide_layout.dart';
@@ -25,6 +26,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => showReleaseNotesIfNew(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

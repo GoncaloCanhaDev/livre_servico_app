@@ -157,6 +157,8 @@ class AccountService extends ChangeNotifier {
   static const _storeKey = 'account_store';
   static const _redactedPrefix = 'peopleRedacted:';
 
+  static const _releaseNotesKey = 'release_notes_seen';
+
   late SharedPreferences _prefs;
   SupabaseClient? _client;
   Timer? _retry;
@@ -206,7 +208,44 @@ class AccountService extends ChangeNotifier {
       await _prefs.setString(localDataStoreKey, s.id);
     }
     SyncService.instance.addListener(_checkAccessNowAndThen);
-    if (_prefs.getString(_sessionKey) != null) unawaited(_restore());
+    if (_prefs.getString(_sessionKey) != null) _restoring = _restore();
+  }
+
+  /// The first [_restore] at startup, while it runs.
+  Future<void>? _restoring;
+
+  /// The newest app version whose "Novidades" this account has seen (on any
+  /// device), from its user metadata; null when signed out, offline or
+  /// never. Waits a little for the saved session to come back first.
+  Future<String?> releaseNotesSeen() async {
+    if (!isConfigured) return null;
+    try {
+      await _restoring?.timeout(const Duration(seconds: 5));
+      if (_api.auth.currentSession == null) return null;
+      final user =
+          (await _api.auth.getUser().timeout(const Duration(seconds: 5)))
+              .user ??
+          _api.auth.currentUser;
+      return user?.userMetadata?[_releaseNotesKey] as String?;
+    } catch (_) {
+      // Offline: what the saved session last said.
+      return _api.auth.currentUser?.userMetadata?[_releaseNotesKey]
+          as String?;
+    }
+  }
+
+  /// Keeps on the account that its "Novidades" were seen up to [version];
+  /// offline, nothing (the device's own pref still has it, and the next
+  /// popup closed online catches up).
+  Future<void> setReleaseNotesSeen(String version) async {
+    if (!isConfigured || _api.auth.currentSession == null) return;
+    try {
+      await _api.auth.updateUser(
+        UserAttributes(data: {_releaseNotesKey: version}),
+      );
+    } catch (_) {
+      // Offline or signed out meanwhile.
+    }
   }
 
   /// Brings back the saved session (refreshing it online if it expired),

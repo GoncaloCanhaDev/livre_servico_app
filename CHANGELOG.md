@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.76.0] — 2026-11-01
+
+### Added
+- **A "Novidades" popup after an update**: the first time Home opens on a new version, a
+  dialog lists what changed since the version last seen (every version missed, newest first),
+  in plain words from `lib/models/release_notes.dart`. Only versions with notes there show it,
+  so small fixes don't interrupt. Closing it ("Entendido") marks it seen on the device and,
+  signed in, on the account (user metadata `release_notes_seen`), so it shows once per account
+  across the phone and the web. Nothing on a first install or in the demo; an install that
+  used the app before counts as having seen up to 0.75.1, so everyone gets this version's
+  notes (Documentos, Listas 1.0 / 2.0, Feita / Não feita).
+
 ## [0.75.1] — 2026-11-01
 
 ### Changed

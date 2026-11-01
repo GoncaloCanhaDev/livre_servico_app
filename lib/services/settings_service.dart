@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart' show ChangeNotifier, ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/release_notes.dart';
 import '../models/vasilhame.dart';
 
 /// The tutorial's sections before it had versions (0.74.0), all version 1.
@@ -45,10 +46,22 @@ class SettingsService extends ChangeNotifier {
   List<VasilhameItem> get vasilhame =>
       _vasilhame.isEmpty ? defaultVasilhame : _vasilhame;
 
+  /// The newest app version whose "Novidades" this device has seen; null on
+  /// a first install (nothing to tell yet).
+  String? _releaseNotesSeen;
+  String? get releaseNotesSeen => _releaseNotesSeen;
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _visualGoal = _prefs.getInt('visualGoal') ?? 200;
     _tutorialSeen = _readTutorialSeen();
+    _releaseNotesSeen =
+        _prefs.getString('releaseNotesSeen') ??
+        // Used before the popup existed (read before `LocalDb.init` sets
+        // `syncBackfilled` on a first start): seen up to then.
+        ((_prefs.getBool('syncBackfilled') ?? false) || _tutorialSeen.isNotEmpty
+            ? releaseNotesBaseline
+            : null);
     _themeMode =
         ThemeMode.values.asNameMap()[_prefs.getString('themeMode')] ??
         ThemeMode.light;
@@ -81,6 +94,11 @@ class SettingsService extends ChangeNotifier {
     _tutorialSeen = {..._tutorialSeen, ...versions};
     await _prefs.setString('tutorialSeenVersions', jsonEncode(_tutorialSeen));
     notifyListeners();
+  }
+
+  Future<void> setReleaseNotesSeen(String version) async {
+    _releaseNotesSeen = version;
+    await _prefs.setString('releaseNotesSeen', version);
   }
 
   Map<String, int> _readTutorialSeen() {
