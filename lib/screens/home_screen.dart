@@ -9,14 +9,13 @@ import 'tabs/abertura_tab.dart';
 import 'tabs/daily_tasks_tab.dart';
 import 'tutorial_screen.dart';
 import 'widgets/app_frame.dart';
+import 'widgets/admin_card.dart';
 import 'widgets/avisos_card.dart';
 import 'widgets/beta_badge.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/release_notes_dialog.dart';
 import 'widgets/today_card.dart';
-import 'widgets/feedback_card.dart';
-import 'widgets/transfer_requests_card.dart';
 import 'widgets/wide_layout.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -122,9 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
 const _cards = [
   AvisosCard(),
   ProfileRequestCard(),
+  AdminCard(),
   JoinRequestsCard(),
-  TransferRequestsCard(),
-  FeedbackCard(),
   TutorialCard(),
   TodayCard(),
 ];

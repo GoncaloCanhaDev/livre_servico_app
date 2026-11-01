@@ -12,7 +12,8 @@ const migrations = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
 await db.exec(`
   create role anon nologin; create role authenticated nologin;
   create schema auth;
-  create table auth.users (id uuid primary key, email text);
+  create table auth.users (id uuid primary key, email text,
+    created_at timestamptz not null default now(), last_sign_in_at timestamptz);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema auth to authenticated, anon;
@@ -486,6 +487,28 @@ ok('the admin marks one dealt with', (await as(A, `select * from public.feedback
 await throws('only the admin removes them', () => as(B, `select public.delete_feedback($1)`, [fb[0].id]), /administrador/);
 await as(A, `select public.delete_feedback($1)`, [fb[0].id]);
 ok('the admin removes one', (await as(A, `select * from public.feedback_list()`)).length === 1);
+
+// Administração: the admin sees every store, account and request at once.
+const [{ store_join_code: adminCode }] = await as(A, `select public.store_join_code($1)`, [store]);
+await as(K, 'select public.join_store($1, null, $2)', [adminCode, 'Kátia']);
+await throws('only the admin sees the summary', () => as(B, `select public.admin_summary()`), /administrador/);
+await throws('only the admin lists every request', () => as(B, `select * from public.admin_join_requests()`), /administrador/);
+await throws('only the admin lists every store', () => as(B, `select * from public.admin_stores()`), /administrador/);
+await throws('only the admin lists every account', () => as(B, `select * from public.admin_accounts()`), /administrador/);
+await throws('only the admin lists a store\'s people', () => as(B, `select * from public.admin_store_people($1)`, [store]), /administrador/);
+const [{ admin_summary: summary }] = await as(A, `select public.admin_summary()`);
+ok('the summary counts the requests and open feedback', summary.join_requests >= 1 && summary.feedback === 1 && typeof summary.transfers === 'number');
+const everyRequest = await as(A, `select * from public.admin_join_requests()`);
+ok('every request, with its store', everyRequest.some((r) => r.user_id === K && r.store_name === 'Pingo Doce X' && r.requested_name === 'Kátia'));
+const everyStore = await as(A, `select * from public.admin_stores()`);
+const x = everyStore.find((s) => s.id === store);
+ok('every store, with its counts', x && Number(x.pending) >= 1 && Number(x.members) >= 1 && Number(x.people) >= 1);
+const accounts = await as(A, `select * from public.admin_accounts()`);
+ok('every account, with its store and status', accounts.some((a) => a.user_id === K && a.status === 'pending' && a.store_name === 'Pingo Doce X'));
+ok('the admin is marked', accounts.some((a) => a.user_id === A && a.is_admin));
+const people = await as(A, `select * from public.admin_store_people($1)`, [store]);
+ok('a store\'s people, with linked accounts', people.length >= 1 && people.some((p) => p.email !== null));
+await as(A, 'select public.refuse_join($1, $2)', [store, K]);
 
 await db.exec('reset role');
 await throws('anon cannot send feedback', async () => { await db.exec(`set role anon`); await db.query(`select public.send_feedback('erro', 'x')`); }, /permission denied/);

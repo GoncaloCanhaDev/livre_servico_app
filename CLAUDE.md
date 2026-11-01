@@ -158,9 +158,15 @@ multi-tenant product.
 - Erros e sugestões (`lib/screens/feedback_screen.dart`, Definições): `FeedbackScreen` sends an
   error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
-  `deleteFeedback`; Home's `FeedbackCard` counts those still open). Not local rows and not
+  `deleteFeedback`; Home's `AdminCard` counts those still open). Not local rows and not
   synced: the online `feedback` table (`20261101120000_feedback.sql`) has no policies, only
   admin-checked RPCs.
+- Administração (`lib/screens/admin_screen.dart`, the admin only): Home's `AdminCard` (counts
+  from `admin_summary`) and Definições open it. Pedidos approves or refuses requests to join
+  any store (`adminJoinRequests`, `approveJoin(storeId:)`) and links to Mudanças de loja and
+  Erros e sugestões; Lojas (`adminStores`, then a store's `adminStorePeople` and accounts) and
+  Contas (`adminAccounts`) list everything. Read-only RPCs in
+  `20261101150000_admin_overview.sql`, refusing anyone but the admin.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in
@@ -362,7 +368,7 @@ files, WhatsApp links, hosting).
   `join_store` and `add_store_member` refuse a second). At sign-in that store opens on its own
   (`storeToOpen` in `start_screen.dart`); "Entrar com código" only shows with no store, and
   "Mudar de loja" only for the admin. Others ask in Conta → "Pedir mudança de loja"
-  (`request_store_transfer`, `store_transfers`, with a note); the admin sees them on Home and in
+  (`request_store_transfer`, `store_transfers`, with a note); the admin sees them in Administração and in
   `StoreTransfersScreen` (`store_transfer_requests`) and moves them (`transfer_member`: the
   membership and the Person go to the new store, the old store keeps a tombstone and the
   history). The moved phone follows on its next access check (`refreshStore`, which clears the

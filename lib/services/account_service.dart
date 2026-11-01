@@ -158,6 +158,51 @@ typedef StoreMember = ({
   String? personId,
 });
 
+/// What waits for the app's admin, in every store: requests to join, to
+/// move store, and error reports or suggestions not yet dealt with.
+typedef AdminSummary = ({int joinRequests, int transfers, int feedback});
+
+/// A request to join any store, as the admin's Administração lists it.
+typedef AdminJoinRequest = ({
+  String storeId,
+  String storeName,
+  JoinRequest request,
+});
+
+/// A store, with its approved [members], [pending] requests and [people].
+typedef AdminStore = ({
+  String id,
+  String name,
+  DateTime createdAt,
+  int members,
+  int pending,
+  int people,
+});
+
+/// An account, with the store it is in ([storeId] null: none), whether it
+/// waits for approval there and the person it is linked to.
+typedef AdminAccount = ({
+  String userId,
+  String email,
+  DateTime createdAt,
+  DateTime? lastSignInAt,
+  bool isAdmin,
+  String? storeId,
+  String? storeName,
+  bool pending,
+  String? personName,
+});
+
+/// One of a store's people, with the [email] of the account linked to it.
+typedef AdminPerson = ({
+  String id,
+  String name,
+  String number,
+  String? team,
+  String? role,
+  String? email,
+});
+
 /// One of a store's people with no account linked yet: only what the
 /// "Quem é você?" list shows, so no other personal details leave the store.
 typedef UnlinkedPerson = ({String id, String name, String number});
@@ -254,14 +299,14 @@ class AccountService extends ChangeNotifier {
       await _restoring?.timeout(const Duration(seconds: 5));
       if (_api.auth.currentSession == null) return null;
       final user =
-          (await _api.auth.getUser().timeout(const Duration(seconds: 5)))
-              .user ??
+          (await _api.auth.getUser().timeout(
+            const Duration(seconds: 5),
+          )).user ??
           _api.auth.currentUser;
       return user?.userMetadata?[_releaseNotesKey] as String?;
     } catch (_) {
       // Offline: what the saved session last said.
-      return _api.auth.currentUser?.userMetadata?[_releaseNotesKey]
-          as String?;
+      return _api.auth.currentUser?.userMetadata?[_releaseNotesKey] as String?;
     }
   }
 
@@ -526,10 +571,8 @@ class AccountService extends ChangeNotifier {
   }
 
   /// Marks a report or suggestion as dealt with, or not. The admin only.
-  Future<void> setFeedbackDone(String id, bool done) => _api.rpc<void>(
-    'set_feedback_done',
-    params: {'p_id': id, 'p_done': done},
-  );
+  Future<void> setFeedbackDone(String id, bool done) =>
+      _api.rpc<void>('set_feedback_done', params: {'p_id': id, 'p_done': done});
 
   /// Removes a report or suggestion. The admin only.
   Future<void> deleteFeedback(String id) =>
@@ -617,15 +660,105 @@ class AccountService extends ChangeNotifier {
     ];
   }
 
-  Future<void> approveJoin(String userId) => _api.rpc<void>(
+  /// Approves [userId]'s request to join the current store (or the store
+  /// [storeId], for the admin).
+  Future<void> approveJoin(String userId, {String? storeId}) => _api.rpc<void>(
     'approve_join',
-    params: {'p_store': store!.id, 'p_user': userId},
+    params: {'p_store': storeId ?? store!.id, 'p_user': userId},
   );
 
-  Future<void> refuseJoin(String userId) => _api.rpc<void>(
+  Future<void> refuseJoin(String userId, {String? storeId}) => _api.rpc<void>(
     'refuse_join',
-    params: {'p_store': store!.id, 'p_user': userId},
+    params: {'p_store': storeId ?? store!.id, 'p_user': userId},
   );
+
+  /// What waits for the admin in every store. The admin only.
+  Future<AdminSummary> adminSummary() async {
+    final r = await _api.rpc<Map<String, dynamic>>('admin_summary');
+    int count(String key) => (r[key] as num?)?.toInt() ?? 0;
+    return (
+      joinRequests: count('join_requests'),
+      transfers: count('transfers'),
+      feedback: count('feedback'),
+    );
+  }
+
+  /// Every request to join, in every store, oldest first. The admin only.
+  Future<List<AdminJoinRequest>> adminJoinRequests() async {
+    final rows = await _api.rpc<List<dynamic>>('admin_join_requests');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          storeId: r['store_id'] as String,
+          storeName: r['store_name'] as String? ?? '',
+          request: (
+            userId: r['user_id'] as String,
+            email: r['email'] as String? ?? '',
+            personId: r['person_id'] as String?,
+            personName: r['person_name'] as String?,
+            requestedName: r['requested_name'] as String?,
+            createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+          ),
+        ),
+    ];
+  }
+
+  /// Every store, by name, with its counts. The admin only.
+  Future<List<AdminStore>> adminStores() async {
+    final rows = await _api.rpc<List<dynamic>>('admin_stores');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          id: r['id'] as String,
+          name: r['name'] as String? ?? '',
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+          members: (r['members'] as num?)?.toInt() ?? 0,
+          pending: (r['pending'] as num?)?.toInt() ?? 0,
+          people: (r['people'] as num?)?.toInt() ?? 0,
+        ),
+    ];
+  }
+
+  /// Every account, by email, with its store. The admin only.
+  Future<List<AdminAccount>> adminAccounts() async {
+    final rows = await _api.rpc<List<dynamic>>('admin_accounts');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          userId: r['user_id'] as String,
+          email: r['email'] as String? ?? '',
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+          lastSignInAt: switch (r['last_sign_in_at']) {
+            final String d => DateTime.parse(d).toLocal(),
+            _ => null,
+          },
+          isAdmin: r['is_admin'] == true,
+          storeId: r['store_id'] as String?,
+          storeName: r['store_name'] as String?,
+          pending: r['status'] == 'pending',
+          personName: r['person_name'] as String?,
+        ),
+    ];
+  }
+
+  /// The store [storeId]'s people, by name. The admin only.
+  Future<List<AdminPerson>> adminStorePeople(String storeId) async {
+    final rows = await _api.rpc<List<dynamic>>(
+      'admin_store_people',
+      params: {'p_store': storeId},
+    );
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          id: r['id'] as String,
+          name: r['full_name'] as String? ?? '',
+          number: r['collaborator_number'] as String? ?? '',
+          team: r['team'] as String?,
+          role: r['role'] as String?,
+          email: r['email'] as String?,
+        ),
+    ];
+  }
 
   /// The current store's people with no account linked yet.
   Future<List<UnlinkedPerson>> unlinkedPeople() async => _unlinkedFromJson(

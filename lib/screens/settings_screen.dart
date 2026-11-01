@@ -4,6 +4,7 @@ import '../services/account_service.dart';
 import '../services/backup_service.dart';
 import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
+import 'admin_screen.dart';
 import 'account_screen.dart';
 import 'feedback_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -180,16 +181,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   AccountService.instance.access.admin)
                 ListTile(
                   title: const Text(
-                    'Erros e sugestões recebidos',
+                    'Administração',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text('Só o administrador os vê.'),
-                  trailing: const Icon(Icons.inbox_outlined),
+                  subtitle: const Text(
+                    'Pedidos, lojas, contas, erros e sugestões.',
+                  ),
+                  trailing: const Icon(Icons.admin_panel_settings_outlined),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const FeedbackInboxScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const AdminScreen()),
                   ),
                 ),
               const Divider(),

@@ -5,7 +5,8 @@ import '../store_members_screen.dart';
 
 /// On Home, for those who approve them (level 3 and up, the admin): how
 /// many requests to join the store are waiting; opens Membros. Nothing when
-/// there are none, offline, or not connected to a store.
+/// there are none, offline, or not connected to a store; the admin sees
+/// every store's on `AdminCard` instead.
 class JoinRequestsCard extends StatefulWidget {
   const JoinRequestsCard({super.key});
 
@@ -41,7 +42,10 @@ class _JoinRequestsCardState extends State<JoinRequestsCard>
   Future<void> _load() async {
     final store = _account.store;
     var count = 0;
-    if (store != null && !store.pending && store.access.canApprove) {
+    if (store != null &&
+        !store.pending &&
+        store.access.canApprove &&
+        !store.access.admin) {
       try {
         count = (await _account.joinRequests()).length;
       } catch (_) {

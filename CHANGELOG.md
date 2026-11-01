@@ -7,6 +7,25 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.78.0] — 2026-11-01
+
+### Added
+- **Administração**, for the app's admin (Home card and Definições): one page for every store.
+  Pedidos lists the requests to join every store, grouped by store, to approve or refuse right
+  there, with links to Mudanças de loja and Erros e sugestões and their counts; Lojas lists
+  every store with its accounts, people and pending requests, and opens one to see its people
+  (team, função, number, linked account) and its accounts; Contas lists every account with its
+  store, linked person, whether it waits for approval and its last sign-in, searchable. New
+  admin-only RPCs `admin_summary`, `admin_join_requests`, `admin_stores`, `admin_accounts` and
+  `admin_store_people` (`20261101150000_admin_overview.sql`); `approveJoin` / `refuseJoin`
+  take any store for the admin.
+
+### Changed
+- Home's admin card ("Administração": pedidos para entrar in every store, mudanças de loja,
+  erros e sugestões) replaces the separate transfer and feedback cards; the admin no longer
+  gets the current store's "pedidos para entrar" card, which it covers. Definições →
+  "Erros e sugestões recebidos" became "Administração".
+
 ## [0.77.0] — 2026-11-01
 
 ### Added
