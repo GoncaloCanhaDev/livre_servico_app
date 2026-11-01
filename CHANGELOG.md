@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.71.0] — 2026-11-01
+
+### Added
+- **Tutorial**: a few pages showing how the app works (Hoje, Tarefas, Listas, Camiões,
+  Inventários e Pedidos, Pessoas e Informações, Histórico, Conta e sincronização). Home shows a
+  "Primeira vez na aplicação?" card until the tutorial is finished or the card closed; it can
+  be seen again in Definições → Tutorial.
+- **The app's version** shows next to the title on Home.
+
 ## [0.70.3] — 2026-10-31
 
 ### Changed

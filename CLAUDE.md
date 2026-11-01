@@ -196,6 +196,9 @@ multi-tenant product.
   around today and signs in locally as its Livre Serviço Chefe de Secção (dia). `DemoBanner`
   (`MaterialApp.builder`) says nothing is kept; Definições hides Conta and the Dados
   section. A new feature worth showing gets example rows in `seedDemo`.
+- `TutorialScreen` (`lib/screens/tutorial_screen.dart`) pages through `tutorialSteps`; Home's
+  `TutorialCard` offers it until `SettingsService.tutorialSeen`, and Definições → Tutorial
+  reopens it. A new Home button or a big change to one gets its step updated.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.
@@ -352,7 +355,8 @@ files, WhatsApp links, hosting).
 ## Versioning
 
 - Every commit is a version. `pubspec.yaml` `version: MAJOR.MINOR.PATCH+BUILD` is the single
-  source of truth; bump it in the commit itself and tag that commit with an annotated tag
+  source of truth; bump it in the commit itself (and `appVersion` in `lib/app_version.dart`,
+  shown on Home; `test/app_version_test.dart` checks they match) and tag that commit with an annotated tag
   `vX.Y.Z` (`git tag -a vX.Y.Z -m "vX.Y.Z"`).
 - While the app is pre-1.0, a commit that adds or removes a feature bumps MINOR and resets PATCH;
   any other commit (fix, improvement, refactor, docs, build change) bumps PATCH. BUILD (the

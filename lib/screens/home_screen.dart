@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_version.dart';
 import '../services/account_service.dart';
 import 'avisos_screen.dart';
 import 'historico_screen.dart';
@@ -11,6 +12,7 @@ import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
 import 'tasks_screen.dart';
 import 'truck_form_screen.dart';
+import 'tutorial_screen.dart';
 import 'widgets/avisos_card.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
@@ -29,7 +31,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Livre Serviço Companion'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(
+                'Livre Serviço Companion',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: 6),
+            Text(
+              'v$appVersion',
+              style: TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
+        ),
         actions: [
           ListenableBuilder(
             listenable: AccountService.instance,
@@ -64,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const ProfileRequestCard(),
               const JoinRequestsCard(),
               const TransferRequestsCard(),
+              const TutorialCard(),
               const TodayCard(),
               GridView.count(
                 // Four across on a computer's wider column.

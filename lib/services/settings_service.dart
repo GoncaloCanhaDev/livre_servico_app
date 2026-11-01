@@ -18,6 +18,10 @@ class SettingsService extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
   ThemeMode get themeMode => _themeMode;
 
+  /// Whether the tutorial was finished or its card on Home closed.
+  bool _tutorialSeen = false;
+  bool get tutorialSeen => _tutorialSeen;
+
   /// The vasilhame list offered on a camião, edited through the backup
   /// file's `"vasilhame"` section; [defaultVasilhame] until a non-empty list
   /// is imported.
@@ -28,6 +32,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _visualGoal = _prefs.getInt('visualGoal') ?? 200;
+    _tutorialSeen = _prefs.getBool('tutorialSeen') ?? false;
     _themeMode =
         ThemeMode.values.asNameMap()[_prefs.getString('themeMode')] ??
         ThemeMode.light;
@@ -52,6 +57,12 @@ class SettingsService extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     await _prefs.setString('themeMode', mode.name);
+    notifyListeners();
+  }
+
+  Future<void> setTutorialSeen() async {
+    _tutorialSeen = true;
+    await _prefs.setBool('tutorialSeen', true);
     notifyListeners();
   }
 

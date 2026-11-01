@@ -6,6 +6,7 @@ import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -136,6 +137,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+              ),
+            ),
+            ListTile(
+              title: const Text(
+                'Tutorial',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('Como funciona a aplicação, passo a passo.'),
+              trailing: const Icon(Icons.school_outlined),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TutorialScreen()),
               ),
             ),
             const Divider(),
