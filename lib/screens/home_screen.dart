@@ -15,6 +15,7 @@ import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/release_notes_dialog.dart';
 import 'widgets/today_card.dart';
+import 'widgets/feedback_card.dart';
 import 'widgets/transfer_requests_card.dart';
 import 'widgets/wide_layout.dart';
 
@@ -123,6 +124,7 @@ const _cards = [
   ProfileRequestCard(),
   JoinRequestsCard(),
   TransferRequestsCard(),
+  FeedbackCard(),
   TutorialCard(),
   TodayCard(),
 ];

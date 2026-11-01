@@ -110,6 +110,37 @@ typedef TransferRequest = ({
   DateTime createdAt,
 });
 
+/// What someone sends from "Reportar erro ou sugestão" (`feedback` online,
+/// by [name]).
+enum FeedbackKind {
+  erro('Erro'),
+  sugestao('Sugestão');
+
+  const FeedbackKind(this.label);
+  final String label;
+
+  static FeedbackKind fromName(Object? name) => FeedbackKind.values.firstWhere(
+    (k) => k.name == name,
+    orElse: () => FeedbackKind.erro,
+  );
+}
+
+/// An error report or a suggestion, as the admin sees it: who sent it
+/// ([email], their person [personName] in [storeName]), from which version
+/// and platform, and when it was dealt with ([doneAt]).
+typedef FeedbackItem = ({
+  String id,
+  FeedbackKind kind,
+  String message,
+  String email,
+  String? storeName,
+  String? personName,
+  String appVersion,
+  String platform,
+  DateTime createdAt,
+  DateTime? doneAt,
+});
+
 /// A request to join the current store, waiting for approval: as the
 /// person [personId] ([personName]), or [requestedName] for someone new.
 typedef JoinRequest = ({
@@ -452,6 +483,57 @@ class AccountService extends ChangeNotifier {
         'transfer_member',
         params: {'p_user': userId, 'p_from': from, 'p_to': to},
       );
+
+  /// Sends an error report or a suggestion to the app's admin, with the
+  /// store in use, the app's [version] and [platform].
+  Future<void> sendFeedback(
+    FeedbackKind kind,
+    String message, {
+    required String version,
+    required String platform,
+  }) => _api.rpc<void>(
+    'send_feedback',
+    params: {
+      'p_kind': kind.name,
+      'p_message': message.trim(),
+      'p_store': store?.id,
+      'p_version': version,
+      'p_platform': platform,
+    },
+  );
+
+  /// Every error report and suggestion, newest first. The admin only.
+  Future<List<FeedbackItem>> feedbackList() async {
+    final rows = await _api.rpc<List<dynamic>>('feedback_list');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          id: r['id'] as String,
+          kind: FeedbackKind.fromName(r['kind']),
+          message: r['message'] as String? ?? '',
+          email: r['email'] as String? ?? '',
+          storeName: r['store_name'] as String?,
+          personName: r['person_name'] as String?,
+          appVersion: r['app_version'] as String? ?? '',
+          platform: r['platform'] as String? ?? '',
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+          doneAt: switch (r['done_at']) {
+            final String d => DateTime.parse(d).toLocal(),
+            _ => null,
+          },
+        ),
+    ];
+  }
+
+  /// Marks a report or suggestion as dealt with, or not. The admin only.
+  Future<void> setFeedbackDone(String id, bool done) => _api.rpc<void>(
+    'set_feedback_done',
+    params: {'p_id': id, 'p_done': done},
+  );
+
+  /// Removes a report or suggestion. The admin only.
+  Future<void> deleteFeedback(String id) =>
+      _api.rpc<void>('delete_feedback', params: {'p_id': id});
 
   /// Whether this account is the app's admin (it creates stores); false
   /// when that can't be asked (offline).

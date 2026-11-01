@@ -5,6 +5,7 @@ import '../services/backup_service.dart';
 import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
 import 'account_screen.dart';
+import 'feedback_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'tutorial_screen.dart';
 import 'widgets/wide_layout.dart';
@@ -159,6 +160,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
+              // The demo sends nothing online.
+              if (!DemoMode.active)
+                ListTile(
+                  title: const Text(
+                    'Reportar erro ou sugestão',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Escreva ao administrador da aplicação.',
+                  ),
+                  trailing: const Icon(Icons.feedback_outlined),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+                  ),
+                ),
+              if (AccountService.instance.store != null &&
+                  AccountService.instance.access.admin)
+                ListTile(
+                  title: const Text(
+                    'Erros e sugestões recebidos',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Só o administrador os vê.'),
+                  trailing: const Icon(Icons.inbox_outlined),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FeedbackInboxScreen(),
+                    ),
+                  ),
+                ),
               const Divider(),
               _sectionHeader('Objetivos Diários'),
               _goalTile(

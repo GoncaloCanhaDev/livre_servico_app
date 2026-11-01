@@ -4,7 +4,7 @@
 library;
 
 /// The date of this text; saved with each new account (`privacy_policy`).
-const privacyPolicyVersion = '2026-10-31';
+const privacyPolicyVersion = '2026-11-01';
 
 /// One part of the policy: a heading and its paragraphs.
 typedef PolicySection = ({String title, List<String> paragraphs});
@@ -47,6 +47,9 @@ const privacyPolicy = <PolicySection>[
           'úteis), com quem o fez e quando.',
       'Avisos: o texto, quem o enviou, a quem e quando, e quem o viu e '
           'quando.',
+      'Erros e sugestões: o que escrever em "Reportar erro ou sugestão", '
+          'com o seu email, a sua loja, a versão da aplicação, o tipo de '
+          'aparelho (Android, navegador...) e a data.',
       'Dados técnicos: a sessão iniciada neste aparelho, a data de cada '
           'alteração e a conta que a gravou. Não há publicidade, estatísticas '
           'de utilização nem qualquer seguimento da sua atividade.',
@@ -83,6 +86,8 @@ const privacyPolicy = <PolicySection>[
           'equipa e a função por quem tiver uma função acima da sua.',
       'Um aviso só o vêem quem o enviou, as pessoas a quem foi enviado e o '
           'administrador da aplicação.',
+      'Os erros e sugestões que enviar só os vê o administrador da '
+          'aplicação.',
       'Ninguém de outra loja vê os dados da sua loja. Só entra na loja quem '
           'tiver o código da loja e for aprovado por um chefe de secção ou '
           'pela gerência.',

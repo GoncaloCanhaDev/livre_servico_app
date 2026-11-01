@@ -469,6 +469,26 @@ await as(A, `delete from storage.objects where bucket_id = 'documents'`);
 await as(A, `delete from public.documents`);
 ok('the admin removes', (await as(B, `select * from public.documents`)).length === 0);
 
+// Erros e sugestões: anyone signed in sends; only the admin reads them.
+await throws('a message is needed', () => as(K, `select public.send_feedback('erro', '   ')`), /mensagem/);
+await throws('erro or sugestão', () => as(K, `select public.send_feedback('outro', 'x')`), /erro ou sugestão/);
+await as(K, `select public.send_feedback('sugestao', ' Mais cores ', $1, '0.77.0', 'web')`, [store]);
+await as(B, `select public.send_feedback('erro', 'Não grava', $1, '0.77.0', 'android')`, [store]);
+ok('a direct read shows nothing', (await as(B, `select * from public.feedback`)).length === 0);
+await throws('only the admin lists them', () => as(B, `select * from public.feedback_list()`), /administrador/);
+let fb = await as(A, `select * from public.feedback_list()`);
+ok('the admin lists them, newest first', fb.length === 2 && fb[0].kind === 'erro' && fb[1].message === 'Mais cores');
+ok('a store is kept only for its members', fb[1].store_name === null && fb[0].store_name === 'Pingo Doce X');
+ok('with the sender\'s email', fb[0].email === 'Editor@x.pt');
+await throws('only the admin marks them', () => as(B, `select public.set_feedback_done($1, true)`, [fb[0].id]), /administrador/);
+await as(A, `select public.set_feedback_done($1, true)`, [fb[0].id]);
+ok('the admin marks one dealt with', (await as(A, `select * from public.feedback_list()`))[0].done_at !== null);
+await throws('only the admin removes them', () => as(B, `select public.delete_feedback($1)`, [fb[0].id]), /administrador/);
+await as(A, `select public.delete_feedback($1)`, [fb[0].id]);
+ok('the admin removes one', (await as(A, `select * from public.feedback_list()`)).length === 1);
+
+await db.exec('reset role');
+await throws('anon cannot send feedback', async () => { await db.exec(`set role anon`); await db.query(`select public.send_feedback('erro', 'x')`); }, /permission denied/);
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
 

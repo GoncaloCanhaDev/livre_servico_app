@@ -155,6 +155,12 @@ multi-tenant product.
   `DocumentService.remote` (`SupabaseDocumentRemote`) with the store sync. The list is cached in
   the `documents_cache` pref, each opened PDF in `LocalDb`'s `local_files` table (dropped when
   no longer listed). The demo and tests use `MemoryDocumentRemote` with PDFs from `simplePdf`.
+- Erros e sugestões (`lib/screens/feedback_screen.dart`, Definições): `FeedbackScreen` sends an
+  error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
+  and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
+  `deleteFeedback`; Home's `FeedbackCard` counts those still open). Not local rows and not
+  synced: the online `feedback` table (`20261101120000_feedback.sql`) has no policies, only
+  admin-checked RPCs.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in

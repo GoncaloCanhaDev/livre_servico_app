@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.77.0] — 2026-11-01
+
+### Added
+- **Reportar erro ou sugestão** (Definições): anyone signed in picks Erro or Sugestão and writes
+  a message to the app's admin, sent with their account, store, app version and platform. Only
+  the admin reads them: a new online `feedback` table with no policies, written through
+  `send_feedback` and read through `feedback_list`, `set_feedback_done` and `delete_feedback`
+  (`20261101120000_feedback.sql`, admin only). The admin sees them in Definições → "Erros e
+  sugestões recebidos" (still to deal with first, then Tratados; mark dealt with, reopen,
+  remove) and a count of those still open on Home. Not shown in the demo. The Política de
+  Privacidade (version 2026-11-01) says what is kept and that only the admin sees it.
+
 ## [0.76.0] — 2026-11-01
 
 ### Added
