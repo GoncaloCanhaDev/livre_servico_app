@@ -25,7 +25,8 @@ void main() {
     expect(find.byType(TutorialScreen), findsOneWidget);
 
     for (final step in tutorialSteps) {
-      expect(find.text(step.title), findsOneWidget);
+      // The sketch's bar may repeat the title.
+      expect(find.text(step.title), findsWidgets);
       await tapAndSettle(
         tester,
         find.text(step == tutorialSteps.last ? 'Concluir' : 'Seguinte'),

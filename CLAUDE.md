@@ -176,7 +176,7 @@ multi-tenant product.
   passing `_changed`, so only the open tab reloads),
   `truck_form_screen.dart` (`lib/screens/truck_form/`), `person_form_screen.dart`
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
-  the ausência dialog).
+  the ausência dialog), `tutorial_screen.dart` (`lib/screens/tutorial/`).
 - `StartScreen` (`lib/screens/start_screen.dart`, `MaterialApp.home` in `lib/main.dart`)
   picks the first page with `firstPage`: on the website, `PresentationScreen` (a landing page
   using the whole width: a hero with the "Hoje na loja" day timeline, features, "Como
@@ -196,7 +196,9 @@ multi-tenant product.
   around today and signs in locally as its Livre Serviço Chefe de Secção (dia). `DemoBanner`
   (`MaterialApp.builder`) says nothing is kept; Definições hides Conta and the Dados
   section. A new feature worth showing gets example rows in `seedDemo`.
-- `TutorialScreen` (`lib/screens/tutorial_screen.dart`) pages through `tutorialSteps`; Home's
+- `TutorialScreen` (`lib/screens/tutorial_screen.dart`) pages through `tutorialSteps`, each a
+  sketch of a screen (drawn from small widgets in the `lib/screens/tutorial/diagrams.dart` part,
+  so it follows the theme) with orange numbered markers matching its steps; Home's
   `TutorialCard` offers it until `SettingsService.tutorialSeen`, and Definições → Tutorial
   reopens it. A new Home button or a big change to one gets its step updated.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in

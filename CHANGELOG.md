@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.71.1] — 2026-11-01
+
+### Changed
+- **The tutorial is more detailed**: 13 pages, each with a sketch of the screen and numbered
+  steps that match the numbers on it (the service day, the ecrã inicial, the Hoje card, marking
+  a task, Abertura and Automáticas, Relatório and Lista Visual, receiving a camião, Inventários
+  and Pedidos, Pessoas, Informações, Histórico, Avisos, Conta e sincronização), with tips where
+  useful.
+
 ## [0.71.0] — 2026-11-01
 
 ### Added
