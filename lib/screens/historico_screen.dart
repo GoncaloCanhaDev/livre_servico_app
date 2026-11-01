@@ -24,6 +24,7 @@ import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/wide_layout.dart';
+import 'widgets/app_bar_tabs.dart';
 
 part 'historico/common.dart';
 part 'historico/all_tab.dart';
@@ -191,13 +192,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 ],
               ),
             ],
-            bottom: TabBar(
-              isScrollable: true,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.white,
-              tabs: tabs,
-            ),
+            bottom: appBarTabs(tabs, scrollable: true),
           ),
           body: ReadableWidth(
             maxWidth: 960,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme.dart';
+import 'app_bar_tabs.dart';
 
 /// How many columns of at least [minWidth] fit across this page (at least
 /// one). Inside the computer's frame, the page's width is the space beside
@@ -117,13 +118,9 @@ class ResponsiveTabs extends StatelessWidget {
           appBar: AppBar(
             title: title,
             actions: actions,
-            bottom: TabBar(
-              isScrollable: scrollable,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.white,
-              tabs: [for (final (name, _) in tabs) Tab(text: name)],
-            ),
+            bottom: appBarTabs([
+              for (final (name, _) in tabs) Tab(text: name),
+            ], scrollable: scrollable),
           ),
           body: SafeArea(
             child: TabBarView(children: [for (final (_, b) in tabs) b]),

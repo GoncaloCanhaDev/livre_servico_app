@@ -8,6 +8,7 @@ import '../services/person_service.dart';
 import '../theme.dart';
 import 'aviso_form_screen.dart';
 import 'widgets/wide_layout.dart';
+import 'widgets/app_bar_tabs.dart';
 
 /// The avisos of the last [avisoKeepDays]: those received and, for those
 /// who send them, those sent (with who has seen each).
@@ -179,12 +180,10 @@ class _AvisosScreenState extends State<AvisosScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Avisos'),
-          bottom: TabBar(
-            tabs: [
-              const Tab(text: 'Recebidos'),
-              if (sends) const Tab(text: 'Enviados'),
-            ],
-          ),
+          bottom: appBarTabs([
+            const Tab(text: 'Recebidos'),
+            if (sends) const Tab(text: 'Enviados'),
+          ]),
         ),
         floatingActionButton: sends
             ? FloatingActionButton.extended(

@@ -218,7 +218,11 @@ multi-tenant product.
   Don't hard-code greys or light tints in widgets: use the `BuildContext` helpers there
   (`context.colors`, `muted`, `faint`, `faintest`, `hairline`, `greyedFill`, `tint(...)`,
   `warningText`), which keep the light theme's original colours and adapt in the dark one.
-  White on the black app bar and on filled badges is fine.
+  White on the black app bar and on filled badges is fine. Text must always stand out from
+  what is behind it: tabs in an app bar's `bottom` go through `appBarTabs`
+  (`widgets/app_bar_tabs.dart`: white on the black bar), never a bare `TabBar` (the theme's
+  default colours are for the page and vanish on the bar); tabs in a page's body take
+  `context.colors.onSurface` / `context.muted`.
 - The app forces `pt_PT` as its only locale (`main.dart`); date formatting is initialized via
   `initializeDateFormatting('pt_PT')` before `runApp`.
 
