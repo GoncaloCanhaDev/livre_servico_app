@@ -1,0 +1,8 @@
+# Flutter keeps the same file names on every build (main.dart.js, drift_worker.js...),
+# so browsers must check with the server before reusing a copy, or an update stays
+# hidden behind the cache for days. "no-cache" still lets them reuse it when unchanged.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|mjs|json|wasm)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

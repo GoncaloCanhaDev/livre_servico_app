@@ -23,7 +23,10 @@ multi-tenant product.
   git-ignored, and fill in the Supabase project; without it the app runs signed out, as before)
 - Web: `flutter run -d chrome --dart-define-from-file=.env`; to host, `flutter build web
   --release --dart-define-from-file=.env` and upload `build/web/` to any static host (e.g.
-  `npx wrangler pages deploy build/web --project-name livre-servico` for Cloudflare Pages). Add
+  `npx wrangler pages deploy build/web --project-name livre-servico` for Cloudflare Pages; the
+  live site, livreservico.goncalocanha.com, is on LiteSpeed, which reads `web/.htaccess`: it
+  keeps browsers from caching `main.dart.js`, whose name never changes, so upload the hidden
+  files too). Add
   the hosted URL in Supabase (Authentication → URL Configuration: Site URL) so email
   confirmation links land there. Never use dart:io or path_provider outside a conditional
   import (see `legacy_photos_io.dart`): `flutter build web` fails or the browser throws.
