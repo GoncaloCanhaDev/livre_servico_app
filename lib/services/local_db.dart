@@ -247,6 +247,39 @@ class LocalDb {
   Future<void> deletePhoto(String name) =>
       _db.customStatement('DELETE FROM local_photos WHERE name = ?', [name]);
 
+  // ---- Files (see DocumentService) ----
+  // Downloaded PDFs of the Documentos, by name; never synced.
+
+  Future<Uint8List?> file(String name) async {
+    final row = await _db
+        .customSelect(
+          'SELECT bytes FROM local_files WHERE name = ?',
+          variables: [Variable.withString(name)],
+        )
+        .getSingleOrNull();
+    return row?.read<Uint8List>('bytes');
+  }
+
+  Future<void> putFile(String name, Uint8List bytes) => _db.customStatement(
+    'INSERT OR REPLACE INTO local_files (name, bytes) VALUES (?, ?)',
+    [name, bytes],
+  );
+
+  /// Removes the files whose names aren't in [keep].
+  Future<void> keepOnlyFiles(Set<String> keep) async {
+    final rows = await _db
+        .customSelect('SELECT name FROM local_files')
+        .get();
+    for (final r in rows) {
+      final name = r.read<String>('name');
+      if (!keep.contains(name)) {
+        await _db.customStatement('DELETE FROM local_files WHERE name = ?', [
+          name,
+        ]);
+      }
+    }
+  }
+
   /// Fills in missing sync fields (UUIDs) on rows from before they existed:
   /// once at the first startup, and after importing a backup, which may be
   /// that old.
@@ -542,6 +575,11 @@ class _Database extends GeneratedDatabase {
         'name TEXT NOT NULL PRIMARY KEY, '
         'bytes BLOB NOT NULL, '
         'uploaded INTEGER NOT NULL DEFAULT 0)',
+      );
+      await customStatement(
+        'CREATE TABLE IF NOT EXISTS local_files ('
+        'name TEXT NOT NULL PRIMARY KEY, '
+        'bytes BLOB NOT NULL)',
       );
     },
   );

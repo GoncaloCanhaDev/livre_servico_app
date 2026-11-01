@@ -32,7 +32,8 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/teams.dart`, `lib/models/aviso.dart` and `lib/theme.dart`, plus a
+  `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/services/document_service.dart` and
+  `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
@@ -146,6 +147,14 @@ multi-tenant product.
   `AvisoFormScreen` sends. The server (`20261031230000_avisos.sql`, `aviso_visible`) lets only
   the sender, the recipients and the admin read them, and `push_records` checks the sender's
   level, name and reach.
+- Documentos (`DocumentService`, `lib/models/app_document.dart`, `documents_screen.dart` and
+  `document_viewer_screen.dart` on `pdfrx`): PDFs the same for every store, not local rows and
+  not synced by `SyncEngine`. They live online in the `documents` table and bucket
+  (`20261101090000_documents.sql`: read by the admin and approved members of any store, written
+  only by the admin, `DocumentService.canManage`); `AccountService` sets
+  `DocumentService.remote` (`SupabaseDocumentRemote`) with the store sync. The list is cached in
+  the `documents_cache` pref, each opened PDF in `LocalDb`'s `local_files` table (dropped when
+  no longer listed). The demo and tests use `MemoryDocumentRemote` with PDFs from `simplePdf`.
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in

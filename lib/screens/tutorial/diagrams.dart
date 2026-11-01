@@ -457,6 +457,7 @@ class _HomeDiagram extends StatelessWidget {
       (Icons.task_alt, 'Tarefas'),
       (Icons.receipt_long, 'Pedidos'),
       (Icons.info_outline, 'Informações'),
+      (Icons.description_outlined, 'Documentos'),
       (Icons.history, 'Histórico'),
       (Icons.people, 'Pessoas'),
     ];
@@ -1155,6 +1156,33 @@ class _InfoDiagram extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _DocumentsDiagram extends StatelessWidget {
+  const _DocumentsDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget doc(String title, String info, {int? marker}) => _Box(
+      marker: marker,
+      child: _Line(
+        title,
+        icon: Icons.picture_as_pdf,
+        trailing: Text(
+          info,
+          style: TextStyle(fontSize: 10, color: context.muted),
+        ),
+      ),
+    );
+    return _Screen(
+      title: 'Documentos',
+      children: [
+        doc('Receção de mercadoria', '320 KB', marker: 1),
+        _gap,
+        doc('Regras de segurança', '1,2 MB', marker: 2),
       ],
     );
   }

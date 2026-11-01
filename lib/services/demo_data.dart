@@ -14,7 +14,9 @@ import '../models/teams.dart';
 import '../models/truck_reception.dart';
 import '../models/weekly_tasks.dart';
 import 'account_service.dart';
+import 'document_service.dart';
 import 'local_db.dart';
+import 'simple_pdf.dart';
 import 'sync_meta.dart';
 
 /// Writes the demo's example store (all invented) into `LocalDb.instance`,
@@ -453,5 +455,33 @@ Future<String> seedDemo({DateTime? now}) async {
       personId: me.syncUuid,
     ),
   );
+  DocumentService.instance
+    ..remote = MemoryDocumentRemote({
+      'Receção de mercadoria': simplePdf('Receção de mercadoria', const [
+        'Documento de exemplo da demonstração.',
+        '',
+        '# Antes de abrir o camião',
+        '1. Confirmar a matrícula e a hora de chegada.',
+        '2. Verificar se os selos estão intactos.',
+        '',
+        '# Descarga',
+        '3. Contar as paletes por departamento.',
+        '4. Separar o vasilhame a devolver.',
+        '5. Registar a receção na aplicação (Camiões).',
+      ]),
+      'Regras de segurança': simplePdf('Regras de segurança', const [
+        'Documento de exemplo da demonstração.',
+        '',
+        '# Na loja',
+        '- Corredores e saídas de emergência sempre livres.',
+        '- Usar o porta-paletes só com formação.',
+        '- Calçado de proteção no armazém e no cais.',
+        '',
+        '# Em caso de acidente',
+        '- Avisar a chefia de imediato.',
+        '- Registar o que aconteceu no próprio dia.',
+      ]),
+    })
+    ..canManage = false;
   return me.syncUuid;
 }

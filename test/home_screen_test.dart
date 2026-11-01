@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/screens/account_screen.dart';
+import 'package:livre_servico_app/screens/documents_screen.dart';
 import 'package:livre_servico_app/screens/historico_screen.dart';
 import 'package:livre_servico_app/screens/info_screen.dart';
 import 'package:livre_servico_app/screens/inventory_screen.dart';
@@ -35,6 +36,7 @@ void main() {
     ('Tarefas', TasksScreen),
     ('Pedidos', PedidosScreen),
     ('Informações', InfoScreen),
+    ('Documentos', DocumentsScreen),
     ('Histórico', HistoricoScreen),
     ('Pessoas', PeopleScreen),
   ]) {

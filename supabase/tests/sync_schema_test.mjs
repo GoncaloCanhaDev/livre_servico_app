@@ -24,7 +24,7 @@ await db.exec(`
   create function storage.foldername(name text) returns text[] language sql immutable as
     $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
   grant usage on schema storage to authenticated;
-  grant select, insert, update on storage.objects to authenticated;
+  grant select, insert, update, delete on storage.objects to authenticated;
   grant usage on sequence storage.objects_id_seq to authenticated;
   grant execute on function auth.uid() to authenticated, anon;
   insert into auth.users values
@@ -446,6 +446,28 @@ await push(J, [visto('av7/pa1', '2026-10-31T20:02:00Z', { avisoId: 'av7', person
 ok('a Visto cannot overwrite someone else\'s', (await stored2('AvisoVisto', 'av7/pa1')).data.personId === 'pa1');
 await push(J, [visto('whatever', '2026-10-31T20:03:00Z', { avisoId: 'av7', personId: 'pj', seenAt: 3 })]);
 ok('a Visto is keyed by its aviso and person', (await stored2('AvisoVisto', 'whatever')) === undefined);
+
+// Documentos: one list for every store; members read, the admin writes.
+await db.exec('reset role');
+const K = '00000000-0000-0000-0000-000000000099';
+await db.query(`insert into auth.users values ($1, 'nobody@x.pt')`, [K]);
+ok('documents bucket is private', (await db.query(`select public from storage.buckets where id = 'documents'`)).rows[0].public === false);
+await as(A, `insert into storage.objects (bucket_id, name) values ('documents', 'd1.pdf')`);
+await as(A, `insert into public.documents (title, file_name, size) values ('Regras', 'd1.pdf', 10)`);
+await throws('a member cannot add a document', () => as(B, `insert into public.documents (title, file_name) values ('X', 'x.pdf')`), /row-level security/);
+await throws('a member cannot add a document file', () => as(B, `insert into storage.objects (bucket_id, name) values ('documents', 'x.pdf')`), /row-level security/);
+ok('a member reads the documents', (await as(B, `select * from public.documents`)).length === 1);
+ok('a member reads the document files', (await as(B, `select * from storage.objects where bucket_id = 'documents'`)).length === 1);
+ok('an account with no store reads none', (await as(K, `select * from public.documents`)).length === 0);
+ok('an account with no store reads no files', (await as(K, `select * from storage.objects where bucket_id = 'documents'`)).length === 0);
+await as(B, `update public.documents set title = 'Mudado'`);
+await as(B, `delete from public.documents`);
+ok('a member neither renames nor removes', (await as(A, `select title from public.documents`))[0]?.title === 'Regras');
+await as(A, `update public.documents set title = 'Regras novas'`);
+ok('the admin renames', (await as(B, `select title from public.documents`))[0].title === 'Regras novas');
+await as(A, `delete from storage.objects where bucket_id = 'documents'`);
+await as(A, `delete from public.documents`);
+ok('the admin removes', (await as(B, `select * from public.documents`)).length === 0);
 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);

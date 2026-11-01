@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
+import 'package:uuid/uuid.dart';
 
+import '../models/app_document.dart';
+import 'document_service.dart';
 import 'photo_store.dart';
 import 'sync_engine.dart';
 
@@ -100,4 +103,54 @@ class SupabasePhotoRemote implements PhotoRemote {
 
   @override
   Future<Uint8List> download(String name) => _bucket.download('$storeId/$name');
+}
+
+/// [DocumentRemote] on the `documents` table and bucket (see
+/// `supabase/migrations/20261101090000_documents.sql`): the same for every
+/// store, written only by the admin.
+class SupabaseDocumentRemote implements DocumentRemote {
+  SupabaseDocumentRemote(this.client);
+
+  final SupabaseClient client;
+
+  StorageFileApi get _bucket => client.storage.from('documents');
+
+  @override
+  Future<List<AppDocument>> list() async {
+    final rows = await client.from('documents').select();
+    return [for (final r in rows) AppDocument.fromJson(r)];
+  }
+
+  @override
+  Future<Uint8List> download(String fileName) => _bucket.download(fileName);
+
+  @override
+  Future<void> add(String title, Uint8List bytes) async {
+    final fileName = '${const Uuid().v4()}.pdf';
+    await _bucket.uploadBinary(
+      fileName,
+      bytes,
+      fileOptions: const FileOptions(contentType: 'application/pdf'),
+    );
+    await client.from('documents').insert({
+      'title': title,
+      'file_name': fileName,
+      'size': bytes.length,
+    });
+  }
+
+  @override
+  Future<void> rename(String id, String title) => client
+      .from('documents')
+      .update({
+        'title': title,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      })
+      .eq('id', id);
+
+  @override
+  Future<void> remove(AppDocument doc) async {
+    await client.from('documents').delete().eq('id', doc.id);
+    await _bucket.remove([doc.fileName]);
+  }
 }

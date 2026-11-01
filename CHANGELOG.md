@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.75.0] — 2026-11-01
+
+### Added
+- **Documentos**, a new Home button (and side-menu entry): PDF documents for every store, opened
+  in the app (scroll between pages, pinch to zoom; `pdfrx`, on the phone and the web). The app's
+  admin adds them ("Adicionar PDF", up to 50 MB), renames and removes them; everyone else only
+  reads. They live online in the new `documents` table and private `documents` bucket
+  (`20261101090000_documents.sql`), readable by the admin and any approved store member. The
+  list is kept on the device and each PDF is saved the first time it is opened, so both work
+  offline; PDFs of removed documents are dropped. The demo has two example documents.
+- A Documentos section in the tutorial; Início's step lists the new button.
+
 ## [0.74.1] — 2026-11-01
 
 ### Changed

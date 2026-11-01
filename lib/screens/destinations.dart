@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'avisos_screen.dart';
+import 'documents_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -42,6 +43,11 @@ final homeDestinations = [
   Destination(Icons.task_alt, 'Tarefas', () => const TasksScreen()),
   Destination(Icons.receipt_long, 'Pedidos', () => const PedidosScreen()),
   Destination(Icons.info_outline, 'Informações', () => const InfoScreen()),
+  Destination(
+    Icons.description_outlined,
+    'Documentos',
+    () => const DocumentsScreen(),
+  ),
   Destination(Icons.history, 'Histórico', () => const HistoricoScreen()),
   Destination(Icons.people, 'Pessoas', () => const PeopleScreen()),
 ];

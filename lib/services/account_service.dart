@@ -8,6 +8,7 @@ import 'package:supabase/supabase.dart';
 import '../models/privacy_policy.dart';
 import '../models/store_access.dart';
 import 'demo_mode.dart';
+import 'document_service.dart';
 import 'local_db.dart';
 import 'photo_store.dart';
 import 'store_data.dart';
@@ -588,6 +589,9 @@ class AccountService extends ChangeNotifier {
       await _prefs.setBool(redactedKey, true);
     }
     PhotoStore.instance.remote = SupabasePhotoRemote(_api, s.id);
+    DocumentService.instance
+      ..remote = SupabaseDocumentRemote(_api)
+      ..canManage = s.access.admin;
     await SyncService.instance.start(
       SupabaseSyncRemote(_api, s.id),
       s.id,
@@ -598,6 +602,9 @@ class AccountService extends ChangeNotifier {
   void _stopSync() {
     SyncService.instance.stop();
     PhotoStore.instance.remote = null;
+    DocumentService.instance
+      ..remote = null
+      ..canManage = false;
   }
 
   Future<void> _saveStore(StoreInfo s) async {

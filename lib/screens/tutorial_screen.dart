@@ -38,7 +38,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'inicio',
     title: 'Início',
-    version: 2,
+    version: 3,
     steps: [
       TutorialStep(
         icon: Icons.waving_hand_outlined,
@@ -71,7 +71,8 @@ const tutorialSections = [
               'perfil, pedidos para entrar na loja.',
           'O cartão Hoje, com o resumo do dia.',
           'Os botões de cada área: Camiões, Listas 2.0, Listas Legacy, '
-              'Inventários, Tarefas, Pedidos, Informações, Histórico e Pessoas.',
+              'Inventários, Tarefas, Pedidos, Informações, Documentos, Histórico '
+              'e Pessoas.',
         ],
       ),
       TutorialStep(
@@ -289,6 +290,30 @@ const tutorialSections = [
           'Toque sem largar numa entrada para a editar, afixar no topo, '
               'partilhar ou apagar.',
         ],
+      ),
+    ],
+  ),
+  TutorialSection(
+    id: 'documentos',
+    title: 'Documentos',
+    version: 1,
+    steps: [
+      TutorialStep(
+        icon: Icons.description_outlined,
+        title: 'Documentos',
+        intro:
+            'Os documentos em PDF da empresa, iguais em todas as lojas, para '
+            'ler na aplicação.',
+        diagram: _DocumentsDiagram(),
+        steps: [
+          'Toque num documento para o abrir. Deslize para mudar de página e '
+              'afaste dois dedos para aumentar.',
+          'Um documento que já abriu fica guardado no telemóvel e abre mesmo '
+              'sem internet.',
+        ],
+        tip:
+            'Os documentos são mantidos pelo administrador da aplicação: '
+            'aparecem depois de entrar numa loja.',
       ),
     ],
   ),
