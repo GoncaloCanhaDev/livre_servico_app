@@ -91,16 +91,20 @@ const tutorialSteps = [
     steps: [
       'Abra Tarefas e escolha o separador (Diárias, Semanais ou '
           'Personalizadas).',
-      'Toque na tarefa feita.',
+      'Cada tarefa tem dois marcadores: ✓ se foi feita, ✗ se não foi. '
+          'Só se marca um.',
       'Em "Quem concluiu?", escolha uma ou mais pessoas. Se foi feita '
           'noutro dia, mude o dia.',
       'Confirme: a tarefa fica marcada com os nomes e já não se desmarca '
           'nesse dia.',
       'O WhatsApp abre com a mensagem: envie-a ao grupo.',
+      'Com ✗, escolha quem marca e escreva o motivo: a tarefa fica como '
+          '"Não feita" com o motivo, e a mensagem diz porquê.',
     ],
     tip:
         'A Verificação de Validades tem duas janelas: Manhã (5h–14h) e '
-        'Noite (19h–5h). Fora da janela não se pode marcar. Em '
+        'Noite (19h–5h). Fora da janela não se marca como feita, só como '
+        'não feita. Em '
         'Personalizadas, o + cria uma tarefa nova (diária, semanal ou '
         'pontual).',
   ),

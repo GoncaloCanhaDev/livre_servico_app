@@ -7,6 +7,20 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.73.0] — 2026-11-01
+
+### Added
+- **Tasks have two markers, ✓ Feita and ✗ Não feita**, in Diárias, Semanais and
+  Personalizadas: only one can be ticked, and either one closes the task for that day (or
+  week). Não feita asks who and which day, then for a reason (required); the card shows
+  "Não feita: <motivo>" in red with the names, and WhatsApp gets "❌ Tarefa não feita: … —
+  <motivo>". A Validades window that has closed can still be marked Não feita.
+
+### Changed
+- A task marked Não feita no longer counts as pending on Hoje. The Histórico shows it with the
+  reason and counts the não feitas; its WhatsApp summary marks them ❌ and open tasks ⬜.
+- The demo has an example, and the tutorial's "Marcar uma tarefa" shows the two markers.
+
 ## [0.72.1] — 2026-11-01
 
 ### Fixed

@@ -5,6 +5,7 @@ import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/historico_search.dart';
 import '../models/inventory.dart';
+import '../models/not_done.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/report_list.dart';

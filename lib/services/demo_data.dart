@@ -5,6 +5,7 @@ import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/local_row.dart';
+import '../models/not_done.dart';
 import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/person.dart';
@@ -237,7 +238,14 @@ Future<String> seedDemo({DateTime? now}) async {
       ..validadesNoite = true
       ..validadesNoiteByNames = ['Carla Mendes']
       ..kiwiFecho = true
-      ..kiwiFechoByNames = ['Ricardo Matos'],
+      ..kiwiFechoByNames = ['Ricardo Matos']
+      ..notDone = {
+        'alteracoes_preco': NotDone(
+          byNames: ['Sofia Almeida'],
+          reason: 'Faltaram as etiquetas novas na entrega',
+          at: day(-1, 16),
+        ),
+      },
   );
   final weekly = stamped(
     WeeklyTasks()

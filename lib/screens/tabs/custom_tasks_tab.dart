@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/custom_task.dart';
+import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/weekly_tasks.dart';
 import '../../services/custom_task_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../widgets/person_picker.dart';
+import '../widgets/task_markers.dart';
 
 DateTime _periodKeyFor(CustomTaskFrequency frequency) {
   switch (frequency) {
@@ -28,6 +30,27 @@ class _TaskRow {
   final CustomTaskEntry? entry;
 
   bool get done => entry?.done ?? false;
+  NotDone? get notDone => done ? null : entry?.notDone;
+
+  TaskOutcome get outcome => done
+      ? TaskOutcome.done
+      : notDone != null
+      ? TaskOutcome.notDone
+      : TaskOutcome.open;
+}
+
+/// The period [day] (a picked calendar date) falls in for [frequency], and
+/// whether that's an earlier one than the current period.
+(DateTime, bool) _targetPeriod(CustomTaskFrequency frequency, DateTime day) {
+  final current = _periodKeyFor(frequency);
+  final target = switch (frequency) {
+    CustomTaskFrequency.daily => DateTime(day.year, day.month, day.day, 5),
+    CustomTaskFrequency.weekly => currentServiceWeek(
+      DateTime(day.year, day.month, day.day, 12),
+    ),
+    CustomTaskFrequency.oneOff => oneOffPeriodKey,
+  };
+  return (target, target != current);
 }
 
 class CustomTasksTab extends StatefulWidget {
@@ -92,27 +115,23 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     if (result == null) return;
     final names = result.people.map((p) => p.fullName).toList();
     final who = joinNames(names);
-    final currentPeriodKey = _periodKeyFor(row.task.frequency);
-
-    late final DateTime targetPeriodKey;
-    late final bool backdated;
-    switch (row.task.frequency) {
-      case CustomTaskFrequency.daily:
-        targetPeriodKey = DateTime(
-          result.day.year,
-          result.day.month,
-          result.day.day,
-          5,
-        );
-        backdated = targetPeriodKey != currentPeriodKey;
-      case CustomTaskFrequency.weekly:
-        targetPeriodKey = currentServiceWeek(
-          DateTime(result.day.year, result.day.month, result.day.day, 12),
-        );
-        backdated = targetPeriodKey != currentPeriodKey;
-      case CustomTaskFrequency.oneOff:
-        targetPeriodKey = oneOffPeriodKey;
-        backdated = false;
+    final (targetPeriodKey, backdated) = _targetPeriod(
+      row.task.frequency,
+      result.day,
+    );
+    if (backdated &&
+        (await CustomTaskService.instance.entryFor(
+              row.task.syncUuid,
+              targetPeriodKey,
+            ))?.notDone !=
+            null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nesse período a tarefa foi marcada como não feita.'),
+        ),
+      );
+      return;
     }
 
     await CustomTaskService.instance.complete(
@@ -134,6 +153,57 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Tarefa marcada como concluída em $dayFmt.')),
+    );
+  }
+
+  Future<void> _markNotDone(_TaskRow row, {int? count}) async {
+    final today = currentServiceDay();
+    final picked = await pickNotDone(
+      context,
+      taskName: row.task.title,
+      initialDay: DateTime(today.year, today.month, today.day),
+      period: 'neste período',
+    );
+    if (picked == null) return;
+    final (result, reason) = picked;
+    final notDone = NotDone(
+      byNames: result.people.map((p) => p.fullName).toList(),
+      reason: reason,
+      at: DateTime.now(),
+    );
+    final (targetPeriodKey, backdated) = _targetPeriod(
+      row.task.frequency,
+      result.day,
+    );
+    if (backdated &&
+        (await CustomTaskService.instance.entryFor(
+              row.task.syncUuid,
+              targetPeriodKey,
+            ))?.done ==
+            true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nesse período a tarefa já foi feita.')),
+      );
+      return;
+    }
+    await CustomTaskService.instance.markNotDone(
+      taskUuid: row.task.syncUuid,
+      periodKey: targetPeriodKey,
+      notDone: notDone,
+      count: count,
+      backdated: backdated,
+    );
+    final msg = notDoneMessage(row.task.title, notDone);
+    if (!backdated) {
+      _sendMsg(msg);
+      return;
+    }
+    final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(result.day);
+    _sendMsg('$msg — $dayFmt');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tarefa marcada como não feita em $dayFmt.')),
     );
   }
 
@@ -254,24 +324,31 @@ class _CustomTasksTabState extends State<CustomTasksTab>
         key: ValueKey(row.task.syncUuid),
         row: row,
         onComplete: (count) => _complete(row, count: count),
+        onNotDone: (count) => _markNotDone(row, count: count),
         onDelete: () => _confirmDelete(row.task),
         onSendWhatsApp: row.done
             ? () => _sendMsg(
                 '✅ Tarefa concluída: ${row.task.title}$countStr$byStr',
               )
-            : null,
+            : _notDoneSender(row),
       );
     }
     return _CustomManualTile(
       key: ValueKey(row.task.syncUuid),
       row: row,
       onComplete: () => _complete(row),
+      onNotDone: () => _markNotDone(row),
       onDelete: () => _confirmDelete(row.task),
       onSendWhatsApp: row.done
           ? () => _sendMsg('✅ Tarefa concluída: ${row.task.title}$byStr')
-          : null,
+          : _notDoneSender(row),
     );
   }
+
+  VoidCallback? _notDoneSender(_TaskRow row) => switch (row.notDone) {
+    null => null,
+    final n => () => _sendMsg(notDoneMessage(row.task.title, n)),
+  };
 }
 
 class _BackdatedNote extends StatelessWidget {
@@ -301,34 +378,34 @@ class _CustomManualTile extends StatelessWidget {
     super.key,
     required this.row,
     required this.onComplete,
+    required this.onNotDone,
     required this.onDelete,
     this.onSendWhatsApp,
   });
 
   final _TaskRow row;
   final VoidCallback onComplete;
+  final VoidCallback onNotDone;
   final VoidCallback onDelete;
   final VoidCallback? onSendWhatsApp;
 
   @override
   Widget build(BuildContext context) {
     final done = row.done;
-    final names = resolveNames(
-      row.entry?.doneByNames ?? const [],
-      row.entry?.doneBy,
-    );
+    final notDone = row.notDone;
+    final names = done
+        ? resolveNames(row.entry?.doneByNames ?? const [], row.entry?.doneBy)
+        : notDone?.byNames ?? const <String>[];
     return GestureDetector(
       onLongPress: onSendWhatsApp,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: done,
-          onChanged: (v) {
-            if (done) return;
-            if (v == true) onComplete();
-          },
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
+        child: ListTile(
+          leading: TaskMarkers(
+            outcome: row.outcome,
+            onDone: onComplete,
+            onNotDone: onNotDone,
+          ),
           title: Text(
             row.task.title,
             style: TextStyle(
@@ -336,13 +413,15 @@ class _CustomManualTile extends StatelessWidget {
               decoration: done ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: (done && row.entry!.backdated)
+          subtitle: notDone != null
+              ? NotDoneNote(notDone, backdated: row.entry!.backdated)
+              : (done && row.entry!.backdated)
               ? const _BackdatedNote()
               : null,
-          secondary: Row(
+          trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (done && names.isNotEmpty) ...[
+              if (names.isNotEmpty) ...[
                 PersonInitialsRow(names: names),
                 const SizedBox(width: 4),
               ],
@@ -364,12 +443,14 @@ class _CustomCountTile extends StatefulWidget {
     super.key,
     required this.row,
     required this.onComplete,
+    required this.onNotDone,
     required this.onDelete,
     this.onSendWhatsApp,
   });
 
   final _TaskRow row;
   final ValueChanged<int> onComplete;
+  final ValueChanged<int> onNotDone;
   final VoidCallback onDelete;
   final VoidCallback? onSendWhatsApp;
 
@@ -395,28 +476,26 @@ class _CustomCountTileState extends State<_CustomCountTile> {
     super.dispose();
   }
 
+  int get _count => int.tryParse(_countCtrl.text) ?? 0;
+
   @override
   Widget build(BuildContext context) {
     final row = widget.row;
     final done = row.done;
-    final names = resolveNames(
-      row.entry?.doneByNames ?? const [],
-      row.entry?.doneBy,
-    );
+    final notDone = row.notDone;
+    final names = done
+        ? resolveNames(row.entry?.doneByNames ?? const [], row.entry?.doneBy)
+        : notDone?.byNames ?? const <String>[];
     return GestureDetector(
       onLongPress: widget.onSendWhatsApp,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: done,
-          onChanged: (v) {
-            if (done) return;
-            if (v != true) return;
-            final count = int.tryParse(_countCtrl.text) ?? 0;
-            widget.onComplete(count);
-          },
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
+        child: ListTile(
+          leading: TaskMarkers(
+            outcome: row.outcome,
+            onDone: () => widget.onComplete(_count),
+            onNotDone: () => widget.onNotDone(_count),
+          ),
           title: Row(
             children: [
               Expanded(
@@ -428,23 +507,25 @@ class _CustomCountTileState extends State<_CustomCountTile> {
                   ),
                 ),
               ),
-              if (done && names.isNotEmpty) ...[
+              if (names.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 PersonInitialsRow(names: names),
               ],
             ],
           ),
-          subtitle: (done && row.entry!.backdated)
+          subtitle: notDone != null
+              ? NotDoneNote(notDone, backdated: row.entry!.backdated)
+              : (done && row.entry!.backdated)
               ? const _BackdatedNote()
               : null,
-          secondary: Row(
+          trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 70,
+                width: 60,
                 child: TextField(
                   controller: _countCtrl,
-                  enabled: !done,
+                  enabled: row.outcome == TaskOutcome.open,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],

@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../widgets/person_picker.dart';
+import '../widgets/task_markers.dart';
 
 import '../../models/daily_tasks.dart';
+import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/validades.dart';
 import '../../services/auto_list_service.dart';
@@ -160,6 +162,15 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       return;
     }
     final other = await DailyTasksService.instance.forDay(targetDay);
+    if (other.notDone.containsKey(taskKey)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nesse dia a tarefa foi marcada como não feita.'),
+        ),
+      );
+      return;
+    }
     apply(other, who);
     if (!other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
@@ -173,8 +184,77 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     );
   }
 
-  /// One part of the Verificação de Validades: it can only be ticked while
-  /// its window is open (see [validadesStateAt]).
+  /// Marks [taskKey] as Não feita: who, which day and why. Like
+  /// [_completeTask], another day's row when the day picked isn't today's.
+  Future<void> _markNotDone({
+    required String taskName,
+    required String taskKey,
+  }) async {
+    final tasks = _tasks;
+    if (tasks == null) return;
+    final picked = await pickNotDone(
+      context,
+      taskName: taskName,
+      initialDay: DateTime(
+        tasks.serviceDay.year,
+        tasks.serviceDay.month,
+        tasks.serviceDay.day,
+      ),
+    );
+    if (picked == null) return;
+    final (result, reason) = picked;
+    final notDone = NotDone(
+      byNames: result.people.map((p) => p.fullName).toList(),
+      reason: reason,
+      at: DateTime.now(),
+    );
+    final targetDay = DateTime(
+      result.day.year,
+      result.day.month,
+      result.day.day,
+      5,
+    );
+    if (targetDay == tasks.serviceDay) {
+      setState(() => tasks.notDone = {...tasks.notDone, taskKey: notDone});
+      await _saveTasks();
+      _sendMsg(notDoneMessage(taskName, notDone));
+      return;
+    }
+    final other = await DailyTasksService.instance.forDay(targetDay);
+    if (_isDone(other, taskKey)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nesse dia a tarefa já foi feita.')),
+      );
+      return;
+    }
+    other.notDone = {...other.notDone, taskKey: notDone};
+    if (!other.backdatedTaskKeys.contains(taskKey)) {
+      other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
+    }
+    await DailyTasksService.instance.save(other);
+    final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
+    _sendMsg('${notDoneMessage(taskName, notDone)} — $dayFmt');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tarefa marcada como não feita em $dayFmt.')),
+    );
+  }
+
+  static bool _isDone(DailyTasks t, String taskKey) => switch (taskKey) {
+    'kiwi_abertura' => t.kiwiAbertura,
+    'alteracoes_preco' => t.alteracoesPreco,
+    'verificacao_temperaturas' => t.verificacaoTemperaturas,
+    'preenchimento_quadro' => t.preenchimentoQuadro,
+    'verificacao_validades' => t.verificacaoValidades,
+    'validades_noite' => t.validadesNoite,
+    'kiwi_fecho' => t.kiwiFecho,
+    _ => false,
+  };
+
+  /// One part of the Verificação de Validades: it can only be marked Feita
+  /// while its window is open (see [validadesStateAt]), and Não feita from
+  /// when it opens.
   Widget _validadesTask(DailyTasks tasks, ValidadesTurno turno) {
     final manha = turno == ValidadesTurno.manha;
     final done = manha ? tasks.verificacaoValidades : tasks.validadesNoite;
@@ -182,16 +262,18 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         ? tasks.verificacaoValidadesCount
         : tasks.validadesNoiteCount;
     final taskKey = manha ? 'verificacao_validades' : 'validades_noite';
+    final notDone = tasks.notDone[taskKey];
     final state = validadesStateAt(turno, DateTime.now());
     return _CountTask(
       label: turno.label,
       checked: done,
+      notDone: notDone,
       locked: state != ValidadesState.open,
       note: switch (state) {
         _ when done => null,
         ValidadesState.notYet => turno.notYetNote,
         ValidadesState.open => turno.openNote,
-        ValidadesState.closed => 'Não feita',
+        ValidadesState.closed => 'Não feita — falta o motivo',
       },
       noteWarn: !done && state == ValidadesState.closed,
       byNames: manha
@@ -204,27 +286,31 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       countController: manha ? _validadesCtrl : _validadesNoiteCtrl,
       onLongPress: done
           ? () => _sendMsg('✅ Tarefa concluída: ${turno.label} ($count)')
+          : notDone != null
+          ? () => _sendMsg(notDoneMessage(turno.label, notDone))
           : null,
-      onCheckedChanged: (v) async {
-        if (!v) return;
-        await _completeTask(
-          taskName: turno.label,
-          taskKey: taskKey,
-          apply: (t, who) {
-            if (manha) {
-              t.verificacaoValidades = true;
-              t.verificacaoValidadesByNames = who;
-              t.verificacaoValidadesCount = count;
-            } else {
-              t.validadesNoite = true;
-              t.validadesNoiteByNames = who;
-              t.validadesNoiteCount = count;
-            }
-          },
-          message: (who) =>
-              '✅ Tarefa concluída: ${turno.label} ($count) (por ${joinNames(who)})',
-        );
-      },
+      onDone: state != ValidadesState.open
+          ? null
+          : () => _completeTask(
+              taskName: turno.label,
+              taskKey: taskKey,
+              apply: (t, who) {
+                if (manha) {
+                  t.verificacaoValidades = true;
+                  t.verificacaoValidadesByNames = who;
+                  t.verificacaoValidadesCount = count;
+                } else {
+                  t.validadesNoite = true;
+                  t.validadesNoiteByNames = who;
+                  t.validadesNoiteCount = count;
+                }
+              },
+              message: (who) =>
+                  '✅ Tarefa concluída: ${turno.label} ($count) (por ${joinNames(who)})',
+            ),
+      onNotDone: state == ValidadesState.notYet
+          ? null
+          : () => _markNotDone(taskName: turno.label, taskKey: taskKey),
       onCountChanged: (n) {
         if (manha) {
           tasks.verificacaoValidadesCount = n;
@@ -233,6 +319,37 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         }
         _saveTasks();
       },
+    );
+  }
+
+  /// A task ticked by hand, with no count.
+  Widget _manual(
+    DailyTasks tasks, {
+    required String label,
+    required String taskKey,
+    required bool checked,
+    required List<String> byNames,
+    required void Function(DailyTasks t, List<String> who) apply,
+  }) {
+    final notDone = tasks.notDone[taskKey];
+    return _ManualTask(
+      label: label,
+      checked: checked,
+      notDone: notDone,
+      byNames: byNames,
+      backdated: tasks.backdatedTaskKeys.contains(taskKey),
+      onLongPress: checked
+          ? () => _sendMsg('✅ Tarefa concluída: $label')
+          : notDone != null
+          ? () => _sendMsg(notDoneMessage(label, notDone))
+          : null,
+      onDone: () => _completeTask(
+        taskName: label,
+        taskKey: taskKey,
+        apply: apply,
+        message: (who) => '✅ Tarefa concluída: $label (por ${joinNames(who)})',
+      ),
+      onNotDone: () => _markNotDone(taskName: label, taskKey: taskKey),
     );
   }
 
@@ -247,6 +364,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     final dayFmt = DateFormat("EEEE, d 'de' MMMM", 'pt_PT');
     final visualGoal = SettingsService.instance.visualGoal;
     final visualDone = _visualItens >= visualGoal;
+    final precoNotDone = tasks.notDone['alteracoes_preco'];
 
     return SafeArea(
       child: ListView(
@@ -257,34 +375,24 @@ class _DailyTasksTabState extends State<DailyTasksTab>
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          _ManualTask(
+          _manual(
+            tasks,
             label: 'Kiwi Abertura',
+            taskKey: 'kiwi_abertura',
             checked: tasks.kiwiAbertura,
             byNames: resolveNames(
               tasks.kiwiAberturaByNames,
               tasks.kiwiAberturaBy,
             ),
-            backdated: tasks.backdatedTaskKeys.contains('kiwi_abertura'),
-            onLongPress: tasks.kiwiAbertura
-                ? () => _sendMsg('✅ Tarefa concluída: Kiwi Abertura')
-                : null,
-            onChanged: (v) async {
-              if (!v) return;
-              await _completeTask(
-                taskName: 'Kiwi Abertura',
-                taskKey: 'kiwi_abertura',
-                apply: (t, who) {
-                  t.kiwiAbertura = true;
-                  t.kiwiAberturaByNames = who;
-                },
-                message: (who) =>
-                    '✅ Tarefa concluída: Kiwi Abertura (por ${joinNames(who)})',
-              );
+            apply: (t, who) {
+              t.kiwiAbertura = true;
+              t.kiwiAberturaByNames = who;
             },
           ),
           _CountTask(
             label: 'Alterações de Preço',
             checked: tasks.alteracoesPreco,
+            notDone: precoNotDone,
             byNames: resolveNames(
               tasks.alteracoesPrecoByNames,
               tasks.alteracoesPrecoBy,
@@ -295,11 +403,14 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                 ? () => _sendMsg(
                     '✅ Tarefa concluída: Alterações de Preço (${tasks.alteracoesPrecoCount})',
                   )
+                : precoNotDone != null
+                ? () => _sendMsg(
+                    notDoneMessage('Alterações de Preço', precoNotDone),
+                  )
                 : null,
-            onCheckedChanged: (v) async {
-              if (!v) return;
+            onDone: () {
               final count = tasks.alteracoesPrecoCount;
-              await _completeTask(
+              _completeTask(
                 taskName: 'Alterações de Preço',
                 taskKey: 'alteracoes_preco',
                 apply: (t, who) {
@@ -311,38 +422,27 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                     '✅ Tarefa concluída: Alterações de Preço ($count) (por ${joinNames(who)})',
               );
             },
+            onNotDone: () => _markNotDone(
+              taskName: 'Alterações de Preço',
+              taskKey: 'alteracoes_preco',
+            ),
             onCountChanged: (n) {
               tasks.alteracoesPrecoCount = n;
               _saveTasks();
             },
           ),
-          _ManualTask(
+          _manual(
+            tasks,
             label: 'Verificação de Temperaturas',
+            taskKey: 'verificacao_temperaturas',
             checked: tasks.verificacaoTemperaturas,
             byNames: resolveNames(
               tasks.verificacaoTemperaturasByNames,
               tasks.verificacaoTemperaturasBy,
             ),
-            backdated: tasks.backdatedTaskKeys.contains(
-              'verificacao_temperaturas',
-            ),
-            onLongPress: tasks.verificacaoTemperaturas
-                ? () => _sendMsg(
-                    '✅ Tarefa concluída: Verificação de Temperaturas',
-                  )
-                : null,
-            onChanged: (v) async {
-              if (!v) return;
-              await _completeTask(
-                taskName: 'Verificação de Temperaturas',
-                taskKey: 'verificacao_temperaturas',
-                apply: (t, who) {
-                  t.verificacaoTemperaturas = true;
-                  t.verificacaoTemperaturasByNames = who;
-                },
-                message: (who) =>
-                    '✅ Tarefa concluída: Verificação de Temperaturas (por ${joinNames(who)})',
-              );
+            apply: (t, who) {
+              t.verificacaoTemperaturas = true;
+              t.verificacaoTemperaturasByNames = who;
             },
           ),
           _AutoTask(
@@ -361,29 +461,18 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                 ? () => _sendMsg('✅ Tarefa concluída: Relatório das Listas')
                 : null,
           ),
-          _ManualTask(
+          _manual(
+            tasks,
             label: 'Preenchimento do Quadro',
+            taskKey: 'preenchimento_quadro',
             checked: tasks.preenchimentoQuadro,
             byNames: resolveNames(
               tasks.preenchimentoQuadroByNames,
               tasks.preenchimentoQuadroBy,
             ),
-            backdated: tasks.backdatedTaskKeys.contains('preenchimento_quadro'),
-            onLongPress: tasks.preenchimentoQuadro
-                ? () => _sendMsg('✅ Tarefa concluída: Preenchimento do Quadro')
-                : null,
-            onChanged: (v) async {
-              if (!v) return;
-              await _completeTask(
-                taskName: 'Preenchimento do Quadro',
-                taskKey: 'preenchimento_quadro',
-                apply: (t, who) {
-                  t.preenchimentoQuadro = true;
-                  t.preenchimentoQuadroByNames = who;
-                },
-                message: (who) =>
-                    '✅ Tarefa concluída: Preenchimento do Quadro (por ${joinNames(who)})',
-              );
+            apply: (t, who) {
+              t.preenchimentoQuadro = true;
+              t.preenchimentoQuadroByNames = who;
             },
           ),
           _AutoTask(
@@ -406,26 +495,15 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           ),
           _validadesTask(tasks, ValidadesTurno.manha),
           _validadesTask(tasks, ValidadesTurno.noite),
-          _ManualTask(
+          _manual(
+            tasks,
             label: 'Kiwi Fecho',
+            taskKey: 'kiwi_fecho',
             checked: tasks.kiwiFecho,
             byNames: resolveNames(tasks.kiwiFechoByNames, tasks.kiwiFechoBy),
-            backdated: tasks.backdatedTaskKeys.contains('kiwi_fecho'),
-            onLongPress: tasks.kiwiFecho
-                ? () => _sendMsg('✅ Tarefa concluída: Kiwi Fecho')
-                : null,
-            onChanged: (v) async {
-              if (!v) return;
-              await _completeTask(
-                taskName: 'Kiwi Fecho',
-                taskKey: 'kiwi_fecho',
-                apply: (t, who) {
-                  t.kiwiFecho = true;
-                  t.kiwiFechoByNames = who;
-                },
-                message: (who) =>
-                    '✅ Tarefa concluída: Kiwi Fecho (por ${joinNames(who)})',
-              );
+            apply: (t, who) {
+              t.kiwiFecho = true;
+              t.kiwiFechoByNames = who;
             },
           ),
         ],
@@ -456,11 +534,19 @@ class _BackdatedNote extends StatelessWidget {
   }
 }
 
+TaskOutcome _outcome(bool checked, NotDone? notDone) => checked
+    ? TaskOutcome.done
+    : notDone != null
+    ? TaskOutcome.notDone
+    : TaskOutcome.open;
+
 class _ManualTask extends StatelessWidget {
   const _ManualTask({
     required this.label,
     required this.checked,
-    required this.onChanged,
+    required this.onDone,
+    required this.onNotDone,
+    this.notDone,
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
@@ -468,25 +554,27 @@ class _ManualTask extends StatelessWidget {
 
   final String label;
   final bool checked;
-  final ValueChanged<bool> onChanged;
+  final NotDone? notDone;
+  final VoidCallback onDone;
+  final VoidCallback onNotDone;
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
 
   @override
   Widget build(BuildContext context) {
+    final notDone = this.notDone;
+    final names = checked ? byNames : notDone?.byNames ?? const <String>[];
     return GestureDetector(
       onLongPress: onLongPress,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: checked,
-          onChanged: (v) {
-            if (checked) return;
-            onChanged(v ?? false);
-          },
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
+        child: ListTile(
+          leading: TaskMarkers(
+            outcome: _outcome(checked, notDone),
+            onDone: onDone,
+            onNotDone: onNotDone,
+          ),
           title: Text(
             label,
             style: TextStyle(
@@ -494,9 +582,13 @@ class _ManualTask extends StatelessWidget {
               decoration: checked ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: (checked && backdated) ? const _BackdatedNote() : null,
-          secondary: (checked && byNames.isNotEmpty)
-              ? PersonInitialsRow(names: byNames, size: 30)
+          subtitle: notDone != null && !checked
+              ? NotDoneNote(notDone, backdated: backdated)
+              : (checked && backdated)
+              ? const _BackdatedNote()
+              : null,
+          trailing: names.isNotEmpty
+              ? PersonInitialsRow(names: names, size: 30)
               : null,
         ),
       ),
@@ -558,8 +650,10 @@ class _CountTask extends StatelessWidget {
     required this.label,
     required this.checked,
     required this.countController,
-    required this.onCheckedChanged,
+    required this.onDone,
+    required this.onNotDone,
     required this.onCountChanged,
+    this.notDone,
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
@@ -570,15 +664,19 @@ class _CountTask extends StatelessWidget {
 
   final String label;
   final bool checked;
+  final NotDone? notDone;
 
-  /// Outside its window: can't be ticked and the count can't change.
+  /// Outside its window: the count can't change.
   final bool locked;
 
   /// Shown under the label ("Abre às 19h"), in orange when [noteWarn].
   final String? note;
   final bool noteWarn;
   final TextEditingController countController;
-  final ValueChanged<bool> onCheckedChanged;
+
+  /// Null leaves that marker disabled.
+  final VoidCallback? onDone;
+  final VoidCallback? onNotDone;
   final ValueChanged<int> onCountChanged;
   final VoidCallback? onLongPress;
   final List<String> byNames;
@@ -586,20 +684,19 @@ class _CountTask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final notDone = this.notDone;
+    final closed = checked || notDone != null;
+    final names = checked ? byNames : notDone?.byNames ?? const <String>[];
     return GestureDetector(
       onLongPress: onLongPress,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: checked,
-          onChanged: locked && !checked
-              ? null
-              : (v) {
-                  if (checked) return;
-                  onCheckedChanged(v ?? false);
-                },
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
+        child: ListTile(
+          leading: TaskMarkers(
+            outcome: _outcome(checked, notDone),
+            onDone: onDone,
+            onNotDone: onNotDone,
+          ),
           title: Row(
             children: [
               Expanded(
@@ -611,13 +708,15 @@ class _CountTask extends StatelessWidget {
                   ),
                 ),
               ),
-              if (checked && byNames.isNotEmpty) ...[
+              if (names.isNotEmpty) ...[
                 const SizedBox(width: 8),
-                PersonInitialsRow(names: byNames, size: 30),
+                PersonInitialsRow(names: names, size: 30),
               ],
             ],
           ),
-          subtitle: (checked && backdated)
+          subtitle: notDone != null && !checked
+              ? NotDoneNote(notDone, backdated: backdated)
+              : (checked && backdated)
               ? const _BackdatedNote()
               : switch (note) {
                   null => null,
@@ -646,11 +745,11 @@ class _CountTask extends StatelessWidget {
                     ],
                   ),
                 },
-          secondary: SizedBox(
-            width: 90,
+          trailing: SizedBox(
+            width: 72,
             child: TextField(
               controller: countController,
-              enabled: !checked && !locked,
+              enabled: !closed && !locked,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],

@@ -1,4 +1,5 @@
 import 'local_row.dart';
+import 'not_done.dart';
 
 /// Stored by index, so never reorder it.
 enum CustomTaskFrequency { daily, weekly, oneOff }
@@ -53,7 +54,8 @@ class CustomTaskEntry with SyncFields {
       ..doneByNames = stringsFromJson(j['doneByNames'])
       ..count = intOrNull(j['count'])
       ..doneAt = dateFromJson(j['doneAt'])
-      ..backdated = boolFromJson(j['backdated']);
+      ..backdated = boolFromJson(j['backdated'])
+      ..notDone = notDoneFromJson(j['notDone']);
     syncFieldsFromJson(e, j);
     return e;
   }
@@ -79,6 +81,10 @@ class CustomTaskEntry with SyncFields {
   /// on its own period.
   bool backdated = false;
 
+  /// Set when the task was marked "Não feita" for this period ([done] is
+  /// then false).
+  NotDone? notDone;
+
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
@@ -90,6 +96,7 @@ class CustomTaskEntry with SyncFields {
     'count': count,
     'doneAt': dateToJson(doneAt),
     'backdated': backdated,
+    'notDone': notDone?.toJson(),
   };
 }
 

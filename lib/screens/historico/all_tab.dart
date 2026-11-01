@@ -196,7 +196,9 @@ class _AllTabState extends State<_AllTab>
           type: _ItemType.tasks,
           time: t.lastUpdatedAt ?? t.serviceDay,
           title: '✅ Tarefas Diárias',
-          subtitle: '$doneCount/$total concluídas',
+          subtitle:
+              '$doneCount/$total concluídas'
+              '${t.notDone.isEmpty ? '' : ' · ${t.notDone.length} não feita${t.notDone.length == 1 ? '' : 's'}'}',
           icon: Icons.task_alt,
           iconColor: doneCount == total ? null : Colors.grey,
           deleted: t.syncDeletedAt != null,

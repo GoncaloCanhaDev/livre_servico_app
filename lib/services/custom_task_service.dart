@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/custom_task.dart';
+import '../models/not_done.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -69,6 +70,29 @@ class CustomTaskService extends ChangeNotifier {
     entry.done = true;
     entry.doneByNames = who;
     entry.doneAt = DateTime.now();
+    entry.count = count;
+    entry.backdated = backdated;
+    entry.notDone = null;
+    SyncMeta.stamp(entry);
+    await _db.customTaskEntries.put(entry);
+    notifyListeners();
+  }
+
+  /// Marks the entry for `(taskUuid, periodKey)` as Não feita, with [notDone]
+  /// saying who and why.
+  Future<void> markNotDone({
+    required String taskUuid,
+    required DateTime periodKey,
+    required NotDone notDone,
+    int? count,
+    bool backdated = false,
+  }) async {
+    var entry = await entryFor(taskUuid, periodKey);
+    entry ??= CustomTaskEntry()
+      ..taskUuid = taskUuid
+      ..periodKey = periodKey;
+    entry.done = false;
+    entry.notDone = notDone;
     entry.count = count;
     entry.backdated = backdated;
     SyncMeta.stamp(entry);

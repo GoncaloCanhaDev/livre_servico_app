@@ -565,10 +565,18 @@ class _TaskDiagram extends StatelessWidget {
         ),
         _Box(
           marker: 2,
-          child: _Line(
-            'Kiwi Abertura',
-            icon: Icons.check_box_outline_blank,
-            trailing: Text('Por fazer', style: TextStyle(color: context.muted)),
+          child: Row(
+            children: [
+              _TaskMark(Icons.check, context.colors.primary),
+              const SizedBox(width: 4),
+              _TaskMark(Icons.close, context.colors.error),
+              const SizedBox(width: 6),
+              const Expanded(child: _Line('Kiwi Abertura')),
+              Text(
+                'Por fazer',
+                style: TextStyle(fontSize: 11, color: context.muted),
+              ),
+            ],
           ),
         ),
         const _Arrow(),
@@ -591,9 +599,12 @@ class _TaskDiagram extends StatelessWidget {
         _Box(
           marker: 4,
           color: context.tint(Colors.green),
-          child: const _Line(
-            'Kiwi Abertura · Por Ana Costa',
-            icon: Icons.check_box,
+          child: Row(
+            children: [
+              _TaskMark(Icons.check, context.colors.primary, filled: true),
+              const SizedBox(width: 6),
+              const Expanded(child: _Line('Kiwi Abertura · Por Ana Costa')),
+            ],
           ),
         ),
         _gap,
@@ -604,7 +615,57 @@ class _TaskDiagram extends StatelessWidget {
             Positioned(top: -6, right: -6, child: _Marker(5)),
           ],
         ),
+        _gap,
+        _Box(
+          marker: 6,
+          color: context.tint(Colors.red),
+          child: Row(
+            children: [
+              _TaskMark(Icons.close, context.colors.error, filled: true),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _Line('Kiwi Fecho · Rui Silva'),
+                    Text(
+                      'Não feita: sem sistema',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.colors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// A task's ✓ Feita or ✗ Não feita marker, small.
+class _TaskMark extends StatelessWidget {
+  const _TaskMark(this.icon, this.color, {this.filled = false});
+
+  final IconData icon;
+  final Color color;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: filled ? color : null,
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Icon(icon, size: 12, color: filled ? Colors.white : color),
     );
   }
 }

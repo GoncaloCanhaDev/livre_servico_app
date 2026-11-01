@@ -121,12 +121,14 @@ class _TasksTabState extends State<_TasksTab>
             final allTasks = <_TaskEntry>[
               _TaskEntry(
                 'Kiwi Abertura',
+                notDone: t.notDone['kiwi_abertura'],
                 t.kiwiAbertura,
                 byNames: resolveNames(t.kiwiAberturaByNames, t.kiwiAberturaBy),
                 backdated: t.backdatedTaskKeys.contains('kiwi_abertura'),
               ),
               _TaskEntry(
                 'Alterações de Preço (${t.alteracoesPrecoCount})',
+                notDone: t.notDone['alteracoes_preco'],
                 t.alteracoesPreco,
                 byNames: resolveNames(
                   t.alteracoesPrecoByNames,
@@ -136,6 +138,7 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 'Verificação de Temperaturas',
+                notDone: t.notDone['verificacao_temperaturas'],
                 t.verificacaoTemperaturas,
                 byNames: resolveNames(
                   t.verificacaoTemperaturasByNames,
@@ -157,6 +160,7 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 'Preenchimento do Quadro',
+                notDone: t.notDone['preenchimento_quadro'],
                 t.preenchimentoQuadro,
                 byNames: resolveNames(
                   t.preenchimentoQuadroByNames,
@@ -176,6 +180,7 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})',
+                notDone: t.notDone['verificacao_validades'],
                 t.verificacaoValidades,
                 byNames: resolveNames(
                   t.verificacaoValidadesByNames,
@@ -187,12 +192,14 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})',
+                notDone: t.notDone['validades_noite'],
                 t.validadesNoite,
                 byNames: t.validadesNoiteByNames,
                 backdated: t.backdatedTaskKeys.contains('validades_noite'),
               ),
               _TaskEntry(
                 'Kiwi Fecho',
+                notDone: t.notDone['kiwi_fecho'],
                 t.kiwiFecho,
                 byNames: resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy),
                 backdated: t.backdatedTaskKeys.contains('kiwi_fecho'),
@@ -200,6 +207,9 @@ class _TasksTabState extends State<_TasksTab>
             ];
             final totalTasks = allTasks.length;
             final doneCount = allTasks.where((e) => e.done).length;
+            final notDoneCount = allTasks
+                .where((e) => !e.done && e.notDone != null)
+                .length;
 
             return _dimmedIfDeleted(
               deleted: t.syncDeletedAt != null,
@@ -210,11 +220,12 @@ class _TasksTabState extends State<_TasksTab>
                   await DailyTasksService.instance.delete(t.id);
                 },
                 onSendWhatsApp: (ctx) async {
-                  String s(bool done, String label) =>
-                      '${done ? '✅' : '❌'} $label';
-                  final lines = allTasks
-                      .map((e) => s(e.done, e.label))
-                      .join('\n');
+                  String s(_TaskEntry e) => e.done
+                      ? '✅ ${e.label}'
+                      : e.notDone != null
+                      ? '❌ ${e.label} — ${e.notDone!.reason}'
+                      : '⬜ ${e.label}';
+                  final lines = allTasks.map(s).join('\n');
                   final msg =
                       '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
                       '$lines\n'
@@ -228,7 +239,10 @@ class _TasksTabState extends State<_TasksTab>
                       dayFmt.format(t.serviceDay),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text('$doneCount/$totalTasks tarefas concluídas'),
+                    subtitle: Text(
+                      '$doneCount/$totalTasks tarefas concluídas'
+                      '${notDoneCount == 0 ? '' : ' · $notDoneCount não feita${notDoneCount == 1 ? '' : 's'}'}',
+                    ),
                     trailing: Icon(
                       doneCount == totalTasks
                           ? Icons.check_circle
@@ -245,6 +259,7 @@ class _TasksTabState extends State<_TasksTab>
                             e.done,
                             byNames: e.byNames,
                             backdated: e.backdated,
+                            notDone: e.done ? null : e.notDone,
                           ),
                         )
                         .toList(),
@@ -265,11 +280,15 @@ class _TaskEntry {
     this.done, {
     this.byNames = const [],
     this.backdated = false,
+    this.notDone,
   });
   final String label;
   final bool done;
   final List<String> byNames;
   final bool backdated;
+
+  /// Set when marked Não feita (and not done after all).
+  final NotDone? notDone;
 }
 
 class _TasksRow {
@@ -305,22 +324,38 @@ Widget _taskTile(
   bool done, {
   List<String> byNames = const [],
   bool backdated = false,
+  NotDone? notDone,
 }) {
+  final names = done ? byNames : notDone?.byNames ?? const <String>[];
   return ListTile(
     dense: true,
     leading: Icon(
-      done ? Icons.check_circle : Icons.cancel,
+      done
+          ? Icons.check_circle
+          : notDone != null
+          ? Icons.cancel
+          : Icons.radio_button_unchecked,
       size: 20,
-      color: done ? context.colors.primary : context.greyedFill,
+      color: done
+          ? context.colors.primary
+          : notDone != null
+          ? context.colors.error
+          : context.greyedFill,
     ),
     title: Text(
       label,
       style: TextStyle(
         decoration: done ? TextDecoration.lineThrough : null,
-        color: done ? null : context.faint,
+        color: done || notDone != null ? null : context.faint,
       ),
     ),
-    subtitle: (done && backdated)
+    subtitle: notDone != null
+        ? Text(
+            'Não feita: ${notDone.reason}'
+            '${backdated ? ' · Preenchido a posteriori' : ''}',
+            style: TextStyle(fontSize: 12, color: context.colors.error),
+          )
+        : (done && backdated)
         ? Text(
             'Preenchido a posteriori',
             style: TextStyle(fontSize: 11, color: context.faint),
@@ -329,13 +364,13 @@ Widget _taskTile(
     trailing: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (done && backdated) ...[
+        if ((done || notDone != null) && backdated) ...[
           Icon(Icons.history_toggle_off, size: 16, color: context.faint),
           const SizedBox(width: 4),
         ],
-        if (done && byNames.isNotEmpty) ...[
+        if (names.isNotEmpty) ...[
           const SizedBox(width: 4),
-          _HistoryInitials(names: byNames),
+          _HistoryInitials(names: names),
         ],
       ],
     ),

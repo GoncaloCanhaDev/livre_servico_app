@@ -74,8 +74,8 @@ List<OnShift> onShiftAt(List<Person> people, DateTime now) {
 
 /// The Diárias still to do at [now], in the Tarefas order: [t] is the
 /// service day's row (null when none was saved yet) and the flags say
-/// whether the tasks ticked by other screens are done. A Validades part only
-/// counts while its window is open.
+/// whether the tasks ticked by other screens are done. A task marked Não
+/// feita isn't pending. A Validades part only counts while its window is open.
 List<String> pendingDailyTasks(
   DailyTasks? t, {
   required bool aberturaDone,
@@ -86,20 +86,27 @@ List<String> pendingDailyTasks(
 }) {
   bool open(ValidadesTurno turno) =>
       validadesStateAt(turno, now) == ValidadesState.open;
+  // Done, or marked Não feita (`DailyTasks.notDone`).
+  bool settled(bool? done, String key) =>
+      (done ?? false) || (t?.notDone.containsKey(key) ?? false);
   return [
-    if (!(t?.kiwiAbertura ?? false)) 'Kiwi Abertura',
-    if (!(t?.alteracoesPreco ?? false)) 'Alterações de Preço',
-    if (!(t?.verificacaoTemperaturas ?? false)) 'Verificação de Temperaturas',
+    if (!settled(t?.kiwiAbertura, 'kiwi_abertura')) 'Kiwi Abertura',
+    if (!settled(t?.alteracoesPreco, 'alteracoes_preco')) 'Alterações de Preço',
+    if (!settled(t?.verificacaoTemperaturas, 'verificacao_temperaturas'))
+      'Verificação de Temperaturas',
     if (!aberturaDone) 'Lista de Abertura',
     if (!relatorioDone) 'Relatório das Listas',
-    if (!(t?.preenchimentoQuadro ?? false)) 'Preenchimento do Quadro',
+    if (!settled(t?.preenchimentoQuadro, 'preenchimento_quadro'))
+      'Preenchimento do Quadro',
     if (!visualDone) 'Lista Visual',
     if (!autoDone) 'Lista Automática',
-    if (!(t?.verificacaoValidades ?? false) && open(ValidadesTurno.manha))
+    if (!settled(t?.verificacaoValidades, 'verificacao_validades') &&
+        open(ValidadesTurno.manha))
       ValidadesTurno.manha.label,
-    if (!(t?.validadesNoite ?? false) && open(ValidadesTurno.noite))
+    if (!settled(t?.validadesNoite, 'validades_noite') &&
+        open(ValidadesTurno.noite))
       ValidadesTurno.noite.label,
-    if (!(t?.kiwiFecho ?? false)) 'Kiwi Fecho',
+    if (!settled(t?.kiwiFecho, 'kiwi_fecho')) 'Kiwi Fecho',
   ];
 }
 

@@ -1,4 +1,5 @@
 import 'local_row.dart';
+import 'not_done.dart';
 
 class DailyTasks with SyncFields {
   DailyTasks();
@@ -38,6 +39,7 @@ class DailyTasks with SyncFields {
       ..kiwiFechoBy = stringOrNull(j['kiwiFechoBy'])
       ..kiwiFechoByNames = stringsFromJson(j['kiwiFechoByNames'])
       ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
+      ..notDone = notDoneMapFromJson(j['notDone'])
       ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
     syncFieldsFromJson(t, j);
     return t;
@@ -82,6 +84,9 @@ class DailyTasks with SyncFields {
   /// backdate flow rather than on this row's own service day.
   List<String> backdatedTaskKeys = [];
 
+  /// Tasks marked "Não feita", by the same keys as [backdatedTaskKeys].
+  Map<String, NotDone> notDone = {};
+
   DateTime? lastUpdatedAt;
 
   @override
@@ -112,6 +117,7 @@ class DailyTasks with SyncFields {
     'kiwiFechoBy': kiwiFechoBy,
     'kiwiFechoByNames': kiwiFechoByNames,
     'backdatedTaskKeys': backdatedTaskKeys,
+    'notDone': notDoneMapToJson(notDone),
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
 }

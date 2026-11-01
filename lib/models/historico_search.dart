@@ -103,6 +103,8 @@ String dailyTasksSearchText(DailyTasks t) => _join([
   ...t.validadesNoiteByNames,
   ...t.kiwiFechoByNames,
   t.kiwiFechoBy,
+  if (t.notDone.isNotEmpty) 'não feita',
+  for (final n in t.notDone.values) ...[...n.byNames, n.reason],
 ]);
 
 /// An Inventário: date, name, code, who, value.

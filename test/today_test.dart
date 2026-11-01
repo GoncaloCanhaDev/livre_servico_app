@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
+import 'package:livre_servico_app/models/not_done.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/models/today.dart';
@@ -107,6 +108,19 @@ void main() {
   });
 
   group('pendingDailyTasks', () {
+    test('a task marked Não feita is not pending', () {
+      final t = DailyTasks()
+        ..serviceDay = DateTime(2026, 10, 8, 5)
+        ..notDone = {
+          'kiwi_abertura': NotDone(byNames: ['Ana'], reason: 'Sem sistema'),
+          'verificacao_validades': NotDone(byNames: ['Ana'], reason: 'x'),
+        };
+      final pending = _pending(t, DateTime(2026, 10, 8, 9));
+      expect(pending, isNot(contains('Kiwi Abertura')));
+      expect(pending, isNot(contains('Validades · Manhã')));
+      expect(pending, contains('Kiwi Fecho'));
+    });
+
     test('without a row everything open is to do', () {
       expect(_pending(null, DateTime(2026, 10, 8, 9)), [
         'Kiwi Abertura',

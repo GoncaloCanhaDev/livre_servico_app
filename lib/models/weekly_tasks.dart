@@ -1,4 +1,5 @@
 import 'local_row.dart';
+import 'not_done.dart';
 import 'opening_list.dart';
 
 class WeeklyTasks with SyncFields {
@@ -21,6 +22,7 @@ class WeeklyTasks with SyncFields {
       ..verificar4aByNames = stringsFromJson(j['verificar4aByNames'])
       ..verificar4aCount = intFromJson(j['verificar4aCount'])
       ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
+      ..notDone = notDoneMapFromJson(j['notDone'])
       ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
     syncFieldsFromJson(w, j);
     return w;
@@ -52,6 +54,9 @@ class WeeklyTasks with SyncFields {
   /// backdate flow rather than on this row's own service week.
   List<String> backdatedTaskKeys = [];
 
+  /// Tasks marked "Não feita", by the same keys as [backdatedTaskKeys].
+  Map<String, NotDone> notDone = {};
+
   DateTime? lastUpdatedAt;
 
   @override
@@ -70,6 +75,7 @@ class WeeklyTasks with SyncFields {
     'verificar4aByNames': verificar4aByNames,
     'verificar4aCount': verificar4aCount,
     'backdatedTaskKeys': backdatedTaskKeys,
+    'notDone': notDoneMapToJson(notDone),
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
 }

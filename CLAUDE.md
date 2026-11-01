@@ -125,6 +125,11 @@ multi-tenant product.
   Validades is split into two windows inside that day, `ValidadesTurno` in
   `lib/models/validades.dart`: Manhã (05–14, the original `verificacaoValidades*` fields) and
   Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open.
+- Each manual task has two markers (`TaskMarkers` in `widgets/task_markers.dart`): ✓ Feita
+  (the old done flags) and ✗ Não feita, a `NotDone` (`lib/models/not_done.dart`: who, reason,
+  when) kept in `DailyTasks.notDone` / `WeeklyTasks.notDone` by task key (the keys of
+  `backdatedTaskKeys`) and `CustomTaskEntry.notDone`. Only one is ever set; a Não feita task
+  isn't pending (`pendingDailyTasks`).
 - The Abertura and Automáticas lists are sent per `ListSection` (Congelados, OPLS, Não
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each

@@ -46,6 +46,7 @@ Future<PeopleAndDay?> pickPeopleAndDay(
   required DateTime initialDay,
   DateTime? firstDay,
   bool Function(DateTime)? selectableDayPredicate,
+  String dayHelpText = 'Quando foi concluída?',
 }) {
   final day = DateTime(initialDay.year, initialDay.month, initialDay.day);
   return showDialog<PeopleAndDay>(
@@ -56,6 +57,7 @@ Future<PeopleAndDay?> pickPeopleAndDay(
       initialDay: day,
       firstDay: firstDay ?? day.subtract(const Duration(days: 90)),
       selectableDayPredicate: selectableDayPredicate,
+      dayHelpText: dayHelpText,
     ),
   );
 }
@@ -67,8 +69,10 @@ class _MultiPersonPickerDialog extends StatefulWidget {
     this.initialDay,
     this.firstDay,
     this.selectableDayPredicate,
+    this.dayHelpText = 'Quando foi concluída?',
   });
   final String title;
+  final String dayHelpText;
   final String? subtitle;
 
   /// When non-null, this dialog is running in "pick people + day" mode and
@@ -142,7 +146,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
       lastDate: DateTime.now(),
       locale: const Locale('pt', 'PT'),
       selectableDayPredicate: widget.selectableDayPredicate,
-      helpText: 'Quando foi concluída?',
+      helpText: widget.dayHelpText,
     );
     if (picked == null) return;
     setState(() {
