@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/settings_service.dart';
 import '../theme.dart';
+import 'widgets/wide_layout.dart';
 
 part 'tutorial/diagrams.dart';
 
@@ -302,53 +303,55 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            LinearProgressIndicator(
-              value: (_page + 1) / tutorialSteps.length,
-              minHeight: 3,
-              backgroundColor: context.hairline,
-            ),
-            Expanded(
-              child: PageView(
-                controller: _pages,
-                onPageChanged: (p) => setState(() => _page = p),
-                children: [for (final s in tutorialSteps) _StepPage(s)],
+      body: ReadableWidth(
+        child: SafeArea(
+          child: Column(
+            children: [
+              LinearProgressIndicator(
+                value: (_page + 1) / tutorialSteps.length,
+                minHeight: 3,
+                backgroundColor: context.hairline,
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _page > 0
-                          ? TextButton(
-                              onPressed: () => _goTo(_page - 1),
-                              child: const Text('Anterior'),
-                            )
-                          : null,
-                    ),
-                  ),
-                  Text(
-                    '${_page + 1} de ${tutorialSteps.length}',
-                    style: TextStyle(color: context.muted),
-                  ),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton(
-                        onPressed: last ? _finish : () => _goTo(_page + 1),
-                        child: Text(last ? 'Concluir' : 'Seguinte'),
+              Expanded(
+                child: PageView(
+                  controller: _pages,
+                  onPageChanged: (p) => setState(() => _page = p),
+                  children: [for (final s in tutorialSteps) _StepPage(s)],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _page > 0
+                            ? TextButton(
+                                onPressed: () => _goTo(_page - 1),
+                                child: const Text('Anterior'),
+                              )
+                            : null,
                       ),
                     ),
-                  ),
-                ],
+                    Text(
+                      '${_page + 1} de ${tutorialSteps.length}',
+                      style: TextStyle(color: context.muted),
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton(
+                          onPressed: last ? _finish : () => _goTo(_page + 1),
+                          child: Text(last ? 'Concluir' : 'Seguinte'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

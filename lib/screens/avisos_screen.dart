@@ -7,6 +7,7 @@ import '../services/aviso_service.dart';
 import '../services/person_service.dart';
 import '../theme.dart';
 import 'aviso_form_screen.dart';
+import 'widgets/wide_layout.dart';
 
 /// The avisos of the last [avisoKeepDays]: those received and, for those
 /// who send them, those sent (with who has seen each).
@@ -195,12 +196,14 @@ class _AvisosScreenState extends State<AvisosScreen> {
                 ),
               )
             : null,
-        body: SafeArea(
-          child: me == null
-              ? _empty('Ligue a sua conta a uma pessoa da loja (Conta).')
-              : TabBarView(
-                  children: [_received(me, now), if (sends) _sent(me, now)],
-                ),
+        body: ReadableWidth(
+          child: SafeArea(
+            child: me == null
+                ? _empty('Ligue a sua conta a uma pessoa da loja (Conta).')
+                : TabBarView(
+                    children: [_received(me, now), if (sends) _sent(me, now)],
+                  ),
+          ),
         ),
       ),
     );

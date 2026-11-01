@@ -7,6 +7,7 @@ import '../services/inventory_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'widgets/person_picker.dart';
+import 'widgets/wide_layout.dart';
 
 // ============================================================================
 // List screen
@@ -158,6 +159,19 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     'Sem inventários registados.',
                     style: TextStyle(color: context.muted),
                   ),
+                ),
+              );
+            }
+            final columns = columnsFor(context, 360, max: 3);
+            if (columns > 1) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                child: GridRows(
+                  columns: columns,
+                  children: [
+                    for (final inv in items)
+                      _InventoryCard(inv: inv, onTap: () => _finishOpen(inv)),
+                  ],
                 ),
               );
             }

@@ -23,6 +23,7 @@ import '../services/visual_list_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
 import 'widgets/person_picker.dart';
+import 'widgets/wide_layout.dart';
 
 part 'historico/common.dart';
 part 'historico/all_tab.dart';
@@ -198,21 +199,24 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
               tabs: tabs,
             ),
           ),
-          body: SafeArea(
-            child: _HistoricoQuery(
-              query: _query,
-              child: const TabBarView(
-                children: [
-                  _AllTab(),
-                  _TrucksTab(),
-                  _OpeningTab(),
-                  _AutoTab(),
-                  _ReportTab(),
-                  _VisualTab(),
-                  _TasksTab(),
-                  _InventoryTab(),
-                  _PedidosTab(),
-                ],
+          body: ReadableWidth(
+            maxWidth: 960,
+            child: SafeArea(
+              child: _HistoricoQuery(
+                query: _query,
+                child: const TabBarView(
+                  children: [
+                    _AllTab(),
+                    _TrucksTab(),
+                    _OpeningTab(),
+                    _AutoTab(),
+                    _ReportTab(),
+                    _VisualTab(),
+                    _TasksTab(),
+                    _InventoryTab(),
+                    _PedidosTab(),
+                  ],
+                ),
               ),
             ),
           ),

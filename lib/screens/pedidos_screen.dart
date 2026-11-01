@@ -6,6 +6,7 @@ import '../models/pedido.dart';
 import '../services/pedido_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'widgets/wide_layout.dart';
 
 // ============================================================================
 // List screen
@@ -87,6 +88,25 @@ class _PedidosScreenState extends State<PedidosScreen> {
               );
             }
             final overdueCount = items.where((p) => p.isOverdue).length;
+            final columns = columnsFor(context, 360, max: 3);
+            if (columns > 1) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (overdueCount > 0) _OverdueBanner(count: overdueCount),
+                    GridRows(
+                      columns: columns,
+                      children: [
+                        for (final p in items)
+                          _PedidoCard(pedido: p, onTap: () => _open(p)),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               itemCount: items.length + (overdueCount > 0 ? 1 : 0),

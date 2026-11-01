@@ -5,6 +5,7 @@ import '../services/account_service.dart';
 import '../services/local_db.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
+import 'widgets/wide_layout.dart';
 
 /// "Quem é você?": the store's people with no account yet. Pops with
 /// `(personId: id, name: null)` for the one picked, `(personId: null, name:
@@ -51,60 +52,62 @@ class _ClaimPersonScreenState extends State<ClaimPersonScreen> {
     ];
     return Scaffold(
       appBar: AppBar(title: const Text('Quem é você?')),
-      body: SafeArea(
-        child: ListView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Escolha-se na lista de pessoas de ${widget.storeName}. '
-                'Depois pode corrigir ou completar os seus dados. Quem já '
-                'tem conta não aparece aqui.',
-                style: TextStyle(color: context.muted),
-              ),
-            ),
-            if (widget.people.length > 8)
+      body: ReadableWidth(
+        child: SafeArea(
+          child: ListView(
+            children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: 'Procurar',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-              ),
-            for (final p in shown)
-              ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: Text(p.name.isEmpty ? 'Sem nome' : p.name),
-                subtitle: Text(
-                  p.number.isEmpty ? 'Sem número' : 'Nº ${p.number}',
-                ),
-                onTap: () =>
-                    Navigator.pop(context, (personId: p.id, name: null)),
-              ),
-            if (widget.people.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  'Não há ninguém sem conta na lista.',
+                  'Escolha-se na lista de pessoas de ${widget.storeName}. '
+                  'Depois pode corrigir ou completar os seus dados. Quem já '
+                  'tem conta não aparece aqui.',
                   style: TextStyle(color: context.muted),
                 ),
               ),
-            if (widget.canAddNew) ...[
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.person_add_alt),
-                title: const Text('Não estou na lista'),
-                subtitle: const Text(
-                  'Quem aprovar o pedido acrescenta-o à lista.',
+              if (widget.people.length > 8)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Procurar',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
                 ),
-                onTap: _notListed,
-              ),
+              for (final p in shown)
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(p.name.isEmpty ? 'Sem nome' : p.name),
+                  subtitle: Text(
+                    p.number.isEmpty ? 'Sem número' : 'Nº ${p.number}',
+                  ),
+                  onTap: () =>
+                      Navigator.pop(context, (personId: p.id, name: null)),
+                ),
+              if (widget.people.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Não há ninguém sem conta na lista.',
+                    style: TextStyle(color: context.muted),
+                  ),
+                ),
+              if (widget.canAddNew) ...[
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.person_add_alt),
+                  title: const Text('Não estou na lista'),
+                  subtitle: const Text(
+                    'Quem aprovar o pedido acrescenta-o à lista.',
+                  ),
+                  onTap: _notListed,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

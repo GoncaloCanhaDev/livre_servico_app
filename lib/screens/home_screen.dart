@@ -3,21 +3,18 @@ import 'package:flutter/material.dart';
 import '../app_version.dart';
 import '../services/account_service.dart';
 import 'avisos_screen.dart';
-import 'historico_screen.dart';
-import 'info_screen.dart';
-import 'inventory_screen.dart';
-import 'pedidos_screen.dart';
-import 'people_screen.dart';
-import 'replenishment_lists_screen.dart';
+import 'destinations.dart';
 import 'settings_screen.dart';
-import 'tasks_screen.dart';
-import 'truck_form_screen.dart';
+import 'tabs/abertura_tab.dart';
+import 'tabs/daily_tasks_tab.dart';
 import 'tutorial_screen.dart';
+import 'widgets/app_frame.dart';
 import 'widgets/avisos_card.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/today_card.dart';
 import 'widgets/transfer_requests_card.dart';
+import 'widgets/wide_layout.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,95 +71,126 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const AvisosCard(),
-              const ProfileRequestCard(),
-              const JoinRequestsCard(),
-              const TransferRequestsCard(),
-              const TutorialCard(),
-              const TodayCard(),
-              GridView.count(
-                // Four across on a computer's wider column.
-                crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                mainAxisExtent: 76,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _NavButton(
-                    icon: Icons.local_shipping,
-                    label: 'Camiões',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const TruckFormScreen(),
-                      ),
+        child: hasSideMenu(context)
+            ? const _Dashboard()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ..._cards,
+                    GridView.count(
+                      // Four across on a computer's wider column.
+                      crossAxisCount: MediaQuery.sizeOf(context).width >= 600
+                          ? 4
+                          : 2,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      mainAxisExtent: 76,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        for (final d in homeDestinations)
+                          _NavButton(
+                            icon: d.icon,
+                            label: d.label,
+                            onPressed: () =>
+                                Navigator.of(context).push(d.route()),
+                          ),
+                      ],
                     ),
-                  ),
-                  _NavButton(
-                    icon: Icons.checklist,
-                    label: 'Listas',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ReplenishmentListsScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.assignment,
-                    label: 'Inventários',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const InventoryScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.task_alt,
-                    label: 'Tarefas',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const TasksScreen()),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.receipt_long,
-                    label: 'Pedidos',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PedidosScreen()),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.info_outline,
-                    label: 'Informações',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const InfoScreen()),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.history,
-                    label: 'Histórico',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const HistoricoScreen(),
-                      ),
-                    ),
-                  ),
-                  _NavButton(
-                    icon: Icons.people,
-                    label: 'Pessoas',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PeopleScreen()),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
+      ),
+    );
+  }
+}
+
+/// Home's cards, from the most urgent: what asks for attention, then the day.
+const _cards = [
+  AvisosCard(),
+  ProfileRequestCard(),
+  JoinRequestsCard(),
+  TransferRequestsCard(),
+  TutorialCard(),
+  TodayCard(),
+];
+
+/// Home beside the computer's side menu (which has the buttons): the cards
+/// on the left, and the day's work open beside them to do right there: the
+/// Diárias and, with room, the Lista de Abertura.
+class _Dashboard extends StatelessWidget {
+  const _Dashboard();
+
+  @override
+  Widget build(BuildContext context) {
+    final abertura = MediaQuery.sizeOf(context).width >= 1180;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _cards,
+              ),
+            ),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _Panel(
+              title: 'Tarefas diárias',
+              open: homeDestinations.firstWhere((d) => d.label == 'Tarefas'),
+              child: const DailyTasksTab(),
+            ),
+          ),
+          if (abertura) ...[
+            const SizedBox(width: 16),
+            Expanded(
+              child: _Panel(
+                title: 'Lista de Abertura',
+                open: homeDestinations.firstWhere((d) => d.label == 'Listas'),
+                child: const AberturaTab(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A part of another page shown on the dashboard, with a link to [open] the
+/// whole page.
+class _Panel extends StatelessWidget {
+  const _Panel({required this.title, required this.open, required this.child});
+
+  final String title;
+  final Destination open;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PanelHeading(
+            title,
+            action: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(open.route()),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: Text('Abrir ${open.label}'),
+            ),
+          ),
+          Expanded(child: child),
+        ],
       ),
     );
   }

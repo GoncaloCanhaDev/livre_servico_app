@@ -184,10 +184,18 @@ multi-tenant product.
   a visitor who isn't signed in,
   `AccountScreen` while signed in without an approved store (`needsAccountFirst`), then
   `HomeScreen` (`lib/screens/home_screen.dart`), the app's entry page on the phone and in the
-  demo; other screens are pushed via `Navigator`. On a wide screen every other page sits in a
-  centred 840 px column (`AppFrame`, `widgets/app_frame.dart`, put around the navigator by
-  `MaterialApp.builder`; pages pushed from the presentation page wrap themselves in it), and
-  Home's buttons go four across; lay out new screens for both widths.
+  demo; other screens are pushed via `Navigator`. `AppFrame` (`widgets/app_frame.dart`, put
+  around the navigator by `MaterialApp.builder`) lays out a computer's window: in the app proper
+  (`menu`, from 1100 px) a side menu with Início and every `Destination`
+  (`lib/screens/destinations.dart`, also Home's buttons; it opens them through
+  `appNavigatorKey`, and `appMenuObserver` highlights the open one by route name) and the page
+  in the rest of the width (`MediaQuery` size is that width, `hasSideMenu` is true); otherwise
+  (Conta first, pages pushed from the presentation page) a centred 840 px column. Beside the
+  menu, Home is a dashboard (the cards, then the Diárias and the Abertura open in panels).
+  `widgets/wide_layout.dart` has the pieces to use the width: `ResponsiveTabs` (tabs on a
+  phone, side by side when `columnsFor` fits them: Tarefas, Listas, a person's page),
+  `GridRows` (Pessoas, Inventários, Pedidos), `ReadableWidth` (forms and text keep 760 px).
+  Lay out new screens for both widths.
 - The demo (`lib/services/demo_mode.dart`): the website at `?demo` (`isDemoUrl`,
   `DemoMode.enter`/`leave` reload the page) starts with `DemoMode.active`: an in-memory
   SQLite (`demo_db_web.dart` / `demo_db_io.dart`, conditional import) and in-memory

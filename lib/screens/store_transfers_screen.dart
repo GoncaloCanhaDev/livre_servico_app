@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../services/account_service.dart';
 import '../theme.dart';
+import 'widgets/wide_layout.dart';
 
 /// "Mudanças de loja", for the app's admin: who asked to move to another
 /// store and where to (their note); choosing the store moves them, with
@@ -94,56 +95,58 @@ class _StoreTransfersScreenState extends State<StoreTransfersScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Mudanças de loja')),
-    body: SafeArea(
-      child: FutureBuilder<List<TransferRequest>>(
-        future: _requests,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(accountErrorText(snap.error!)),
-                  TextButton(
-                    onPressed: _reload,
-                    child: const Text('Tentar outra vez'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final list = snap.data;
-          if (list == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (list.isEmpty) {
-            return Center(
-              child: Text(
-                'Ninguém pediu para mudar de loja.',
-                style: TextStyle(color: context.muted),
-              ),
-            );
-          }
-          final when = DateFormat('d/M', 'pt_PT');
-          return ListView(
-            children: [
-              for (final r in list)
-                ListTile(
-                  leading: const Icon(Icons.swap_horiz),
-                  title: Text(r.personName ?? r.email),
-                  subtitle: Text(
-                    [
-                      '${r.fromStoreName} · ${when.format(r.createdAt)}',
-                      if (r.note.isNotEmpty) r.note,
-                    ].join('\n'),
-                  ),
-                  isThreeLine: r.note.isNotEmpty,
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _move(r),
+    body: ReadableWidth(
+      child: SafeArea(
+        child: FutureBuilder<List<TransferRequest>>(
+          future: _requests,
+          builder: (context, snap) {
+            if (snap.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(accountErrorText(snap.error!)),
+                    TextButton(
+                      onPressed: _reload,
+                      child: const Text('Tentar outra vez'),
+                    ),
+                  ],
                 ),
-            ],
-          );
-        },
+              );
+            }
+            final list = snap.data;
+            if (list == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (list.isEmpty) {
+              return Center(
+                child: Text(
+                  'Ninguém pediu para mudar de loja.',
+                  style: TextStyle(color: context.muted),
+                ),
+              );
+            }
+            final when = DateFormat('d/M', 'pt_PT');
+            return ListView(
+              children: [
+                for (final r in list)
+                  ListTile(
+                    leading: const Icon(Icons.swap_horiz),
+                    title: Text(r.personName ?? r.email),
+                    subtitle: Text(
+                      [
+                        '${r.fromStoreName} · ${when.format(r.createdAt)}',
+                        if (r.note.isNotEmpty) r.note,
+                      ].join('\n'),
+                    ),
+                    isThreeLine: r.note.isNotEmpty,
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _move(r),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     ),
   );

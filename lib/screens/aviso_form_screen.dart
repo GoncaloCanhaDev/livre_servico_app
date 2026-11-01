@@ -7,6 +7,7 @@ import '../services/account_service.dart';
 import '../services/aviso_service.dart';
 import '../services/person_service.dart';
 import 'claim_person_screen.dart';
+import 'widgets/wide_layout.dart';
 
 /// Novo aviso: the text and who it goes to — whole teams the account
 /// reaches and/or people picked one by one (see `recipientsFor`).
@@ -148,61 +149,66 @@ class _AvisoFormScreenState extends State<AvisoFormScreen> {
     final count = _recipients.length;
     return Scaffold(
       appBar: AppBar(title: const Text('Novo aviso')),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _textCtrl,
-                maxLength: avisoMaxLength,
-                minLines: 3,
-                maxLines: 8,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Aviso',
-                  border: OutlineInputBorder(),
+      body: ReadableWidth(
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _textCtrl,
+                  maxLength: avisoMaxLength,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Aviso',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
-              ),
-              const SizedBox(height: 12),
-              const Text('Para', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  for (final t in teamIds)
-                    FilterChip(
-                      label: Text(teamById(t)?.name ?? 'Sem equipa'),
-                      selected: _teamIds.contains(t),
-                      onSelected: (v) => setState(
-                        () => v ? _teamIds.add(t) : _teamIds.remove(t),
+                const SizedBox(height: 12),
+                const Text(
+                  'Para',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final t in teamIds)
+                      FilterChip(
+                        label: Text(teamById(t)?.name ?? 'Sem equipa'),
+                        selected: _teamIds.contains(t),
+                        onSelected: (v) => setState(
+                          () => v ? _teamIds.add(t) : _teamIds.remove(t),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.person_search),
-                label: Text(
-                  _personIds.isEmpty
-                      ? 'Escolher pessoas'
-                      : 'Escolher pessoas (${_personIds.length})',
+                  ],
                 ),
-                onPressed: reachable.isEmpty ? null : _pickPeople,
-              ),
-              const SizedBox(height: 12),
-              Text(count == 1 ? '1 pessoa' : '$count pessoas'),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                icon: const Icon(Icons.send),
-                label: const Text('Enviar'),
-                onPressed: count == 0 || _sending ? null : _send,
-              ),
-            ],
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.person_search),
+                  label: Text(
+                    _personIds.isEmpty
+                        ? 'Escolher pessoas'
+                        : 'Escolher pessoas (${_personIds.length})',
+                  ),
+                  onPressed: reachable.isEmpty ? null : _pickPeople,
+                ),
+                const SizedBox(height: 12),
+                Text(count == 1 ? '1 pessoa' : '$count pessoas'),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.send),
+                  label: const Text('Enviar'),
+                  onPressed: count == 0 || _sending ? null : _send,
+                ),
+              ],
+            ),
           ),
         ),
       ),

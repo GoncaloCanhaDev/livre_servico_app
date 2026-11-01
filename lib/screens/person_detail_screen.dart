@@ -21,6 +21,7 @@ import '../services/truck_service.dart';
 import '../services/visual_list_service.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
+import 'widgets/wide_layout.dart';
 import 'widgets/person_avatar.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
@@ -320,44 +321,26 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     final canEdit = PersonFieldGroup.values.any(
       (g) => access.canEdit(_person, g),
     );
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_person.fullName),
-          actions: [
-            if (access.canRequestUpdate(_person))
-              IconButton(
-                tooltip: 'Pedir atualização',
-                icon: const Icon(Icons.notification_add_outlined),
-                onPressed: _requestUpdate,
-              ),
-            if (canEdit)
-              IconButton(
-                tooltip: 'Editar',
-                icon: const Icon(Icons.edit),
-                onPressed: _openEditForm,
-              ),
-          ],
-          bottom: const TabBar(
-            labelColor: AppColors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: AppColors.white,
-            tabs: [
-              Tab(text: 'Detalhes'),
-              Tab(text: 'Histórico'),
-            ],
+    return ResponsiveTabs(
+      title: Text(_person.fullName),
+      actions: [
+        if (access.canRequestUpdate(_person))
+          IconButton(
+            tooltip: 'Pedir atualização',
+            icon: const Icon(Icons.notification_add_outlined),
+            onPressed: _requestUpdate,
           ),
-        ),
-        body: SafeArea(
-          child: TabBarView(
-            children: [
-              _DetailsTab(person: _person),
-              _historyTab(),
-            ],
+        if (canEdit)
+          IconButton(
+            tooltip: 'Editar',
+            icon: const Icon(Icons.edit),
+            onPressed: _openEditForm,
           ),
-        ),
-      ),
+      ],
+      tabs: [
+        ('Detalhes', _DetailsTab(person: _person)),
+        ('Histórico', _historyTab()),
+      ],
     );
   }
 

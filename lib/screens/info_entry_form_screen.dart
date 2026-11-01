@@ -5,6 +5,7 @@ import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
 import '../services/info_service.dart';
 import 'widgets/photo_viewer.dart';
+import 'widgets/wide_layout.dart';
 
 /// Adds or edits an Informações entry (Título, Descrição) or, with
 /// [contact], a Contactos Úteis contact (Nome, Grupo, Telefone, Email,
@@ -218,83 +219,85 @@ class _InfoEntryFormScreenState extends State<InfoEntryFormScreen> {
           (false, true) => 'Editar entrada',
         }),
       ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _title,
-                autofocus: !editing,
-                textCapitalization: contact
-                    ? TextCapitalization.words
-                    : TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: contact ? 'Nome' : 'Título',
-                  border: const OutlineInputBorder(),
-                ),
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              if (contact) ...[
-                _groupField(),
-                const SizedBox(height: 12),
+      body: ReadableWidth(
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
                 TextFormField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Telefone (opcional)',
-                    border: OutlineInputBorder(),
+                  controller: _title,
+                  autofocus: !editing,
+                  textCapitalization: contact
+                      ? TextCapitalization.words
+                      : TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    labelText: contact ? 'Nome' : 'Título',
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                if (contact) ...[
+                  _groupField(),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Telefone (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextFormField(
+                  controller: _description,
+                  minLines: 3,
+                  maxLines: 10,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    labelText: contact ? 'Nota (opcional)' : 'Descrição',
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Fotos',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 12),
-              ],
-              TextFormField(
-                controller: _description,
-                minLines: 3,
-                maxLines: 10,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: contact ? 'Nota (opcional)' : 'Descrição',
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Fotos',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              if (_photos.isNotEmpty) ...[
-                PhotoStrip(paths: _photos, onRemove: _removePhoto),
                 const SizedBox(height: 8),
-              ],
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: _addPhoto,
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text('Adicionar foto'),
+                if (_photos.isNotEmpty) ...[
+                  PhotoStrip(paths: _photos, onRemove: _removePhoto),
+                  const SizedBox(height: 8),
+                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: _addPhoto,
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: const Text('Adicionar foto'),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save),
-                label: const Text('Guardar'),
-              ),
-            ],
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: _save,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Guardar'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

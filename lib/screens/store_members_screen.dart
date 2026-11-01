@@ -5,6 +5,7 @@ import '../services/account_service.dart';
 import '../services/person_service.dart';
 import '../theme.dart';
 import 'claim_person_screen.dart';
+import 'widgets/wide_layout.dart';
 
 /// Conta → Membros: who is in the store, and which person each account is.
 /// Level 3 and up (Chefe de Secção, Gerência) and the admin approve or
@@ -211,50 +212,52 @@ class _StoreMembersScreenState extends State<StoreMembersScreen> {
             label: const Text('Adicionar'),
           )
         : null,
-    body: SafeArea(
-      child: FutureBuilder<List<StoreMember>>(
-        future: _members,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(accountErrorText(snap.error!)),
-                  TextButton(
-                    onPressed: _reload,
-                    child: const Text('Tentar outra vez'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final members = snap.data;
-          if (members == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 88),
-            children: [
-              if (_manages) const _JoinCodeCard(),
-              _Requests(
-                requests: _requests,
-                onApprove: (r) => _run(() => _account.approveJoin(r.userId)),
-                onRefuse: (r) => _run(() => _account.refuseJoin(r.userId)),
-              ),
-              for (final m in members)
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(m.email),
-                  subtitle: Text(_subtitle(m)),
-                  // Gerência manages the others, never themselves.
-                  onTap: _manages && m.email != _account.email
-                      ? () => _edit(m)
-                      : null,
+    body: ReadableWidth(
+      child: SafeArea(
+        child: FutureBuilder<List<StoreMember>>(
+          future: _members,
+          builder: (context, snap) {
+            if (snap.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(accountErrorText(snap.error!)),
+                    TextButton(
+                      onPressed: _reload,
+                      child: const Text('Tentar outra vez'),
+                    ),
+                  ],
                 ),
-            ],
-          );
-        },
+              );
+            }
+            final members = snap.data;
+            if (members == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 88),
+              children: [
+                if (_manages) const _JoinCodeCard(),
+                _Requests(
+                  requests: _requests,
+                  onApprove: (r) => _run(() => _account.approveJoin(r.userId)),
+                  onRefuse: (r) => _run(() => _account.refuseJoin(r.userId)),
+                ),
+                for (final m in members)
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(m.email),
+                    subtitle: Text(_subtitle(m)),
+                    // Gerência manages the others, never themselves.
+                    onTap: _manages && m.email != _account.email
+                        ? () => _edit(m)
+                        : null,
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     ),
   );

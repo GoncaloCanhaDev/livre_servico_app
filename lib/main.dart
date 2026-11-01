@@ -66,7 +66,7 @@ void main() async {
 }
 
 /// Every page in [AppFrame], but the website's presentation page, which
-/// uses the whole width.
+/// uses the whole width; Home and what opens from it with the side menu.
 class _FramedUnlessPresentation extends StatelessWidget {
   const _FramedUnlessPresentation({required this.child});
 
@@ -77,17 +77,18 @@ class _FramedUnlessPresentation extends StatelessWidget {
     final account = AccountService.instance;
     return ListenableBuilder(
       listenable: account,
-      builder: (_, _) =>
-          firstPage(
-                web: kIsWeb,
-                configured: account.isConfigured,
-                signedIn: account.isSignedIn,
-                store: account.store,
-                demo: DemoMode.active,
-              ) ==
-              FirstPage.presentation
-          ? child
-          : AppFrame(child: child),
+      builder: (_, _) => switch (firstPage(
+        web: kIsWeb,
+        configured: account.isConfigured,
+        signedIn: account.isSignedIn,
+        store: account.store,
+        demo: DemoMode.active,
+      )) {
+        FirstPage.presentation => child,
+        FirstPage.account => AppFrame(child: child),
+        // In the app proper, a computer gets the side menu.
+        FirstPage.home => AppFrame(menu: true, child: child),
+      },
     );
   }
 }
@@ -115,7 +116,8 @@ class LivreServicoApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        navigatorObservers: [_observer],
+        navigatorKey: appNavigatorKey,
+        navigatorObservers: [_observer, appMenuObserver],
         builder: (_, child) {
           final page = _FramedUnlessPresentation(child: child!);
           return DemoMode.active ? DemoBanner(child: page) : page;

@@ -12,6 +12,7 @@ import 'privacy_policy_screen.dart';
 import 'person_detail_screen.dart';
 import 'start_screen.dart';
 import 'store_members_screen.dart';
+import 'widgets/wide_layout.dart';
 
 /// Definições → Conta: sign in to the online database, choose the store
 /// this device syncs with, and see how the sync is going.
@@ -63,7 +64,7 @@ class _AccountScreenState extends State<AccountScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Conta')),
-      body: SafeArea(child: body),
+      body: ReadableWidth(child: SafeArea(child: body)),
     );
   }
 }

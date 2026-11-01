@@ -13,6 +13,7 @@ import '../services/photo_store.dart';
 import '../services/sync_meta.dart';
 import '../theme.dart';
 import 'widgets/edit_lock.dart';
+import 'widgets/wide_layout.dart';
 
 part 'person_form/ausencia_dialog.dart';
 part 'person_form/fields.dart';
@@ -392,290 +393,294 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     };
     return Scaffold(
       appBar: AppBar(title: Text(isEdit ? 'Editar pessoa' : 'Nova pessoa')),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              EditLock(
-                enabled: self,
-                child: _PhotoButton(
-                  photo: switch (_pendingPhoto) {
-                    final bytes? => MemoryImage(bytes),
-                    null when _hasPhotoPreview => PhotoImage(_photoPath!),
-                    null => null,
-                  },
-                  onTap: _pickPhoto,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const _FormHeading('Pessoa'),
-              EditLock(
-                enabled: self,
-                child: TextFormField(
-                  controller: _nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome completo',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
-                ),
-              ),
-              if (personal) ...[
-                const SizedBox(height: 12),
+      body: ReadableWidth(
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
                 EditLock(
-                  enabled: other,
+                  enabled: self,
+                  child: _PhotoButton(
+                    photo: switch (_pendingPhoto) {
+                      final bytes? => MemoryImage(bytes),
+                      null when _hasPhotoPreview => PhotoImage(_photoPath!),
+                      null => null,
+                    },
+                    onTap: _pickPhoto,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const _FormHeading('Pessoa'),
+                EditLock(
+                  enabled: self,
                   child: TextFormField(
-                    controller: _numberCtrl,
-                    keyboardType: TextInputType.number,
+                    controller: _nameCtrl,
+                    textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
-                      labelText: 'Nº colaborador (opcional)',
+                      labelText: 'Nome completo',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
                   ),
                 ),
-              ],
-              const SizedBox(height: 12),
-              EditLock(
-                enabled: self,
-                child: _BirthdayField(
-                  day: _birthDay,
-                  month: _birthMonth,
-                  onDay: (d) => setState(() => _birthDay = d),
-                  onMonth: (m) => setState(() => _birthMonth = m),
-                ),
-              ),
-              const SizedBox(height: 12),
-              EditLock(
-                enabled: self,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Género (opcional)',
-                    helperText: 'Para escrever "Novo" ou "Nova"',
-                    border: OutlineInputBorder(),
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<Genero>(
-                      showSelectedIcon: false,
-                      emptySelectionAllowed: true,
-                      segments: [
-                        for (final g in Genero.values)
-                          ButtonSegment(value: g, label: Text(g.label)),
-                      ],
-                      selected: {?_genero},
-                      onSelectionChanged: (v) =>
-                          setState(() => _genero = v.firstOrNull),
-                    ),
-                  ),
-                ),
-              ),
-              const _FormHeading('Equipa'),
-              EditLock(
-                enabled: role,
-                child: DropdownButtonFormField<String?>(
-                  initialValue: _team,
-                  decoration: const InputDecoration(
-                    labelText: 'Equipa',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final t in _teamChoices)
-                      DropdownMenuItem(
-                        value: t,
-                        child: Text(teamById(t)?.name ?? 'Sem equipa'),
-                      ),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _team = v;
-                    if (!rolesIn(v).contains(_role)) _role = Role.operador;
-                    _turno = teamById(v)?.hasTurnos == true ? Turno.dia : null;
-                  }),
-                ),
-              ),
-              if (teamById(_team) case final team?) ...[
-                if (team.hasTurnos) ...[
+                if (personal) ...[
                   const SizedBox(height: 12),
                   EditLock(
-                    enabled: role,
-                    child: DropdownButtonFormField<Turno>(
-                      key: ValueKey('turno-${team.id}'),
-                      initialValue: _turno,
+                    enabled: other,
+                    child: TextFormField(
+                      controller: _numberCtrl,
+                      keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Turno',
+                        labelText: 'Nº colaborador (opcional)',
                         border: OutlineInputBorder(),
                       ),
-                      items: [
-                        for (final t in Turno.values)
-                          DropdownMenuItem(value: t, child: Text(t.label)),
-                      ],
-                      validator: (v) => v == null ? 'Obrigatório' : null,
-                      onChanged: (v) => setState(() => _turno = v),
                     ),
                   ),
                 ],
-              ],
-              const SizedBox(height: 12),
-              EditLock(
-                enabled: role,
-                child: DropdownButtonFormField<Role>(
-                  key: ValueKey('role-$_team'),
-                  initialValue: _role,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Função',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final r in _roleChoices)
-                      DropdownMenuItem(value: r, child: Text(r.label)),
-                  ],
-                  onChanged: (v) => setState(() => _role = v ?? _role),
-                ),
-              ),
-              const SizedBox(height: 12),
-              EditLock(
-                enabled: role,
-                child: _TagsField(
-                  permanencia: _permanencia,
-                  onPermanencia: (v) => setState(() => _permanencia = v),
-                ),
-              ),
-              if (personal) ...[
-                const _FormHeading('Planeamento'),
+                const SizedBox(height: 12),
                 EditLock(
-                  enabled: other,
+                  enabled: self,
+                  child: _BirthdayField(
+                    day: _birthDay,
+                    month: _birthMonth,
+                    onDay: (d) => setState(() => _birthDay = d),
+                    onMonth: (m) => setState(() => _birthMonth = m),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                EditLock(
+                  enabled: self,
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: 'Horário',
+                      labelText: 'Género (opcional)',
+                      helperText: 'Para escrever "Novo" ou "Nova"',
                       border: OutlineInputBorder(),
                     ),
                     child: SizedBox(
                       width: double.infinity,
-                      child: SegmentedButton<bool>(
+                      child: SegmentedButton<Genero>(
                         showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(
-                            value: false,
-                            label: Text('Tempo inteiro'),
-                          ),
-                          ButtonSegment(
-                            value: true,
-                            label: Text('Tempo parcial'),
-                          ),
+                        emptySelectionAllowed: true,
+                        segments: [
+                          for (final g in Genero.values)
+                            ButtonSegment(value: g, label: Text(g.label)),
                         ],
-                        selected: {_partTime},
+                        selected: {?_genero},
                         onSelectionChanged: (v) =>
-                            setState(() => _partTime = v.first),
+                            setState(() => _genero = v.firstOrNull),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const _FormHeading('Equipa'),
                 EditLock(
-                  enabled: other,
-                  child: TextFormField(
-                    controller: _weeklyHoursCtrl,
-                    keyboardType: TextInputType.number,
+                  enabled: role,
+                  child: DropdownButtonFormField<String?>(
+                    initialValue: _team,
                     decoration: const InputDecoration(
-                      labelText: 'Horas por semana (opcional)',
+                      labelText: 'Equipa',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) {
-                      final text = v?.trim() ?? '';
-                      if (text.isEmpty) return null;
-                      final h = int.tryParse(text);
-                      return h == null || h < 1 || h > 80
-                          ? 'Entre 1 e 80'
+                    items: [
+                      for (final t in _teamChoices)
+                        DropdownMenuItem(
+                          value: t,
+                          child: Text(teamById(t)?.name ?? 'Sem equipa'),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _team = v;
+                      if (!rolesIn(v).contains(_role)) _role = Role.operador;
+                      _turno = teamById(v)?.hasTurnos == true
+                          ? Turno.dia
                           : null;
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                EditLock(
-                  enabled: other,
-                  child: _ShiftField(
-                    start: _shiftStart,
-                    end: _shiftEnd,
-                    onPick: (start) => _pickTime(start: start),
-                    onClear: () => setState(() {
-                      _shiftStart = null;
-                      _shiftEnd = null;
                     }),
                   ),
                 ),
-                const SizedBox(height: 12),
-                EditLock(
-                  enabled: schedule,
-                  child: _FolgasField(
-                    folgas: _folgas,
-                    onToggle: (d, off) => setState(() {
-                      if (off) {
-                        _folgas.add(d);
-                      } else {
-                        _folgas.remove(d);
-                      }
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                EditLock(
-                  enabled: schedule,
-                  child: _AusenciasField(
-                    ausencias: _ausencias,
-                    onEdit: _editAusencia,
-                    onRemove: (a) => setState(() => _ausencias.remove(a)),
-                  ),
-                ),
-                const _FormHeading('Datas'),
-                EditLock(
-                  enabled: other,
-                  child: _DateRow(
-                    label: 'Início na loja',
-                    value: _storeStart,
-                    formatted: _storeStart == null
-                        ? null
-                        : dateFmt.format(_storeStart!),
-                    onTap: () => _pickDate(
-                      'Início na loja',
-                      _storeStart,
-                      (d) => _storeStart = d,
+                if (teamById(_team) case final team?) ...[
+                  if (team.hasTurnos) ...[
+                    const SizedBox(height: 12),
+                    EditLock(
+                      enabled: role,
+                      child: DropdownButtonFormField<Turno>(
+                        key: ValueKey('turno-${team.id}'),
+                        initialValue: _turno,
+                        decoration: const InputDecoration(
+                          labelText: 'Turno',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          for (final t in Turno.values)
+                            DropdownMenuItem(value: t, child: Text(t.label)),
+                        ],
+                        validator: (v) => v == null ? 'Obrigatório' : null,
+                        onChanged: (v) => setState(() => _turno = v),
+                      ),
                     ),
-                    onClear: () => setState(() => _storeStart = null),
+                  ],
+                ],
+                const SizedBox(height: 12),
+                EditLock(
+                  enabled: role,
+                  child: DropdownButtonFormField<Role>(
+                    key: ValueKey('role-$_team'),
+                    initialValue: _role,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Função',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final r in _roleChoices)
+                        DropdownMenuItem(value: r, child: Text(r.label)),
+                    ],
+                    onChanged: (v) => setState(() => _role = v ?? _role),
                   ),
                 ),
                 const SizedBox(height: 12),
                 EditLock(
-                  enabled: other,
-                  child: _DateRow(
-                    label: 'Início no Pingo Doce',
-                    value: _hireDate,
-                    formatted: _hireDate == null
-                        ? null
-                        : dateFmt.format(_hireDate!),
-                    onTap: () => _pickDate(
-                      'Início no Pingo Doce',
-                      _hireDate,
-                      (d) => _hireDate = d,
+                  enabled: role,
+                  child: _TagsField(
+                    permanencia: _permanencia,
+                    onPermanencia: (v) => setState(() => _permanencia = v),
+                  ),
+                ),
+                if (personal) ...[
+                  const _FormHeading('Planeamento'),
+                  EditLock(
+                    enabled: other,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Horário',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<bool>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Tempo inteiro'),
+                            ),
+                            ButtonSegment(
+                              value: true,
+                              label: Text('Tempo parcial'),
+                            ),
+                          ],
+                          selected: {_partTime},
+                          onSelectionChanged: (v) =>
+                              setState(() => _partTime = v.first),
+                        ),
+                      ),
                     ),
-                    onClear: () => setState(() => _hireDate = null),
                   ),
-                ),
-                const _FormHeading('Notas'),
-                EditLock(
-                  enabled: self,
-                  child: _NotesField(
-                    notes: _noteCtrls,
-                    newNote: _newNoteCtrl,
-                    onAdd: _addNote,
-                    onRemove: _removeNote,
+                  const SizedBox(height: 12),
+                  EditLock(
+                    enabled: other,
+                    child: TextFormField(
+                      controller: _weeklyHoursCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Horas por semana (opcional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        final text = v?.trim() ?? '';
+                        if (text.isEmpty) return null;
+                        final h = int.tryParse(text);
+                        return h == null || h < 1 || h > 80
+                            ? 'Entre 1 e 80'
+                            : null;
+                      },
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  EditLock(
+                    enabled: other,
+                    child: _ShiftField(
+                      start: _shiftStart,
+                      end: _shiftEnd,
+                      onPick: (start) => _pickTime(start: start),
+                      onClear: () => setState(() {
+                        _shiftStart = null;
+                        _shiftEnd = null;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  EditLock(
+                    enabled: schedule,
+                    child: _FolgasField(
+                      folgas: _folgas,
+                      onToggle: (d, off) => setState(() {
+                        if (off) {
+                          _folgas.add(d);
+                        } else {
+                          _folgas.remove(d);
+                        }
+                      }),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  EditLock(
+                    enabled: schedule,
+                    child: _AusenciasField(
+                      ausencias: _ausencias,
+                      onEdit: _editAusencia,
+                      onRemove: (a) => setState(() => _ausencias.remove(a)),
+                    ),
+                  ),
+                  const _FormHeading('Datas'),
+                  EditLock(
+                    enabled: other,
+                    child: _DateRow(
+                      label: 'Início na loja',
+                      value: _storeStart,
+                      formatted: _storeStart == null
+                          ? null
+                          : dateFmt.format(_storeStart!),
+                      onTap: () => _pickDate(
+                        'Início na loja',
+                        _storeStart,
+                        (d) => _storeStart = d,
+                      ),
+                      onClear: () => setState(() => _storeStart = null),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  EditLock(
+                    enabled: other,
+                    child: _DateRow(
+                      label: 'Início no Pingo Doce',
+                      value: _hireDate,
+                      formatted: _hireDate == null
+                          ? null
+                          : dateFmt.format(_hireDate!),
+                      onTap: () => _pickDate(
+                        'Início no Pingo Doce',
+                        _hireDate,
+                        (d) => _hireDate = d,
+                      ),
+                      onClear: () => setState(() => _hireDate = null),
+                    ),
+                  ),
+                  const _FormHeading('Notas'),
+                  EditLock(
+                    enabled: self,
+                    child: _NotesField(
+                      notes: _noteCtrls,
+                      newNote: _newNoteCtrl,
+                      onAdd: _addNote,
+                      onRemove: _removeNote,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

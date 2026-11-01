@@ -12,6 +12,7 @@ import '../theme.dart';
 import 'people_sections.dart';
 import 'person_detail_screen.dart';
 import 'person_form_screen.dart';
+import 'widgets/wide_layout.dart';
 import 'widgets/person_avatar.dart';
 import 'widgets/role_badge.dart';
 import 'widgets/section_header.dart';
@@ -297,7 +298,8 @@ class _SearchField extends StatelessWidget {
 }
 
 /// The list view: [sections] from [buildPeopleSections], each under a
-/// "Team (count)" header, with dividers between people.
+/// "Team (count)" header, with dividers between people (in columns on a
+/// computer).
 class _PeopleList extends StatelessWidget {
   const _PeopleList({
     required this.sections,
@@ -317,6 +319,7 @@ class _PeopleList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final columns = columnsFor(context, 380, max: 3);
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
@@ -327,14 +330,20 @@ class _PeopleList extends StatelessWidget {
             onTap: onToggle == null ? null : () => onToggle!(section),
           ),
           if (isOpen(section))
-            for (final (i, p) in section.people.indexed) ...[
-              if (i > 0) const Divider(height: 1),
-              _PersonTile(
-                person: p,
-                onTap: () => onTap(p),
-                onLongPress: () => onLongPress(p),
-              ),
-            ],
+            // In columns on a computer.
+            GridRows(
+              columns: columns,
+              spacing: 0,
+              divided: true,
+              children: [
+                for (final p in section.people)
+                  _PersonTile(
+                    person: p,
+                    onTap: () => onTap(p),
+                    onLongPress: () => onLongPress(p),
+                  ),
+              ],
+            ),
         ],
       ],
     );

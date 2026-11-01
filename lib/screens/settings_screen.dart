@@ -7,6 +7,7 @@ import '../services/settings_service.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'tutorial_screen.dart';
+import 'widgets/wide_layout.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -109,136 +110,145 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final canWipeAll = AccountService.instance.canWipeAll;
     return Scaffold(
       appBar: AppBar(title: const Text('Definições')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _sectionHeader('Conta'),
-            if (!DemoMode.active)
+      body: ReadableWidth(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _sectionHeader('Conta'),
+              if (!DemoMode.active)
+                ListTile(
+                  title: const Text(
+                    'Conta e Sincronização',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(_accountSubtitle()),
+                  trailing: const Icon(Icons.cloud_sync),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  ),
+                ),
               ListTile(
                 title: const Text(
-                  'Conta e Sincronização',
+                  'Política de Privacidade',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(_accountSubtitle()),
-                trailing: const Icon(Icons.cloud_sync),
+                subtitle: const Text('Que dados são guardados e quem os vê.'),
+                trailing: const Icon(Icons.privacy_tip_outlined),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
                 ),
               ),
-            ListTile(
-              title: const Text(
-                'Política de Privacidade',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              ListTile(
+                title: const Text(
+                  'Tutorial',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Como funciona a aplicação, passo a passo.',
+                ),
+                trailing: const Icon(Icons.school_outlined),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                ),
               ),
-              subtitle: const Text('Que dados são guardados e quem os vê.'),
-              trailing: const Icon(Icons.privacy_tip_outlined),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
-              ),
-            ),
-            ListTile(
-              title: const Text(
-                'Tutorial',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('Como funciona a aplicação, passo a passo.'),
-              trailing: const Icon(Icons.school_outlined),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TutorialScreen()),
-              ),
-            ),
-            const Divider(),
-            _sectionHeader('Objetivos Diários'),
-            _goalTile(
-              title: 'Lista Visual',
-              subtitle: 'Itens picados necessários por dia.',
-              unitLabel: 'Itens picados',
-              value: SettingsService.instance.visualGoal,
-              onSave: SettingsService.instance.setVisualGoal,
-            ),
-            const Divider(),
-            _sectionHeader('Aparência'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SegmentedButton<ThemeMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: ThemeMode.system,
-                    label: Text('Automático'),
-                    icon: Icon(Icons.brightness_auto),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.light,
-                    label: Text('Claro'),
-                    icon: Icon(Icons.light_mode),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.dark,
-                    label: Text('Escuro'),
-                    icon: Icon(Icons.dark_mode),
-                  ),
-                ],
-                selected: {SettingsService.instance.themeMode},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) async {
-                  await SettingsService.instance.setThemeMode(s.single);
-                  if (mounted) setState(() {});
-                },
-              ),
-            ),
-            // The demo keeps nothing: no copies in or out, nothing to wipe.
-            if (!DemoMode.active) ...[
               const Divider(),
-              _sectionHeader('Dados'),
-              ListTile(
-                title: const Text(
-                  'Exportar Dados',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'Guarda uma cópia de segurança da base de dados.',
-                ),
-                trailing: const Icon(Icons.upload_file),
-                onTap: _onExport,
+              _sectionHeader('Objetivos Diários'),
+              _goalTile(
+                title: 'Lista Visual',
+                subtitle: 'Itens picados necessários por dia.',
+                unitLabel: 'Itens picados',
+                value: SettingsService.instance.visualGoal,
+                onSave: SettingsService.instance.setVisualGoal,
               ),
-              ListTile(
-                title: const Text(
-                  'Importar Dados',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+              const Divider(),
+              _sectionHeader('Aparência'),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                subtitle: const Text(
-                  'Substitui todos os dados atuais por uma cópia de segurança.',
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      label: Text('Automático'),
+                      icon: Icon(Icons.brightness_auto),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      label: Text('Claro'),
+                      icon: Icon(Icons.light_mode),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      label: Text('Escuro'),
+                      icon: Icon(Icons.dark_mode),
+                    ),
+                  ],
+                  selected: {SettingsService.instance.themeMode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) async {
+                    await SettingsService.instance.setThemeMode(s.single);
+                    if (mounted) setState(() {});
+                  },
                 ),
-                trailing: const Icon(Icons.download),
-                onTap: _onImport,
               ),
-              ListTile(
-                enabled: canWipeAll,
-                title: Text(
-                  'Apagar Todos os Dados',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
+              // The demo keeps nothing: no copies in or out, nothing to wipe.
+              if (!DemoMode.active) ...[
+                const Divider(),
+                _sectionHeader('Dados'),
+                ListTile(
+                  title: const Text(
+                    'Exportar Dados',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Guarda uma cópia de segurança da base de dados.',
+                  ),
+                  trailing: const Icon(Icons.upload_file),
+                  onTap: _onExport,
+                ),
+                ListTile(
+                  title: const Text(
+                    'Importar Dados',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Substitui todos os dados atuais por uma cópia de segurança.',
+                  ),
+                  trailing: const Icon(Icons.download),
+                  onTap: _onImport,
+                ),
+                ListTile(
+                  enabled: canWipeAll,
+                  title: Text(
+                    'Apagar Todos os Dados',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: canWipeAll ? Colors.red : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    canWipeAll
+                        ? 'Remove permanentemente todos os dados da aplicação.'
+                        : 'Só o administrador: apagaria os dados de todos os '
+                              'aparelhos.',
+                  ),
+                  trailing: Icon(
+                    Icons.delete_forever,
                     color: canWipeAll ? Colors.red : null,
                   ),
+                  onTap: _onDeleteAll,
                 ),
-                subtitle: Text(
-                  canWipeAll
-                      ? 'Remove permanentemente todos os dados da aplicação.'
-                      : 'Só o administrador: apagaria os dados de todos os '
-                            'aparelhos.',
-                ),
-                trailing: Icon(
-                  Icons.delete_forever,
-                  color: canWipeAll ? Colors.red : null,
-                ),
-                onTap: _onDeleteAll,
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -10,6 +10,7 @@ import '../theme.dart';
 import 'info_entry_form_screen.dart';
 import 'widgets/phone_linked_text.dart';
 import 'widgets/photo_viewer.dart';
+import 'widgets/wide_layout.dart';
 
 /// One of the store's single-value fields (Horário, Morada, Contactos).
 class _StoreField {
@@ -351,9 +352,8 @@ class _InfoScreenState extends State<InfoScreen> {
       body: SafeArea(
         child: entries == null
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
+            : _InfoColumns(
+                left: [
                   if (entries.where((e) => e.pinned).toList() case final pinned
                       when pinned.isNotEmpty) ...[
                     Card(
@@ -414,7 +414,8 @@ class _InfoScreenState extends State<InfoScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                ],
+                right: [
                   _Section(
                     title: 'Ações de Suporte',
                     icon: Icons.support_agent,
@@ -443,6 +444,47 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 }
 
+/// Informações' sections: one list on a phone, two columns on a computer
+/// (the store's fields and protocols on the left, support and contacts on
+/// the right).
+class _InfoColumns extends StatelessWidget {
+  const _InfoColumns({required this.left, required this.right});
+
+  final List<Widget> left;
+  final List<Widget> right;
+
+  @override
+  Widget build(BuildContext context) {
+    if (columnsFor(context, 440, max: 2) == 1) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [...left, const SizedBox(height: 12), ...right],
+      );
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: left,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Section extends StatelessWidget {
   const _Section({
     required this.title,
@@ -459,6 +501,8 @@ class _Section extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
+        // Open from the start on a computer, where there is room.
+        initiallyExpanded: columnsFor(context, 440, max: 2) > 1,
         leading: Icon(icon, color: context.colors.primary),
         title: Text(
           title,
