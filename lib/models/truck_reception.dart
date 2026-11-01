@@ -86,8 +86,7 @@ class PalletCount {
 
   factory PalletCount.fromJson(Map<String, dynamic> j) => PalletCount()
     ..category =
-        enumFromJson(PalletCategory.values, j['category']) ??
-        PalletCategory.dph
+        enumFromJson(PalletCategory.values, j['category']) ?? PalletCategory.dph
     ..department = stringOrNull(j['department'])
     ..total = intFromJson(j['total'])
     ..mistas = intFromJson(j['mistas']);

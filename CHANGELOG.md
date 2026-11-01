@@ -7,6 +7,23 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.74.0] — 2026-11-01
+
+### Added
+- **Listas 2.0**, a new Home button (and side-menu entry) for the store's new lists. Empty for
+  now ("Em breve"): the new system's lists will go there.
+- **The tutorial is split by section** (Início, Tarefas, Listas 2.0, Listas Legacy, Camiões…),
+  each with a version. When a section changes, its version goes up and Home shows a
+  "Novidades" card ("Mudou: …") with just those pages, as if they had never been seen.
+  Definições → Tutorial (and the side menu) lists the sections, with "Novo" on the changed
+  ones, and "Ver tudo". Whoever finished the old tutorial now sees Início, Listas 2.0 and
+  Listas Legacy again.
+
+### Changed
+- **The old lists moved to Listas Legacy** (Abertura, Automáticas, Relatório Dia Anterior,
+  Visual), unchanged and still used by other stores. The computer's dashboard opens the
+  Abertura panel there.
+
 ## [0.73.0] — 2026-11-01
 
 ### Added

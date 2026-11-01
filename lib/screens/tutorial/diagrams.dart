@@ -451,7 +451,8 @@ class _HomeDiagram extends StatelessWidget {
   Widget build(BuildContext context) {
     const buttons = [
       (Icons.local_shipping, 'Camiões'),
-      (Icons.checklist, 'Listas'),
+      (Icons.checklist, 'Listas 2.0'),
+      (Icons.archive_outlined, 'Listas Legacy'),
       (Icons.assignment, 'Inventários'),
       (Icons.task_alt, 'Tarefas'),
       (Icons.receipt_long, 'Pedidos'),
@@ -719,7 +720,7 @@ class _AberturaDiagram extends StatelessWidget {
           ),
         );
     return _Screen(
-      title: 'Listas',
+      title: 'Listas Legacy',
       children: [
         const Row(
           children: [
@@ -748,6 +749,35 @@ class _AberturaDiagram extends StatelessWidget {
               '20',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Listas2Diagram extends StatelessWidget {
+  const _Listas2Diagram();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Screen(
+      title: 'Listas 2.0',
+      children: [
+        _Box(
+          marker: 1,
+          color: context.tint(Colors.blue),
+          child: const _Line(
+            'Em breve: as novas listas',
+            icon: Icons.checklist,
+          ),
+        ),
+        _gap,
+        const _Box(
+          marker: 2,
+          child: _Line(
+            'Listas Legacy: Abertura, Automáticas…',
+            icon: Icons.archive_outlined,
           ),
         ),
       ],

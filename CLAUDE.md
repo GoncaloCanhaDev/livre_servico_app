@@ -172,7 +172,9 @@ multi-tenant product.
 
 - `lib/screens/*.dart` are mostly `StatefulWidget`s that read/write through the services above;
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
-  auto/report/visual lists (`ReplenishmentListsScreen`) and the daily/weekly/custom tasks
+  auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas Legacy": the old
+  lists, kept for the stores still using them; the new ones go in `Listas2Screen`, "Listas
+  2.0", empty for now) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest
   screens are split with `part` files, so their private widgets stay private:
   `historico_screen.dart` (one part per tab in `lib/screens/historico/`; each tab filters its
@@ -213,7 +215,13 @@ multi-tenant product.
   sketch of a screen (drawn from small widgets in the `lib/screens/tutorial/diagrams.dart` part,
   so it follows the theme) with orange numbered markers matching its steps; Home's
   `TutorialCard` offers it until `SettingsService.tutorialSeen`, and Definições → Tutorial
-  reopens it. A new Home button or a big change to one gets its step updated.
+  reopens it. The steps are grouped in `tutorialSections`, each with an `id` and a `version`
+  (the seen versions are kept per id in `SettingsService.tutorialSeenVersion`): when a part
+  of the app changes, update its steps and raise its section's `version`, so Home's
+  `TutorialCard` offers it again ("Novidades") to everyone who saw it; a new area gets a new
+  section (new id, version 1). Never rename or reuse an id. Definições → Tutorial opens
+  `TutorialIndexScreen` (whole tutorial or one section). A new Home button or a big change to
+  one gets its step updated.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too.

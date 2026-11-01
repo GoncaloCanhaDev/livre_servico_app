@@ -15,9 +15,7 @@ class DailyTasks with SyncFields {
       ..alteracoesPrecoByNames = stringsFromJson(j['alteracoesPrecoByNames'])
       ..alteracoesPrecoCount = intFromJson(j['alteracoesPrecoCount'])
       ..verificacaoTemperaturas = boolFromJson(j['verificacaoTemperaturas'])
-      ..verificacaoTemperaturasBy = stringOrNull(
-        j['verificacaoTemperaturasBy'],
-      )
+      ..verificacaoTemperaturasBy = stringOrNull(j['verificacaoTemperaturasBy'])
       ..verificacaoTemperaturasByNames = stringsFromJson(
         j['verificacaoTemperaturasByNames'],
       )
@@ -48,34 +46,42 @@ class DailyTasks with SyncFields {
   late DateTime serviceDay;
 
   bool kiwiAbertura = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? kiwiAberturaBy;
   List<String> kiwiAberturaByNames = [];
   bool alteracoesPreco = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? alteracoesPrecoBy;
   List<String> alteracoesPrecoByNames = [];
   int alteracoesPrecoCount = 0;
   bool verificacaoTemperaturas = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificacaoTemperaturasBy;
   List<String> verificacaoTemperaturasByNames = [];
   bool preenchimentoQuadro = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? preenchimentoQuadroBy;
   List<String> preenchimentoQuadroByNames = [];
+
   /// Validades · Manhã (05–14, see `ValidadesTurno`); before the split, the
   /// single Verificação de Validades.
   bool verificacaoValidades = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificacaoValidadesBy;
   List<String> verificacaoValidadesByNames = [];
   int verificacaoValidadesCount = 0;
+
   /// Validades · Noite (19–05).
   bool validadesNoite = false;
   List<String> validadesNoiteByNames = [];
   int validadesNoiteCount = 0;
   bool kiwiFecho = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? kiwiFechoBy;
   List<String> kiwiFechoByNames = [];

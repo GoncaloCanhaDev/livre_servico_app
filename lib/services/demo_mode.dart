@@ -41,8 +41,6 @@ class DemoMode {
   /// Reloads the website out of the demo, on the presentation page.
   static Future<void> leave() => _reload(demo: false);
 
-  static Future<void> _reload({required bool demo}) => launchUrl(
-    demoAddress(Uri.base, demo: demo),
-    webOnlyWindowName: '_self',
-  );
+  static Future<void> _reload({required bool demo}) =>
+      launchUrl(demoAddress(Uri.base, demo: demo), webOnlyWindowName: '_self');
 }

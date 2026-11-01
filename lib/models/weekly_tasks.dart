@@ -32,12 +32,14 @@ class WeeklyTasks with SyncFields {
   late DateTime serviceWeek;
 
   bool limpezaMaquinaVoltas = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? limpezaMaquinaVoltasBy;
   List<String> limpezaMaquinaVoltasByNames = [];
 
   /// Itens no Mural — mínimo 10, recomendado 20. Due Tuesday.
   bool verificar1a = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificar1aBy;
   List<String> verificar1aByNames = [];
@@ -45,6 +47,7 @@ class WeeklyTasks with SyncFields {
 
   /// Itens por colocar preço. Due Tuesday.
   bool verificar4a = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? verificar4aBy;
   List<String> verificar4aByNames = [];

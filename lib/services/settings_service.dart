@@ -5,6 +5,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/vasilhame.dart';
 
+/// The tutorial's sections before it had versions (0.74.0), all version 1.
+const _tutorialSectionsBefore074 = [
+  'inicio',
+  'tarefas',
+  'listas',
+  'camioes',
+  'inventarios',
+  'pessoas',
+  'informacoes',
+  'historico',
+  'avisos',
+  'conta',
+];
+
 class SettingsService extends ChangeNotifier {
   SettingsService._();
   static final instance = SettingsService._();
@@ -18,9 +32,11 @@ class SettingsService extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
   ThemeMode get themeMode => _themeMode;
 
-  /// Whether the tutorial was finished or its card on Home closed.
-  bool _tutorialSeen = false;
-  bool get tutorialSeen => _tutorialSeen;
+  /// The version of each tutorial section last seen (finished, skipped or
+  /// its card on Home closed), by section id; 0 when never seen. A section
+  /// whose version went up since shows again on Home.
+  Map<String, int> _tutorialSeen = const {};
+  int tutorialSeenVersion(String section) => _tutorialSeen[section] ?? 0;
 
   /// The vasilhame list offered on a camião, edited through the backup
   /// file's `"vasilhame"` section; [defaultVasilhame] until a non-empty list
@@ -32,7 +48,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _visualGoal = _prefs.getInt('visualGoal') ?? 200;
-    _tutorialSeen = _prefs.getBool('tutorialSeen') ?? false;
+    _tutorialSeen = _readTutorialSeen();
     _themeMode =
         ThemeMode.values.asNameMap()[_prefs.getString('themeMode')] ??
         ThemeMode.light;
@@ -60,10 +76,32 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setTutorialSeen() async {
-    _tutorialSeen = true;
-    await _prefs.setBool('tutorialSeen', true);
+  /// Marks these tutorial sections (id → version) as seen.
+  Future<void> setTutorialSeen(Map<String, int> versions) async {
+    _tutorialSeen = {..._tutorialSeen, ...versions};
+    await _prefs.setString('tutorialSeenVersions', jsonEncode(_tutorialSeen));
     notifyListeners();
+  }
+
+  Map<String, int> _readTutorialSeen() {
+    try {
+      final saved = _prefs.getString('tutorialSeenVersions');
+      if (saved != null) {
+        return {
+          for (final MapEntry(:key, :value)
+              in (jsonDecode(saved) as Map<String, dynamic>).entries)
+            if (value is int) key: value,
+        };
+      }
+    } on FormatException {
+      // Read as never seen.
+    }
+    // Before 0.74.0 the tutorial was one whole, seen or not: seen means
+    // every section it had then, at version 1.
+    if (_prefs.getBool('tutorialSeen') ?? false) {
+      return {for (final id in _tutorialSectionsBefore074) id: 1};
+    }
+    return const {};
   }
 
   Future<void> setVisualGoal(int goal) async {

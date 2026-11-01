@@ -6,13 +6,15 @@ import 'tabs/relatorio_tab.dart';
 import 'tabs/visual_tab.dart';
 import 'widgets/wide_layout.dart';
 
+/// Listas Legacy: the old Abertura, Automáticas, Relatório and Visual lists,
+/// kept for the stores still using them (the new ones are in Listas 2.0).
 class ReplenishmentListsScreen extends StatelessWidget {
   const ReplenishmentListsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const ResponsiveTabs(
-      title: Text('Listas de Reposição'),
+      title: Text('Listas Legacy'),
       scrollable: true,
       minColumnWidth: 360,
       tabs: [

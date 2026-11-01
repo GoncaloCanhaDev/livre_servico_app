@@ -149,12 +149,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
-                  'Como funciona a aplicação, passo a passo.',
+                  'Como funciona a aplicação, passo a passo, por secção.',
                 ),
                 trailing: const Icon(Icons.school_outlined),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const TutorialIndexScreen(),
+                  ),
                 ),
               ),
               const Divider(),

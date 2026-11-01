@@ -4,6 +4,7 @@ import 'avisos_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
+import 'listas2_screen.dart';
 import 'pedidos_screen.dart';
 import 'people_screen.dart';
 import 'replenishment_lists_screen.dart';
@@ -31,9 +32,10 @@ class Destination {
 /// Home's buttons, in order.
 final homeDestinations = [
   Destination(Icons.local_shipping, 'Camiões', () => const TruckFormScreen()),
+  Destination(Icons.checklist, 'Listas 2.0', () => const Listas2Screen()),
   Destination(
-    Icons.checklist,
-    'Listas',
+    Icons.archive_outlined,
+    'Listas Legacy',
     () => const ReplenishmentListsScreen(),
   ),
   Destination(Icons.assignment, 'Inventários', () => const InventoryScreen()),
@@ -59,5 +61,5 @@ final settingsDestination = Destination(
 final tutorialDestination = Destination(
   Icons.school_outlined,
   'Tutorial',
-  () => const TutorialScreen(),
+  () => const TutorialIndexScreen(),
 );

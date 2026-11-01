@@ -5,6 +5,7 @@ import 'package:livre_servico_app/screens/account_screen.dart';
 import 'package:livre_servico_app/screens/historico_screen.dart';
 import 'package:livre_servico_app/screens/info_screen.dart';
 import 'package:livre_servico_app/screens/inventory_screen.dart';
+import 'package:livre_servico_app/screens/listas2_screen.dart';
 import 'package:livre_servico_app/screens/pedidos_screen.dart';
 import 'package:livre_servico_app/screens/people_screen.dart';
 import 'package:livre_servico_app/screens/replenishment_lists_screen.dart';
@@ -28,7 +29,8 @@ void main() {
   // Every screen (and every tab in it) builds on an empty database.
   for (final (label, screen) in [
     ('Camiões', TruckFormScreen),
-    ('Listas', ReplenishmentListsScreen),
+    ('Listas 2.0', Listas2Screen),
+    ('Listas Legacy', ReplenishmentListsScreen),
     ('Inventários', InventoryScreen),
     ('Tarefas', TasksScreen),
     ('Pedidos', PedidosScreen),

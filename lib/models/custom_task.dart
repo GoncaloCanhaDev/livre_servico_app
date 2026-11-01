@@ -69,6 +69,7 @@ class CustomTaskEntry with SyncFields {
   late DateTime periodKey;
 
   bool done = false;
+
   /// Legacy — kept for historical read fallback only, do not write.
   String? doneBy;
   List<String> doneByNames = [];

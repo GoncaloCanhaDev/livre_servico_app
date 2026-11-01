@@ -121,8 +121,9 @@ class OpeningList with SyncFields {
       return false;
     }
     finalizedAt = at;
-    createdByNames = {for (final s in ListSection.values) ...namesOf(s)}
-        .toList();
+    createdByNames = {
+      for (final s in ListSection.values) ...namesOf(s),
+    }.toList();
     return true;
   }
 }
