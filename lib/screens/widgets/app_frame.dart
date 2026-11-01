@@ -6,6 +6,7 @@ import '../../app_version.dart';
 import '../../services/account_service.dart';
 import '../../theme.dart';
 import '../destinations.dart';
+import 'beta_badge.dart';
 
 /// The app's navigator, so the side menu (outside it) can open pages.
 final appNavigatorKey = GlobalKey<NavigatorState>();
@@ -167,13 +168,19 @@ class _SideMenu extends StatelessWidget {
               builder: (_, _) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Livre Serviço',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  const Row(
+                    children: [
+                      Text(
+                        'Livre Serviço',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      BetaBadge(),
+                    ],
                   ),
                   Text(
                     'Companion · v$appVersion',

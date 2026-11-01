@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/demo_mode.dart';
+import 'beta_badge.dart';
 
 /// Across the top of every page in the demo: that nothing is kept, and the
 /// way out (Sair) or in (Criar conta, on the presentation page).
@@ -27,6 +28,8 @@ class DemoBanner extends StatelessWidget {
               padding: const EdgeInsets.only(left: 16, right: 4),
               child: Row(
                 children: [
+                  const BetaBadge(),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Modo demonstração — nada é guardado',

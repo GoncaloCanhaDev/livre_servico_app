@@ -10,6 +10,7 @@ import 'tabs/daily_tasks_tab.dart';
 import 'tutorial_screen.dart';
 import 'widgets/app_frame.dart';
 import 'widgets/avisos_card.dart';
+import 'widgets/beta_badge.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/today_card.dart';
@@ -30,8 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
           children: [
             Flexible(
               child: Text(
@@ -44,6 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'v$appVersion',
               style: TextStyle(fontSize: 12, color: Colors.white70),
             ),
+            SizedBox(width: 8),
+            BetaBadge(),
           ],
         ),
         actions: [

@@ -6,6 +6,7 @@ import '../theme.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'widgets/app_frame.dart';
+import 'widgets/beta_badge.dart';
 
 /// The headlines' typeface (bundled in `assets/fonts`).
 const _display = 'RobotoCondensed';
@@ -136,10 +137,18 @@ class _TopBar extends StatelessWidget {
           Icon(Icons.storefront, color: context.colors.primary),
           const SizedBox(width: 8),
           const Expanded(
-            child: Text(
-              'Livre Serviço Companion',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: _display, fontSize: 20),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    'Livre Serviço Companion',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: _display, fontSize: 20),
+                  ),
+                ),
+                SizedBox(width: 8),
+                BetaBadge(),
+              ],
             ),
           ),
           TextButton(onPressed: onAccount, child: const Text('Entrar')),
