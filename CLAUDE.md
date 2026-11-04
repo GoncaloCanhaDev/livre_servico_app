@@ -22,7 +22,9 @@ multi-tenant product.
 - Run app: `flutter run --dart-define-from-file=.env` (copy `.env.example` to `.env`, which is
   git-ignored, and fill in the Supabase project; without it the app runs signed out, as before)
 - Web: `flutter run -d chrome --dart-define-from-file=.env`; to host, `flutter build web
-  --release --dart-define-from-file=.env` and upload `build/web/` to any static host (e.g.
+  --wasm --release --dart-define-from-file=.env` (WebAssembly with the Skwasm renderer, and
+  the JavaScript build for browsers without it; Skwasm runs single-threaded, since the site
+  sends no COOP/COEP headers) and upload `build/web/` to any static host (e.g.
   `npx wrangler pages deploy build/web --project-name livre-servico` for Cloudflare Pages; the
   live site, livreservico.goncalocanha.com, is on LiteSpeed, which reads `web/.htaccess`: it
   keeps browsers from caching `main.dart.js`, whose name never changes, so upload the hidden
@@ -63,8 +65,11 @@ multi-tenant product.
   matching the versions in `pubspec.lock`: replace them when those packages are upgraded).
   There is no Drift code generation: one table, `local_rows` (collection, id, data), made
   with plain SQL, holds every row as a JSON document, like the online `records`. Each collection (`LocalDb.instance.persons`, `.dailyTasks`...) is read
-  into memory at startup and queried in Dart with `all`, `where`, `firstWhere` and `get`;
-  every read builds new objects, so a row changes nothing until it is `put`. Writes go to
+  into memory at startup (decoded in an isolate from 1000 rows) and queried in Dart with
+  `all`, `where`, `firstWhere` and `get`; every read builds new objects, so a row changes
+  nothing until it is `put`. Each row is also kept decoded once (`_decoded`, dropped on
+  write): `where`/`firstWhere` tests run on those, so a test must never change the row it
+  gets, and only matches are built anew. Prefer `where` to filtering `all()` for one day. Writes go to
   SQLite first; `LocalDb.transaction` groups several.
 - Every persisted model in `lib/models/*.dart` mixes in `SyncFields` (`lib/models/local_row.dart`:
   the local `id`, 0 until saved, and the sync fields) and has `toJson` / `fromJson`. Adding a

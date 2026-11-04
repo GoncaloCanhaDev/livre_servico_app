@@ -184,6 +184,66 @@ void main() {
       expect(found!.id, 1);
     });
 
+    test('where and firstWhere see a row as last saved', () async {
+      final db = LocalDb.instance;
+      final id = await db.persons.put(ana());
+      expect(await db.persons.where((p) => p.fullName == 'Ana Silva'), [
+        isA<Person>(),
+      ]);
+      final p = (await db.persons.get(id))!..fullName = 'Rui';
+      await db.persons.put(p);
+      expect(await db.persons.where((p) => p.fullName == 'Ana Silva'), isEmpty);
+      expect(
+        (await db.persons.firstWhere((p) => p.fullName == 'Rui'))!.id,
+        id,
+      );
+      await db.persons.softDelete(id);
+      expect(await db.persons.firstWhere((p) => p.fullName == 'Rui'), isNull);
+      expect(
+        await db.persons.firstWhere(
+          (p) => p.fullName == 'Rui',
+          includeDeleted: true,
+        ),
+        isNotNull,
+      );
+    });
+
+    test('rows from where are copies', () async {
+      final db = LocalDb.instance;
+      await db.persons.put(ana());
+      final found = (await db.persons.where((p) => true)).single;
+      found.folgas.add(5);
+      found.fullName = 'Changed';
+      final again = (await db.persons.where((p) => true)).single;
+      expect(again.fullName, 'Ana Silva');
+      expect(again.folgas, [1, 3]);
+    });
+
+    test('a long history loads at startup', () async {
+      final dir = await Directory.systemTemp.createTemp('local_db_test');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/db.sqlite');
+
+      await LocalDb.instance.close();
+      await LocalDb.init(executor: NativeDatabase(file));
+      final start = DateTime(2020, 1, 1, 5);
+      await LocalDb.instance.dailyTasks.putAll([
+        for (var i = 0; i < 1500; i++)
+          DailyTasks()..serviceDay = start.add(Duration(days: i)),
+      ]);
+      await LocalDb.instance.close();
+
+      await LocalDb.init(executor: NativeDatabase(file));
+      expect(await LocalDb.instance.dailyTasks.all(), hasLength(1500));
+      final last = start.add(const Duration(days: 1499));
+      expect(
+        (await LocalDb.instance.dailyTasks.firstWhere(
+          (t) => t.serviceDay.isAtSameMomentAs(last),
+        ))!.id,
+        1500,
+      );
+    });
+
     test('a failed transaction leaves nothing behind', () async {
       final db = LocalDb.instance;
       await expectLater(

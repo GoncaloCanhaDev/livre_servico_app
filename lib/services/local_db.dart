@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auto2_entry.dart';
@@ -210,14 +211,22 @@ class LocalDb {
     final rows = await _db
         .customSelect('SELECT collection, id, data FROM local_rows')
         .get();
-    for (final r in rows) {
+    final texts = [for (final r in rows) r.read<String>('data')];
+    // Decoding a long history takes a while: off the main thread, so the
+    // app doesn't freeze meanwhile (on the web, compute runs it in place).
+    final decoded = texts.length < _decodeAwayFrom
+        ? _decodeAll(texts)
+        : await compute(_decodeAll, texts);
+    for (final (i, r) in rows.indexed) {
       final c = byName[r.read<String>('collection')];
-      if (c == null) continue;
-      final data = jsonDecode(r.read<String>('data'));
-      if (data is! Map<String, dynamic>) continue;
+      final data = decoded[i];
+      if (c == null || data is! Map<String, dynamic>) continue;
       c._remember(r.read<int>('id'), data);
     }
   }
+
+  /// From this many rows, [_load] decodes them in a background isolate.
+  static const _decodeAwayFrom = 1000;
 
   // ---- Photos (see PhotoStore) ----
   // Kept in their own table, read one at a time, never all at startup.
@@ -323,19 +332,32 @@ class LocalCollection<T extends SyncedRow> {
   late _Database _db;
 
   final _rows = <int, Map<String, dynamic>>{};
+
+  /// Each row of [_rows] decoded once, the first time a test or a sync key
+  /// needs it, and dropped when the row is written. Never handed out (reads
+  /// still build new objects), so nothing can change it.
+  final _decoded = <int, T>{};
   int _lastId = 0;
 
   void _clearMemory() {
     _rows.clear();
+    _decoded.clear();
     _lastId = 0;
   }
 
   void _remember(int id, Map<String, dynamic> data) {
     _rows[id] = data;
+    _decoded.remove(id);
     if (id > _lastId) _lastId = id;
   }
 
   T _read(int id, Map<String, dynamic> data) => _fromJson(data)..id = id;
+
+  /// The row with [id] (in [_rows]) from [_decoded], for reading only.
+  T _cached(int id) => _decoded[id] ??= _read(id, _rows[id]!);
+
+  bool _visible(Map<String, dynamic> data, bool includeDeleted) =>
+      includeDeleted || data['syncDeletedAt'] == null;
 
   Future<T?> get(int id) async {
     final data = _rows[id];
@@ -346,27 +368,35 @@ class LocalCollection<T extends SyncedRow> {
   /// [includeDeleted].
   Future<List<T>> all({bool includeDeleted = false}) async => [
     for (final e in _rows.entries)
-      if (includeDeleted || e.value['syncDeletedAt'] == null)
-        _read(e.key, e.value),
+      if (_visible(e.value, includeDeleted)) _read(e.key, e.value),
   ];
 
-  /// The rows [test] accepts, in no particular order.
+  /// The rows [test] accepts, in no particular order. [test] sees each row
+  /// as decoded once and must not change it; only the rows it accepts are
+  /// built anew.
   Future<List<T>> where(
     bool Function(T row) test, {
     bool includeDeleted = false,
   }) async => [
-    for (final r in await all(includeDeleted: includeDeleted))
-      if (test(r)) r,
+    for (final e in _rows.entries)
+      if (_visible(e.value, includeDeleted) && test(_cached(e.key)))
+        _read(e.key, e.value),
   ];
 
-  /// The first row [test] accepts (the oldest saved), or null.
+  /// The first row [test] accepts (the oldest saved), or null. [test] must
+  /// not change the row (see [where]).
   Future<T?> firstWhere(
     bool Function(T row) test, {
     bool includeDeleted = false,
   }) async {
-    final rows = await where(test, includeDeleted: includeDeleted);
-    if (rows.isEmpty) return null;
-    return rows.reduce((a, b) => a.id <= b.id ? a : b);
+    int? first;
+    for (final e in _rows.entries) {
+      if (first != null && e.key >= first) continue;
+      if (_visible(e.value, includeDeleted) && test(_cached(e.key))) {
+        first = e.key;
+      }
+    }
+    return first == null ? null : _read(first, _rows[first]!);
   }
 
   /// Saves [row], giving it an id if it has none (0); returns the id.
@@ -406,6 +436,7 @@ class LocalCollection<T extends SyncedRow> {
       }
     });
     _rows.addAll(pending);
+    pending.keys.forEach(_decoded.remove);
   }
 
   /// Tombstones the row with [id] (see [SyncMeta.softDelete]); false when
@@ -438,8 +469,8 @@ class LocalCollection<T extends SyncedRow> {
   /// Removes the rows [test] accepts for good, tombstones included.
   Future<void> deleteWhere(bool Function(T row) test) async {
     final ids = [
-      for (final r in await all(includeDeleted: true))
-        if (test(r)) r.id,
+      for (final id in _rows.keys)
+        if (test(_cached(id))) id,
     ];
     if (ids.isEmpty) return;
     await _db.transaction(() async {
@@ -450,7 +481,10 @@ class LocalCollection<T extends SyncedRow> {
         );
       }
     });
-    ids.forEach(_rows.remove);
+    for (final id in ids) {
+      _rows.remove(id);
+      _decoded.remove(id);
+    }
   }
 
   /// Every row (tombstones included) as JSON, for a backup, as its model
@@ -480,8 +514,8 @@ class LocalCollection<T extends SyncedRow> {
   /// The rows to push, tombstones included: those pending, or with [all]
   /// every row (the first sync with a store).
   Future<List<T>> toPush({bool all = false}) async => [
-    for (final r in await this.all(includeDeleted: true))
-      if (all || !r.synced) r,
+    for (final e in _rows.entries)
+      if (all || !_cached(e.key).synced) _read(e.key, e.value),
   ];
 
   /// Marks [pushed] as synced, unless a row was saved again since it was
@@ -512,7 +546,7 @@ class LocalCollection<T extends SyncedRow> {
   }) async {
     if (rows.isEmpty) return 0;
     final byKey = <String, int>{
-      for (final e in _rows.entries) syncKeyOf(_read(e.key, e.value)): e.key,
+      for (final id in _rows.keys) syncKeyOf(_cached(id)): id,
     };
     final staged = <int, Map<String, dynamic>>{};
     for (final r in rows) {
@@ -547,6 +581,10 @@ class LocalCollection<T extends SyncedRow> {
     return staged.length;
   }
 }
+
+List<Object?> _decodeAll(List<String> texts) => [
+  for (final t in texts) jsonDecode(t),
+];
 
 /// [d]'s local date as "2026-10-30", the online key of a row there is one
 /// of per day or week.

@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.4] — 2026-11-04
+
+### Changed
+- Faster as the history grows: `LocalCollection` keeps each row decoded once (dropped when it
+  is written), so `where`, `firstWhere` and `deleteWhere` test those and only build the rows
+  they return, and sync (`applyRemote`'s key index, `toPush`) no longer decodes every row of a
+  collection on each run. Reads still return new objects.
+- At startup, from 1000 rows the JSON is decoded in a background isolate (`compute`), so the
+  app doesn't freeze while a long history loads.
+- The website is built with `--wasm` (Skwasm renderer, Dart compiled to WebAssembly);
+  browsers that can't run it load the JavaScript build, as before.
+
 ## [0.84.3] — 2026-11-04
 
 ### Changed
