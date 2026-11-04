@@ -19,7 +19,8 @@ void main() {
   });
   tearDown(() => LocalDb.instance.close());
 
-  Uint8List pdf(String title) => simplePdf(title, const ['Linha', '', '# Parte']);
+  Uint8List pdf(String title) =>
+      simplePdf(title, const ['Linha', '', '# Parte']);
 
   test('lists the documents by title', () async {
     service.remote = MemoryDocumentRemote({

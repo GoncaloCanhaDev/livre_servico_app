@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'tabs/automaticas2_tab.dart';
 import 'widgets/wide_layout.dart';
 
-/// The store's new lists: Automáticas and Visível, empty for now.
+/// The store's new lists: Automáticas and Visível (empty for now).
 /// The old ones (Abertura, Automáticas, Relatório, Visual) are in
 /// `ReplenishmentListsScreen` (Listas 1.0), still used by other stores.
 class Listas2Screen extends StatelessWidget {
@@ -15,13 +16,7 @@ class Listas2Screen extends StatelessWidget {
       title: Text('Listas 2.0'),
       minColumnWidth: 360,
       tabs: [
-        (
-          'Automáticas',
-          _ComingSoon(
-            icon: Icons.autorenew,
-            text: 'A nova lista de Automáticas vai aparecer aqui.',
-          ),
-        ),
+        ('Automáticas', Automaticas2Tab()),
         (
           'Visível',
           _ComingSoon(

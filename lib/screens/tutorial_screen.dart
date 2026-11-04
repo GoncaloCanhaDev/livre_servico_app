@@ -130,24 +130,26 @@ const tutorialSections = [
   TutorialSection(
     id: 'listas2',
     title: 'Listas 2.0',
-    version: 1,
+    version: 2,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
         title: 'Listas 2.0',
         intro:
-            'O sistema de listas da loja está a mudar. As novas listas vão ficar '
-            'em Listas 2.0.',
+            'As novas listas da loja. Em Automáticas, cada item tem o seu '
+            'número e marca-se quando estiver feito.',
         diagram: _Listas2Diagram(),
         steps: [
-          'As secções das novas listas: Automáticas e Visível.',
-          'O conteúdo de cada secção, que vai aparecer aqui em breve.',
-          'Listas 1.0: as listas antigas (Abertura, Automáticas, Relatório '
-              'e Visual), para as lojas que ainda as usam.',
+          'As secções: Automáticas e Visível (o Visível vem em breve). As '
+              'listas antigas continuam em Listas 1.0.',
+          'Escreva o número do item e toque no círculo: escolha quem o fez '
+              '(e o dia, se foi noutro) e envie a mensagem por WhatsApp.',
+          'Um item feito mostra quem o fez e a que horas. Toque no visto '
+              'para o desmarcar.',
         ],
         tip:
-            'Quando uma secção da aplicação muda, o seu tutorial volta a '
-            'aparecer no ecrã inicial, em "Novidades".',
+            'Os itens marcados ficam guardados para o dia e aparecem em todos '
+            'os telemóveis da loja.',
       ),
     ],
   ),

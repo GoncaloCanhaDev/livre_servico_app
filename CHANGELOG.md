@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.79.0] — 2026-11-04
+
+### Added
+- Listas 2.0 → Automáticas: twelve items (Mercearia, Pet Food, Bebidas, Vinhos e Destilados,
+  Detergentes, Produtos Pessoais, Bazar, Leite e Ovos, Congelados, OPLS, F&V (NÃO USAR), Não
+  Sortido), each with a number and a check. Ticking one asks who did it (and the day, when it
+  was another), saves it for the service day and offers a WhatsApp message. Tapping the check
+  again unticks it. Each item is its own `Auto2Entry` row, keyed online by item and day, so two
+  phones ticking different items don't overwrite each other. The demo has a few ticked, and
+  the tutorial's Listas 2.0 section (version 2) shows it.
+
 ## [0.78.3] — 2026-11-04
 
 ### Changed

@@ -21,9 +21,8 @@ class DocumentViewerScreen extends StatefulWidget {
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   late Future<Uint8List> _bytes = DocumentService.instance.open(widget.doc);
 
-  void _retry() => setState(
-    () => _bytes = DocumentService.instance.open(widget.doc),
-  );
+  void _retry() =>
+      setState(() => _bytes = DocumentService.instance.open(widget.doc));
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import '../models/auto2_entry.dart';
 import '../models/aviso.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
@@ -266,6 +267,21 @@ Future<String> seedDemo({DateTime? now}) async {
       ..opls = 4
       ..naoPereciveis = 9,
   );
+  final auto2 = [
+    for (final (item, value, at, by) in [
+      (Auto2Item.mercearia, 14, day(0, 7, 40), 'João Pereira'),
+      (Auto2Item.bebidas, 6, day(0, 8, 5), 'Inês Rodrigues'),
+      (Auto2Item.leiteOvos, 3, day(0, 8, 20), 'João Pereira'),
+    ])
+      stamped(
+        Auto2Entry()
+          ..serviceDay = today
+          ..item = item.name
+          ..value = value
+          ..doneAt = at
+          ..byNames = [by],
+      ),
+  ];
   final customTask = stamped(
     CustomTask()
       ..title = 'Repor sacos nas caixas'
@@ -433,6 +449,7 @@ Future<String> seedDemo({DateTime? now}) async {
     await db.dailyTasks.putAll([daily, yesterday]);
     await db.weeklyTasks.put(weekly);
     await db.openingLists.put(opening);
+    await db.auto2Entries.putAll(auto2);
     await db.customTasks.put(customTask);
     await db.truckReceptions.putAll(trucks);
     await db.inventories.putAll(inventories);

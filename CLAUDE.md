@@ -39,7 +39,8 @@ multi-tenant product.
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/claim_person_screen_test.dart`
+  `test/truck_form_screen_test.dart` saves a camião, `test/automaticas2_tab_test.dart` ticks
+  Listas 2.0 items, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
   `test/sync_engine_test.dart` the sync engine between two devices, `test/demo_data_test.dart`
@@ -138,6 +139,10 @@ multi-tenant product.
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
+- Listas 2.0 → Automáticas (`lib/models/auto2_entry.dart`, `Auto2Service`): the items are
+  `Auto2Item` (stored by name; never rename one), each ticked per service day as its own
+  `Auto2Entry` row (number, who, when), keyed online `'<item>/<day>'`. Unticking clears the
+  row rather than deleting it.
 - There are no horários (the monthly shift sheet was removed in 0.61.0, since it showed
   everyone's folgas and absences): who works when comes from each person's `folgas`,
   `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`
@@ -198,7 +203,7 @@ multi-tenant product.
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
   auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas 1.0": the old
   lists, kept for the stores still using them; the new ones go in `Listas2Screen`, "Listas
-  2.0", empty for now) and the daily/weekly/custom tasks
+  2.0": Automáticas, `Automaticas2Tab`, and Visível, empty for now) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest
   screens are split with `part` files, so their private widgets stay private:
   `historico_screen.dart` (one part per tab in `lib/screens/historico/`; each tab filters its

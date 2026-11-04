@@ -7,10 +7,8 @@ import 'dart:typed_data';
 /// An empty line in [lines] is a gap; a line starting with `# ` is a bold
 /// heading.
 Uint8List simplePdf(String title, List<String> lines) {
-  String esc(String s) => s
-      .replaceAll(r'\', r'\\')
-      .replaceAll('(', r'\(')
-      .replaceAll(')', r'\)');
+  String esc(String s) =>
+      s.replaceAll(r'\', r'\\').replaceAll('(', r'\(').replaceAll(')', r'\)');
   final content = StringBuffer()
     ..writeln('BT')
     ..writeln('/F2 20 Tf')

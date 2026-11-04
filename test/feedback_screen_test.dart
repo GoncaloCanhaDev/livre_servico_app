@@ -11,10 +11,7 @@ void main() {
     expect(find.textContaining('inicie sessão'), findsOneWidget);
     await tester.tap(find.text('Sugestão'));
     await tester.pump();
-    expect(
-      find.text('O que gostava que a aplicação fizesse.'),
-      findsOneWidget,
-    );
+    expect(find.text('O que gostava que a aplicação fizesse.'), findsOneWidget);
     final send = tester.widget<ButtonStyleButton>(
       find.ancestor(
         of: find.text('Enviar'),

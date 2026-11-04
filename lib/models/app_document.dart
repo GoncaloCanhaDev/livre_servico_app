@@ -50,9 +50,8 @@ class AppDocument {
 
 /// [docs] by title, ignoring case.
 List<AppDocument> sortedDocuments(Iterable<AppDocument> docs) =>
-    [...docs]..sort(
-      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-    );
+    [...docs]
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
 /// "320 KB", "1,4 MB": a PDF's size for the list.
 String documentSizeLabel(int bytes) {

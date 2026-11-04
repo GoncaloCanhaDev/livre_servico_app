@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/auto2_entry.dart';
 import '../models/auto_list.dart';
 import '../models/aviso.dart';
 import '../models/custom_task.dart';
@@ -49,6 +50,11 @@ class LocalDb {
     syncKey: (l) => dayKey(l.serviceDay),
   );
   final autoLists = LocalCollection<AutoList>._('AutoList', AutoList.fromJson);
+  final auto2Entries = LocalCollection<Auto2Entry>._(
+    'Auto2Entry',
+    Auto2Entry.fromJson,
+    syncKey: (e) => '${e.item}/${dayKey(e.serviceDay)}',
+  );
   final reportLists = LocalCollection<ReportList>._(
     'ReportList',
     ReportList.fromJson,
@@ -99,6 +105,7 @@ class LocalDb {
     truckReceptions,
     openingLists,
     autoLists,
+    auto2Entries,
     reportLists,
     visualLists,
     dailyTasks,
@@ -267,9 +274,7 @@ class LocalDb {
 
   /// Removes the files whose names aren't in [keep].
   Future<void> keepOnlyFiles(Set<String> keep) async {
-    final rows = await _db
-        .customSelect('SELECT name FROM local_files')
-        .get();
+    final rows = await _db.customSelect('SELECT name FROM local_files').get();
     for (final r in rows) {
       final name = r.read<String>('name');
       if (!keep.contains(name)) {

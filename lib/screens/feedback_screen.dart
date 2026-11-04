@@ -53,9 +53,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         platform: _platform,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enviado. Obrigado!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enviado. Obrigado!')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -317,8 +317,14 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen> {
                 ),
               );
             }
-            final open = [for (final f in list) if (f.doneAt == null) f];
-            final done = [for (final f in list) if (f.doneAt != null) f];
+            final open = [
+              for (final f in list)
+                if (f.doneAt == null) f,
+            ];
+            final done = [
+              for (final f in list)
+                if (f.doneAt != null) f,
+            ];
             return RefreshIndicator(
               onRefresh: () async {
                 _reload();
