@@ -935,6 +935,12 @@ class AccountService extends ChangeNotifier {
 /// What went wrong with an account or store action, in words for the
 /// person using the app.
 String accountErrorText(Object e) {
+  // The refuse_blocked_email trigger (a disposable email) makes Supabase Auth
+  // answer this, with status 500, without the trigger's own message.
+  if (e is AuthException &&
+      e.message.toLowerCase().contains('database error saving new user')) {
+    return 'Não são aceites emails temporários. Use outro email.';
+  }
   if (e is AuthRetryableFetchException) return 'Sem ligação à internet.';
   if (e is AuthException) {
     final m = e.message.toLowerCase();

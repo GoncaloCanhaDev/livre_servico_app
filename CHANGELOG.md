@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.1] — 2026-11-04
+
+### Changed
+- Disposable (temporary) emails can't make an account: the `refuse_blocked_email` trigger on
+  `auth.users` (`20261104150000_blocked_email_domains.sql`) refuses a new account, or a change
+  of email, whose domain is in `blocked_email_domains` (en2ch, mailinator, yopmail,
+  guerrillamail, temp-mail... an entry without a dot blocks that name under any ending). The
+  app shows "Não são aceites emails temporários. Use outro email." Existing accounts stay.
+
 ## [0.84.0] — 2026-11-04
 
 ### Added

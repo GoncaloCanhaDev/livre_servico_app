@@ -27,6 +27,16 @@ void main() {
       accountErrorText(AuthRetryableFetchException()),
       'Sem ligação à internet.',
     );
+    expect(
+      accountErrorText(
+        AuthRetryableFetchException(
+          message:
+              '{"code":"unexpected_failure","message":"Database error saving new user"}',
+          statusCode: '500',
+        ),
+      ),
+      'Não são aceites emails temporários. Use outro email.',
+    );
   });
 
   test("the database's own errors are shown as they are", () {

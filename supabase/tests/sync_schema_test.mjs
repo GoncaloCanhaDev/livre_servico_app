@@ -525,6 +525,18 @@ await db.query(`insert into auth.users values ('00000000-0000-0000-0000-00000000
 await db.query(`insert into app_admins values ('00000000-0000-0000-0000-000000000098')`);
 await throws('not another admin', () => as(A, 'select public.admin_delete_account($1)', ['00000000-0000-0000-0000-000000000098']), /administrador/);
 
+// Disposable emails can't make an account, or be changed to.
+await db.exec('reset role');
+await throws('a disposable email', () => db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000099', 'x@en2ch.com')`), /temporários/);
+await throws('under any ending, in capitals', () => db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000099', ' X@Mail.EN2CH.net ')`), /temporários/);
+await throws('a listed domain', () => db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000099', 'x@yopmail.fr')`), /temporários/);
+await throws('nor changed to one', () => db.query(`update auth.users set email = 'h@mailinator.com' where id = $1`, [H]), /temporários/);
+await db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000099', 'x@gmail.com')`);
+ok('other emails make accounts', (await db.query(`select 1 from auth.users where email = 'x@gmail.com'`)).rows.length === 1);
+await db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000097', 'x@noten2ch.com')`);
+ok('a name only containing a blocked one passes', (await db.query(`select 1 from auth.users where email = 'x@noten2ch.com'`)).rows.length === 1);
+await throws('the API cannot read the list', async () => { await db.exec(`set role authenticated`); await db.query(`select * from public.blocked_email_domains`); }, /permission denied/);
+
 await db.exec('reset role');
 await throws('anon cannot send feedback', async () => { await db.exec(`set role anon`); await db.query(`select public.send_feedback('erro', 'x')`); }, /permission denied/);
 await db.exec('reset role');

@@ -370,7 +370,10 @@ files, WhatsApp links, hosting).
   "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every device. The old
   viewer role ("Só leitura") is gone: every approved member edits the everyday data. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
   `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
-  already are.
+  already are. Disposable emails can't sign up: the `refuse_blocked_email` trigger on
+  `auth.users` checks `blocked_email_domains` (edited in the SQL Editor; an entry without a dot
+  blocks that name under any ending), and Auth answers "Database error saving new user", which
+  `accountErrorText` reads as that.
 - Each store has a join code (`store_codes`, read only through `store_join_code` /
   `reset_store_join_code`, Gerência and the admin). With it, `join_store_preview` shows a signed-in
   stranger the store's name and its people with no account yet (name and collaborator number
