@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'auto2_entry.dart';
 import 'auto_list.dart';
 import 'daily_tasks.dart';
 import 'fold_text.dart';
@@ -66,6 +67,10 @@ String autoSearchText(AutoList a) => _join([
   a.naoPereciveis,
   a.total,
 ]);
+
+/// An Automáticas 2.0 send: date, item, who, value.
+String auto2SearchText(Auto2Entry a) =>
+    _join([dateWords(a.createdAt), a.label, ...a.byNames, a.value]);
 
 /// A Relatório: date, who, values.
 String reportSearchText(ReportList r) => _join([

@@ -4,7 +4,7 @@ import '../models/auto2_entry.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
-/// Listas 2.0 → Automáticas: each item's number and tick per service day.
+/// Listas 2.0 → Automáticas: each send of an item, kept in Histórico.
 class Auto2Service extends ChangeNotifier {
   Auto2Service._() {
     LocalDb.listenRemote(const {'Auto2Entry'}, notifyListeners);
@@ -13,51 +13,38 @@ class Auto2Service extends ChangeNotifier {
 
   LocalDb get _db => LocalDb.instance;
 
-  /// The rows of [serviceDay], by [Auto2Item]. An item missing has nothing
-  /// saved yet.
-  Future<Map<Auto2Item, Auto2Entry>> forDay(DateTime serviceDay) async {
-    final rows = await _db.auto2Entries.where(
-      (e) => e.serviceDay.isAtSameMomentAs(serviceDay),
-    );
-    return {for (final e in rows) ?Auto2Item.byName(e.item): e};
-  }
-
-  /// Ticks [item] on [serviceDay] as [value], done by [names]. Returns
-  /// false when it was already ticked there (by another phone, say).
-  Future<bool> complete({
-    required DateTime serviceDay,
+  /// Saves [item] as [value], done by [names]: now, or on [serviceDay]
+  /// (then at noon, flagged backdated) when it was an earlier day.
+  Future<Auto2Entry> send({
     required Auto2Item item,
     required int value,
     required List<String> names,
-    bool backdated = false,
+    DateTime? serviceDay,
   }) async {
-    final existing = (await forDay(serviceDay))[item];
-    if (existing != null && existing.isDone) return false;
-    final row =
-        existing ??
-        (Auto2Entry()
-          ..serviceDay = serviceDay
-          ..item = item.name);
-    row
+    final entry = Auto2Entry()
+      ..createdAt = serviceDay == null
+          ? DateTime.now()
+          : DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
+      ..item = item.name
       ..value = value
-      ..doneAt = DateTime.now()
       ..byNames = names
-      ..backdated = backdated;
-    SyncMeta.stamp(row);
-    await _db.auto2Entries.put(row);
-    notifyListeners();
-    return true;
-  }
-
-  /// Unticks [entry]: its number can be typed again.
-  Future<void> undo(Auto2Entry entry) async {
-    entry
-      ..value = 0
-      ..doneAt = null
-      ..byNames = []
-      ..backdated = false;
+      ..backdated = serviceDay != null;
     SyncMeta.stamp(entry);
     await _db.auto2Entries.put(entry);
     notifyListeners();
+    return entry;
   }
+
+  Future<void> delete(int id) async {
+    if (await _db.auto2Entries.softDelete(id)) notifyListeners();
+  }
+
+  Future<void> deleteAll() async {
+    if (await _db.auto2Entries.softDeleteAll()) notifyListeners();
+  }
+
+  /// Newest first.
+  Future<List<Auto2Entry>> history({bool includeDeleted = false}) async =>
+      (await _db.auto2Entries.all(includeDeleted: includeDeleted))
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 }

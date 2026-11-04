@@ -9,7 +9,7 @@ class _ReportTab extends StatefulWidget {
 class _ReportTabState extends State<_ReportTab>
     with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
   @override
-  int get tabIndex => 4;
+  int get tabIndex => 5;
 
   @override
   bool get wantKeepAlive => true;

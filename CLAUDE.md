@@ -39,7 +39,7 @@ multi-tenant product.
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/automaticas2_tab_test.dart` ticks
+  `test/truck_form_screen_test.dart` saves a camião, `test/automaticas2_tab_test.dart` sends
   Listas 2.0 items, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
@@ -140,9 +140,9 @@ multi-tenant product.
   finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
 - Listas 2.0 → Automáticas (`lib/models/auto2_entry.dart`, `Auto2Service`): the items are
-  `Auto2Item` (stored by name; never rename one), each ticked per service day as its own
-  `Auto2Entry` row (number, who, when), keyed online `'<item>/<day>'`. Unticking clears the
-  row rather than deleting it.
+  `Auto2Item` (stored by name; never rename one). Like 1.0's, each item is sent on its own:
+  every send is one `Auto2Entry` (value, who, `createdAt`) and the field clears. They show in
+  Histórico's Automáticas 2.0 tab and in Tudo, not (yet) in the Diárias.
 - There are no horários (the monthly shift sheet was removed in 0.61.0, since it showed
   everyone's folgas and absences): who works when comes from each person's `folgas`,
   `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`

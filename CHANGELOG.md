@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.80.0] — 2026-11-04
+
+### Changed
+- Listas 2.0 → Automáticas now works like 1.0: the check sends the item (who did it, the day
+  when it was another, WhatsApp), saves it to the history and clears the field for the next
+  one. Nothing stays ticked. `Auto2Entry` is one row per send (`createdAt`, item, value, who),
+  with no per-day key; the 0.79.0 per-day ticks are gone (unreleased).
+
+### Added
+- Histórico → Automáticas 2.0: every item sent, searchable, swipe to resend or delete; also
+  in Tudo.
+
 ## [0.79.0] — 2026-11-04
 
 ### Added

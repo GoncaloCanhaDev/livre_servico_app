@@ -7,12 +7,12 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
-    version: '0.79.0',
+    version: '0.80.0',
     items: [
-      'Listas 2.0 → Automáticas: cada item (Mercearia, Pet Food, Bebidas…) '
-          'tem o seu número e marca-se quando estiver feito, com quem o fez. '
-          'Fica guardado para o dia, em todos os telemóveis da loja, e pode '
-          'enviar a mensagem por WhatsApp.',
+      'Listas 2.0 → Automáticas: Mercearia, Pet Food, Bebidas e os outros '
+          'itens, cada um enviado sozinho quando estiver feito, como em '
+          'Listas 1.0: o número, quem o fez e a mensagem por WhatsApp. Fica '
+          'no Histórico, em Automáticas 2.0.',
     ],
   ),
   (

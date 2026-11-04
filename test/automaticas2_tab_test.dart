@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/models/auto2_entry.dart';
-import 'package:livre_servico_app/models/opening_list.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/screens/widgets/number_row.dart';
 import 'package:livre_servico_app/services/auto2_service.dart';
-import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/person_service.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
 
@@ -28,25 +26,17 @@ void main() {
     await tapAndSettle(tester, find.text('Listas 2.0'));
   }
 
-  Future<void> toTop(WidgetTester tester) async {
-    await tester.drag(find.byType(ListView), const Offset(0, 2000));
-    await settle(tester);
-  }
-
   Finder field(Auto2Item item) => find.descendant(
     of: find.widgetWithText(NumberRow, item.label),
     matching: find.byType(TextField),
   );
 
-  /// Types [value] into [item], ticks it as done by Ana and returns the
+  /// Types [value] into [item], sends it as done by Ana and returns the
   /// WhatsApp message offered, declining to send it.
-  Future<String> tick(WidgetTester tester, Auto2Item item, String value) async {
+  Future<String> send(WidgetTester tester, Auto2Item item, String value) async {
     await tester.enterText(field(item), value);
     await settle(tester);
-    await tapAndSettle(
-      tester,
-      find.byTooltip('Marcar ${item.label} como feita'),
-    );
+    await tapAndSettle(tester, find.byTooltip('Enviar ${item.label}'));
     expect(find.text('Quem fez ${item.label}?'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, 'Procurar'), 'ana');
     await settle(tester);
@@ -68,8 +58,8 @@ void main() {
     return message;
   }
 
-  Future<Map<Auto2Item, Auto2Entry>> today(WidgetTester tester) =>
-      dbCall(tester, () => Auto2Service.instance.forDay(currentServiceDay()));
+  Future<List<Auto2Entry>> history(WidgetTester tester) =>
+      dbCall(tester, Auto2Service.instance.history);
 
   testWidgets('the items show in order', (tester) async {
     await open(tester);
@@ -84,46 +74,34 @@ void main() {
     expect(Auto2Item.values.last.label, 'Não Sortido');
   });
 
-  testWidgets('ticking an item saves it, by whom, and offers WhatsApp', (
+  testWidgets('sending an item saves it to the history and clears it', (
     tester,
   ) async {
     await open(tester);
-    final message = await tick(tester, Auto2Item.mercearia, '12');
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.check_circle).first,
+          )
+          .onPressed,
+      isNull,
+      reason: 'nothing to send while empty',
+    );
+
+    final message = await send(tester, Auto2Item.mercearia, '12');
     expect(message, contains('Automáticas · Mercearia: 12'));
     expect(message, contains('Por: Ana Silva'));
-
-    expect(find.textContaining('Por Ana Silva · '), findsOneWidget);
-    await toTop(tester);
-    expect(find.text('1/12 feitas'), findsOneWidget);
     expect(
-      tester.widget<TextField>(field(Auto2Item.mercearia)).enabled,
-      isFalse,
+      tester.widget<TextField>(field(Auto2Item.mercearia)).controller!.text,
+      '',
     );
 
-    final entries = await today(tester);
-    expect(entries.keys, [Auto2Item.mercearia]);
-    final e = entries[Auto2Item.mercearia]!;
-    expect(e.value, 12);
-    expect(e.byNames, ['Ana Silva']);
-    expect(e.isDone, isTrue);
+    await send(tester, Auto2Item.mercearia, '4');
+    final rows = await history(tester);
     expect(
-      LocalDb.instance.auto2Entries.syncKeyOf(e),
-      'mercearia/${dayKey(currentServiceDay())}',
+      [for (final r in rows) (r.item, r.value, r.byNames.join(', '))],
+      [('mercearia', 4, 'Ana Silva'), ('mercearia', 12, 'Ana Silva')],
     );
-  });
-
-  testWidgets('unticking clears it', (tester) async {
-    await open(tester);
-    await tick(tester, Auto2Item.petFood, '3');
-    await tapAndSettle(tester, find.byTooltip('Desmarcar Pet Food'));
-    await tapAndSettle(tester, find.text('Desmarcar'));
-
-    await toTop(tester);
-    expect(find.text('0/12 feitas'), findsOneWidget);
-    expect(tester.widget<TextField>(field(Auto2Item.petFood)).enabled, isTrue);
-    final e = (await today(tester))[Auto2Item.petFood]!;
-    expect(e.isDone, isFalse);
-    expect(e.value, 0);
-    expect(e.byNames, isEmpty);
+    expect(rows.every((r) => !r.backdated), isTrue);
   });
 }

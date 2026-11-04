@@ -53,7 +53,6 @@ class LocalDb {
   final auto2Entries = LocalCollection<Auto2Entry>._(
     'Auto2Entry',
     Auto2Entry.fromJson,
-    syncKey: (e) => '${e.item}/${dayKey(e.serviceDay)}',
   );
   final reportLists = LocalCollection<ReportList>._(
     'ReportList',

@@ -177,7 +177,7 @@ class _ListsByDay {
   List<AutoList> autos(DateTime day) => _autos[day] ?? const [];
 }
 
-enum _ItemType { truck, opening, auto, report, visual, tasks, inventory }
+enum _ItemType { truck, opening, auto, auto2, report, visual, tasks, inventory }
 
 class _HistoryInitials extends StatelessWidget {
   const _HistoryInitials({required this.names});

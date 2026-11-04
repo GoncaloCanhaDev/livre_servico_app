@@ -27,46 +27,44 @@ enum Auto2Item {
   }
 }
 
-/// One item of Listas 2.0 → Automáticas on one service day: its number and,
-/// once ticked, who did it and when. One row per item and day (keyed online
-/// by both), so two phones ticking different items never overwrite each
-/// other. Unticking clears [doneAt] and keeps the row.
+/// One send of an item of Listas 2.0 → Automáticas: its number, who did
+/// it and when. Each send is its own row, kept in Histórico, like 1.0's
+/// `AutoList`; an item can be sent any number of times a day.
 class Auto2Entry with SyncFields {
   Auto2Entry();
 
   factory Auto2Entry.fromJson(Map<String, dynamic> j) {
     final e = Auto2Entry()
-      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
       ..item = stringOrNull(j['item']) ?? ''
       ..value = intFromJson(j['value'])
-      ..doneAt = dateFromJson(j['doneAt'])
       ..byNames = stringsFromJson(j['byNames'])
       ..backdated = boolFromJson(j['backdated']);
     syncFieldsFromJson(e, j);
     return e;
   }
 
-  late DateTime serviceDay;
+  /// When it was sent; noon of the day chosen for one sent [backdated].
+  late DateTime createdAt;
 
   /// An [Auto2Item.name].
   String item = '';
 
   int value = 0;
-  DateTime? doneAt;
   List<String> byNames = [];
 
-  /// Ticked from a later day, for this one.
+  /// Sent from a later day, for an earlier one.
   bool backdated = false;
 
-  bool get isDone => doneAt != null;
+  /// The item's name, or what was stored for an item no longer listed.
+  String get label => Auto2Item.byName(item)?.label ?? item;
 
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
-    'serviceDay': dateToJson(serviceDay),
+    'createdAt': dateToJson(createdAt),
     'item': item,
     'value': value,
-    'doneAt': dateToJson(doneAt),
     'byNames': byNames,
     'backdated': backdated,
   };

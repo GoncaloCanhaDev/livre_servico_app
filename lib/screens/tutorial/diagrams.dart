@@ -762,49 +762,35 @@ class _Listas2Diagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget item(String name, String value, {String? by, int? marker}) =>
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (by != null)
-                      Text(
-                        by,
-                        style: TextStyle(fontSize: 10, color: context.muted),
-                      ),
-                  ],
-                ),
-              ),
-              _Field(value),
-              const SizedBox(width: 6),
-              Icon(
-                by == null ? Icons.radio_button_unchecked : Icons.check_circle,
-                size: 16,
-                color: by == null ? context.muted : context.colors.primary,
-              ),
-              SizedBox(
-                width: 22,
-                child: marker == null
-                    ? null
-                    : Align(
-                        alignment: Alignment.centerRight,
-                        child: _Marker(marker, size: 15),
-                      ),
-              ),
-            ],
+    Widget item(String name, String value, {int? marker}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            ),
           ),
-        );
+          _Field(value),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.check_circle,
+            size: 16,
+            color: value.isEmpty ? context.faint : context.colors.primary,
+          ),
+          SizedBox(
+            width: 22,
+            child: marker == null
+                ? null
+                : Align(
+                    alignment: Alignment.centerRight,
+                    child: _Marker(marker, size: 15),
+                  ),
+          ),
+        ],
+      ),
+    );
     return _Screen(
       title: 'Listas 2.0',
       children: [
@@ -814,9 +800,9 @@ class _Listas2Diagram extends StatelessWidget {
             _Marker(1),
           ],
         ),
-        item('Mercearia', '14', by: 'Por Ana Costa · 07:40', marker: 3),
-        item('Pet Food', '5'),
-        item('Bebidas', '', marker: 2),
+        item('Mercearia', '14', marker: 2),
+        item('Pet Food', ''),
+        item('Bebidas', '', marker: 3),
         item('Vinhos e Destilados', ''),
       ],
     );

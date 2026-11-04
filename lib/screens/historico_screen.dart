@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/auto2_entry.dart';
 import '../models/auto_list.dart';
 import '../models/daily_tasks.dart';
 import '../models/historico_search.dart';
@@ -12,6 +13,7 @@ import '../models/report_list.dart';
 import '../models/truck_reception.dart';
 import '../models/validades.dart';
 import '../models/visual_list.dart';
+import '../services/auto2_service.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
 import '../services/inventory_service.dart';
@@ -32,6 +34,7 @@ part 'historico/all_tab.dart';
 part 'historico/trucks_tab.dart';
 part 'historico/opening_tab.dart';
 part 'historico/auto_tab.dart';
+part 'historico/auto2_tab.dart';
 part 'historico/report_tab.dart';
 part 'historico/visual_tab.dart';
 part 'historico/tasks_tab.dart';
@@ -71,6 +74,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     'Camiões',
     'Abertura',
     'Automáticas',
+    'Automáticas 2.0',
     'Relatório',
     'Visual',
     'Tarefas',
@@ -93,18 +97,21 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         await AutoListService.instance.deleteAll();
         break;
       case 4:
-        await ReportListService.instance.deleteAll();
+        await Auto2Service.instance.deleteAll();
         break;
       case 5:
-        await VisualListService.instance.deleteAll();
+        await ReportListService.instance.deleteAll();
         break;
       case 6:
-        await DailyTasksService.instance.deleteAll();
+        await VisualListService.instance.deleteAll();
         break;
       case 7:
-        await InventoryService.instance.deleteAll();
+        await DailyTasksService.instance.deleteAll();
         break;
       case 8:
+        await InventoryService.instance.deleteAll();
+        break;
+      case 9:
         await PedidoService.instance.deleteAll();
         break;
     }
@@ -114,6 +121,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     await TruckService.instance.deleteAll();
     await OpeningListService.instance.deleteAll();
     await AutoListService.instance.deleteAll();
+    await Auto2Service.instance.deleteAll();
     await ReportListService.instance.deleteAll();
     await VisualListService.instance.deleteAll();
     await DailyTasksService.instance.deleteAll();
@@ -206,6 +214,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     _TrucksTab(),
                     _OpeningTab(),
                     _AutoTab(),
+                    _Auto2Tab(),
                     _ReportTab(),
                     _VisualTab(),
                     _TasksTab(),

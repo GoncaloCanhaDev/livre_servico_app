@@ -26,6 +26,7 @@ class _AllTabState extends State<_AllTab>
     TruckService.instance.addListener(_changed);
     OpeningListService.instance.addListener(_changed);
     AutoListService.instance.addListener(_changed);
+    Auto2Service.instance.addListener(_changed);
     ReportListService.instance.addListener(_changed);
     VisualListService.instance.addListener(_changed);
     DailyTasksService.instance.addListener(_changed);
@@ -37,6 +38,7 @@ class _AllTabState extends State<_AllTab>
     TruckService.instance.removeListener(_changed);
     OpeningListService.instance.removeListener(_changed);
     AutoListService.instance.removeListener(_changed);
+    Auto2Service.instance.removeListener(_changed);
     ReportListService.instance.removeListener(_changed);
     VisualListService.instance.removeListener(_changed);
     DailyTasksService.instance.removeListener(_changed);
@@ -115,6 +117,22 @@ class _AllTabState extends State<_AllTab>
               'Cong: ${a.congelados} · OPLS: ${a.opls} · NP: ${a.naoPereciveis} · Total: ${a.total}',
           icon: Icons.bolt,
           names: resolveNames(a.createdByNames, a.createdByInitials),
+          deleted: a.syncDeletedAt != null,
+        ),
+      );
+    }
+
+    // Automáticas 2.0, one line per item sent
+    final autos2 = await Auto2Service.instance.history(includeDeleted: true);
+    for (final a in autos2) {
+      items.add(
+        _DayItem(
+          type: _ItemType.auto2,
+          time: a.createdAt,
+          title: '📦 Automáticas · ${a.label}',
+          subtitle: '${a.value}',
+          icon: Icons.bolt,
+          names: a.byNames,
           deleted: a.syncDeletedAt != null,
         ),
       );

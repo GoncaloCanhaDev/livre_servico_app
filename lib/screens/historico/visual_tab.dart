@@ -9,7 +9,7 @@ class _VisualTab extends StatefulWidget {
 class _VisualTabState extends State<_VisualTab>
     with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
   @override
-  int get tabIndex => 5;
+  int get tabIndex => 6;
 
   @override
   bool get wantKeepAlive => true;

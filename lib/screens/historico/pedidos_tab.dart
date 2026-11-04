@@ -9,7 +9,7 @@ class _PedidosTab extends StatefulWidget {
 class _PedidosTabState extends State<_PedidosTab>
     with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
   @override
-  int get tabIndex => 8;
+  int get tabIndex => 9;
 
   late Future<List<Pedido>> _future;
 

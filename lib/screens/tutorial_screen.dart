@@ -136,20 +136,21 @@ const tutorialSections = [
         icon: Icons.checklist,
         title: 'Listas 2.0',
         intro:
-            'As novas listas da loja. Em Automáticas, cada item tem o seu '
-            'número e marca-se quando estiver feito.',
+            'As novas listas da loja. Em Automáticas, cada item é enviado '
+            'sozinho quando estiver feito, como em Listas 1.0.',
         diagram: _Listas2Diagram(),
         steps: [
           'As secções: Automáticas e Visível (o Visível vem em breve). As '
               'listas antigas continuam em Listas 1.0.',
-          'Escreva o número do item e toque no círculo: escolha quem o fez '
-              '(e o dia, se foi noutro) e envie a mensagem por WhatsApp.',
-          'Um item feito mostra quem o fez e a que horas. Toque no visto '
-              'para o desmarcar.',
+          'Escreva o número do item e toque no visto: escolha quem o fez (e '
+              'o dia, se foi noutro) e envie a mensagem por WhatsApp.',
+          'Depois de enviado, o item fica guardado no Histórico '
+              '(Automáticas 2.0) e volta a ficar vazio, pronto para o '
+              'próximo.',
         ],
         tip:
-            'Os itens marcados ficam guardados para o dia e aparecem em todos '
-            'os telemóveis da loja.',
+            'No Histórico, deslize uma linha para a reenviar por WhatsApp ou '
+            'apagar.',
       ),
     ],
   ),

@@ -275,10 +275,9 @@ Future<String> seedDemo({DateTime? now}) async {
     ])
       stamped(
         Auto2Entry()
-          ..serviceDay = today
+          ..createdAt = at
           ..item = item.name
           ..value = value
-          ..doneAt = at
           ..byNames = [by],
       ),
   ];
