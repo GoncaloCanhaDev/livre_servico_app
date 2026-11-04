@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.3] — 2026-11-04
+
+### Changed
+- The website's icons (favicon, `web/icons/`, used when it's installed or added to the home
+  screen) are the phone's: the white tick on green, generated from `assets/icon/icon.png` by
+  `flutter_launcher_icons` (its new `web` section), instead of Flutter's default logo.
+
 ## [0.84.2] — 2026-11-04
 
 ### Changed
