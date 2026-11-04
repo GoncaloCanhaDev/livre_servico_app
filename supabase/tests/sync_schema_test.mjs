@@ -535,6 +535,10 @@ await db.query(`insert into auth.users values ('00000000-0000-0000-0000-00000000
 ok('other emails make accounts', (await db.query(`select 1 from auth.users where email = 'x@gmail.com'`)).rows.length === 1);
 await db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000097', 'x@noten2ch.com')`);
 ok('a name only containing a blocked one passes', (await db.query(`select 1 from auth.users where email = 'x@noten2ch.com'`)).rows.length === 1);
+await db.exec('set role anon');
+ok('the app asks before signing up', (await db.query(`select public.email_domain_blocked('a@EN2CH.com') as b`)).rows[0].b === true
+  && (await db.query(`select public.email_domain_blocked('a@gmail.com') as b`)).rows[0].b === false);
+await db.exec('reset role');
 await throws('the API cannot read the list', async () => { await db.exec(`set role authenticated`); await db.query(`select * from public.blocked_email_domains`); }, /permission denied/);
 
 await db.exec('reset role');

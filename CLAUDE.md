@@ -373,7 +373,8 @@ files, WhatsApp links, hosting).
   already are. Disposable emails can't sign up: the `refuse_blocked_email` trigger on
   `auth.users` checks `blocked_email_domains` (edited in the SQL Editor; an entry without a dot
   blocks that name under any ending), and Auth answers "Database error saving new user", which
-  `accountErrorText` reads as that.
+  `accountErrorText` reads as that. Criar conta asks `email_domain_blocked` first (anon may
+  call it) and shows the "Email não aceite" popup, also on that error.
 - Each store has a join code (`store_codes`, read only through `store_join_code` /
   `reset_store_join_code`, Gerência and the admin). With it, `join_store_preview` shows a signed-in
   stranger the store's name and its people with no account yet (name and collaborator number

@@ -439,6 +439,22 @@ class AccountService extends ChangeNotifier {
     return true;
   }
 
+  /// Whether [email] is a disposable one the server refuses
+  /// (`email_domain_blocked`). False when it can't ask: the server's
+  /// refuse_blocked_email trigger still refuses the account then.
+  Future<bool> emailBlocked(String email) async {
+    if (!isConfigured) return false;
+    try {
+      return await _api.rpc(
+            'email_domain_blocked',
+            params: {'p_email': email.trim()},
+          ) ==
+          true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _signedIn() async {
     email = _api.auth.currentUser?.email;
     if (email case final e?) await _prefs.setString(_emailKey, e);
@@ -932,15 +948,20 @@ class AccountService extends ChangeNotifier {
       .eq('user_id', userId);
 }
 
+/// Shown when an account is made with a disposable email.
+const blockedEmailText = 'Não são aceites emails temporários. Use outro email.';
+
+/// Whether [e] is the server refusing a disposable email: the
+/// refuse_blocked_email trigger makes Supabase Auth answer this, with status
+/// 500, without the trigger's own message.
+bool isBlockedEmailError(Object e) =>
+    e is AuthException &&
+    e.message.toLowerCase().contains('database error saving new user');
+
 /// What went wrong with an account or store action, in words for the
 /// person using the app.
 String accountErrorText(Object e) {
-  // The refuse_blocked_email trigger (a disposable email) makes Supabase Auth
-  // answer this, with status 500, without the trigger's own message.
-  if (e is AuthException &&
-      e.message.toLowerCase().contains('database error saving new user')) {
-    return 'Não são aceites emails temporários. Use outro email.';
-  }
+  if (isBlockedEmailError(e)) return blockedEmailText;
   if (e is AuthRetryableFetchException) return 'Sem ligação à internet.';
   if (e is AuthException) {
     final m = e.message.toLowerCase();

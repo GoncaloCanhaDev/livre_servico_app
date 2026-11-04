@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.2] — 2026-11-04
+
+### Changed
+- Criar conta with a disposable email shows an "Email não aceite" popup, before the Política de
+  Privacidade: the app asks `email_domain_blocked` (callable by anon since
+  `20261104160000_email_domain_blocked_api.sql`; a yes or no, the list stays unreadable). When
+  it can't ask, the server's refusal shows the same popup.
+
 ## [0.84.1] — 2026-11-04
 
 ### Changed

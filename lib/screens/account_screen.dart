@@ -92,6 +92,10 @@ class _Note extends StatelessWidget {
 }
 
 void _showError(BuildContext context, Object e) {
+  if (isBlockedEmailError(e)) {
+    _showBlockedEmail(context);
+    return;
+  }
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(accountErrorText(e)),
@@ -99,6 +103,22 @@ void _showError(BuildContext context, Object e) {
     ),
   );
 }
+
+/// The popup for an account made with a disposable email.
+Future<void> _showBlockedEmail(BuildContext context) => showDialog<void>(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    icon: const Icon(Icons.block),
+    title: const Text('Email não aceite'),
+    content: const Text(
+      'Não são aceites emails temporários (descartáveis). Crie a conta com '
+      'um email pessoal ou do trabalho que vá continuar a usar.',
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+    ],
+  ),
+);
 
 class _SignInForm extends StatefulWidget {
   const _SignInForm();
@@ -143,6 +163,14 @@ class _SignInFormState extends State<_SignInForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Preencha o email e a palavra-passe.')),
       );
+      return;
+    }
+    setState(() => _busy = true);
+    final blocked = await AccountService.instance.emailBlocked(_email.text);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (blocked) {
+      await _showBlockedEmail(context);
       return;
     }
     final accepted = await Navigator.push<bool>(
