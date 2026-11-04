@@ -37,55 +37,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
-  Widget _goalTile({
-    required String title,
-    required String subtitle,
-    required String unitLabel,
-    required int value,
-    required Future<void> Function(int) onSave,
-  }) {
-    return ListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle),
-      trailing: Text(
-        value.toString(),
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-      onTap: () async {
-        final ctrl = TextEditingController(text: value.toString());
-        final val = await showDialog<int>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('Objetivo: $title'),
-            content: TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: unitLabel,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () =>
-                    Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
-                child: const Text('Guardar'),
-              ),
-            ],
-          ),
-        );
-        if (val != null && val > 0) {
-          await onSave(val);
-        }
-      },
-    );
-  }
-
   Widget _sectionHeader(String label) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
@@ -193,15 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     MaterialPageRoute(builder: (_) => const AdminScreen()),
                   ),
                 ),
-              const Divider(),
-              _sectionHeader('Objetivos Diários'),
-              _goalTile(
-                title: 'Lista Visual',
-                subtitle: 'Itens picados necessários por dia.',
-                unitLabel: 'Itens picados',
-                value: SettingsService.instance.visualGoal,
-                onSave: SettingsService.instance.setVisualGoal,
-              ),
               const Divider(),
               _sectionHeader('Aparência'),
               Padding(

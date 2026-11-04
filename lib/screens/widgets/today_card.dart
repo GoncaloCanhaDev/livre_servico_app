@@ -11,15 +11,10 @@ import '../../models/opening_list.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
 import '../../models/truck_reception.dart';
-import '../../services/auto_list_service.dart';
 import '../../services/daily_tasks_service.dart';
-import '../../services/opening_list_service.dart';
 import '../../services/pedido_service.dart';
 import '../../services/person_service.dart';
-import '../../services/report_list_service.dart';
-import '../../services/settings_service.dart';
 import '../../services/truck_service.dart';
-import '../../services/visual_list_service.dart';
 import '../../theme.dart';
 import '../historico_screen.dart';
 import '../pedidos_screen.dart';
@@ -71,10 +66,6 @@ class _DayRows {
     required this.day,
     required this.everyone,
     required this.tasks,
-    required this.aberturaDone,
-    required this.relatorioDone,
-    required this.visualDone,
-    required this.autoDone,
     required this.pedidos,
     required this.trucks,
   });
@@ -82,10 +73,6 @@ class _DayRows {
   final DateTime day;
   final List<Person> everyone;
   final DailyTasks? tasks;
-  final bool aberturaDone;
-  final bool relatorioDone;
-  final bool visualDone;
-  final bool autoDone;
   final List<Pedido> pedidos;
   final List<TruckReception> trucks;
 }
@@ -98,10 +85,6 @@ class _TodayCardState extends State<TodayCard> {
   List<Listenable> get _sources => [
     PersonService.instance,
     DailyTasksService.instance,
-    OpeningListService.instance,
-    ReportListService.instance,
-    VisualListService.instance,
-    AutoListService.instance,
     PedidoService.instance,
     TruckService.instance,
   ];
@@ -136,23 +119,10 @@ class _TodayCardState extends State<TodayCard> {
   /// Reads today's rows, then [_recount]s.
   Future<void> _reload() async {
     final day = currentServiceDay();
-    final visual = await VisualListService.instance.entriesForServiceDay(day);
     final rows = _DayRows(
       day: day,
       everyone: await PersonService.instance.all(),
       tasks: await DailyTasksService.instance.find(day),
-      aberturaDone: (await OpeningListService.instance.entriesForServiceDay(
-        day,
-      )).any((o) => o.isFinalized),
-      relatorioDone: (await ReportListService.instance.entriesForServiceDay(
-        day,
-      )).any((r) => r.isFinalized),
-      visualDone:
-          visual.fold(0, (s, e) => s + e.itensPicados) >=
-          SettingsService.instance.visualGoal,
-      autoDone: (await AutoListService.instance.entriesForServiceDay(
-        day,
-      )).isNotEmpty,
       pedidos: await PedidoService.instance.openWithDate(),
       trucks: await TruckService.instance.forServiceDay(day),
     );
@@ -178,14 +148,7 @@ class _TodayCardState extends State<TodayCard> {
         hasShifts: people.any((p) => shiftSpanOn(p, day) != null),
         onShift: onShiftAt(people, now),
         counts: shiftCountsOn(people, day),
-        pending: pendingDailyTasks(
-          rows.tasks,
-          aberturaDone: rows.aberturaDone,
-          relatorioDone: rows.relatorioDone,
-          visualDone: rows.visualDone,
-          autoDone: rows.autoDone,
-          now: now,
-        ),
+        pending: pendingDailyTasks(rows.tasks, now: now),
         overduePedidos: rows.pedidos.where((p) => p.isOverdue).length,
         trucks: rows.trucks.length,
         pallets: rows.trucks.fold(0, (s, t) => s + t.totalPallets),

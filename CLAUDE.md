@@ -137,7 +137,7 @@ multi-tenant product.
   isn't pending (`pendingDailyTasks`).
 - The Abertura and Automáticas lists are sent per `ListSection` (Congelados, OPLS, Não
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
-  finalizes it (and so ticks Lista de Abertura in Diárias) once all three are sent. Each
+  finalizes it once all three are sent. Each
   Automáticas send saves an `AutoList` holding only that section.
 - Listas 2.0 → Automáticas (`lib/models/auto2_entry.dart`, `Auto2Service`): the items are
   `Auto2Item` (stored by name; never rename one). Like 1.0's, each item is sent on its own:
@@ -192,7 +192,7 @@ multi-tenant product.
   Feature services extending `ChangeNotifier` call `notifyListeners()` after mutations; screens
   subscribe via `addListener`/`removeListener` in `initState`/`dispose` rather than a state
   management package — there is no Provider/Riverpod/Bloc in this codebase.
-- `SettingsService` wraps `shared_preferences` for simple user prefs (goals) and is initialized
+- `SettingsService` wraps `shared_preferences` for simple user prefs and is initialized
   in `main()` before the app runs. There are no phone notifications or reminders; avisos (below)
   live inside the app.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
@@ -257,7 +257,10 @@ multi-tenant product.
   one gets its step updated.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
-  must be added to `pendingDailyTasks` too.
+  must be added to `pendingDailyTasks` too. The Diárias are only the manual tasks: the lists
+  (Abertura, Relatório, Visual, Automáticas) no longer tick a daily task (since 0.82.0), so
+  the Lista Visual goal is gone from Definições (`SettingsService.visualGoal` is kept only so
+  backups still carry it).
 - After an update, Home shows the "Novidades" popup once (`showReleaseNotesIfNew`,
   `widgets/release_notes_dialog.dart`): the entries of `releaseNotes`
   (`lib/models/release_notes.dart`, plain Portuguese for the people using the app, not the
@@ -348,7 +351,7 @@ files, WhatsApp links, hosting).
   three seconds after a save (`LocalDb.localWrites`), a second after Realtime says the store's
   `records` changed (`SyncRemote.changes`: a Supabase Realtime channel filtered by store; the
   event only triggers the usual sync, so it needs no merge logic of its own), when the app
-  comes back to the foreground, and every minute in case an event was missed. Settings in shared preferences (vasilhame, goals) don't sync.
+  comes back to the foreground, and every minute in case an event was missed. Settings in shared preferences (vasilhame) don't sync.
 - `AccountService` (`lib/services/account_service.dart`) is the optional login: email and
   password on the `supabase` package (not `supabase_flutter`, so no extra plugins; the session
   is kept in shared preferences, implicit auth flow), the chosen store (`account_store` pref)

@@ -526,7 +526,7 @@ class _TodayDiagram extends StatelessWidget {
                 ),
                 const _Line('     Hoje: 9 de dia · 6 de noite'),
                 _Line(
-                  'Por fazer (3) · Kiwi Fecho, Lista Visual…',
+                  'Por fazer (3) · Kiwi Fecho, Preenchimento do Quadro…',
                   icon: Icons.task_alt,
                   trailing: const _Marker(2, size: 15),
                 ),

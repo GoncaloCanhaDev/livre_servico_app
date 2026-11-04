@@ -15,14 +15,8 @@ class _TasksTabState extends State<_TasksTab>
   bool get wantKeepAlive => true;
   late Future<List<_TasksRow>> _future;
 
-  /// The Diárias and the lists that tick some of them.
-  List<Listenable> get _sources => [
-    DailyTasksService.instance,
-    OpeningListService.instance,
-    ReportListService.instance,
-    VisualListService.instance,
-    AutoListService.instance,
-  ];
+  /// The Diárias.
+  List<Listenable> get _sources => [DailyTasksService.instance];
 
   @override
   void initState() {
@@ -50,46 +44,7 @@ class _TasksTabState extends State<_TasksTab>
 
   Future<List<_TasksRow>> _load() async {
     final all = await DailyTasksService.instance.history(includeDeleted: true);
-    final lists = await _ListsByDay.load();
-    final rows = <_TasksRow>[];
-    for (final t in all) {
-      final day = t.serviceDay;
-      final openingEntries = lists.openings(day);
-      final aberturaDone = openingEntries.any((o) => o.isFinalized);
-      final aberturaBackdated = openingEntries.any(
-        (o) => o.isFinalized && o.backdated,
-      );
-      final reportEntries = lists.reports(day);
-      final relatorioDone = reportEntries.any((r) => r.isFinalized);
-      final relatorioBackdated = reportEntries.any(
-        (r) => r.isFinalized && r.backdated,
-      );
-      final visualEntries = lists.visuals(day);
-      final visualItens = visualEntries.fold<int>(
-        0,
-        (s, e) => s + e.itensPicados,
-      );
-      final visualDone = visualItens >= SettingsService.instance.visualGoal;
-      final visualBackdated = visualEntries.any((e) => e.backdated);
-      final autoEntries = lists.autos(day);
-      final autoDone = autoEntries.isNotEmpty;
-      final autoBackdated = autoEntries.any((e) => e.backdated);
-      rows.add(
-        _TasksRow(
-          tasks: t,
-          aberturaDone: aberturaDone,
-          aberturaBackdated: aberturaBackdated,
-          relatorioDone: relatorioDone,
-          relatorioBackdated: relatorioBackdated,
-          visualDone: visualDone,
-          visualItens: visualItens,
-          visualBackdated: visualBackdated,
-          autoDone: autoDone,
-          autoCount: autoEntries.length,
-          autoBackdated: autoBackdated,
-        ),
-      );
-    }
+    final rows = [for (final t in all) _TasksRow(tasks: t)];
     return rows;
   }
 
@@ -149,16 +104,6 @@ class _TasksTabState extends State<_TasksTab>
                 ),
               ),
               _TaskEntry(
-                'Lista de Abertura',
-                r.aberturaDone,
-                backdated: r.aberturaBackdated,
-              ),
-              _TaskEntry(
-                'Relatório das Listas',
-                r.relatorioDone,
-                backdated: r.relatorioBackdated,
-              ),
-              _TaskEntry(
                 'Preenchimento do Quadro',
                 notDone: t.notDone['preenchimento_quadro'],
                 t.preenchimentoQuadro,
@@ -167,16 +112,6 @@ class _TasksTabState extends State<_TasksTab>
                   t.preenchimentoQuadroBy,
                 ),
                 backdated: t.backdatedTaskKeys.contains('preenchimento_quadro'),
-              ),
-              _TaskEntry(
-                'Lista Visual (${r.visualItens}/${SettingsService.instance.visualGoal})',
-                r.visualDone,
-                backdated: r.visualBackdated,
-              ),
-              _TaskEntry(
-                'Lista Automática (${r.autoCount})',
-                r.autoDone,
-                backdated: r.autoBackdated,
               ),
               _TaskEntry(
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})',
@@ -292,30 +227,8 @@ class _TaskEntry {
 }
 
 class _TasksRow {
-  _TasksRow({
-    required this.tasks,
-    required this.aberturaDone,
-    required this.aberturaBackdated,
-    required this.relatorioDone,
-    required this.relatorioBackdated,
-    required this.visualDone,
-    required this.visualItens,
-    required this.visualBackdated,
-    required this.autoDone,
-    required this.autoCount,
-    required this.autoBackdated,
-  });
+  _TasksRow({required this.tasks});
   final DailyTasks tasks;
-  final bool aberturaDone;
-  final bool aberturaBackdated;
-  final bool relatorioDone;
-  final bool relatorioBackdated;
-  final bool visualDone;
-  final int visualItens;
-  final bool visualBackdated;
-  final bool autoDone;
-  final int autoCount;
-  final bool autoBackdated;
 }
 
 Widget _taskTile(

@@ -191,8 +191,8 @@ const tutorialSections = [
           'Quando uma secção estiver feita, toque na seta de enviar ao lado '
               'dela.',
           'Escolha quem a fez e envie a mensagem no WhatsApp.',
-          'Com as três secções enviadas, a lista fica finalizada e a Lista de '
-              'Abertura fica marcada nas Diárias. A próxima abre às 5h.',
+          'Com as três secções enviadas, a lista fica finalizada. A próxima '
+              'abre às 5h.',
         ],
         tip:
             'As Automáticas funcionam da mesma forma: cada envio guarda essa '
@@ -212,9 +212,7 @@ const tutorialSections = [
               'abre um novo às 5h.',
           'Visual: escreva os itens picados, a quebra e o benefício e toque em '
               'Finalizar.',
-          'A barra mostra quanto falta para o objetivo diário de itens picados.',
         ],
-        tip: 'O objetivo da Lista Visual muda-se em Definições → Objetivos.',
       ),
     ],
   ),

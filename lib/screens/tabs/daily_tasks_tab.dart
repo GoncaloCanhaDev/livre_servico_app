@@ -11,12 +11,7 @@ import '../../models/daily_tasks.dart';
 import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/validades.dart';
-import '../../services/auto_list_service.dart';
 import '../../services/daily_tasks_service.dart';
-import '../../services/opening_list_service.dart';
-import '../../services/report_list_service.dart';
-import '../../services/settings_service.dart';
-import '../../services/visual_list_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 
@@ -33,10 +28,6 @@ class _DailyTasksTabState extends State<DailyTasksTab>
   bool get wantKeepAlive => true;
 
   DailyTasks? _tasks;
-  bool _aberturaDone = false;
-  bool _relatorioDone = false;
-  int _visualItens = 0;
-  int _autoCount = 0;
 
   late final TextEditingController _alteracoesCtrl;
   late final TextEditingController _validadesCtrl;
@@ -58,20 +49,12 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         setState(() {});
       }
     });
-    OpeningListService.instance.addListener(_reload);
-    ReportListService.instance.addListener(_reload);
-    VisualListService.instance.addListener(_reload);
-    AutoListService.instance.addListener(_reload);
     DailyTasksService.instance.addListener(_reload);
     _reload();
   }
 
   @override
   void dispose() {
-    OpeningListService.instance.removeListener(_reload);
-    ReportListService.instance.removeListener(_reload);
-    VisualListService.instance.removeListener(_reload);
-    AutoListService.instance.removeListener(_reload);
     DailyTasksService.instance.removeListener(_reload);
     _clock.cancel();
     _alteracoesCtrl.dispose();
@@ -81,23 +64,11 @@ class _DailyTasksTabState extends State<DailyTasksTab>
   }
 
   Future<void> _reload() async {
-    final day = currentServiceDay();
     final tasks = await DailyTasksService.instance.currentOrCreate();
-
-    final opening = await OpeningListService.instance.currentOrCreate();
-    final report = await ReportListService.instance.currentOrCreate();
-    final visualEntries = await VisualListService.instance.entriesForServiceDay(
-      day,
-    );
-    final autoToday = await AutoListService.instance.entriesForServiceDay(day);
 
     if (!mounted) return;
     setState(() {
       _tasks = tasks;
-      _aberturaDone = opening.isFinalized;
-      _relatorioDone = report.isFinalized;
-      _visualItens = visualEntries.fold(0, (s, e) => s + e.itensPicados);
-      _autoCount = autoToday.length;
       if (_alteracoesCtrl.text != '${tasks.alteracoesPrecoCount}') {
         _alteracoesCtrl.text = tasks.alteracoesPrecoCount == 0
             ? ''
@@ -362,8 +333,6 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     }
     final day = tasks.serviceDay;
     final dayFmt = DateFormat("EEEE, d 'de' MMMM", 'pt_PT');
-    final visualGoal = SettingsService.instance.visualGoal;
-    final visualDone = _visualItens >= visualGoal;
     final precoNotDone = tasks.notDone['alteracoes_preco'];
 
     return SafeArea(
@@ -445,22 +414,6 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               t.verificacaoTemperaturasByNames = who;
             },
           ),
-          _AutoTask(
-            label: 'Lista de Abertura',
-            checked: _aberturaDone,
-            note: _aberturaDone ? null : 'Finaliza no separador Abertura',
-            onLongPress: _aberturaDone
-                ? () => _sendMsg('✅ Tarefa concluída: Lista de Abertura')
-                : null,
-          ),
-          _AutoTask(
-            label: 'Relatório das Listas',
-            checked: _relatorioDone,
-            note: _relatorioDone ? null : 'Finaliza no separador Relatório',
-            onLongPress: _relatorioDone
-                ? () => _sendMsg('✅ Tarefa concluída: Relatório das Listas')
-                : null,
-          ),
           _manual(
             tasks,
             label: 'Preenchimento do Quadro',
@@ -474,24 +427,6 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               t.preenchimentoQuadro = true;
               t.preenchimentoQuadroByNames = who;
             },
-          ),
-          _AutoTask(
-            label: 'Lista Visual',
-            checked: visualDone,
-            note: '$_visualItens / $visualGoal itens picados hoje',
-            onLongPress: visualDone
-                ? () => _sendMsg('✅ Tarefa concluída: Lista Visual')
-                : null,
-          ),
-          _AutoTask(
-            label: 'Lista Automática',
-            checked: _autoCount > 0,
-            note: _autoCount == 0
-                ? 'Sem listas automáticas hoje'
-                : '$_autoCount lista${_autoCount == 1 ? '' : 's'} hoje',
-            onLongPress: _autoCount > 0
-                ? () => _sendMsg('✅ Tarefa concluída: Lista Automática')
-                : null,
           ),
           _validadesTask(tasks, ValidadesTurno.manha),
           _validadesTask(tasks, ValidadesTurno.noite),
@@ -590,55 +525,6 @@ class _ManualTask extends StatelessWidget {
           trailing: names.isNotEmpty
               ? PersonInitialsRow(names: names, size: 30)
               : null,
-        ),
-      ),
-    );
-  }
-}
-
-class _AutoTask extends StatelessWidget {
-  const _AutoTask({
-    required this.label,
-    required this.checked,
-    this.note,
-    this.onLongPress,
-  });
-
-  final String label;
-  final bool checked;
-  final String? note;
-  final VoidCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: onLongPress,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: checked,
-          onChanged: null,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
-          title: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              decoration: checked ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          subtitle: Row(
-            children: [
-              Icon(Icons.lock_outline, size: 12, color: context.faintest),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  note ?? 'Automática',
-                  style: TextStyle(fontSize: 12, color: context.muted),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

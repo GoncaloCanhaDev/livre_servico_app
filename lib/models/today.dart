@@ -73,17 +73,9 @@ List<OnShift> onShiftAt(List<Person> people, DateTime now) {
 }
 
 /// The Diárias still to do at [now], in the Tarefas order: [t] is the
-/// service day's row (null when none was saved yet) and the flags say
-/// whether the tasks ticked by other screens are done. A task marked Não
+/// service day's row (null when none was saved yet). A task marked Não
 /// feita isn't pending. A Validades part only counts while its window is open.
-List<String> pendingDailyTasks(
-  DailyTasks? t, {
-  required bool aberturaDone,
-  required bool relatorioDone,
-  required bool visualDone,
-  required bool autoDone,
-  required DateTime now,
-}) {
+List<String> pendingDailyTasks(DailyTasks? t, {required DateTime now}) {
   bool open(ValidadesTurno turno) =>
       validadesStateAt(turno, now) == ValidadesState.open;
   // Done, or marked Não feita (`DailyTasks.notDone`).
@@ -94,12 +86,8 @@ List<String> pendingDailyTasks(
     if (!settled(t?.alteracoesPreco, 'alteracoes_preco')) 'Alterações de Preço',
     if (!settled(t?.verificacaoTemperaturas, 'verificacao_temperaturas'))
       'Verificação de Temperaturas',
-    if (!aberturaDone) 'Lista de Abertura',
-    if (!relatorioDone) 'Relatório das Listas',
     if (!settled(t?.preenchimentoQuadro, 'preenchimento_quadro'))
       'Preenchimento do Quadro',
-    if (!visualDone) 'Lista Visual',
-    if (!autoDone) 'Lista Automática',
     if (!settled(t?.verificacaoValidades, 'verificacao_validades') &&
         open(ValidadesTurno.manha))
       ValidadesTurno.manha.label,

@@ -194,35 +194,16 @@ class _AllTabState extends State<_AllTab>
       );
     }
 
-    // Tasks (same counting logic as the Tasks tab — includes derived tasks)
+    // Tasks (same counting as the Tarefas tab)
     final tasks = await DailyTasksService.instance.history(
       includeDeleted: true,
     );
-    final lists = await _ListsByDay.load();
     for (final t in tasks) {
-      final day = t.serviceDay;
-      final openingEntries = lists.openings(day);
-      final aberturaDone = openingEntries.any((o) => o.isFinalized);
-      final reportEntries = lists.reports(day);
-      final relatorioDone = reportEntries.any((r) => r.isFinalized);
-      final visualEntries = lists.visuals(day);
-      final visualItens = visualEntries.fold<int>(
-        0,
-        (s, e) => s + e.itensPicados,
-      );
-      final visualDone = visualItens >= SettingsService.instance.visualGoal;
-      final autoEntries = lists.autos(day);
-      final autoDone = autoEntries.isNotEmpty;
-
       final flags = <bool>[
         t.kiwiAbertura,
         t.alteracoesPreco,
         t.verificacaoTemperaturas,
-        aberturaDone,
-        relatorioDone,
         t.preenchimentoQuadro,
-        visualDone,
-        autoDone,
         t.verificacaoValidades,
         t.validadesNoite,
         t.kiwiFecho,

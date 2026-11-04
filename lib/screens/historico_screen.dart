@@ -21,7 +21,6 @@ import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
-import '../services/settings_service.dart';
 import '../services/truck_service.dart';
 import '../services/visivel2_service.dart';
 import '../services/visual_list_service.dart';

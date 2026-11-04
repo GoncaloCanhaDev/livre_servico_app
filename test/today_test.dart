@@ -20,21 +20,8 @@ Person _shift(Person p, String start, String end) {
     ..shiftEnd = m(end);
 }
 
-List<String> _pending(
-  DailyTasks? t,
-  DateTime now, {
-  bool abertura = false,
-  bool relatorio = false,
-  bool visual = false,
-  bool auto = false,
-}) => pendingDailyTasks(
-  t,
-  aberturaDone: abertura,
-  relatorioDone: relatorio,
-  visualDone: visual,
-  autoDone: auto,
-  now: now,
-);
+List<String> _pending(DailyTasks? t, DateTime now) =>
+    pendingDailyTasks(t, now: now);
 
 void main() {
   group('shiftSpanOn', () {
@@ -126,11 +113,7 @@ void main() {
         'Kiwi Abertura',
         'Alterações de Preço',
         'Verificação de Temperaturas',
-        'Lista de Abertura',
-        'Relatório das Listas',
         'Preenchimento do Quadro',
-        'Lista Visual',
-        'Lista Automática',
         'Validades · Manhã',
         'Kiwi Fecho',
       ]);
@@ -144,33 +127,10 @@ void main() {
         ..verificacaoTemperaturas = true
         ..preenchimentoQuadro = true
         ..kiwiFecho = true;
-      expect(
-        _pending(t, DateTime(2026, 10, 8, 15), abertura: true, visual: true),
-        ['Relatório das Listas', 'Lista Automática'],
-      );
-      expect(
-        _pending(
-          t,
-          DateTime(2026, 10, 9, 2),
-          abertura: true,
-          relatorio: true,
-          visual: true,
-          auto: true,
-        ),
-        ['Validades · Noite'],
-      );
+      expect(_pending(t, DateTime(2026, 10, 8, 15)), isEmpty);
+      expect(_pending(t, DateTime(2026, 10, 9, 2)), ['Validades · Noite']);
       t.validadesNoite = true;
-      expect(
-        _pending(
-          t,
-          DateTime(2026, 10, 9, 2),
-          abertura: true,
-          relatorio: true,
-          visual: true,
-          auto: true,
-        ),
-        isEmpty,
-      );
+      expect(_pending(t, DateTime(2026, 10, 9, 2)), isEmpty);
     });
   });
 
