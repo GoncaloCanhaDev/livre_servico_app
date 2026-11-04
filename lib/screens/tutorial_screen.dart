@@ -140,7 +140,8 @@ const tutorialSections = [
             'em Listas 2.0.',
         diagram: _Listas2Diagram(),
         steps: [
-          'Listas 2.0: as novas listas, que vão aparecer aqui em breve.',
+          'As secções das novas listas: Automáticas e Visível.',
+          'O conteúdo de cada secção, que vai aparecer aqui em breve.',
           'Listas 1.0: as listas antigas (Abertura, Automáticas, Relatório '
               'e Visual), para as lojas que ainda as usam.',
         ],

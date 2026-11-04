@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.78.3] — 2026-11-04
+
+### Changed
+- Listas 2.0 has two sections, Automáticas and Visível, as tabs (side by side on a wide
+  screen); both say "Em breve" until their lists are added. The tutorial's Listas 2.0 sketch
+  shows them.
+
 ## [0.78.2] — 2026-11-01
 
 ### Fixed

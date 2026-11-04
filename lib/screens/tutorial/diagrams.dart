@@ -765,8 +765,14 @@ class _Listas2Diagram extends StatelessWidget {
     return _Screen(
       title: 'Listas 2.0',
       children: [
+        const Row(
+          children: [
+            Expanded(child: _Tabs(['Automáticas', 'Visível'])),
+            _Marker(1),
+          ],
+        ),
         _Box(
-          marker: 1,
+          marker: 2,
           color: context.tint(Colors.blue),
           child: const _Line(
             'Em breve: as novas listas',
@@ -775,7 +781,7 @@ class _Listas2Diagram extends StatelessWidget {
         ),
         _gap,
         const _Box(
-          marker: 2,
+          marker: 3,
           child: _Line(
             'Listas 1.0: Abertura, Automáticas…',
             icon: Icons.archive_outlined,
