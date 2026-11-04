@@ -272,7 +272,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           const SizedBox(height: 12),
           _verificar(
             tasks,
-            label: 'Verificar 1ª',
+            label: 'Verificar 1ª Sheet',
             taskKey: 'verificar_1a',
             checked: tasks.verificar1a,
             byNames: resolveNames(
@@ -292,7 +292,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           ),
           _verificar(
             tasks,
-            label: 'Verificar 4ª',
+            label: 'Verificar 4ª Sheet',
             taskKey: 'verificar_4a',
             checked: tasks.verificar4a,
             byNames: resolveNames(
