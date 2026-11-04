@@ -120,7 +120,7 @@ void main() {
       ]);
     });
 
-    test('leaves out what is done and validades windows not open', () {
+    test('leaves out what is done and validades windows not open yet', () {
       final t = DailyTasks()
         ..serviceDay = DateTime(2026, 10, 8, 5)
         ..kiwiAbertura = true
@@ -128,6 +128,9 @@ void main() {
         ..verificacaoTemperaturas = true
         ..preenchimentoQuadro = true
         ..kiwiFecho = true;
+      // Past 14h the Manhã can still be marked, so it is still to do.
+      expect(_pending(t, DateTime(2026, 10, 8, 15)), ['Validades · Manhã']);
+      t.verificacaoValidades = true;
       expect(_pending(t, DateTime(2026, 10, 8, 15)), isEmpty);
       expect(_pending(t, DateTime(2026, 10, 9, 2)), ['Validades · Noite']);
       t.validadesNoite = true;

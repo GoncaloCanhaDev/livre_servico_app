@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.83.1] — 2026-11-04
+
+### Changed
+- Diárias → Validades (Manhã and Noite) no longer lock when their window ends: once open, a
+  part can be marked Feita until the service day ends at 05:00, so a check done but not
+  ticked in time can be ticked later. It stays in "Por fazer" until marked. The Tarefas
+  tutorial (version 3) says so.
+
 ## [0.83.0] — 2026-11-04
 
 ### Added

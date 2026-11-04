@@ -41,5 +41,9 @@ void main() {
     expect(ValidadesTurno.manha.openNote, 'Aberta até às 14h');
     expect(ValidadesTurno.noite.openNote, 'Aberta até às 5h');
     expect(ValidadesTurno.noite.notYetNote, 'Abre às 19h');
+    expect(
+      ValidadesTurno.manha.lateNote,
+      'Era até às 14h — ainda se pode marcar',
+    );
   });
 }

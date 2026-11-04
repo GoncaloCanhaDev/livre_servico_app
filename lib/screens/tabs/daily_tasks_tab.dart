@@ -241,9 +241,9 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     _ => false,
   };
 
-  /// One part of the Verificação de Validades: it can only be marked Feita
-  /// while its window is open (see [validadesStateAt]), and Não feita from
-  /// when it opens.
+  /// One part of the Verificação de Validades: it can be marked from when
+  /// its window opens (see [validadesStateAt]) until the service day ends,
+  /// so a check done but not ticked in time can still be ticked later.
   Widget _validadesTask(DailyTasks tasks, ValidadesTurno turno) {
     final manha = turno == ValidadesTurno.manha;
     final done = manha ? tasks.verificacaoValidades : tasks.validadesNoite;
@@ -257,12 +257,12 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       label: turno.label,
       checked: done,
       notDone: notDone,
-      locked: state != ValidadesState.open,
+      locked: state == ValidadesState.notYet,
       note: switch (state) {
         _ when done => null,
         ValidadesState.notYet => turno.notYetNote,
         ValidadesState.open => turno.openNote,
-        ValidadesState.closed => 'Não feita — falta o motivo',
+        ValidadesState.closed => turno.lateNote,
       },
       noteWarn: !done && state == ValidadesState.closed,
       byNames: manha
@@ -278,7 +278,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           : notDone != null
           ? () => _sendMsg(notDoneMessage(turno.label, notDone))
           : null,
-      onDone: state != ValidadesState.open
+      onDone: state == ValidadesState.notYet
           ? null
           : () => _completeTask(
               taskName: turno.label,

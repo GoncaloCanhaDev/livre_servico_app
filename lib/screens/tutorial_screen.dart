@@ -96,7 +96,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'tarefas',
     title: 'Tarefas',
-    version: 2,
+    version: 3,
     steps: [
       TutorialStep(
         icon: Icons.task_alt,
@@ -120,8 +120,8 @@ const tutorialSections = [
         ],
         tip:
             'A Verificação de Validades tem duas janelas: Manhã (5h–14h) e '
-            'Noite (19h–5h). Fora da janela não se marca como feita, só como '
-            'não feita. Em '
+            'Noite (19h–5h). Antes de abrir não se marca; depois da janela '
+            'ainda se marca até ao fim do dia. Em '
             'Personalizadas, o + cria uma tarefa nova (diária, semanal ou '
             'pontual). A Lista Visível marca-se sozinha com um Visível de '
             'Listas 2.0; a Lista Automática só conta as automáticas do dia.',

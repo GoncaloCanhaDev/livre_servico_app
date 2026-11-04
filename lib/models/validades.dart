@@ -14,6 +14,9 @@ enum ValidadesTurno {
 
   String get openNote => 'Aberta até às ${closesAt}h';
   String get notYetNote => 'Abre às ${opensAt}h';
+
+  /// Past the window it can still be marked until the service day ends.
+  String get lateNote => 'Era até às ${closesAt}h — ainda se pode marcar';
 }
 
 enum ValidadesState { notYet, open, closed }
