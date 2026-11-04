@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.5] — 2026-11-04
+
+### Changed
+- Política de Privacidade (version 2026-11-04): says the admin sees every account's email,
+  store, linked person, creation date and last sign-in (Administração → Contas), and that
+  removing an account deletes the email, password and membership while the profile and the
+  work records stay with the store.
+
 ## [0.84.4] — 2026-11-04
 
 ### Changed

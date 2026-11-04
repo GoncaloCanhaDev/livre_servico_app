@@ -34,6 +34,8 @@ void main() {
     expect(find.text(privacyPolicy.first.title), findsOneWidget);
     final accept = find.text('Li e aceito');
     await tester.scrollUntilVisible(accept, 400);
+    await tester.ensureVisible(accept);
+    await tester.pumpAndSettle();
     expect(find.text(privacyPolicy.last.title), findsOneWidget);
     await tester.tap(accept);
     await tester.pumpAndSettle();

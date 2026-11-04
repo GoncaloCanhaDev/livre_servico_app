@@ -4,7 +4,7 @@
 library;
 
 /// The date of this text; saved with each new account (`privacy_policy`).
-const privacyPolicyVersion = '2026-11-01';
+const privacyPolicyVersion = '2026-11-04';
 
 /// One part of the policy: a heading and its paragraphs.
 typedef PolicySection = ({String title, List<String> paragraphs});
@@ -51,7 +51,8 @@ const privacyPolicy = <PolicySection>[
           'com o seu email, a sua loja, a versão da aplicação, o tipo de '
           'aparelho (Android, navegador...) e a data.',
       'Dados técnicos: a sessão iniciada neste aparelho, a data de cada '
-          'alteração e a conta que a gravou. Não há publicidade, estatísticas '
+          'alteração e a conta que a gravou, e a data em que a conta foi '
+          'criada e em que iniciou sessão pela última vez. Não há publicidade, estatísticas '
           'de utilização nem qualquer seguimento da sua atividade.',
       'Não são guardados números de telefone nem o ano de nascimento.',
       'Não escreva nas notas nem noutros campos informações de saúde ou '
@@ -88,6 +89,9 @@ const privacyPolicy = <PolicySection>[
           'administrador da aplicação.',
       'Os erros e sugestões que enviar só os vê o administrador da '
           'aplicação.',
+      'O administrador da aplicação vê também a lista de todas as contas: o '
+          'email, a loja, a pessoa a que cada conta está ligada, quando foi '
+          'criada e quando iniciou sessão pela última vez.',
       'Ninguém de outra loja vê os dados da sua loja. Só entra na loja quem '
           'tiver o código da loja e for aprovado por um chefe de secção ou '
           'pela gerência.',
@@ -113,6 +117,9 @@ const privacyPolicy = <PolicySection>[
           'é apagado na aplicação fica online marcado como apagado, e as '
           'fotografias não são apagadas online. Pode pedir ao administrador que '
           'os apague definitivamente.',
+      'O administrador pode remover a sua conta: apaga o email, a '
+          'palavra-passe e a ligação à loja. O seu perfil e os registos de '
+          'trabalho ficam na loja, até pedir que também sejam apagados.',
       'Se mudar de loja, o seu perfil passa para a nova loja e os registos de '
           'trabalho ficam na loja anterior.',
     ],
