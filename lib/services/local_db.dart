@@ -18,6 +18,7 @@ import '../models/pedido.dart';
 import '../models/person.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
+import '../models/visivel2_entry.dart';
 import '../models/visual_list.dart';
 import '../models/weekly_tasks.dart';
 import 'sync_meta.dart';
@@ -63,6 +64,10 @@ class LocalDb {
     'VisualList',
     VisualList.fromJson,
   );
+  final visivel2Entries = LocalCollection<Visivel2Entry>._(
+    'Visivel2Entry',
+    Visivel2Entry.fromJson,
+  );
   final dailyTasks = LocalCollection<DailyTasks>._(
     'DailyTasks',
     DailyTasks.fromJson,
@@ -107,6 +112,7 @@ class LocalDb {
     auto2Entries,
     reportLists,
     visualLists,
+    visivel2Entries,
     dailyTasks,
     weeklyTasks,
     inventories,

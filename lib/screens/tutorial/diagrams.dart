@@ -809,6 +809,42 @@ class _Listas2Diagram extends StatelessWidget {
   }
 }
 
+class _Visivel2Diagram extends StatelessWidget {
+  const _Visivel2Diagram();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _Screen(
+      title: 'Listas 2.0',
+      children: [
+        _Tabs(['Automáticas', 'Visível']),
+        _Box(marker: 1, child: _Line('Itens Picados', trailing: _Field('37'))),
+        _gap,
+        Row(
+          children: [
+            _Button('Finalizar', icon: Icons.check_circle, filled: true),
+            SizedBox(width: 6),
+            _Marker(2),
+          ],
+        ),
+        _gap,
+        _Box(
+          dark: true,
+          marker: 3,
+          child: _Line(
+            'Hoje · Itens Picados',
+            bold: true,
+            trailing: Text(
+              '37',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ReportDiagram extends StatelessWidget {
   const _ReportDiagram();
 

@@ -13,6 +13,7 @@ import '../models/person.dart';
 import '../models/store_access.dart';
 import '../models/teams.dart';
 import '../models/truck_reception.dart';
+import '../models/visivel2_entry.dart';
 import '../models/weekly_tasks.dart';
 import 'account_service.dart';
 import 'document_service.dart';
@@ -281,6 +282,13 @@ Future<String> seedDemo({DateTime? now}) async {
           ..byNames = [by],
       ),
   ];
+  final visivel2 = stamped(
+    Visivel2Entry()
+      ..createdAt = day(0, 9, 30)
+      ..serviceDay = today
+      ..itens = 37
+      ..byNames = ['Inês Rodrigues'],
+  );
   final customTask = stamped(
     CustomTask()
       ..title = 'Repor sacos nas caixas'
@@ -449,6 +457,7 @@ Future<String> seedDemo({DateTime? now}) async {
     await db.weeklyTasks.put(weekly);
     await db.openingLists.put(opening);
     await db.auto2Entries.putAll(auto2);
+    await db.visivel2Entries.put(visivel2);
     await db.customTasks.put(customTask);
     await db.truckReceptions.putAll(trucks);
     await db.inventories.putAll(inventories);

@@ -12,6 +12,7 @@ import '../models/pedido.dart';
 import '../models/report_list.dart';
 import '../models/truck_reception.dart';
 import '../models/validades.dart';
+import '../models/visivel2_entry.dart';
 import '../models/visual_list.dart';
 import '../services/auto2_service.dart';
 import '../services/auto_list_service.dart';
@@ -22,6 +23,7 @@ import '../services/pedido_service.dart';
 import '../services/report_list_service.dart';
 import '../services/settings_service.dart';
 import '../services/truck_service.dart';
+import '../services/visivel2_service.dart';
 import '../services/visual_list_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
@@ -37,6 +39,7 @@ part 'historico/auto_tab.dart';
 part 'historico/auto2_tab.dart';
 part 'historico/report_tab.dart';
 part 'historico/visual_tab.dart';
+part 'historico/visivel2_tab.dart';
 part 'historico/tasks_tab.dart';
 part 'historico/inventory_tab.dart';
 part 'historico/pedidos_tab.dart';
@@ -77,6 +80,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     'Automáticas 2.0',
     'Relatório',
     'Visual',
+    'Visível 2.0',
     'Tarefas',
     'Inventários',
     'Pedidos',
@@ -106,12 +110,15 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         await VisualListService.instance.deleteAll();
         break;
       case 7:
-        await DailyTasksService.instance.deleteAll();
+        await Visivel2Service.instance.deleteAll();
         break;
       case 8:
-        await InventoryService.instance.deleteAll();
+        await DailyTasksService.instance.deleteAll();
         break;
       case 9:
+        await InventoryService.instance.deleteAll();
+        break;
+      case 10:
         await PedidoService.instance.deleteAll();
         break;
     }
@@ -124,6 +131,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     await Auto2Service.instance.deleteAll();
     await ReportListService.instance.deleteAll();
     await VisualListService.instance.deleteAll();
+    await Visivel2Service.instance.deleteAll();
     await DailyTasksService.instance.deleteAll();
     await InventoryService.instance.deleteAll();
     await PedidoService.instance.deleteAll();
@@ -217,6 +225,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     _Auto2Tab(),
                     _ReportTab(),
                     _VisualTab(),
+                    _Visivel2Tab(),
                     _TasksTab(),
                     _InventoryTab(),
                     _PedidosTab(),

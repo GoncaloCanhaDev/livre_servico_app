@@ -9,7 +9,7 @@ class _InventoryTab extends StatefulWidget {
 class _InventoryTabState extends State<_InventoryTab>
     with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
   @override
-  int get tabIndex => 8;
+  int get tabIndex => 9;
 
   late Future<List<Inventory>> _future;
 

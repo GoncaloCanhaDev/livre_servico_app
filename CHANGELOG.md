@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.81.0] — 2026-11-04
+
+### Added
+- Listas 2.0 → Visível: like 1.0's Visual without Quebra and Benefício. Type the itens picados
+  counted going round the store, then Finalizar: who did it (and the day, when it was
+  another), saved to the history, WhatsApp, and the field clears. Meant once a day after a
+  round of Automáticas but never locked; a card shows today's total and each one done. Each is
+  a `Visivel2Entry`.
+- Histórico → Visível 2.0 (grouped by day; swipe to resend or delete), also in Tudo. The demo
+  has one, and the Listas 2.0 tutorial (version 3) explains the order: Automáticas of every
+  item, a Visível, then Automáticas all day.
+
 ## [0.80.0] — 2026-11-04
 
 ### Changed

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../theme.dart';
 import 'tabs/automaticas2_tab.dart';
+import 'tabs/visivel2_tab.dart';
 import 'widgets/wide_layout.dart';
 
-/// The store's new lists: Automáticas and Visível (empty for now).
+/// The store's new lists: Automáticas, sent item by item all day, and the
+/// Visível, once a day after a round of them. Neither is locked.
 /// The old ones (Abertura, Automáticas, Relatório, Visual) are in
 /// `ReplenishmentListsScreen` (Listas 1.0), still used by other stores.
 class Listas2Screen extends StatelessWidget {
@@ -15,52 +16,7 @@ class Listas2Screen extends StatelessWidget {
     return const ResponsiveTabs(
       title: Text('Listas 2.0'),
       minColumnWidth: 360,
-      tabs: [
-        ('Automáticas', Automaticas2Tab()),
-        (
-          'Visível',
-          _ComingSoon(
-            icon: Icons.visibility_outlined,
-            text: 'A nova lista do Visível vai aparecer aqui.',
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A section with nothing in it yet.
-class _ComingSoon extends StatelessWidget {
-  const _ComingSoon({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return ReadableWidth(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 56, color: context.faint),
-              const SizedBox(height: 12),
-              const Text(
-                'Em breve',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.muted, height: 1.4),
-              ),
-            ],
-          ),
-        ),
-      ),
+      tabs: [('Automáticas', Automaticas2Tab()), ('Visível', Visivel2Tab())],
     );
   }
 }

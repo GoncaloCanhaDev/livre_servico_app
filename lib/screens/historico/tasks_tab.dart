@@ -9,7 +9,7 @@ class _TasksTab extends StatefulWidget {
 class _TasksTabState extends State<_TasksTab>
     with AutomaticKeepAliveClientMixin, _ReloadWhenOpen {
   @override
-  int get tabIndex => 7;
+  int get tabIndex => 8;
 
   @override
   bool get wantKeepAlive => true;

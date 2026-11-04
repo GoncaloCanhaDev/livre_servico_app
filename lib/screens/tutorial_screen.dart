@@ -130,18 +130,19 @@ const tutorialSections = [
   TutorialSection(
     id: 'listas2',
     title: 'Listas 2.0',
-    version: 2,
+    version: 3,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
-        title: 'Listas 2.0',
+        title: 'Listas 2.0: Automáticas',
         intro:
-            'As novas listas da loja. Em Automáticas, cada item é enviado '
-            'sozinho quando estiver feito, como em Listas 1.0.',
+            'Primeiro, uma automática de cada item; depois, um Visível; depois, '
+            'automáticas o dia todo. Cada item é enviado sozinho quando '
+            'estiver feito, como em Listas 1.0.',
         diagram: _Listas2Diagram(),
         steps: [
-          'As secções: Automáticas e Visível (o Visível vem em breve). As '
-              'listas antigas continuam em Listas 1.0.',
+          'As secções: Automáticas e Visível. As listas antigas continuam em '
+              'Listas 1.0.',
           'Escreva o número do item e toque no visto: escolha quem o fez (e '
               'o dia, se foi noutro) e envie a mensagem por WhatsApp.',
           'Depois de enviado, o item fica guardado no Histórico '
@@ -151,6 +152,24 @@ const tutorialSections = [
         tip:
             'No Histórico, deslize uma linha para a reenviar por WhatsApp ou '
             'apagar.',
+      ),
+      TutorialStep(
+        icon: Icons.visibility_outlined,
+        title: 'Listas 2.0: Visível',
+        intro:
+            'Uma vez por dia, depois de uma volta de Automáticas: percorra a '
+            'loja, pique os produtos à mão e conte-os.',
+        diagram: _Visivel2Diagram(),
+        steps: [
+          'Escreva quantos itens picou.',
+          'Finalizar: escolha quem o fez, guarde e envie por WhatsApp. O '
+              'campo volta a ficar vazio.',
+          'O total de hoje e cada Visível feito, com a hora e quem. Fica no '
+              'Histórico, em Visível 2.0.',
+        ],
+        tip:
+            'Nada fica bloqueado: se for preciso, pode fazer mais do que um '
+            'por dia.',
       ),
     ],
   ),

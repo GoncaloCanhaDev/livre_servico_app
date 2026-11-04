@@ -9,6 +9,7 @@ import 'opening_list.dart';
 import 'pedido.dart';
 import 'report_list.dart';
 import 'truck_reception.dart';
+import 'visivel2_entry.dart';
 import 'visual_list.dart';
 
 /// Whether every word of [query] appears in [text], ignoring case and
@@ -91,6 +92,10 @@ String visualSearchText(VisualList v) => _join([
   v.createdByInitials,
   v.itensPicados,
 ]);
+
+/// A Visível 2.0: date, who, itens picados.
+String visivel2SearchText(Visivel2Entry v) =>
+    _join([dateWords(v.serviceDay), ...v.byNames, v.itens]);
 
 /// The Diárias of a day: date and everyone who did a task.
 String dailyTasksSearchText(DailyTasks t) => _join([

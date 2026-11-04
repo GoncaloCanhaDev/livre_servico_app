@@ -27,6 +27,7 @@ class _AllTabState extends State<_AllTab>
     OpeningListService.instance.addListener(_changed);
     AutoListService.instance.addListener(_changed);
     Auto2Service.instance.addListener(_changed);
+    Visivel2Service.instance.addListener(_changed);
     ReportListService.instance.addListener(_changed);
     VisualListService.instance.addListener(_changed);
     DailyTasksService.instance.addListener(_changed);
@@ -39,6 +40,7 @@ class _AllTabState extends State<_AllTab>
     OpeningListService.instance.removeListener(_changed);
     AutoListService.instance.removeListener(_changed);
     Auto2Service.instance.removeListener(_changed);
+    Visivel2Service.instance.removeListener(_changed);
     ReportListService.instance.removeListener(_changed);
     VisualListService.instance.removeListener(_changed);
     DailyTasksService.instance.removeListener(_changed);
@@ -169,6 +171,24 @@ class _AllTabState extends State<_AllTab>
           subtitle: '${v.itensPicados} itens picados',
           icon: Icons.visibility,
           names: resolveNames(v.createdByNames, v.createdByInitials),
+          deleted: v.syncDeletedAt != null,
+        ),
+      );
+    }
+
+    // Visível 2.0
+    final visiveis = await Visivel2Service.instance.history(
+      includeDeleted: true,
+    );
+    for (final v in visiveis) {
+      items.add(
+        _DayItem(
+          type: _ItemType.visivel2,
+          time: v.createdAt,
+          title: '👁 Visível',
+          subtitle: '${v.itens} itens picados',
+          icon: Icons.visibility,
+          names: v.byNames,
           deleted: v.syncDeletedAt != null,
         ),
       );

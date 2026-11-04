@@ -40,7 +40,7 @@ multi-tenant product.
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/automaticas2_tab_test.dart` sends
-  Listas 2.0 items, `test/claim_person_screen_test.dart`
+  Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
   `test/sync_engine_test.dart` the sync engine between two devices, `test/demo_data_test.dart`
@@ -143,6 +143,10 @@ multi-tenant product.
   `Auto2Item` (stored by name; never rename one). Like 1.0's, each item is sent on its own:
   every send is one `Auto2Entry` (value, who, `createdAt`) and the field clears. They show in
   Histórico's Automáticas 2.0 tab and in Tudo, not (yet) in the Diárias.
+  Visível (`lib/models/visivel2_entry.dart`, `Visivel2Service`) is 1.0's Visual without
+  Quebra and Benefício: each Finalizar saves one `Visivel2Entry` (itens picados, who), shown in
+  Histórico's Visível 2.0 tab. The order is a round of Automáticas, one Visível, then
+  Automáticas all day, but neither is ever locked (not feasible in practice).
 - There are no horários (the monthly shift sheet was removed in 0.61.0, since it showed
   everyone's folgas and absences): who works when comes from each person's `folgas`,
   `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`
@@ -203,7 +207,7 @@ multi-tenant product.
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
   auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas 1.0": the old
   lists, kept for the stores still using them; the new ones go in `Listas2Screen`, "Listas
-  2.0": Automáticas, `Automaticas2Tab`, and Visível, empty for now) and the daily/weekly/custom tasks
+  2.0": Automáticas, `Automaticas2Tab`, and Visível, `Visivel2Tab`) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest
   screens are split with `part` files, so their private widgets stay private:
   `historico_screen.dart` (one part per tab in `lib/screens/historico/`; each tab filters its
