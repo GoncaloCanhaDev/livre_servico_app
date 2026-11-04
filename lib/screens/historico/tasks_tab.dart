@@ -15,8 +15,12 @@ class _TasksTabState extends State<_TasksTab>
   bool get wantKeepAlive => true;
   late Future<List<_TasksRow>> _future;
 
-  /// The Diárias.
-  List<Listenable> get _sources => [DailyTasksService.instance];
+  /// The Diárias and the Listas 2.0 they show.
+  List<Listenable> get _sources => [
+    DailyTasksService.instance,
+    Visivel2Service.instance,
+    Auto2Service.instance,
+  ];
 
   @override
   void initState() {
@@ -44,7 +48,15 @@ class _TasksTabState extends State<_TasksTab>
 
   Future<List<_TasksRow>> _load() async {
     final all = await DailyTasksService.instance.history(includeDeleted: true);
-    final rows = [for (final t in all) _TasksRow(tasks: t)];
+    final lists = await _Listas2ByDay.load();
+    final rows = [
+      for (final t in all)
+        _TasksRow(
+          tasks: t,
+          visiveis: lists.visiveis(t.serviceDay),
+          autoCount: lists.autoCount(t.serviceDay),
+        ),
+    ];
     return rows;
   }
 
@@ -114,6 +126,14 @@ class _TasksTabState extends State<_TasksTab>
                 backdated: t.backdatedTaskKeys.contains('preenchimento_quadro'),
               ),
               _TaskEntry(
+                'Lista Visível',
+                r.visiveis.isNotEmpty,
+                byNames: {for (final v in r.visiveis) ...v.byNames}.toList(),
+                backdated:
+                    r.visiveis.isNotEmpty &&
+                    r.visiveis.every((v) => v.backdated),
+              ),
+              _TaskEntry(
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})',
                 notDone: t.notDone['verificacao_validades'],
                 t.verificacaoValidades,
@@ -164,6 +184,7 @@ class _TasksTabState extends State<_TasksTab>
                   final msg =
                       '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
                       '$lines\n'
+                      '🔢 Lista Automática: ${r.autoCount}\n'
                       'Total: $doneCount/$totalTasks';
                   await WhatsAppService.sendWithConfirm(ctx, msg);
                 },
@@ -186,18 +207,33 @@ class _TasksTabState extends State<_TasksTab>
                           ? context.colors.primary
                           : context.faint,
                     ),
-                    children: allTasks
-                        .map(
-                          (e) => _taskTile(
-                            context,
-                            e.label,
-                            e.done,
-                            byNames: e.byNames,
-                            backdated: e.backdated,
-                            notDone: e.done ? null : e.notDone,
+                    children: [
+                      for (final e in allTasks)
+                        _taskTile(
+                          context,
+                          e.label,
+                          e.done,
+                          byNames: e.byNames,
+                          backdated: e.backdated,
+                          notDone: e.done ? null : e.notDone,
+                        ),
+                      ListTile(
+                        dense: true,
+                        leading: Icon(
+                          Icons.bolt,
+                          size: 20,
+                          color: context.colors.primary,
+                        ),
+                        title: const Text('Lista Automática'),
+                        trailing: Text(
+                          '${r.autoCount}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -227,8 +263,14 @@ class _TaskEntry {
 }
 
 class _TasksRow {
-  _TasksRow({required this.tasks});
+  _TasksRow({
+    required this.tasks,
+    required this.visiveis,
+    required this.autoCount,
+  });
   final DailyTasks tasks;
+  final List<Visivel2Entry> visiveis;
+  final int autoCount;
 }
 
 Widget _taskTile(

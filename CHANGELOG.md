@@ -7,6 +7,16 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.83.0] — 2026-11-04
+
+### Added
+- Diárias → Lista Visível: ticked once a Listas 2.0 Visível is saved that day (itens picados
+  and who underneath); until then it is pending, also on the Hoje card.
+- Diárias → Lista Automática: only a counter of the Listas 2.0 Automáticas sent that day,
+  never ticked and never pending.
+- Both show in Histórico → Tarefas (the counter as its own line and in the WhatsApp summary);
+  the Lista Visível also counts in Tudo. The Tarefas tutorial (version 2) mentions them.
+
 ## [0.82.0] — 2026-11-04
 
 ### Removed

@@ -131,6 +131,32 @@ mixin _ReloadWhenOpen<T extends StatefulWidget> on State<T> {
   }
 }
 
+/// What a day's Diárias take from Listas 2.0, for every day at once: the
+/// Visíveis (Lista Visível is done with one) and how many Automáticas were
+/// sent (only counted).
+class _Listas2ByDay {
+  _Listas2ByDay._(this._visiveis, this._autoCounts);
+
+  static Future<_Listas2ByDay> load() async {
+    final visiveis = <DateTime, List<Visivel2Entry>>{};
+    for (final v in await Visivel2Service.instance.history()) {
+      (visiveis[v.serviceDay] ??= []).add(v);
+    }
+    final autos = <DateTime, int>{};
+    for (final a in await Auto2Service.instance.history()) {
+      final day = currentServiceDay(a.createdAt);
+      autos[day] = (autos[day] ?? 0) + 1;
+    }
+    return _Listas2ByDay._(visiveis, autos);
+  }
+
+  final Map<DateTime, List<Visivel2Entry>> _visiveis;
+  final Map<DateTime, int> _autoCounts;
+
+  List<Visivel2Entry> visiveis(DateTime day) => _visiveis[day] ?? const [];
+  int autoCount(DateTime day) => _autoCounts[day] ?? 0;
+}
+
 enum _ItemType {
   truck,
   opening,

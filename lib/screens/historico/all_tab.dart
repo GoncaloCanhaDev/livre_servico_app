@@ -198,12 +198,14 @@ class _AllTabState extends State<_AllTab>
     final tasks = await DailyTasksService.instance.history(
       includeDeleted: true,
     );
+    final lists2 = await _Listas2ByDay.load();
     for (final t in tasks) {
       final flags = <bool>[
         t.kiwiAbertura,
         t.alteracoesPreco,
         t.verificacaoTemperaturas,
         t.preenchimentoQuadro,
+        lists2.visiveis(t.serviceDay).isNotEmpty,
         t.verificacaoValidades,
         t.validadesNoite,
         t.kiwiFecho,

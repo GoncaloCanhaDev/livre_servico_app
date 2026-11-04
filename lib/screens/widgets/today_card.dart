@@ -15,6 +15,7 @@ import '../../services/daily_tasks_service.dart';
 import '../../services/pedido_service.dart';
 import '../../services/person_service.dart';
 import '../../services/truck_service.dart';
+import '../../services/visivel2_service.dart';
 import '../../theme.dart';
 import '../historico_screen.dart';
 import '../pedidos_screen.dart';
@@ -66,6 +67,7 @@ class _DayRows {
     required this.day,
     required this.everyone,
     required this.tasks,
+    required this.visivelDone,
     required this.pedidos,
     required this.trucks,
   });
@@ -73,6 +75,7 @@ class _DayRows {
   final DateTime day;
   final List<Person> everyone;
   final DailyTasks? tasks;
+  final bool visivelDone;
   final List<Pedido> pedidos;
   final List<TruckReception> trucks;
 }
@@ -85,6 +88,7 @@ class _TodayCardState extends State<TodayCard> {
   List<Listenable> get _sources => [
     PersonService.instance,
     DailyTasksService.instance,
+    Visivel2Service.instance,
     PedidoService.instance,
     TruckService.instance,
   ];
@@ -123,6 +127,9 @@ class _TodayCardState extends State<TodayCard> {
       day: day,
       everyone: await PersonService.instance.all(),
       tasks: await DailyTasksService.instance.find(day),
+      visivelDone: (await Visivel2Service.instance.forServiceDay(
+        day,
+      )).isNotEmpty,
       pedidos: await PedidoService.instance.openWithDate(),
       trucks: await TruckService.instance.forServiceDay(day),
     );
@@ -148,7 +155,11 @@ class _TodayCardState extends State<TodayCard> {
         hasShifts: people.any((p) => shiftSpanOn(p, day) != null),
         onShift: onShiftAt(people, now),
         counts: shiftCountsOn(people, day),
-        pending: pendingDailyTasks(rows.tasks, now: now),
+        pending: pendingDailyTasks(
+          rows.tasks,
+          visivelDone: rows.visivelDone,
+          now: now,
+        ),
         overduePedidos: rows.pedidos.where((p) => p.isOverdue).length,
         trucks: rows.trucks.length,
         pallets: rows.trucks.fold(0, (s, t) => s + t.totalPallets),

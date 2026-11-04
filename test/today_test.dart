@@ -20,8 +20,8 @@ Person _shift(Person p, String start, String end) {
     ..shiftEnd = m(end);
 }
 
-List<String> _pending(DailyTasks? t, DateTime now) =>
-    pendingDailyTasks(t, now: now);
+List<String> _pending(DailyTasks? t, DateTime now, {bool visivel = true}) =>
+    pendingDailyTasks(t, visivelDone: visivel, now: now);
 
 void main() {
   group('shiftSpanOn', () {
@@ -109,11 +109,12 @@ void main() {
     });
 
     test('without a row everything open is to do', () {
-      expect(_pending(null, DateTime(2026, 10, 8, 9)), [
+      expect(_pending(null, DateTime(2026, 10, 8, 9), visivel: false), [
         'Kiwi Abertura',
         'Alterações de Preço',
         'Verificação de Temperaturas',
         'Preenchimento do Quadro',
+        'Lista Visível',
         'Validades · Manhã',
         'Kiwi Fecho',
       ]);

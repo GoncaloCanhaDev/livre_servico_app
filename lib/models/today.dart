@@ -73,9 +73,15 @@ List<OnShift> onShiftAt(List<Person> people, DateTime now) {
 }
 
 /// The Diárias still to do at [now], in the Tarefas order: [t] is the
-/// service day's row (null when none was saved yet). A task marked Não
-/// feita isn't pending. A Validades part only counts while its window is open.
-List<String> pendingDailyTasks(DailyTasks? t, {required DateTime now}) {
+/// service day's row (null when none was saved yet) and [visivelDone] says
+/// whether a Listas 2.0 Visível was saved that day. A task marked Não feita
+/// isn't pending. A Validades part only counts while its window is open.
+/// The Lista Automática only shows a count, so it is never pending.
+List<String> pendingDailyTasks(
+  DailyTasks? t, {
+  required bool visivelDone,
+  required DateTime now,
+}) {
   bool open(ValidadesTurno turno) =>
       validadesStateAt(turno, now) == ValidadesState.open;
   // Done, or marked Não feita (`DailyTasks.notDone`).
@@ -88,6 +94,7 @@ List<String> pendingDailyTasks(DailyTasks? t, {required DateTime now}) {
       'Verificação de Temperaturas',
     if (!settled(t?.preenchimentoQuadro, 'preenchimento_quadro'))
       'Preenchimento do Quadro',
+    if (!visivelDone) 'Lista Visível',
     if (!settled(t?.verificacaoValidades, 'verificacao_validades') &&
         open(ValidadesTurno.manha))
       ValidadesTurno.manha.label,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/auto2_entry.dart';
+import '../models/opening_list.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -34,6 +35,10 @@ class Auto2Service extends ChangeNotifier {
     notifyListeners();
     return entry;
   }
+
+  /// The sends of service [day] (one backdated to it included).
+  Future<List<Auto2Entry>> forServiceDay(DateTime day) => _db.auto2Entries
+      .where((e) => currentServiceDay(e.createdAt).isAtSameMomentAs(day));
 
   Future<void> delete(int id) async {
     if (await _db.auto2Entries.softDelete(id)) notifyListeners();

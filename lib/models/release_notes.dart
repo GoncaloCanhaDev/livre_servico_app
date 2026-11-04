@@ -7,6 +7,14 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
+    version: '0.83.0',
+    items: [
+      'Diárias: a Lista Visível marca-se sozinha quando se faz um Visível em '
+          'Listas 2.0, e a Lista Automática mostra quantas automáticas já se '
+          'enviaram hoje.',
+    ],
+  ),
+  (
     version: '0.82.0',
     items: [
       'As Diárias já não incluem a Lista de Abertura, o Relatório, a Lista '

@@ -96,7 +96,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'tarefas',
     title: 'Tarefas',
-    version: 1,
+    version: 2,
     steps: [
       TutorialStep(
         icon: Icons.task_alt,
@@ -123,7 +123,8 @@ const tutorialSections = [
             'Noite (19h–5h). Fora da janela não se marca como feita, só como '
             'não feita. Em '
             'Personalizadas, o + cria uma tarefa nova (diária, semanal ou '
-            'pontual).',
+            'pontual). A Lista Visível marca-se sozinha com um Visível de '
+            'Listas 2.0; a Lista Automática só conta as automáticas do dia.',
       ),
     ],
   ),

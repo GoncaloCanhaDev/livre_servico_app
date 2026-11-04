@@ -11,7 +11,10 @@ import '../../models/daily_tasks.dart';
 import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/validades.dart';
+import '../../models/visivel2_entry.dart';
+import '../../services/auto2_service.dart';
 import '../../services/daily_tasks_service.dart';
+import '../../services/visivel2_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 
@@ -28,6 +31,11 @@ class _DailyTasksTabState extends State<DailyTasksTab>
   bool get wantKeepAlive => true;
 
   DailyTasks? _tasks;
+
+  /// Today's Listas 2.0 Visíveis (the Lista Visível is done with one) and
+  /// how many Automáticas were sent (only counted, never ticked).
+  List<Visivel2Entry> _visiveis = [];
+  int _autoCount = 0;
 
   late final TextEditingController _alteracoesCtrl;
   late final TextEditingController _validadesCtrl;
@@ -50,12 +58,16 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       }
     });
     DailyTasksService.instance.addListener(_reload);
+    Visivel2Service.instance.addListener(_reload);
+    Auto2Service.instance.addListener(_reload);
     _reload();
   }
 
   @override
   void dispose() {
     DailyTasksService.instance.removeListener(_reload);
+    Visivel2Service.instance.removeListener(_reload);
+    Auto2Service.instance.removeListener(_reload);
     _clock.cancel();
     _alteracoesCtrl.dispose();
     _validadesCtrl.dispose();
@@ -65,10 +77,16 @@ class _DailyTasksTabState extends State<DailyTasksTab>
 
   Future<void> _reload() async {
     final tasks = await DailyTasksService.instance.currentOrCreate();
+    final visiveis = await Visivel2Service.instance.forServiceDay(
+      tasks.serviceDay,
+    );
+    final autos = await Auto2Service.instance.forServiceDay(tasks.serviceDay);
 
     if (!mounted) return;
     setState(() {
       _tasks = tasks;
+      _visiveis = visiveis;
+      _autoCount = autos.length;
       if (_alteracoesCtrl.text != '${tasks.alteracoesPrecoCount}') {
         _alteracoesCtrl.text = tasks.alteracoesPrecoCount == 0
             ? ''
@@ -428,6 +446,24 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               t.preenchimentoQuadroByNames = who;
             },
           ),
+          _ListTask(
+            label: 'Lista Visível',
+            checked: _visiveis.isNotEmpty,
+            note: _visiveis.isEmpty
+                ? 'Faz-se em Listas 2.0 → Visível'
+                : '${_visiveis.fold(0, (s, e) => s + e.itens)} itens picados · '
+                      'por ${joinNames({for (final v in _visiveis) ...v.byNames}.toList())}',
+            onLongPress: _visiveis.isEmpty
+                ? null
+                : () => _sendMsg('✅ Tarefa concluída: Lista Visível'),
+          ),
+          _CounterTask(
+            label: 'Lista Automática',
+            count: _autoCount,
+            note: _autoCount == 1
+                ? '1 automática enviada hoje'
+                : '$_autoCount automáticas enviadas hoje',
+          ),
           _validadesTask(tasks, ValidadesTurno.manha),
           _validadesTask(tasks, ValidadesTurno.noite),
           _manual(
@@ -525,6 +561,103 @@ class _ManualTask extends StatelessWidget {
           trailing: names.isNotEmpty
               ? PersonInitialsRow(names: names, size: 30)
               : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// A task ticked by another screen: no markers, only whether it is done.
+class _ListTask extends StatelessWidget {
+  const _ListTask({
+    required this.label,
+    required this.checked,
+    required this.note,
+    this.onLongPress,
+  });
+
+  final String label;
+  final bool checked;
+  final String note;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: CheckboxListTile(
+          value: checked,
+          onChanged: null,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: context.colors.primary,
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              decoration: checked ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              Icon(Icons.lock_outline, size: 12, color: context.faintest),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  note,
+                  style: TextStyle(fontSize: 12, color: context.muted),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A task that is only counted, never ticked: the Lista Automática.
+class _CounterTask extends StatelessWidget {
+  const _CounterTask({
+    required this.label,
+    required this.count,
+    required this.note,
+  });
+
+  final String label;
+  final int count;
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: count == 0 ? null : context.colors.primary,
+            border: count == 0 ? Border.all(color: context.faint) : null,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              color: count == 0
+                  ? context.colors.onSurface
+                  : context.colors.onPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          note,
+          style: TextStyle(fontSize: 12, color: context.muted),
         ),
       ),
     );
