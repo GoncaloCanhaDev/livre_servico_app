@@ -179,7 +179,9 @@ multi-tenant product.
   any store (`adminJoinRequests`, `approveJoin(storeId:)`) and links to Mudanças de loja and
   Erros e sugestões; Lojas (`adminStores`, then a store's `adminStorePeople` and accounts) and
   Contas (`adminAccounts`) list everything. Read-only RPCs in
-  `20261101150000_admin_overview.sql`, refusing anyone but the admin.
+  `20261101150000_admin_overview.sql`, refusing anyone but the admin. Contas also removes
+  an account (`adminDeleteAccount`, `20261104120000_admin_delete_account.sql`: deletes the
+  auth user, so its memberships cascade; the store's data and Person stay; never an admin).
 - Informações (`InfoEntry`, read/written through `InfoService`) holds the store fields, bucket
   entries (Protocolos, Avarias, Reclamações) and Contactos Úteis (bucket `contactos`, grouped by
   `InfoEntry.group`). Contacts from the old fixed buckets are read through the helpers in

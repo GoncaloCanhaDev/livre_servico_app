@@ -104,7 +104,14 @@ class _AdminScreenState extends State<AdminScreen> {
           onOpen: (s) => _open(_AdminStoreScreen(store: s)),
         ),
       ),
-      ('Contas', _AccountsTab(accounts: _accounts, onRefresh: _reload)),
+      (
+        'Contas',
+        _AccountsTab(
+          accounts: _accounts,
+          onRefresh: _reload,
+          onDelete: (a) => _run(() => _account.adminDeleteAccount(a.userId)),
+        ),
+      ),
     ],
   );
 }
@@ -345,12 +352,18 @@ String _lastSignIn(AdminAccount a) => switch (a.lastSignInAt) {
   null => 'Conta criada ${_day.format(a.createdAt)}',
 };
 
-/// Every account, searchable by email, store or person.
+/// Every account, searchable by email, store or person; any but an admin's
+/// removed with [onDelete], once confirmed.
 class _AccountsTab extends StatefulWidget {
-  const _AccountsTab({required this.accounts, required this.onRefresh});
+  const _AccountsTab({
+    required this.accounts,
+    required this.onRefresh,
+    required this.onDelete,
+  });
 
   final Future<List<AdminAccount>> accounts;
   final Future<void> Function() onRefresh;
+  final Future<void> Function(AdminAccount) onDelete;
 
   @override
   State<_AccountsTab> createState() => _AccountsTabState();
@@ -367,6 +380,32 @@ class _AccountsTabState extends State<_AccountsTab> {
       a.storeName ?? '',
       a.personName ?? '',
     ].any((t) => t.toLowerCase().contains(q));
+  }
+
+  Future<void> _confirmDelete(AdminAccount a) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover conta'),
+        content: Text(
+          'Remover a conta ${a.email}? Deixa de poder entrar e sai '
+          '${a.storeName != null ? 'da loja ${a.storeName}' : 'da app'}. '
+          'Os dados da loja, incluindo a pessoa, ficam. Não se pode desfazer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await widget.onDelete(a);
   }
 
   @override
@@ -411,6 +450,13 @@ class _AccountsTabState extends State<_AccountsTab> {
                   title: Text(a.email),
                   subtitle: Text('${_accountLine(a)}\n${_lastSignIn(a)}'),
                   isThreeLine: true,
+                  trailing: a.isAdmin
+                      ? null
+                      : IconButton(
+                          tooltip: 'Remover conta',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _confirmDelete(a),
+                        ),
                 ),
             ];
           },

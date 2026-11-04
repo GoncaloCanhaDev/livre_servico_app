@@ -510,6 +510,21 @@ const people = await as(A, `select * from public.admin_store_people($1)`, [store
 ok('a store\'s people, with linked accounts', people.length >= 1 && people.some((p) => p.email !== null));
 await as(A, 'select public.refuse_join($1, $2)', [store, K]);
 
+// The admin removes an account (never their own or another admin's).
+await as(K, 'select public.join_store($1, null, $2)', [adminCode, 'Kátia']);
+await as(K, `select public.send_feedback('erro', 'Antes de sair')`);
+await throws('only the admin removes accounts', () => as(B, 'select public.admin_delete_account($1)', [K]), /administrador/);
+await throws('not their own account', () => as(A, 'select public.admin_delete_account($1)', [A]), /própria/);
+await as(A, 'select public.admin_delete_account($1)', [K]);
+ok('the account is gone', !(await as(A, `select * from public.admin_accounts()`)).some((a) => a.user_id === K));
+ok('with its membership', (await db.query('select * from public.store_members where user_id = $1', [K])).rows.length === 0);
+ok('its feedback stays, unlinked', (await as(A, `select * from public.feedback_list()`)).some((f) => f.message === 'Antes de sair'));
+await throws('an account already removed', () => as(A, 'select public.admin_delete_account($1)', [K]), /já não existe/);
+await db.exec('reset role');
+await db.query(`insert into auth.users values ('00000000-0000-0000-0000-000000000098', 'admin2@x.pt')`);
+await db.query(`insert into app_admins values ('00000000-0000-0000-0000-000000000098')`);
+await throws('not another admin', () => as(A, 'select public.admin_delete_account($1)', ['00000000-0000-0000-0000-000000000098']), /administrador/);
+
 await db.exec('reset role');
 await throws('anon cannot send feedback', async () => { await db.exec(`set role anon`); await db.query(`select public.send_feedback('erro', 'x')`); }, /permission denied/);
 await db.exec('reset role');

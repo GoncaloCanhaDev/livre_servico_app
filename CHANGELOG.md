@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.84.0] — 2026-11-04
+
+### Added
+- Administração → Contas: the admin removes an account (the bin beside it, confirmed), through
+  the new `admin_delete_account` RPC (`20261104120000_admin_delete_account.sql`). Its
+  memberships and store-change request go with it; the store's data, its Person included,
+  stays. Never the admin's own account or another admin's.
+
 ## [0.83.2] — 2026-11-04
 
 ### Changed

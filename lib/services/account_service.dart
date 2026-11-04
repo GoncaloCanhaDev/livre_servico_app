@@ -741,6 +741,12 @@ class AccountService extends ChangeNotifier {
     ];
   }
 
+  /// Removes the account [userId] for good: its memberships go with it, the
+  /// store's data (its Person too) stays. The admin only, never an admin's
+  /// account.
+  Future<void> adminDeleteAccount(String userId) =>
+      _api.rpc<void>('admin_delete_account', params: {'p_user': userId});
+
   /// The store [storeId]'s people, by name. The admin only.
   Future<List<AdminPerson>> adminStorePeople(String storeId) async {
     final rows = await _api.rpc<List<dynamic>>(
