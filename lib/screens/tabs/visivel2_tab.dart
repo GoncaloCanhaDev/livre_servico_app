@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/opening_list.dart';
 import '../../models/visivel2_entry.dart';
+import '../../services/settings_service.dart';
 import '../../services/visivel2_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
@@ -11,7 +12,9 @@ import '../widgets/person_picker.dart';
 
 /// Listas 2.0 → Visível, like 1.0's Visual without Quebra and Benefício:
 /// the products picked by hand going round the store. Meant once a day,
-/// after a round of Automáticas, but never locked.
+/// after a round of Automáticas, but never locked. The number typed is
+/// kept as a draft ([SettingsService.draft]) until it is finalized, so an
+/// interruption loses nothing.
 class Visivel2Tab extends StatefulWidget {
   const Visivel2Tab({super.key});
 
@@ -20,7 +23,10 @@ class Visivel2Tab extends StatefulWidget {
 }
 
 class _Visivel2TabState extends State<Visivel2Tab> {
-  final _itens = TextEditingController();
+  static const _draftKey = 'visivel2';
+  final _itens = TextEditingController(
+    text: SettingsService.instance.draft(_draftKey),
+  );
   List<Visivel2Entry> _today = [];
 
   @override
@@ -79,6 +85,8 @@ class _Visivel2TabState extends State<Visivel2Tab> {
     );
     if (!mounted) return;
     setState(_itens.clear);
+    await SettingsService.instance.setDraft(_draftKey, '');
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Visível guardado.')));
@@ -109,7 +117,10 @@ class _Visivel2TabState extends State<Visivel2Tab> {
           NumberRow(
             label: 'Itens Picados',
             controller: _itens,
-            onChanged: () => setState(() {}),
+            onChanged: () {
+              SettingsService.instance.setDraft(_draftKey, _itens.text);
+              setState(() {});
+            },
           ),
           const SizedBox(height: 8),
           ElevatedButton.icon(

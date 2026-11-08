@@ -31,9 +31,20 @@ void main() {
     matching: find.byType(TextField),
   );
 
+  /// Picks [item]'s chip, which may also show its count.
+  Future<void> pick(WidgetTester tester, Auto2Item item) => tapAndSettle(
+    tester,
+    find.ancestor(
+      of: find.textContaining(item.label),
+      matching: find.byType(ChoiceChip),
+    ),
+  );
+
   /// Types [value] into [item], sends it as done by Ana and returns the
   /// WhatsApp message offered, declining to send it.
+
   Future<String> send(WidgetTester tester, Auto2Item item, String value) async {
+    await pick(tester, item);
     await tester.enterText(field(item), value);
     await settle(tester);
     await tapAndSettle(tester, find.byTooltip('Enviar ${item.label}'));
@@ -61,15 +72,17 @@ void main() {
   Future<List<Auto2Entry>> history(WidgetTester tester) =>
       dbCall(tester, Auto2Service.instance.history);
 
-  testWidgets('the items show in order', (tester) async {
+  testWidgets('the items show in order, one field at a time', (tester) async {
     await open(tester);
     final labels = tester
-        .widgetList<NumberRow>(find.byType(NumberRow))
-        .map((r) => r.label)
+        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+        .map((c) => (c.label as Text).data)
         .toList();
-    expect(labels, [
-      for (final i in Auto2Item.values.take(labels.length)) i.label,
-    ]);
+    expect(labels, [for (final i in Auto2Item.values) i.label]);
+    expect(find.byType(NumberRow), findsOneWidget);
+    expect(find.widgetWithText(NumberRow, 'Mercearia'), findsOneWidget);
+    await pick(tester, Auto2Item.bebidas);
+    expect(find.widgetWithText(NumberRow, 'Bebidas'), findsOneWidget);
     expect(Auto2Item.values.first.label, 'Mercearia');
     expect(Auto2Item.values.last.label, 'Não Sortido');
   });
@@ -80,9 +93,7 @@ void main() {
     await open(tester);
     expect(
       tester
-          .widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.check_circle).first,
-          )
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send))
           .onPressed,
       isNull,
       reason: 'nothing to send while empty',
@@ -103,5 +114,26 @@ void main() {
       [('mercearia', 4, 'Ana Silva'), ('mercearia', 12, 'Ana Silva')],
     );
     expect(rows.every((r) => !r.backdated), isTrue);
+  });
+
+  testWidgets('a count not sent is kept after leaving', (tester) async {
+    await open(tester);
+    await pick(tester, Auto2Item.bebidas);
+    await tester.enterText(field(Auto2Item.bebidas), '20');
+    await settle(tester);
+    // Leaving the app: everything on screen is gone.
+    await pumpApp(tester, const SizedBox());
+    await pumpApp(tester, const LivreServicoApp());
+    await tapAndSettle(tester, find.text('Listas 2.0'));
+
+    expect(find.text('Bebidas · 20'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(field(Auto2Item.bebidas)).controller!.text,
+      '20',
+      reason: 'the first item with a count opens',
+    );
+    await send(tester, Auto2Item.bebidas, '20');
+    expect(find.text('Bebidas · 20'), findsNothing);
+    expect(find.widgetWithText(ChoiceChip, 'Bebidas'), findsOneWidget);
   });
 }

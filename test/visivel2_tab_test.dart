@@ -73,4 +73,19 @@ void main() {
     expect([for (final r in rows) r.itens], [5, 37]);
     expect(rows.every((r) => r.byNames.join() == 'Ana Silva'), isTrue);
   });
+
+  testWidgets('the number typed is kept until finalized', (tester) async {
+    await open(tester);
+    await tester.enterText(field(), '15');
+    await settle(tester);
+    // Leaving the app: everything on screen is gone.
+    await pumpApp(tester, const SizedBox());
+    await pumpApp(tester, const LivreServicoApp());
+    await tapAndSettle(tester, find.text('Listas 2.0'));
+    await tapAndSettle(tester, find.text('Visível'));
+    expect(tester.widget<TextField>(field()).controller!.text, '15');
+
+    await finalize(tester, '15');
+    expect(tester.widget<TextField>(field()).controller!.text, '');
+  });
 }

@@ -762,33 +762,21 @@ class _Listas2Diagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget item(String name, String value, {int? marker}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-            ),
-          ),
-          _Field(value),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.check_circle,
-            size: 16,
-            color: value.isEmpty ? context.faint : context.colors.primary,
-          ),
-          SizedBox(
-            width: 22,
-            child: marker == null
-                ? null
-                : Align(
-                    alignment: Alignment.centerRight,
-                    child: _Marker(marker, size: 15),
-                  ),
-          ),
-        ],
+    Widget chip(String name, {bool selected = false}) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: selected ? context.colors.primary.withValues(alpha: 0.15) : null,
+        border: Border.all(
+          color: selected ? context.colors.primary : context.greyedFill,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        name,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
       ),
     );
     return _Screen(
@@ -800,10 +788,37 @@ class _Listas2Diagram extends StatelessWidget {
             _Marker(1),
           ],
         ),
-        item('Mercearia', '14', marker: 2),
-        item('Pet Food', ''),
-        item('Bebidas', '', marker: 3),
-        item('Vinhos e Destilados', ''),
+        Row(
+          children: [
+            const Expanded(
+              child: _Line('Bebidas', bold: true, trailing: _Field('14')),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.send, size: 16, color: context.colors.primary),
+            const SizedBox(width: 4),
+            const _Marker(3, size: 15),
+          ],
+        ),
+        _gap,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  chip('Mercearia · 20'),
+                  chip('Pet Food'),
+                  chip('Bebidas · 14', selected: true),
+                  chip('Vinhos e Destilados'),
+                  chip('Detergentes'),
+                ],
+              ),
+            ),
+            const _Marker(2, size: 15),
+          ],
+        ),
       ],
     );
   }

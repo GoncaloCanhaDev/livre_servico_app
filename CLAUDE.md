@@ -146,7 +146,9 @@ multi-tenant product.
   Automáticas send saves an `AutoList` holding only that section.
 - Listas 2.0 → Automáticas (`lib/models/auto2_entry.dart`, `Auto2Service`): the items are
   `Auto2Item` (stored by name; never rename one). Like 1.0's, each item is sent on its own:
-  every send is one `Auto2Entry` (value, who, `createdAt`) and the field clears. They show in
+  every send is one `Auto2Entry` (value, who, `createdAt`) and the field clears. The item is
+  picked from chips above one field. A count typed and not sent (each item, the Visível) is
+  kept on the device by `SettingsService.draft`/`setDraft` until sent. They show in
   Histórico's Automáticas 2.0 tab and in Tudo, and are counted in the Diárias (Lista
   Automática).
   Visível (`lib/models/visivel2_entry.dart`, `Visivel2Service`) is 1.0's Visual without

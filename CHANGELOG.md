@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.85.1] — 2026-11-08
+
+### Changed
+- Listas 2.0 → Automáticas: the section is picked from chips (each showing its count, if any)
+  and its count typed in the one field at the top, with the send button beside it, so nothing
+  needs scrolling.
+
+### Fixed
+- Listas 2.0: a count typed and not yet sent (each Automáticas item, the Visível) is kept on the
+  device (`SettingsService.draft`) until it is sent, so leaving the app or being interrupted
+  loses nothing.
+
 ## [0.85.0] — 2026-11-08
 
 ### Added

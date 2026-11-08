@@ -122,6 +122,15 @@ class SettingsService extends ChangeNotifier {
     return const {};
   }
 
+  /// A number typed on this device and not sent yet (an Automáticas 2.0
+  /// item, the Visível), kept so leaving the app or being interrupted
+  /// loses nothing; '' when there is none. Never synced nor backed up.
+  String draft(String key) => _prefs.getString('draft:$key') ?? '';
+
+  Future<void> setDraft(String key, String value) => value.isEmpty
+      ? _prefs.remove('draft:$key')
+      : _prefs.setString('draft:$key', value);
+
   Future<void> setVisualGoal(int goal) async {
     _visualGoal = goal;
     await _prefs.setInt('visualGoal', goal);

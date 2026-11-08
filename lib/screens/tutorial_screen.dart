@@ -131,7 +131,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'listas2',
     title: 'Listas 2.0',
-    version: 3,
+    version: 4,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
@@ -144,11 +144,11 @@ const tutorialSections = [
         steps: [
           'As secções: Automáticas e Visível. As listas antigas continuam em '
               'Listas 1.0.',
-          'Escreva o número do item e toque no visto: escolha quem o fez (e '
-              'o dia, se foi noutro) e envie a mensagem por WhatsApp.',
-          'Depois de enviado, o item fica guardado no Histórico '
-              '(Automáticas 2.0) e volta a ficar vazio, pronto para o '
-              'próximo.',
+          'Escolha a secção: o número que já tem aparece ao lado do nome. '
+              'Fica guardado até ser enviado, mesmo que saia da aplicação.',
+          'Escreva o número e toque em enviar: escolha quem o fez (e o dia, '
+              'se foi noutro) e envie a mensagem por WhatsApp. Fica no '
+              'Histórico (Automáticas 2.0) e o campo volta a ficar vazio.',
         ],
         tip:
             'No Histórico, deslize uma linha para a reenviar por WhatsApp ou '
@@ -162,7 +162,8 @@ const tutorialSections = [
             'loja, pique os produtos à mão e conte-os.',
         diagram: _Visivel2Diagram(),
         steps: [
-          'Escreva quantos itens picou.',
+          'Escreva quantos itens picou. Se for interrompido, o número fica '
+              'guardado até finalizar.',
           'Finalizar: escolha quem o fez, guarde e envie por WhatsApp. O '
               'campo volta a ficar vazio.',
           'O total de hoje e cada Visível feito, com a hora e quem. Fica no '

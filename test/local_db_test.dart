@@ -193,10 +193,7 @@ void main() {
       final p = (await db.persons.get(id))!..fullName = 'Rui';
       await db.persons.put(p);
       expect(await db.persons.where((p) => p.fullName == 'Ana Silva'), isEmpty);
-      expect(
-        (await db.persons.firstWhere((p) => p.fullName == 'Rui'))!.id,
-        id,
-      );
+      expect((await db.persons.firstWhere((p) => p.fullName == 'Rui'))!.id, id);
       await db.persons.softDelete(id);
       expect(await db.persons.firstWhere((p) => p.fullName == 'Rui'), isNull);
       expect(
