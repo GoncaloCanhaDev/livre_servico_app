@@ -38,6 +38,8 @@ class Auto2Entry with SyncFields {
       ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
       ..item = stringOrNull(j['item']) ?? ''
       ..value = intFromJson(j['value'])
+      ..porTratar = intFromJson(j['porTratar'])
+      ..semStock = intFromJson(j['semStock'])
       ..byNames = stringsFromJson(j['byNames'])
       ..backdated = boolFromJson(j['backdated']);
     syncFieldsFromJson(e, j);
@@ -50,7 +52,18 @@ class Auto2Entry with SyncFields {
   /// An [Auto2Item.name].
   String item = '';
 
+  /// The artigos on the list (the total).
   int value = 0;
+
+  /// Of [value], those left for later; 0 on rows from before 0.86.0.
+  int porTratar = 0;
+
+  /// Of [value], those out of stock; 0 on rows from before 0.86.0.
+  int semStock = 0;
+
+  /// Those dealt with: [value] less [porTratar].
+  int get tratados => value - porTratar;
+
   List<String> byNames = [];
 
   /// Sent from a later day, for an earlier one.
@@ -59,13 +72,41 @@ class Auto2Entry with SyncFields {
   /// The item's name, or what was stored for an item no longer listed.
   String get label => Auto2Item.byName(item)?.label ?? item;
 
+  /// "12", or "12 · 2 por tratar · 1 sem stock" when those were counted.
+  String get summary => auto2Summary(value, porTratar, semStock);
+
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
     'createdAt': dateToJson(createdAt),
     'item': item,
     'value': value,
+    'porTratar': porTratar,
+    'semStock': semStock,
     'byNames': byNames,
     'backdated': backdated,
   };
 }
+
+/// [value] artigos, then the [porTratar] and [semStock] of them, if any.
+String auto2Summary(int value, int porTratar, int semStock) => [
+  '$value',
+  if (porTratar > 0) '$porTratar por tratar',
+  if (semStock > 0) '$semStock sem stock',
+].join(' · ');
+
+/// The WhatsApp message for one send ([dayNote] names an earlier day).
+String auto2Message({
+  required String label,
+  required int value,
+  required int porTratar,
+  required int semStock,
+  required String byNames,
+  String dayNote = '',
+}) => [
+  '📦 Automáticas$dayNote · $label: $value artigos',
+  if (porTratar > 0 || semStock > 0)
+    'Tratados: ${value - porTratar} · Por tratar: $porTratar · '
+        'Sem stock: $semStock',
+  'Por: $byNames',
+].join('\n');

@@ -69,8 +69,14 @@ class _Auto2TabState extends State<_Auto2Tab>
                 onSendWhatsApp: (ctx) async {
                   await WhatsAppService.sendWithConfirm(
                     ctx,
-                    '📦 Automáticas ($when) · ${a.label}: ${a.value}\n'
-                    'Por: ${joinNames(a.byNames)}',
+                    auto2Message(
+                      label: a.label,
+                      value: a.value,
+                      porTratar: a.porTratar,
+                      semStock: a.semStock,
+                      byNames: joinNames(a.byNames),
+                      dayNote: ' ($when)',
+                    ),
                   );
                 },
                 child: ListTile(
@@ -81,6 +87,11 @@ class _Auto2TabState extends State<_Auto2Tab>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(when),
+                      if (a.porTratar > 0 || a.semStock > 0)
+                        Text(
+                          '${a.tratados} tratados · ${a.porTratar} por tratar'
+                          ' · ${a.semStock} sem stock',
+                        ),
                       if (a.backdated) const _BackdatedRow(),
                     ],
                   ),

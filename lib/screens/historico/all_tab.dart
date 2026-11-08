@@ -132,7 +132,7 @@ class _AllTabState extends State<_AllTab>
           type: _ItemType.auto2,
           time: a.createdAt,
           title: '📦 Automáticas · ${a.label}',
-          subtitle: '${a.value}',
+          subtitle: a.summary,
           icon: Icons.bolt,
           names: a.byNames,
           deleted: a.syncDeletedAt != null,

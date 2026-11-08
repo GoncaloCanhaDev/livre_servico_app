@@ -14,11 +14,14 @@ class Auto2Service extends ChangeNotifier {
 
   LocalDb get _db => LocalDb.instance;
 
-  /// Saves [item] as [value], done by [names]: now, or on [serviceDay]
+  /// Saves [item] as [value] artigos ([porTratar] of them left for later,
+  /// [semStock] out of stock), done by [names]: now, or on [serviceDay]
   /// (then at noon, flagged backdated) when it was an earlier day.
   Future<Auto2Entry> send({
     required Auto2Item item,
     required int value,
+    int porTratar = 0,
+    int semStock = 0,
     required List<String> names,
     DateTime? serviceDay,
   }) async {
@@ -28,6 +31,8 @@ class Auto2Service extends ChangeNotifier {
           : DateTime(serviceDay.year, serviceDay.month, serviceDay.day, 12)
       ..item = item.name
       ..value = value
+      ..porTratar = porTratar
+      ..semStock = semStock
       ..byNames = names
       ..backdated = serviceDay != null;
     SyncMeta.stamp(entry);

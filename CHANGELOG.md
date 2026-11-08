@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.86.0] — 2026-11-08
+
+### Added
+- Listas 2.0 → Automáticas: each send records, besides the artigos on the list (`value`), how
+  many were left por tratar and how many were sem stock (`Auto2Entry.porTratar`/`semStock`,
+  0 on older rows; `tratados` is the difference). Neither can exceed the total. Both are kept
+  as drafts like the total, and shown in the WhatsApp message (`auto2Message`), in Histórico
+  (Automáticas 2.0 and Tudo, `auto2Summary`) and in its search. The demo has some.
+
 ## [0.85.3] — 2026-11-08
 
 ### Changed

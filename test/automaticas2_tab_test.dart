@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/models/auto2_entry.dart';
 import 'package:livre_servico_app/models/person.dart';
-import 'package:livre_servico_app/screens/widgets/number_row.dart';
 import 'package:livre_servico_app/services/auto2_service.dart';
 import 'package:livre_servico_app/services/person_service.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
@@ -26,9 +25,15 @@ void main() {
     await tapAndSettle(tester, find.text('Listas 2.0'));
   }
 
-  Finder field(Auto2Item item) => find.descendant(
-    of: find.widgetWithText(NumberRow, item.label),
-    matching: find.byType(TextField),
+  /// The selected item's field: 'total', 'porTratar' or 'semStock'.
+  Finder field(String count) => find.byKey(ValueKey('auto2:$count'));
+
+  String textOf(WidgetTester tester, String count) =>
+      tester.widget<TextField>(field(count)).controller!.text;
+
+  Finder sendButton(Auto2Item item) => find.ancestor(
+    of: find.text('Enviar ${item.label}'),
+    matching: find.bySubtype<ButtonStyleButton>(),
   );
 
   /// Picks [item]'s chip, which may also show its count.
@@ -40,14 +45,26 @@ void main() {
     ),
   );
 
-  /// Types [value] into [item], sends it as done by Ana and returns the
-  /// WhatsApp message offered, declining to send it.
-
-  Future<String> send(WidgetTester tester, Auto2Item item, String value) async {
-    await pick(tester, item);
-    await tester.enterText(field(item), value);
+  Future<void> type(WidgetTester tester, String count, String value) async {
+    await tester.enterText(field(count), value);
     await settle(tester);
-    await tapAndSettle(tester, find.byTooltip('Enviar ${item.label}'));
+  }
+
+  /// Picks [item], types its counts, sends it as done by Ana and returns
+  /// the WhatsApp message offered, declining to send it.
+  Future<String> send(
+    WidgetTester tester,
+    Auto2Item item,
+    String value, {
+    String porTratar = '',
+    String semStock = '',
+  }) async {
+    await pick(tester, item);
+    await type(tester, 'total', value);
+    if (porTratar.isNotEmpty) await type(tester, 'porTratar', porTratar);
+    if (semStock.isNotEmpty) await type(tester, 'semStock', semStock);
+    await tester.ensureVisible(sendButton(item));
+    await tapAndSettle(tester, sendButton(item));
     expect(find.text('Quem fez ${item.label}?'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, 'Procurar'), 'ana');
     await settle(tester);
@@ -72,17 +89,16 @@ void main() {
   Future<List<Auto2Entry>> history(WidgetTester tester) =>
       dbCall(tester, Auto2Service.instance.history);
 
-  testWidgets('the items show in order, one field at a time', (tester) async {
+  testWidgets('the items show in order, one at a time', (tester) async {
     await open(tester);
     final labels = tester
         .widgetList<ChoiceChip>(find.byType(ChoiceChip))
         .map((c) => (c.label as Text).data)
         .toList();
     expect(labels, [for (final i in Auto2Item.values) i.label]);
-    expect(find.byType(NumberRow), findsOneWidget);
-    expect(find.widgetWithText(NumberRow, 'Mercearia'), findsOneWidget);
+    expect(find.text('Enviar Mercearia'), findsOneWidget);
     await pick(tester, Auto2Item.bebidas);
-    expect(find.widgetWithText(NumberRow, 'Bebidas'), findsOneWidget);
+    expect(find.text('Enviar Bebidas'), findsOneWidget);
     expect(Auto2Item.values.first.label, 'Mercearia');
     expect(Auto2Item.values.last.label, 'Não Sortido');
   });
@@ -93,19 +109,17 @@ void main() {
     await open(tester);
     expect(
       tester
-          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send))
+          .widget<ButtonStyleButton>(sendButton(Auto2Item.mercearia))
           .onPressed,
       isNull,
       reason: 'nothing to send while empty',
     );
 
     final message = await send(tester, Auto2Item.mercearia, '12');
-    expect(message, contains('Automáticas · Mercearia: 12'));
+    expect(message, contains('Automáticas · Mercearia: 12 artigos'));
+    expect(message, isNot(contains('Por tratar')));
     expect(message, contains('Por: Ana Silva'));
-    expect(
-      tester.widget<TextField>(field(Auto2Item.mercearia)).controller!.text,
-      '',
-    );
+    expect(textOf(tester, 'total'), '');
 
     await send(tester, Auto2Item.mercearia, '4');
     final rows = await history(tester);
@@ -116,11 +130,47 @@ void main() {
     expect(rows.every((r) => !r.backdated), isTrue);
   });
 
-  testWidgets('a count not sent is kept after leaving', (tester) async {
+  testWidgets('por tratar and sem stock are sent with the total', (
+    tester,
+  ) async {
     await open(tester);
     await pick(tester, Auto2Item.bebidas);
-    await tester.enterText(field(Auto2Item.bebidas), '20');
-    await settle(tester);
+    await type(tester, 'total', '20');
+    await type(tester, 'porTratar', '25');
+    expect(
+      find.text('Por tratar não pode ser mais do que os artigos na lista.'),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<ButtonStyleButton>(sendButton(Auto2Item.bebidas)).onPressed,
+      isNull,
+    );
+
+    final message = await send(
+      tester,
+      Auto2Item.bebidas,
+      '20',
+      porTratar: '3',
+      semStock: '2',
+    );
+    expect(message, contains('Bebidas: 20 artigos'));
+    expect(message, contains('Tratados: 17 · Por tratar: 3 · Sem stock: 2'));
+    expect(textOf(tester, 'porTratar'), '');
+    expect(textOf(tester, 'semStock'), '');
+
+    final row = (await history(tester)).single;
+    expect(
+      (row.value, row.porTratar, row.semStock, row.tratados),
+      (20, 3, 2, 17),
+    );
+    expect(row.summary, '20 · 3 por tratar · 2 sem stock');
+  });
+
+  testWidgets('counts not sent are kept after leaving', (tester) async {
+    await open(tester);
+    await pick(tester, Auto2Item.bebidas);
+    await type(tester, 'total', '20');
+    await type(tester, 'semStock', '1');
     // Leaving the app: everything on screen is gone.
     await pumpApp(tester, const SizedBox());
     await pumpApp(tester, const LivreServicoApp());
@@ -128,12 +178,14 @@ void main() {
 
     expect(find.text('Bebidas · 20'), findsOneWidget);
     expect(
-      tester.widget<TextField>(field(Auto2Item.bebidas)).controller!.text,
-      '20',
+      find.text('Enviar Bebidas'),
+      findsOneWidget,
       reason: 'the first item with a count opens',
     );
-    await send(tester, Auto2Item.bebidas, '20');
-    expect(find.text('Bebidas · 20'), findsNothing);
-    expect(find.widgetWithText(ChoiceChip, 'Bebidas'), findsOneWidget);
+    expect(textOf(tester, 'total'), '20');
+    expect(textOf(tester, 'semStock'), '1');
+
+    await pick(tester, Auto2Item.mercearia);
+    expect(textOf(tester, 'total'), '');
   });
 }

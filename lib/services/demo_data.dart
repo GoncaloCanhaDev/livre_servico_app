@@ -269,16 +269,18 @@ Future<String> seedDemo({DateTime? now}) async {
       ..naoPereciveis = 9,
   );
   final auto2 = [
-    for (final (item, value, at, by) in [
-      (Auto2Item.mercearia, 14, day(0, 7, 40), 'João Pereira'),
-      (Auto2Item.bebidas, 6, day(0, 8, 5), 'Inês Rodrigues'),
-      (Auto2Item.leiteOvos, 3, day(0, 8, 20), 'João Pereira'),
+    for (final (item, value, porTratar, semStock, at, by) in [
+      (Auto2Item.mercearia, 14, 2, 1, day(0, 7, 40), 'João Pereira'),
+      (Auto2Item.bebidas, 6, 0, 0, day(0, 8, 5), 'Inês Rodrigues'),
+      (Auto2Item.leiteOvos, 3, 0, 2, day(0, 8, 20), 'João Pereira'),
     ])
       stamped(
         Auto2Entry()
           ..createdAt = at
           ..item = item.name
           ..value = value
+          ..porTratar = porTratar
+          ..semStock = semStock
           ..byNames = [by],
       ),
   ];

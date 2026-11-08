@@ -71,7 +71,7 @@ String autoSearchText(AutoList a) => _join([
 
 /// An Automáticas 2.0 send: date, item, who, value.
 String auto2SearchText(Auto2Entry a) =>
-    _join([dateWords(a.createdAt), a.label, ...a.byNames, a.value]);
+    _join([dateWords(a.createdAt), a.label, ...a.byNames, a.summary]);
 
 /// A Relatório: date, who, values.
 String reportSearchText(ReportList r) => _join([
