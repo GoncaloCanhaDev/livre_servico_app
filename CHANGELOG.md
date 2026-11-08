@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.85.2] — 2026-11-08
+
+### Fixed
+- Erros e sugestões (the admin's inbox) reads the list again every 30 seconds while open and
+  when the app comes back, so new ones show without reloading; Home's Administração card does
+  the same every minute, and keeps its counts when a read fails offline.
+
 ## [0.85.1] — 2026-11-08
 
 ### Changed

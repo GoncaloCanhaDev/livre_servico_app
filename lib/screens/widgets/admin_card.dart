@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../services/account_service.dart';
@@ -6,7 +8,8 @@ import '../admin_screen.dart';
 
 /// On Home, for the app's admin: what waits in every store (requests to
 /// join, to move store, errors and suggestions); opens Administração.
-/// Nothing for anyone else, or offline.
+/// Nothing for anyone else, or offline. Read again every minute and when
+/// the app comes back, so new ones show without reloading.
 class AdminCard extends StatefulWidget {
   const AdminCard({super.key});
 
@@ -17,17 +20,20 @@ class AdminCard extends StatefulWidget {
 class _AdminCardState extends State<AdminCard> with WidgetsBindingObserver {
   final _account = AccountService.instance;
   AdminSummary? _summary;
+  late final Timer _timer;
 
   @override
   void initState() {
     super.initState();
     _account.addListener(_load);
     WidgetsBinding.instance.addObserver(this);
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _load());
     _load();
   }
 
   @override
   void dispose() {
+    _timer.cancel();
     _account.removeListener(_load);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -44,7 +50,8 @@ class _AdminCardState extends State<AdminCard> with WidgetsBindingObserver {
       try {
         summary = await _account.adminSummary();
       } catch (_) {
-        // Offline: show nothing until the next try.
+        // Offline: keep what is shown until the next try.
+        return;
       }
     }
     if (mounted && summary != _summary) setState(() => _summary = summary);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -207,18 +209,56 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
 /// "Erros e sugestões", for the app's admin: everything sent, those still
 /// to deal with first; each can be marked dealt with, reopened or removed.
+/// While open it reads the list again every [refreshEvery] and when the app
+/// comes back, so new ones show without reloading.
 class FeedbackInboxScreen extends StatefulWidget {
   const FeedbackInboxScreen({super.key});
 
   @override
   State<FeedbackInboxScreen> createState() => _FeedbackInboxScreenState();
+
+  static const refreshEvery = Duration(seconds: 30);
 }
 
-class _FeedbackInboxScreenState extends State<FeedbackInboxScreen> {
+class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
+    with WidgetsBindingObserver {
   final _account = AccountService.instance;
   late Future<List<FeedbackItem>> _items = _account.feedbackList();
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _timer = Timer.periodic(FeedbackInboxScreen.refreshEvery, (_) {
+      _refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
 
   void _reload() => setState(() => _items = _account.feedbackList());
+
+  /// Reads the list again in the background: shown once it arrives, and
+  /// nothing changes if it fails (offline), until the next try.
+  Future<void> _refresh() async {
+    try {
+      final list = await _account.feedbackList();
+      if (mounted) setState(() => _items = Future.value(list));
+    } catch (_) {
+      // Keep what is shown.
+    }
+  }
 
   void _showError(Object e) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
