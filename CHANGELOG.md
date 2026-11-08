@@ -7,6 +7,15 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.85.3] — 2026-11-08
+
+### Changed
+- Erros e sugestões is a button on Home and in the side menu (`feedbackDestination`, not in the
+  demo) instead of Definições; for the admin its app bar opens the ones received.
+- Listas 1.0 left Home and the side menu: it opens from Definições → Funções antigas
+  (`legacyListsDestination`). The computer's dashboard still shows its Abertura panel.
+- Tutorial: Início, Listas 2.0 and Listas 1.0 say where these are now (versions raised).
+
 ## [0.85.2] — 2026-11-08
 
 ### Fixed

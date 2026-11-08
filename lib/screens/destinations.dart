@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'avisos_screen.dart';
+import '../services/demo_mode.dart';
 import 'documents_screen.dart';
+import 'feedback_screen.dart';
 import 'historico_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
@@ -30,15 +32,11 @@ class Destination {
   );
 }
 
-/// Home's buttons, in order.
-final homeDestinations = [
+/// Home's buttons, in order. Erros e sugestões is left out of the demo,
+/// which sends nothing online.
+List<Destination> get homeDestinations => [
   Destination(Icons.local_shipping, 'Camiões', () => const TruckFormScreen()),
   Destination(Icons.checklist, 'Listas 2.0', () => const Listas2Screen()),
-  Destination(
-    Icons.archive_outlined,
-    'Listas 1.0',
-    () => const ReplenishmentListsScreen(),
-  ),
   Destination(Icons.assignment, 'Inventários', () => const InventoryScreen()),
   Destination(Icons.task_alt, 'Tarefas', () => const TasksScreen()),
   Destination(Icons.receipt_long, 'Pedidos', () => const PedidosScreen()),
@@ -50,7 +48,22 @@ final homeDestinations = [
   ),
   Destination(Icons.history, 'Histórico', () => const HistoricoScreen()),
   Destination(Icons.people, 'Pessoas', () => const PeopleScreen()),
+  if (!DemoMode.active) feedbackDestination,
 ];
+
+final feedbackDestination = Destination(
+  Icons.feedback_outlined,
+  'Erros e sugestões',
+  () => const FeedbackScreen(),
+);
+
+/// The old lists, kept for the stores still using them: opened from
+/// Definições → Funções antigas, not from Home.
+final legacyListsDestination = Destination(
+  Icons.archive_outlined,
+  'Listas 1.0',
+  () => const ReplenishmentListsScreen(),
+);
 
 final avisosDestination = Destination(
   Icons.campaign_outlined,

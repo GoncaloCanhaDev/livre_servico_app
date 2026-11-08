@@ -47,7 +47,7 @@ const privacyPolicy = <PolicySection>[
           'úteis), com quem o fez e quando.',
       'Avisos: o texto, quem o enviou, a quem e quando, e quem o viu e '
           'quando.',
-      'Erros e sugestões: o que escrever em "Reportar erro ou sugestão", '
+      'Erros e sugestões: o que escrever em "Erros e sugestões", '
           'com o seu email, a sua loja, a versão da aplicação, o tipo de '
           'aparelho (Android, navegador...) e a data.',
       'Dados técnicos: a sessão iniciada neste aparelho, a data de cada '

@@ -452,7 +452,6 @@ class _HomeDiagram extends StatelessWidget {
     const buttons = [
       (Icons.local_shipping, 'Camiões'),
       (Icons.checklist, 'Listas 2.0'),
-      (Icons.archive_outlined, 'Listas 1.0'),
       (Icons.assignment, 'Inventários'),
       (Icons.task_alt, 'Tarefas'),
       (Icons.receipt_long, 'Pedidos'),
@@ -460,6 +459,7 @@ class _HomeDiagram extends StatelessWidget {
       (Icons.description_outlined, 'Documentos'),
       (Icons.history, 'Histórico'),
       (Icons.people, 'Pessoas'),
+      (Icons.feedback_outlined, 'Erros e sugestões'),
     ];
     return _Screen(
       title: 'Livre Serviço Companion',

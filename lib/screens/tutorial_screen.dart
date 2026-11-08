@@ -38,7 +38,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'inicio',
     title: 'Início',
-    version: 3,
+    version: 4,
     steps: [
       TutorialStep(
         icon: Icons.waving_hand_outlined,
@@ -66,13 +66,14 @@ const tutorialSections = [
         diagram: _HomeDiagram(),
         steps: [
           'Avisos: os que recebeu e os que enviou.',
-          'Definições: conta, tutorial, objetivos e aparência.',
+          'Definições: conta, tutorial, aparência e as funções antigas '
+              '(Listas 1.0).',
           'Cartões que pedem atenção: avisos novos, pedidos de atualização do '
               'perfil, pedidos para entrar na loja.',
           'O cartão Hoje, com o resumo do dia.',
-          'Os botões de cada área: Camiões, Listas 2.0, Listas 1.0, '
-              'Inventários, Tarefas, Pedidos, Informações, Documentos, Histórico '
-              'e Pessoas.',
+          'Os botões de cada área: Camiões, Listas 2.0, Inventários, Tarefas, '
+              'Pedidos, Informações, Documentos, Histórico, Pessoas e Erros e '
+              'sugestões (para escrever ao administrador).',
         ],
       ),
       TutorialStep(
@@ -143,7 +144,7 @@ const tutorialSections = [
         diagram: _Listas2Diagram(),
         steps: [
           'As secções: Automáticas e Visível. As listas antigas continuam em '
-              'Listas 1.0.',
+              'Definições → Funções antigas → Listas 1.0.',
           'Escolha a secção: o número que já tem aparece ao lado do nome. '
               'Fica guardado até ser enviado, mesmo que saia da aplicação.',
           'Escreva o número e toque em enviar: escolha quem o fez (e o dia, '
@@ -178,7 +179,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'listas',
     title: 'Listas 1.0',
-    version: 3,
+    version: 4,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
@@ -188,7 +189,7 @@ const tutorialSections = [
             'Congelados, OPLS e Não Perecíveis.',
         diagram: _AberturaDiagram(),
         steps: [
-          'Abra Listas 1.0 → Abertura.',
+          'Abra Definições → Funções antigas → Listas 1.0 → Abertura.',
           'Escreva o número de cada secção.',
           'Quando uma secção estiver feita, toque na seta de enviar ao lado '
               'dela.',

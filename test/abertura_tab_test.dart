@@ -23,6 +23,8 @@ void main() {
     SyncMeta.stamp(ana);
     await dbCall(tester, () => PersonService.instance.save(ana));
     await pumpApp(tester, const LivreServicoApp());
+    await tapAndSettle(tester, find.byIcon(Icons.settings));
+    await tester.scrollUntilVisible(find.text('Listas 1.0'), 200);
     await tapAndSettle(tester, find.text('Listas 1.0'));
   }
 

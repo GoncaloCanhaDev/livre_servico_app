@@ -5,8 +5,8 @@ import '../services/backup_service.dart';
 import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
 import 'admin_screen.dart';
+import 'destinations.dart';
 import 'account_screen.dart';
-import 'feedback_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'tutorial_screen.dart';
 import 'widgets/wide_layout.dart';
@@ -112,22 +112,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              // The demo sends nothing online.
-              if (!DemoMode.active)
-                ListTile(
-                  title: const Text(
-                    'Reportar erro ou sugestão',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: const Text(
-                    'Escreva ao administrador da aplicação.',
-                  ),
-                  trailing: const Icon(Icons.feedback_outlined),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-                  ),
-                ),
               if (AccountService.instance.store != null &&
                   AccountService.instance.access.admin)
                 ListTile(
@@ -176,6 +160,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (mounted) setState(() {});
                   },
                 ),
+              ),
+              const Divider(),
+              _sectionHeader('Funções antigas'),
+              ListTile(
+                title: const Text(
+                  'Listas 1.0',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'As listas antigas: Abertura, Relatório, Visual e '
+                  'Automáticas.',
+                ),
+                trailing: Icon(legacyListsDestination.icon),
+                onTap: () =>
+                    Navigator.of(context).push(legacyListsDestination.route()),
               ),
               // The demo keeps nothing: no copies in or out, nothing to wipe.
               if (!DemoMode.active) ...[

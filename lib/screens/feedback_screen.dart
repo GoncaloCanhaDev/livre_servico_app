@@ -73,8 +73,9 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
   return out.toString();
 }
 
-/// "Reportar erro ou sugestão": anyone signed in writes to the app's admin,
-/// who is the only one to read it ([FeedbackInboxScreen]).
+/// "Erros e sugestões" (a Home button): anyone signed in writes to the
+/// app's admin, who is the only one to read it ([FeedbackInboxScreen],
+/// opened from here too).
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
@@ -133,7 +134,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     final ready = _canSend && !_sending && _message.text.trim().isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: const Text('Erro ou sugestão')),
+      appBar: AppBar(
+        title: const Text('Erros e sugestões'),
+        actions: [
+          if (AccountService.instance.store != null &&
+              AccountService.instance.access.admin)
+            IconButton(
+              tooltip: 'Ver os recebidos',
+              icon: const Icon(Icons.inbox_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeedbackInboxScreen()),
+              ),
+            ),
+        ],
+      ),
       body: ReadableWidth(
         child: SafeArea(
           child: ListView(

@@ -175,7 +175,8 @@ multi-tenant product.
   `DocumentService.remote` (`SupabaseDocumentRemote`) with the store sync. The list is cached in
   the `documents_cache` pref, each opened PDF in `LocalDb`'s `local_files` table (dropped when
   no longer listed). The demo and tests use `MemoryDocumentRemote` with PDFs from `simplePdf`.
-- Erros e sugestões (`lib/screens/feedback_screen.dart`, Definições): `FeedbackScreen` sends an
+- Erros e sugestões (`lib/screens/feedback_screen.dart`, a Home button, `feedbackDestination`,
+  not in the demo; its app bar opens the inbox for the admin): `FeedbackScreen` sends an
   error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
   `deleteFeedback`; both re-read on a timer and on resume, since the table has no Realtime;
@@ -218,7 +219,8 @@ multi-tenant product.
 - `lib/screens/*.dart` are mostly `StatefulWidget`s that read/write through the services above;
   `lib/screens/tabs/*.dart` holds tab bodies used from screens with a `TabBar`: the opening/
   auto/report/visual lists (`ReplenishmentListsScreen`, shown as "Listas 1.0": the old
-  lists, kept for the stores still using them; the new ones go in `Listas2Screen`, "Listas
+  lists, kept for the stores still using them, opened from Definições → Funções antigas
+  through `legacyListsDestination`, not from Home or the side menu; the new ones go in `Listas2Screen`, "Listas
   2.0": Automáticas, `Automaticas2Tab`, and Visível, `Visivel2Tab`) and the daily/weekly/custom tasks
   (`TasksScreen`). `lib/screens/widgets/*.dart` holds small shared widgets. The largest
   screens are split with `part` files, so their private widgets stay private:

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/main.dart';
 import 'package:livre_servico_app/screens/account_screen.dart';
 import 'package:livre_servico_app/screens/documents_screen.dart';
+import 'package:livre_servico_app/screens/feedback_screen.dart';
 import 'package:livre_servico_app/screens/historico_screen.dart';
 import 'package:livre_servico_app/screens/info_screen.dart';
 import 'package:livre_servico_app/screens/inventory_screen.dart';
@@ -31,7 +32,6 @@ void main() {
   for (final (label, screen) in [
     ('Camiões', TruckFormScreen),
     ('Listas 2.0', Listas2Screen),
-    ('Listas 1.0', ReplenishmentListsScreen),
     ('Inventários', InventoryScreen),
     ('Tarefas', TasksScreen),
     ('Pedidos', PedidosScreen),
@@ -39,6 +39,7 @@ void main() {
     ('Documentos', DocumentsScreen),
     ('Histórico', HistoricoScreen),
     ('Pessoas', PeopleScreen),
+    ('Erros e sugestões', FeedbackScreen),
   ]) {
     testWidgets('$label opens from Home', (tester) async {
       await pumpApp(tester, const LivreServicoApp());
@@ -59,6 +60,24 @@ void main() {
     await pumpApp(tester, const LivreServicoApp());
     await tapAndSettle(tester, find.byIcon(Icons.settings));
     expect(find.byType(SettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('Listas 1.0 opens from Definições, not from Home', (
+    tester,
+  ) async {
+    await pumpApp(tester, const LivreServicoApp());
+    expect(find.text('Listas 1.0'), findsNothing);
+    await tapAndSettle(tester, find.byIcon(Icons.settings));
+    await tester.scrollUntilVisible(find.text('Listas 1.0'), 200);
+    await tapAndSettle(tester, find.text('Listas 1.0'));
+    expect(find.byType(ReplenishmentListsScreen), findsOneWidget);
+    final tabs = find.descendant(
+      of: find.byType(ReplenishmentListsScreen),
+      matching: find.byType(Tab),
+    );
+    for (var i = 0; i < tabs.evaluate().length; i++) {
+      await tapAndSettle(tester, tabs.at(i));
+    }
   });
 
   testWidgets('Conta opens from Definições; tests have no online project', (
