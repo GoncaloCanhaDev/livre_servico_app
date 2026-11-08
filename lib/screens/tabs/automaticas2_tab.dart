@@ -289,12 +289,8 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Automáticas',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
           Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               'Toca na secção, escreve os artigos da lista (e quantos '
               'ficaram por tratar ou sem stock) e envia quando estiver feita. '

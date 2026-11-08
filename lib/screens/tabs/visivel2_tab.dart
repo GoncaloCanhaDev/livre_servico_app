@@ -101,17 +101,10 @@ class _Visivel2TabState extends State<Visivel2Tab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Visível',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              'Uma vez por dia, depois de uma volta de Automáticas: conte os '
-              'produtos picados na loja.',
-              style: TextStyle(fontSize: 12, color: context.muted),
-            ),
+          Text(
+            'Uma vez por dia, depois de uma volta de Automáticas: conte os '
+            'produtos picados na loja.',
+            style: TextStyle(fontSize: 12, color: context.muted),
           ),
           const SizedBox(height: 8),
           NumberRow(

@@ -128,11 +128,6 @@ class _VisualTabState extends State<VisualTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Nova lista visual',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
           _IntRow(
             label: 'Itens Picados',
             controller: _itens,

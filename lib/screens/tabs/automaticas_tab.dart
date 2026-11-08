@@ -92,16 +92,9 @@ class _AutomaticasTabState extends State<AutomaticasTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Nova lista automática',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text(
-              'Envia cada secção quando estiver feita.',
-              style: TextStyle(fontSize: 12, color: context.muted),
-            ),
+          Text(
+            'Envia cada secção quando estiver feita.',
+            style: TextStyle(fontSize: 12, color: context.muted),
           ),
           const SizedBox(height: 8),
           for (final s in ListSection.values)
