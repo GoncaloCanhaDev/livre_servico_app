@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.88.3] — 2026-11-08
+
+### Fixed
+- Erros e sugestões (the admin's inbox): a new state, or a removal, shows at once instead of
+  after the server answers and the list is read again; on an error it goes back to what it was.
+  The 30-second refresh waits while a change is being saved.
+
 ## [0.88.2] — 2026-11-08
 
 ### Changed

@@ -479,6 +479,7 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
   /// Reads the list again in the background: shown once it arrives, and
   /// nothing changes if it fails (offline), until the next try.
   Future<void> _refresh() async {
+    if (_saving > 0) return;
     try {
       final list = await _account.feedbackList();
       if (mounted) setState(() => _items = Future.value(list));
@@ -494,13 +495,47 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     ),
   );
 
-  Future<void> _setStatus(FeedbackItem f, FeedbackStatus status) async {
+  /// Changes being saved: the timer doesn't read the list meanwhile, so it
+  /// never shows what was there before.
+  var _saving = 0;
+
+  /// Shows [edit] of the list at once, then runs [save]: on an error the
+  /// list goes back to what it was. Either way it is read again after.
+  Future<void> _changeLocally(
+    List<FeedbackItem> Function(List<FeedbackItem>) edit,
+    Future<void> Function() save,
+  ) async {
+    final List<FeedbackItem> before;
     try {
-      await _account.setFeedbackStatus(f.id, status);
-    } catch (e) {
-      if (mounted) _showError(e);
+      before = await _items;
+    } catch (_) {
+      return; // Nothing shown to change.
     }
-    if (mounted) _reload();
+    if (!mounted) return;
+    setState(() => _items = Future.value(edit(before)));
+    _saving++;
+    try {
+      await save();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _items = Future.value(before));
+        _showError(e);
+      }
+    } finally {
+      _saving--;
+    }
+    if (mounted) await _refresh();
+  }
+
+  /// Sets [f]'s state: shown at once, then saved.
+  Future<void> _setStatus(FeedbackItem f, FeedbackStatus status) async {
+    if (status == f.status) return;
+    await _changeLocally(
+      (list) => [
+        for (final i in list) i.id == f.id ? _withStatus(i, status) : i,
+      ],
+      () => _account.setFeedbackStatus(f.id, status),
+    );
   }
 
   Future<void> _delete(FeedbackItem f) async {
@@ -522,12 +557,13 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
       ),
     );
     if (ok != true) return;
-    try {
-      await _account.deleteFeedback(f.id);
-    } catch (e) {
-      if (mounted) _showError(e);
-    }
-    if (mounted) _reload();
+    await _changeLocally(
+      (list) => [
+        for (final i in list)
+          if (i.id != f.id) i,
+      ],
+      () => _account.deleteFeedback(f.id),
+    );
   }
 
   Future<void> _export(List<FeedbackItem> list) async {
@@ -720,3 +756,19 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     ),
   );
 }
+
+/// [f] with its state set to [status], closed now if it wasn't already.
+FeedbackItem _withStatus(FeedbackItem f, FeedbackStatus status) => (
+  id: f.id,
+  kind: f.kind,
+  message: f.message,
+  email: f.email,
+  storeName: f.storeName,
+  personName: f.personName,
+  appVersion: f.appVersion,
+  platform: f.platform,
+  createdAt: f.createdAt,
+  doneAt: status.isOpen ? null : (f.doneAt ?? DateTime.now()),
+  status: status,
+  isPublic: f.isPublic,
+);
