@@ -113,15 +113,6 @@ class FeedbackScreen extends StatefulWidget {
 }
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
-  /// Goes up on every send, so Todos reads the list again.
-  final _sent = ValueNotifier(0);
-
-  @override
-  void dispose() {
-    _sent.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) => ResponsiveTabs(
     title: const Text('Erros e sugestões'),
@@ -137,17 +128,12 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
         ),
     ],
-    tabs: [
-      ('Escrever', _WriteTab(onSent: () => _sent.value++)),
-      ('Todos', _AllTab(sent: _sent)),
-    ],
+    tabs: [('Escrever', _WriteTab()), ('Todos', _AllTab())],
   );
 }
 
 class _WriteTab extends StatefulWidget {
-  const _WriteTab({required this.onSent});
-
-  final VoidCallback onSent;
+  const _WriteTab();
 
   @override
   State<_WriteTab> createState() => _WriteTabState();
@@ -191,7 +177,6 @@ class _WriteTabState extends State<_WriteTab> {
         _sending = false;
         _message.clear();
       });
-      widget.onSent();
       DefaultTabController.maybeOf(context)?.animateTo(1);
     } catch (e) {
       if (!mounted) return;
@@ -281,11 +266,10 @@ class _WriteTabState extends State<_WriteTab> {
 
 /// Todos: every public message and this account's own, with their state.
 /// Read again every 30 seconds while open, when the app comes back and
-/// after a send.
+/// as soon as this device sends or changes one
+/// ([AccountService.feedbackChanges]).
 class _AllTab extends StatefulWidget {
-  const _AllTab({required this.sent});
-
-  final ValueListenable<int> sent;
+  const _AllTab();
 
   @override
   State<_AllTab> createState() => _AllTabState();
@@ -304,7 +288,7 @@ class _AllTabState extends State<_AllTab> with WidgetsBindingObserver {
     super.initState();
     if (!_signedIn) return;
     WidgetsBinding.instance.addObserver(this);
-    widget.sent.addListener(_load);
+    _account.feedbackChanges.addListener(_load);
     _timer = Timer.periodic(FeedbackInboxScreen.refreshEvery, (_) => _load());
     _load();
   }
@@ -312,7 +296,7 @@ class _AllTabState extends State<_AllTab> with WidgetsBindingObserver {
   @override
   void dispose() {
     _timer?.cancel();
-    widget.sent.removeListener(_load);
+    _account.feedbackChanges.removeListener(_load);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

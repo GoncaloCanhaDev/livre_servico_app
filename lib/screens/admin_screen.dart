@@ -30,6 +30,13 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     _load();
+    _account.feedbackChanges.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    _account.feedbackChanges.removeListener(_reload);
+    super.dispose();
   }
 
   void _load() {

@@ -26,6 +26,7 @@ class _AdminCardState extends State<AdminCard> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _account.addListener(_load);
+    _account.feedbackChanges.addListener(_load);
     WidgetsBinding.instance.addObserver(this);
     _timer = Timer.periodic(const Duration(minutes: 1), (_) => _load());
     _load();
@@ -35,6 +36,7 @@ class _AdminCardState extends State<AdminCard> with WidgetsBindingObserver {
   void dispose() {
     _timer.cancel();
     _account.removeListener(_load);
+    _account.feedbackChanges.removeListener(_load);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

@@ -560,6 +560,16 @@ class AccountService extends ChangeNotifier {
         params: {'p_user': userId, 'p_from': from, 'p_to': to},
       );
 
+  /// Goes up after every error report or suggestion this device sends,
+  /// changes or removes, so every screen showing them reads them again at
+  /// once (the Todos tab, Home's Administração card).
+  final feedbackChanges = ValueNotifier(0);
+
+  Future<void> _feedbackChanged(Future<void> change) async {
+    await change;
+    feedbackChanges.value++;
+  }
+
   /// Sends an error report or a suggestion to the app's admin, with the
   /// store in use, the app's [version] and [platform]. Everyone reads its
   /// text and state ([feedbackPublicList]), never who sent it.
@@ -568,16 +578,18 @@ class AccountService extends ChangeNotifier {
     String message, {
     required String version,
     required String platform,
-  }) => _api.rpc<void>(
-    'send_feedback',
-    params: {
-      'p_kind': kind.name,
-      'p_message': message.trim(),
-      'p_store': store?.id,
-      'p_version': version,
-      'p_platform': platform,
-      'p_public': true,
-    },
+  }) => _feedbackChanged(
+    _api.rpc<void>(
+      'send_feedback',
+      params: {
+        'p_kind': kind.name,
+        'p_message': message.trim(),
+        'p_store': store?.id,
+        'p_version': version,
+        'p_platform': platform,
+        'p_public': true,
+      },
+    ),
   );
 
   /// Every error report and suggestion, newest first. The admin only.
@@ -624,17 +636,20 @@ class AccountService extends ChangeNotifier {
 
   /// Sets a report's or suggestion's state. The admin only.
   Future<void> setFeedbackStatus(String id, FeedbackStatus status) =>
-      _api.rpc<void>(
-        'set_feedback_status',
-        params: {'p_id': id, 'p_status': status.dbName},
+      _feedbackChanged(
+        _api.rpc<void>(
+          'set_feedback_status',
+          params: {'p_id': id, 'p_status': status.dbName},
+        ),
       );
 
   /// Makes every new report and suggestion Visto: the admin opened them.
-  Future<void> markFeedbackSeen() => _api.rpc<void>('mark_feedback_seen');
+  Future<void> markFeedbackSeen() =>
+      _feedbackChanged(_api.rpc<void>('mark_feedback_seen'));
 
   /// Removes a report or suggestion. The admin only.
   Future<void> deleteFeedback(String id) =>
-      _api.rpc<void>('delete_feedback', params: {'p_id': id});
+      _feedbackChanged(_api.rpc<void>('delete_feedback', params: {'p_id': id}));
 
   /// Whether this account is the app's admin (it creates stores); false
   /// when that can't be asked (offline).

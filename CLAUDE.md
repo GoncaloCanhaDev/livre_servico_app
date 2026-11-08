@@ -190,7 +190,8 @@ multi-tenant product.
   `20261108120000_feedback_status.sql`). Escrever sends an
   error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
-  `deleteFeedback`; both re-read on a timer and on resume, since the table has no Realtime;
+  `deleteFeedback`; both re-read on a timer and on resume, since the table has no Realtime, and at once after
+  any change made on this device (`AccountService.feedbackChanges`);
   Home's `AdminCard` counts those still open; the app bar's export shares
   them all as one text file, `feedbackExportText` through `shareTextFile`). Not local rows and not
   synced: the online `feedback` table (`20261101120000_feedback.sql`) has no policies, only
