@@ -23,9 +23,9 @@ enum _Count {
 
 /// Listas 2.0 → Automáticas, like 1.0's: each item is sent on its own once
 /// done (who did it, then WhatsApp), saved to Histórico, and its fields
-/// clear for the next one. The item is picked from chips, so its counts are
-/// typed without scrolling; every count not yet sent is kept as a draft
-/// ([SettingsService.draft]) until it is.
+/// clear for the next one. The items are listed with what was typed; tapping
+/// one opens a sheet with its counts and its send button. Every count not
+/// yet sent is kept as a draft ([SettingsService.draft]) until it is.
 class Automaticas2Tab extends StatefulWidget {
   const Automaticas2Tab({super.key});
 
@@ -41,11 +41,6 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
           text: SettingsService.instance.draft(_key(i, c)),
         ),
   };
-  late Auto2Item _selected = Auto2Item.values.firstWhere(
-    (i) => _ctrls[(i, _Count.total)]!.text.isNotEmpty,
-    orElse: () => Auto2Item.values.first,
-  );
-
   static String _key(Auto2Item i, _Count c) =>
       'auto2:${i.name}${c.draftSuffix}';
 
@@ -81,6 +76,13 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
   }
 
   bool _canSend(Auto2Item i) => _get(i) > 0 && _problem(i) == null;
+
+  /// "2 por tratar · 1 sem stock" as typed for [i], or ''.
+  String _extras(Auto2Item i) => [
+    if (_get(i, _Count.porTratar) > 0)
+      '${_get(i, _Count.porTratar)} por tratar',
+    if (_get(i, _Count.semStock) > 0) '${_get(i, _Count.semStock)} sem stock',
+  ].join(' · ');
 
   Future<void> _send(Auto2Item item) async {
     if (!_canSend(item)) return;
@@ -139,8 +141,105 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
     ).showSnackBar(SnackBar(content: Text('${item.label} guardado.')));
   }
 
-  Widget _field(String label, _Count c, {String? hint}) {
-    final item = _selected;
+  /// The sheet with [item]'s counts; Enviar closes it and sends.
+  Future<void> _open(Auto2Item item) async {
+    final send = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheet) => StatefulBuilder(
+        builder: (sheet, setSheet) {
+          void changed(_Count c) {
+            _changed(item, c);
+            setSheet(() {});
+          }
+
+          final problem = _problem(item);
+          return Padding(
+            // Above the keyboard.
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              16 + MediaQuery.viewInsetsOf(sheet).bottom,
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _field(
+                    item,
+                    'Artigos na lista',
+                    _Count.total,
+                    autofocus: true,
+                    onChanged: changed,
+                  ),
+                  _field(
+                    item,
+                    'Por tratar',
+                    _Count.porTratar,
+                    hint: 'Ficaram para depois',
+                    onChanged: changed,
+                  ),
+                  _field(
+                    item,
+                    'Sem stock',
+                    _Count.semStock,
+                    onChanged: changed,
+                  ),
+                  if (problem != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        problem,
+                        style: TextStyle(color: context.colors.error),
+                      ),
+                    )
+                  else if (_get(item) > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Tratados: '
+                        '${_get(item) - _get(item, _Count.porTratar)}'
+                        ' de ${_get(item)}',
+                        style: TextStyle(color: context.muted),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.send),
+                    label: Text('Enviar ${item.label}'),
+                    onPressed: _canSend(item)
+                        ? () => Navigator.pop(sheet, true)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (send == true && mounted) await _send(item);
+  }
+
+  Widget _field(
+    Auto2Item item,
+    String label,
+    _Count c, {
+    String? hint,
+    bool autofocus = false,
+    required void Function(_Count) onChanged,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -163,6 +262,7 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
             child: TextField(
               key: ValueKey('auto2:${c.name}'),
               controller: _ctrls[(item, c)],
+              autofocus: autofocus,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -175,7 +275,7 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (_) => _changed(item, c),
+              onChanged: (_) => onChanged(c),
             ),
           ),
         ],
@@ -194,82 +294,47 @@ class _Automaticas2TabState extends State<Automaticas2Tab> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
             child: Text(
-              'Escolhe a secção, escreve os artigos da lista (e quantos '
+              'Toca na secção, escreve os artigos da lista (e quantos '
               'ficaram por tratar ou sem stock) e envia quando estiver feita. '
               'Os números ficam guardados até serem enviados.',
               style: TextStyle(fontSize: 12, color: context.muted),
             ),
           ),
-          const SizedBox(height: 8),
           Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    _selected.label,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (final (n, i) in Auto2Item.values.indexed) ...[
+                  if (n > 0) Divider(height: 1, color: context.hairline),
+                  ListTile(
+                    title: Text(i.label),
+                    subtitle: switch (_extras(i)) {
+                      '' => null,
+                      final extras => Text(extras),
+                    },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_get(i) > 0)
+                          Text(
+                            '${_get(i)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: context.colors.primary,
+                            ),
+                          ),
+                        const Icon(Icons.chevron_right),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  _field('Artigos na lista', _Count.total),
-                  _field(
-                    'Por tratar',
-                    _Count.porTratar,
-                    hint: 'Ficaram para depois',
-                  ),
-                  _field('Sem stock', _Count.semStock),
-                  if (_problem(_selected) case final problem?)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        problem,
-                        style: TextStyle(color: context.colors.error),
-                      ),
-                    )
-                  else if (_get(_selected) > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Tratados: '
-                        '${_get(_selected) - _get(_selected, _Count.porTratar)}'
-                        ' de ${_get(_selected)}',
-                        style: TextStyle(color: context.muted),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.send),
-                    label: Text('Enviar ${_selected.label}'),
-                    onPressed: _canSend(_selected)
-                        ? () => _send(_selected)
-                        : null,
+                    onTap: () => _open(i),
                   ),
                 ],
-              ),
+              ],
             ),
-          ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final i in Auto2Item.values)
-                ChoiceChip(
-                  label: Text(
-                    _get(i) == 0 ? i.label : '${i.label} · ${_get(i)}',
-                  ),
-                  selected: i == _selected,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onSelected: (_) => setState(() => _selected = i),
-                ),
-            ],
           ),
           const SizedBox(height: 16),
           Card(

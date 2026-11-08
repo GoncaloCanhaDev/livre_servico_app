@@ -133,7 +133,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'listas2',
     title: 'Listas 2.0',
-    version: 5,
+    version: 6,
     steps: [
       TutorialStep(
         icon: Icons.checklist,
@@ -146,10 +146,11 @@ const tutorialSections = [
         steps: [
           'As secções: Automáticas e Visível. As listas antigas continuam em '
               'Definições → Funções antigas → Listas 1.0.',
-          'Escolha a secção: o número que já tem aparece ao lado do nome. '
-              'Fica guardado até ser enviado, mesmo que saia da aplicação.',
-          'Escreva os artigos da lista e, se houver, quantos ficaram por '
-              'tratar e quantos estavam sem stock. Toque em enviar: escolha '
+          'Toque na secção. O número que já tem aparece ao lado do nome e '
+              'fica guardado até ser enviado, mesmo que saia da aplicação.',
+          'Na janela que abre, escreva os artigos da lista e, se houver, '
+              'quantos ficaram por tratar e quantos estavam sem stock. Toque '
+              'em Enviar: escolha '
               'quem o fez (e o dia, se foi noutro) e envie a mensagem por '
               'WhatsApp. Fica no Histórico (Automáticas 2.0) e os campos '
               'voltam a ficar vazios.',

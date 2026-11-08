@@ -151,8 +151,8 @@ multi-tenant product.
 - Listas 2.0 → Automáticas (`lib/models/auto2_entry.dart`, `Auto2Service`): the items are
   `Auto2Item` (stored by name; never rename one). Like 1.0's, each item is sent on its own:
   every send is one `Auto2Entry` (value = artigos on the list, `porTratar` and `semStock` of
-  them, who, `createdAt`) and the fields clear. The item is
-  picked from chips above one field. A count typed and not sent (each item, the Visível) is
+  them, who, `createdAt`) and the fields clear. The items are
+  a list; tapping one opens a bottom sheet with its fields. A count typed and not sent (each item, the Visível) is
   kept on the device by `SettingsService.draft`/`setDraft` until sent. They show in
   Histórico's Automáticas 2.0 tab and in Tudo, and are counted in the Diárias (Lista
   Automática).

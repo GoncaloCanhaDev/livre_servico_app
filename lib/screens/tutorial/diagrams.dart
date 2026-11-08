@@ -762,21 +762,22 @@ class _Listas2Diagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(String name, {bool selected = false}) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: selected ? context.colors.primary.withValues(alpha: 0.15) : null,
-        border: Border.all(
-          color: selected ? context.colors.primary : context.greyedFill,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        name,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        ),
+    Widget row(String name, String count) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(name, style: const TextStyle(fontSize: 11))),
+          if (count.isNotEmpty)
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: context.colors.primary,
+              ),
+            ),
+          Icon(Icons.chevron_right, size: 14, color: context.faint),
+        ],
       ),
     );
     return _Screen(
@@ -788,36 +789,31 @@ class _Listas2Diagram extends StatelessWidget {
             _Marker(1),
           ],
         ),
-        Row(
-          children: [
-            const Expanded(
-              child: _Line('Bebidas', bold: true, trailing: _Field('14')),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.send, size: 16, color: context.colors.primary),
-            const SizedBox(width: 4),
-            const _Marker(3, size: 15),
-          ],
+        _Box(
+          marker: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              row('Mercearia', '20'),
+              row('Pet Food', ''),
+              row('Bebidas', ''),
+            ],
+          ),
         ),
-        _gap,
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  chip('Mercearia · 20'),
-                  chip('Pet Food'),
-                  chip('Bebidas · 14', selected: true),
-                  chip('Vinhos e Destilados'),
-                  chip('Detergentes'),
-                ],
-              ),
-            ),
-            const _Marker(2, size: 15),
-          ],
+        const _Arrow(),
+        const _Box(
+          marker: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Line('Mercearia', bold: true),
+              _Line('Artigos na lista', trailing: _Field('20')),
+              _Line('Por tratar', trailing: _Field('2')),
+              _Line('Sem stock', trailing: _Field('1')),
+              SizedBox(height: 4),
+              _Button('Enviar Mercearia', icon: Icons.send, filled: true),
+            ],
+          ),
         ),
       ],
     );
