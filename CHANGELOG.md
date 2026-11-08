@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.88.5] — 2026-11-08
+
+### Fixed
+- Erros e sugestões: changing a state or removing one in the admin's inbox did nothing in
+  debug builds: `setState(() => _items = Future.value(...))` returns the Future, which
+  `setState` refuses, so the change stopped before it was saved. Every such reload (the inbox,
+  Mudanças de loja, Conta's transfer, the join code, a document) now uses a block body.
+
 ## [0.88.4] — 2026-11-08
 
 ### Fixed

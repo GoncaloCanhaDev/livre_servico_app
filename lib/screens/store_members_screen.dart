@@ -367,7 +367,9 @@ class _JoinCodeCardState extends State<_JoinCodeCard> {
       ),
     );
     if (ok == true) {
-      setState(() => _code = AccountService.instance.resetJoinCode());
+      setState(() {
+        _code = AccountService.instance.resetJoinCode();
+      });
     }
   }
 

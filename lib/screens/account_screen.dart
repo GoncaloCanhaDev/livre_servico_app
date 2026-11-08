@@ -760,8 +760,9 @@ class _TransferTileState extends State<_TransferTile> {
       .instance
       .myTransfer();
 
-  void _reload() =>
-      setState(() => _request = AccountService.instance.myTransfer());
+  void _reload() => setState(() {
+    _request = AccountService.instance.myTransfer();
+  });
 
   Future<void> _ask() async {
     final note = await showDialog<String>(

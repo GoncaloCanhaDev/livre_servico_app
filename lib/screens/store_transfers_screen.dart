@@ -19,7 +19,9 @@ class _StoreTransfersScreenState extends State<StoreTransfersScreen> {
   final _account = AccountService.instance;
   late Future<List<TransferRequest>> _requests = _account.transferRequests();
 
-  void _reload() => setState(() => _requests = _account.transferRequests());
+  void _reload() => setState(() {
+    _requests = _account.transferRequests();
+  });
 
   void _showError(Object e) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

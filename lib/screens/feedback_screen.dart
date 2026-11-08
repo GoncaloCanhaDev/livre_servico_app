@@ -458,7 +458,9 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     if (state == AppLifecycleState.resumed) _refresh();
   }
 
-  void _reload() => setState(() => _items = _account.feedbackList());
+  void _reload() => setState(() {
+    _items = _account.feedbackList();
+  });
 
   /// Reads the list again in the background: shown once it arrives, and
   /// nothing changes if it fails (offline), until the next try.
@@ -466,7 +468,10 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     if (_saving > 0) return;
     try {
       final list = await _account.feedbackList();
-      if (mounted) setState(() => _items = Future.value(list));
+      if (!mounted) return;
+      setState(() {
+        _items = Future.value(list);
+      });
     } catch (_) {
       // Keep what is shown.
     }
@@ -496,13 +501,17 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
       return; // Nothing shown to change.
     }
     if (!mounted) return;
-    setState(() => _items = Future.value(edit(before)));
+    setState(() {
+      _items = Future.value(edit(before));
+    });
     _saving++;
     try {
       await save();
     } catch (e) {
       if (mounted) {
-        setState(() => _items = Future.value(before));
+        setState(() {
+          _items = Future.value(before);
+        });
         _showError(e);
       }
     } finally {
