@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../app_version.dart';
 import '../services/account_service.dart';
+import '../services/share_file.dart';
 import '../theme.dart';
 import 'widgets/wide_layout.dart';
 
@@ -12,6 +13,63 @@ const _maxLength = 4000;
 
 /// The platform sent with a report, so the admin knows where it happened.
 String get _platform => kIsWeb ? 'web' : defaultTargetPlatform.name;
+
+/// Every error report and suggestion in [items] as one plain text file, for
+/// the admin to keep or read elsewhere: those still to deal with first, then
+/// those dealt with, each with who sent it, when, from which version.
+String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
+  final when = DateFormat('d/M/y HH:mm', 'pt_PT');
+  final open = [
+    for (final f in items)
+      if (f.doneAt == null) f,
+  ];
+  final done = [
+    for (final f in items)
+      if (f.doneAt != null) f,
+  ];
+  final out = StringBuffer()
+    ..writeln('Livre Serviço — Erros e sugestões')
+    ..writeln(
+      'Exportado em ${when.format(now)} · ${items.length} '
+      '${items.length == 1 ? 'mensagem' : 'mensagens'} '
+      '(${open.length} por tratar, ${done.length} '
+      '${done.length == 1 ? 'tratada' : 'tratadas'})',
+    );
+  var n = 0;
+  void section(String title, List<FeedbackItem> list) {
+    if (list.isEmpty) return;
+    out
+      ..writeln()
+      ..writeln('==== $title (${list.length}) ====');
+    for (final f in list) {
+      n++;
+      final who = [
+        f.personName ?? f.email,
+        if (f.personName != null && f.email.isNotEmpty) f.email,
+        f.storeName ?? 'Sem loja',
+      ].join(' · ');
+      final from = [
+        if (f.appVersion.isNotEmpty) 'v${f.appVersion}',
+        if (f.platform.isNotEmpty) f.platform,
+      ].join(' · ');
+      out
+        ..writeln()
+        ..writeln('[$n] ${f.kind.label} · ${when.format(f.createdAt)}')
+        ..writeln('De: $who');
+      if (from.isNotEmpty) out.writeln('Versão: $from');
+      if (f.doneAt != null) out.writeln('Tratado em ${when.format(f.doneAt!)}');
+      out
+        ..writeln()
+        ..writeln(f.message.trim())
+        ..writeln()
+        ..writeln('-' * 40);
+    }
+  }
+
+  section('POR TRATAR', open);
+  section('TRATADOS', done);
+  return out.toString();
+}
 
 /// "Reportar erro ou sugestão": anyone signed in writes to the app's admin,
 /// who is the only one to read it ([FeedbackInboxScreen]).
@@ -205,6 +263,23 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen> {
     if (mounted) _reload();
   }
 
+  Future<void> _export(List<FeedbackItem> list) async {
+    final now = DateTime.now();
+    try {
+      await shareTextFile(
+        feedbackExportText(list, now: now),
+        name:
+            'erros_e_sugestoes_${DateFormat('yyyy-MM-dd_HH-mm').format(now)}.txt',
+        subject: 'Erros e sugestões - Livre Serviço',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Não foi possível exportar: $e')));
+    }
+  }
+
   Widget _section(String label) => Padding(
     padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
     child: Text(
@@ -285,7 +360,24 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Erros e sugestões')),
+    appBar: AppBar(
+      title: const Text('Erros e sugestões'),
+      actions: [
+        FutureBuilder<List<FeedbackItem>>(
+          future: _items,
+          builder: (context, snap) {
+            final list = snap.data;
+            return IconButton(
+              tooltip: 'Exportar tudo (texto)',
+              icon: const Icon(Icons.file_download_outlined),
+              onPressed: list == null || list.isEmpty
+                  ? null
+                  : () => _export(list),
+            );
+          },
+        ),
+      ],
+    ),
     body: ReadableWidth(
       child: SafeArea(
         child: FutureBuilder<List<FeedbackItem>>(

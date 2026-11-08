@@ -176,7 +176,8 @@ multi-tenant product.
 - Erros e sugestões (`lib/screens/feedback_screen.dart`, Definições): `FeedbackScreen` sends an
   error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
-  `deleteFeedback`; Home's `AdminCard` counts those still open). Not local rows and not
+  `deleteFeedback`; Home's `AdminCard` counts those still open; the app bar's export shares
+  them all as one text file, `feedbackExportText` through `shareTextFile`). Not local rows and not
   synced: the online `feedback` table (`20261101120000_feedback.sql`) has no policies, only
   admin-checked RPCs.
 - Administração (`lib/screens/admin_screen.dart`, the admin only): Home's `AdminCard` (counts

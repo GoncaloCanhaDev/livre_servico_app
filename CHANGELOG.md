@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.85.0] — 2026-11-08
+
+### Added
+- Erros e sugestões (the admin's inbox): "Exportar tudo" in the app bar shares every error
+  report and suggestion as one plain text file (`feedbackExportText`: those still to deal with
+  first, then those dealt with, each with who sent it, the store, when, the version and
+  platform), through the new `shareTextFile`.
+
 ## [0.84.5] — 2026-11-04
 
 ### Changed
