@@ -361,6 +361,27 @@ Future<String> seedDemo({DateTime? now}) async {
         ..startedAt = day(0, 8, 30)
         ..createdByNames = ['Inês Rodrigues'],
     ),
+    // Planned by the chefe, still to do.
+    stamped(
+      Inventory()
+        ..name = 'Conservas de peixe'
+        ..code = '4471'
+        ..valueCents = 0
+        ..createdAt = day(-2, 9)
+        ..plannedAt = day(-2, 9)
+        ..plannedBy = me.fullName
+        ..dueDate = day(-1, 0),
+    ),
+    stamped(
+      Inventory()
+        ..name = 'Café e cápsulas'
+        ..code = '4502'
+        ..valueCents = 0
+        ..createdAt = day(-1, 10)
+        ..plannedAt = day(-1, 10)
+        ..plannedBy = me.fullName
+        ..dueDate = day(3, 0),
+    ),
   ];
   final pedidos = [
     stamped(

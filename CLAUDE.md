@@ -41,7 +41,8 @@ multi-tenant product.
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/automaticas2_tab_test.dart` sends
+  `test/truck_form_screen_test.dart` saves a camião, `test/inventory_screen_test.dart` plans
+  and marks done an inventory, `test/automaticas2_tab_test.dart` sends
   Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível, `test/daily_lists2_test.dart` the Diárias from them, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
@@ -127,6 +128,9 @@ multi-tenant product.
   People keep no phone number and no year of birth: a trigger on `records`
   (`person_without_removed_fields`) strips `phoneNumber` and turns an old `dateOfBirth` into
   the birthday, and `Person.fromJson` does the same for rows saved before 0.67.0.
+- Inventários: an `Inventory` planned by level 3+ (`plannedAt`, `plannedBy`, optional
+  `dueDate`; `StoreAccess.canPlanInventories`, app-side only) is `isToDo` ("Por fazer" tab,
+  `InventoryService.toDo`) until `markDone`; `history()` leaves those out.
 - `TruckReception` (Receção de Camião) has a `TruckType`, paletes per departamento
   (`PalletCount.department` holds a `truckDepartments` id; read the name through
   `PalletCount.label`, which falls back to the legacy, index-stored `PalletCategory` on older

@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.87.0] — 2026-11-08
+
+### Added
+- Inventários has two tabs, Por fazer and Feitos (`ResponsiveTabs`, which now takes a
+  `floatingActionButton`). Level 3 and up (`StoreAccess.canPlanInventories`; anyone with no
+  store) plans an inventory to do: name, code and an optional date (`InventoryService.plan`;
+  `Inventory.plannedAt`/`plannedBy`/`dueDate`). It is listed, due first and "Atrasado" once
+  the date passes, until anyone marks it Feito with who did it and the value
+  (`markDone`), then it is in Feitos and the Histórico like any other. Those still to do
+  (`isToDo`) are left out of `history()`. Not checked by the server. Tutorial step, demo rows.
+
 ## [0.86.0] — 2026-11-08
 
 ### Added

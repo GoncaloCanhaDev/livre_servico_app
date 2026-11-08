@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/inventory.dart';
+import '../services/account_service.dart';
 import '../services/inventory_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'claim_person_screen.dart' show myPerson;
 import 'widgets/person_picker.dart';
 import 'widgets/wide_layout.dart';
 
@@ -22,11 +24,13 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   late Future<List<Inventory>> _future;
+  late Future<List<Inventory>> _toDo;
 
   @override
   void initState() {
     super.initState();
     _future = InventoryService.instance.history();
+    _toDo = InventoryService.instance.toDo();
     InventoryService.instance.addListener(_reload);
   }
 
@@ -39,6 +43,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   void _reload() {
     setState(() {
       _future = InventoryService.instance.history();
+      _toDo = InventoryService.instance.toDo();
     });
   }
 
@@ -132,10 +137,116 @@ class _InventoryScreenState extends State<InventoryScreen> {
     await WhatsAppService.sendWithConfirm(context, msg);
   }
 
+  bool get _canPlan => AccountService.instance.access.canPlanInventories;
+
+  Future<void> _plan() async {
+    final result = await showDialog<_NewInventoryData>(
+      context: context,
+      builder: (_) => const _NewInventoryDialog(planning: true),
+    );
+    if (result == null || !mounted) return;
+    final me = AccountService.instance.store?.personId;
+    final by = me == null ? null : (await myPerson(me))?.fullName;
+    await InventoryService.instance.plan(
+      name: result.name,
+      code: result.code,
+      dueDate: result.dueDate,
+      plannedBy: by,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${result.name}: por fazer.')));
+  }
+
+  /// Marks the planned [inv] done: who did it, its value, then WhatsApp.
+  Future<void> _markDone(Inventory inv) async {
+    final people = await pickPeople(
+      context,
+      title: 'Quem fez o inventário?',
+      subtitle: inv.name,
+    );
+    if (people == null || !mounted) return;
+    final names = people.map((p) => p.fullName).toList();
+    final cents = await _askFinalValueOnScreen(context);
+    if (cents == null || !mounted) return;
+    await InventoryService.instance.markDone(
+      inv,
+      names: names,
+      finalValueCents: cents,
+    );
+    if (!mounted) return;
+    final msg =
+        '📦 Inventário: ${inv.name} (cód. ${inv.code ?? '—'})\n'
+        'Valor: ${_fmtCents(cents)}\n'
+        'Por: ${joinNames(names)}';
+    await WhatsAppService.sendWithConfirm(context, msg);
+  }
+
+  Future<void> _removeToDo(Inventory inv) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover inventário por fazer?'),
+        content: Text(inv.name),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await InventoryService.instance.delete(inv.id);
+  }
+
+  Widget _toDoBody() => FutureBuilder<List<Inventory>>(
+    future: _toDo,
+    builder: (context, snap) {
+      if (!snap.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final items = snap.data!;
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
+          if (_canPlan)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: OutlinedButton.icon(
+                onPressed: _plan,
+                icon: const Icon(Icons.playlist_add),
+                label: const Text('Planear inventário'),
+              ),
+            ),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Nenhum inventário por fazer.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.muted),
+              ),
+            ),
+          for (final inv in items)
+            _ToDoCard(
+              inv: inv,
+              onTap: () => _markDone(inv),
+              onRemove: _canPlan ? () => _removeToDo(inv) : null,
+            ),
+        ],
+      );
+    },
+  );
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Inventários')),
+    return ResponsiveTabs(
+      title: const Text('Inventários'),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
@@ -143,47 +254,121 @@ class _InventoryScreenState extends State<InventoryScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Novo'),
       ),
-      body: SafeArea(
-        child: FutureBuilder<List<Inventory>>(
-          future: _future,
-          builder: (context, snap) {
-            if (!snap.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final items = snap.data!;
-            if (items.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Sem inventários registados.',
-                    style: TextStyle(color: context.muted),
-                  ),
+      tabs: [('Por fazer', _toDoBody()), ('Feitos', _doneBody())],
+    );
+  }
+
+  Widget _doneBody() {
+    return SafeArea(
+      child: FutureBuilder<List<Inventory>>(
+        future: _future,
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final items = snap.data!;
+          if (items.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Sem inventários registados.',
+                  style: TextStyle(color: context.muted),
                 ),
-              );
-            }
-            final columns = columnsFor(context, 360, max: 3);
-            if (columns > 1) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                child: GridRows(
-                  columns: columns,
-                  children: [
-                    for (final inv in items)
-                      _InventoryCard(inv: inv, onTap: () => _finishOpen(inv)),
-                  ],
-                ),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              itemCount: items.length,
-              itemBuilder: (_, i) => _InventoryCard(
-                inv: items[i],
-                onTap: () => _finishOpen(items[i]),
               ),
             );
-          },
+          }
+          // Its own width: beside "Por fazer" on a computer.
+          return LayoutBuilder(
+            builder: (context, box) {
+              final columns = (box.maxWidth / 360).floor().clamp(1, 3);
+              if (columns > 1) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  child: GridRows(
+                    columns: columns,
+                    children: [
+                      for (final inv in items)
+                        _InventoryCard(inv: inv, onTap: () => _finishOpen(inv)),
+                    ],
+                  ),
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                itemCount: items.length,
+                itemBuilder: (_, i) => _InventoryCard(
+                  inv: items[i],
+                  onTap: () => _finishOpen(items[i]),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A planned inventory in "Por fazer": tap to mark it done.
+class _ToDoCard extends StatelessWidget {
+  const _ToDoCard({required this.inv, required this.onTap, this.onRemove});
+  final Inventory inv;
+  final VoidCallback onTap;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final due = inv.dueDate;
+    final now = DateTime.now();
+    final late =
+        due != null && due.isBefore(DateTime(now.year, now.month, now.day));
+    final parts = [
+      if (inv.code case final code? when code.isNotEmpty) 'Código $code',
+      if (due != null) 'Até ${DateFormat('d/M').format(due)}' else 'Sem data',
+    ];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          Icons.pending_actions,
+          color: late ? context.colors.error : context.colors.secondary,
+        ),
+        title: Text(
+          inv.name,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(parts.join(' • '), style: const TextStyle(fontSize: 13)),
+            if (late)
+              Text(
+                'Atrasado',
+                style: TextStyle(
+                  color: context.colors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            if (inv.plannedBy case final by? when by.isNotEmpty)
+              Text(
+                'Planeado por $by',
+                style: TextStyle(color: context.faint, fontSize: 12),
+              ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onRemove != null)
+              IconButton(
+                tooltip: 'Remover',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onRemove,
+              ),
+            FilledButton(onPressed: onTap, child: const Text('Feito')),
+          ],
         ),
       ),
     );
@@ -270,13 +455,21 @@ class _InventoryCard extends StatelessWidget {
 }
 
 class _NewInventoryData {
-  const _NewInventoryData({required this.name, required this.code});
+  const _NewInventoryData({
+    required this.name,
+    required this.code,
+    this.dueDate,
+  });
   final String name;
   final String code;
+  final DateTime? dueDate;
 }
 
 class _NewInventoryDialog extends StatefulWidget {
-  const _NewInventoryDialog();
+  const _NewInventoryDialog({this.planning = false});
+
+  /// Planning one to do: also asks for an optional date.
+  final bool planning;
 
   @override
   State<_NewInventoryDialog> createState() => _NewInventoryDialogState();
@@ -286,6 +479,18 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
   final _name = TextEditingController();
   final _code = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  DateTime? _due;
+
+  Future<void> _pickDue() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _due ?? now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 1, now.month, now.day),
+    );
+    if (picked != null) setState(() => _due = picked);
+  }
 
   @override
   void dispose() {
@@ -297,7 +502,7 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Novo inventário'),
+      title: Text(widget.planning ? 'Planear inventário' : 'Novo inventário'),
       content: Form(
         key: _formKey,
         child: Column(
@@ -324,6 +529,18 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
               ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Obrigatório' : null,
             ),
+            if (widget.planning) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _pickDue,
+                icon: const Icon(Icons.event),
+                label: Text(
+                  _due == null
+                      ? 'Data (opcional)'
+                      : 'Até ${DateFormat('d/M/y').format(_due!)}',
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -343,10 +560,11 @@ class _NewInventoryDialogState extends State<_NewInventoryDialog> {
               _NewInventoryData(
                 name: _name.text.trim(),
                 code: _code.text.trim(),
+                dueDate: _due,
               ),
             );
           },
-          child: const Text('Continuar'),
+          child: Text(widget.planning ? 'Planear' : 'Continuar'),
         ),
       ],
     );

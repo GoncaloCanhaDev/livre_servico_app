@@ -29,6 +29,54 @@ class InventoryService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Plans an inventory to do ("Por fazer"), by [dueDate] if given.
+  Future<Inventory> plan({
+    required String name,
+    required String code,
+    DateTime? dueDate,
+    String? plannedBy,
+  }) async {
+    final now = DateTime.now();
+    final inv = Inventory()
+      ..name = name
+      ..code = code
+      ..valueCents = 0
+      ..createdAt = now
+      ..plannedAt = now
+      ..plannedBy = plannedBy
+      ..dueDate = dueDate;
+    await save(inv);
+    return inv;
+  }
+
+  /// Marks the planned [inv] done now by [names], with its value.
+  Future<void> markDone(
+    Inventory inv, {
+    required List<String> names,
+    required int finalValueCents,
+  }) async {
+    if (!inv.isToDo) return;
+    final now = DateTime.now();
+    inv
+      ..createdAt = now
+      ..startedAt = now
+      ..finishedAt = now
+      ..createdByNames = names
+      ..valueCents = finalValueCents
+      ..finalValueCents = finalValueCents;
+    await save(inv);
+  }
+
+  /// The planned inventories not done yet: those due first, then those
+  /// with no date, each in the order planned.
+  Future<List<Inventory>> toDo() async =>
+      (await _db.inventories.where((i) => i.isToDo))..sort((a, b) {
+        final ad = a.dueDate, bd = b.dueDate;
+        if (ad != null && bd != null && ad != bd) return ad.compareTo(bd);
+        if ((ad == null) != (bd == null)) return ad == null ? 1 : -1;
+        return a.plannedAt!.compareTo(b.plannedAt!);
+      });
+
   Future<Inventory?> getByUuid(String uuid) => _db.inventories.firstWhere(
     (i) => i.syncUuid == uuid,
     includeDeleted: true,
@@ -44,7 +92,11 @@ class InventoryService extends ChangeNotifier {
     if (await _db.inventories.softDeleteAll()) notifyListeners();
   }
 
+  /// The inventories done (and older ones), newest first; not those still
+  /// to do.
   Future<List<Inventory>> history({bool includeDeleted = false}) async =>
-      (await _db.inventories.all(includeDeleted: includeDeleted))
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      (await _db.inventories.where(
+        (i) => !i.isToDo,
+        includeDeleted: includeDeleted,
+      ))..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 }

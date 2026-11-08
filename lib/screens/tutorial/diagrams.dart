@@ -1008,6 +1008,47 @@ class _TruckDiagram extends StatelessWidget {
   }
 }
 
+class _InventoryToDoDiagram extends StatelessWidget {
+  const _InventoryToDoDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Screen(
+      title: 'Inventários',
+      children: [
+        const _Tabs(['Por fazer', 'Feitos']),
+        const Row(
+          children: [
+            Expanded(
+              child: _Button('Planear inventário', icon: Icons.playlist_add),
+            ),
+            SizedBox(width: 6),
+            _Marker(1),
+          ],
+        ),
+        _gap,
+        _Box(
+          marker: 2,
+          child: _Line(
+            'Conservas · Até 7/11',
+            icon: Icons.pending_actions,
+            trailing: _Tag('Atrasado', context.colors.error),
+          ),
+        ),
+        _gap,
+        const _Box(
+          marker: 3,
+          child: _Line(
+            'Café e cápsulas · Até 12/11',
+            icon: Icons.pending_actions,
+            trailing: _Button('Feito', filled: true),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _InventoryDiagram extends StatelessWidget {
   const _InventoryDiagram();
 

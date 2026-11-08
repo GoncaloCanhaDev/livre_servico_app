@@ -252,7 +252,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'inventarios',
     title: 'Inventários e Pedidos',
-    version: 1,
+    version: 2,
     steps: [
       TutorialStep(
         icon: Icons.assignment,
@@ -267,6 +267,22 @@ const tutorialSections = [
               'e a data prevista de chegada; toque em Criar pedido.',
           'Quando a mercadoria chegar, abra o pedido e toque em Finalizar. Se a '
               'data passar, aparece como atrasado no cartão Hoje.',
+        ],
+      ),
+      TutorialStep(
+        icon: Icons.pending_actions,
+        title: 'Inventários por fazer',
+        intro:
+            'O chefe de secção (ou acima) planeia os inventários; quem os '
+            'fizer marca-os como feitos.',
+        diagram: _InventoryToDoDiagram(),
+        steps: [
+          'Inventários → Por fazer → Planear inventário: nome, código e, se '
+              'quiser, a data até quando deve ser feito.',
+          'Cada um fica na lista até ser feito; se a data passar, aparece '
+              'como atrasado.',
+          'Toque em Feito: escolha quem o fez e escreva o valor final. Passa '
+              'para Feitos e para o Histórico.',
         ],
       ),
     ],

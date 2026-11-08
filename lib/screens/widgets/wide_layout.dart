@@ -96,7 +96,10 @@ class ResponsiveTabs extends StatelessWidget {
     this.actions = const [],
     this.minColumnWidth = 380,
     this.scrollable = false,
+    this.floatingActionButton,
   });
+
+  final Widget? floatingActionButton;
 
   final Widget title;
   final List<Widget> actions;
@@ -115,6 +118,7 @@ class ResponsiveTabs extends StatelessWidget {
       return DefaultTabController(
         length: tabs.length,
         child: Scaffold(
+          floatingActionButton: floatingActionButton,
           appBar: AppBar(
             title: title,
             actions: actions,
@@ -137,6 +141,7 @@ class ResponsiveTabs extends StatelessWidget {
       next += size;
     }
     return Scaffold(
+      floatingActionButton: floatingActionButton,
       appBar: AppBar(title: title, actions: actions),
       body: SafeArea(
         child: Row(

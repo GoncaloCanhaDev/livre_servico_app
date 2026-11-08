@@ -72,6 +72,10 @@ class StoreAccess {
   /// Whether this account approves requests to join the store.
   bool get canApprove => admin || level >= 3;
 
+  /// Whether this account plans inventories to do (Inventários → Por
+  /// fazer); anyone marks them done.
+  bool get canPlanInventories => admin || level >= 3;
+
   /// Whether this account shares the join code and adds, links and removes
   /// members.
   bool get canManageMembers => admin || level >= 4;

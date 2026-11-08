@@ -13,7 +13,10 @@ class Inventory with SyncFields {
       ..code = stringOrNull(j['code'])
       ..startedAt = dateFromJson(j['startedAt'])
       ..finishedAt = dateFromJson(j['finishedAt'])
-      ..finalValueCents = intOrNull(j['finalValueCents']);
+      ..finalValueCents = intOrNull(j['finalValueCents'])
+      ..plannedAt = dateFromJson(j['plannedAt'])
+      ..plannedBy = stringOrNull(j['plannedBy'])
+      ..dueDate = dateFromJson(j['dueDate']);
     syncFieldsFromJson(i, j);
     return i;
   }
@@ -43,8 +46,23 @@ class Inventory with SyncFields {
 
   int? finalValueCents;
 
-  bool get isLegacy => startedAt == null;
+  // --- Planned ("Por fazer", added in 0.87.0) ---------------------------
+
+  /// When it was planned, by level 3 and up; null for one recorded as done
+  /// straight away. A planned one is [isToDo] until marked done.
+  DateTime? plannedAt;
+
+  /// Who planned it (the planner's person), if known.
+  String? plannedBy;
+
+  /// The day it should be done by, if one was given.
+  DateTime? dueDate;
+
+  bool get isLegacy => startedAt == null && plannedAt == null;
   bool get isFinalized => finishedAt != null;
+
+  /// Planned and not done yet: listed in "Por fazer", not in the history.
+  bool get isToDo => plannedAt != null && finishedAt == null;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -58,5 +76,8 @@ class Inventory with SyncFields {
     'startedAt': dateToJson(startedAt),
     'finishedAt': dateToJson(finishedAt),
     'finalValueCents': finalValueCents,
+    'plannedAt': dateToJson(plannedAt),
+    'plannedBy': plannedBy,
+    'dueDate': dateToJson(dueDate),
   };
 }
