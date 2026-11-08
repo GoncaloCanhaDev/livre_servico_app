@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.88.0] — 2026-11-08
+
+### Added
+- Erros e sugestões: each message has a state (Novo, Visto, Em curso, Resolvido, Não será
+  feito; `FeedbackStatus`) instead of only dealt with or not. The admin sets it from the
+  inbox's menu (`set_feedback_status`); opening the inbox makes the new ones Visto
+  (`mark_feedback_seen`). The export shows it.
+- Erros e sugestões has two tabs, Escrever and Todos: everyone signed in reads every public
+  message and their own, with its state and date and without the sender
+  (`feedback_public_list`), refreshed every 30 seconds. Messages are public when sent from this
+  version on (`send_feedback`'s `p_public`); older ones stay the admin's. Migration
+  `20261108120000_feedback_status.sql` (`set_feedback_done` kept for older apps).
+
+### Changed
+- Política de Privacidade (2026-11-08): what everyone sees of errors and suggestions.
+
 ## [0.87.0] — 2026-11-08
 
 ### Added

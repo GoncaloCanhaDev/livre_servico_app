@@ -488,6 +488,31 @@ await throws('only the admin removes them', () => as(B, `select public.delete_fe
 await as(A, `select public.delete_feedback($1)`, [fb[0].id]);
 ok('the admin removes one', (await as(A, `select * from public.feedback_list()`)).length === 1);
 
+// Their state, and the public list everyone reads, without names.
+fb = await as(A, `select * from public.feedback_list()`);
+ok('an old message is private and new', fb[0].status === 'novo' && fb[0].is_public === false);
+await as(B, `select public.send_feedback('sugestao', 'Mapa da loja', $1, '0.88.0', 'web', true)`, [store]);
+let pub = await as(C, `select * from public.feedback_public_list()`);
+ok('everyone reads the public ones only', pub.length === 1 && pub[0].message === 'Mapa da loja' && pub[0].mine === false);
+ok('with no sender', !('email' in pub[0]) && !('store_name' in pub[0]) && !('person_name' in pub[0]));
+pub = await as(K, `select * from public.feedback_public_list()`);
+ok('and their own, even private', pub.length === 2 && pub.some((f) => f.message === 'Mais cores' && f.mine));
+await throws('only the admin sets the state', () => as(B, `select public.set_feedback_status($1, 'resolvido')`, [pub[0].id]), /administrador/);
+await throws('only the admin marks them seen', () => as(B, `select public.mark_feedback_seen()`), /administrador/);
+await throws('a known state', () => as(A, `select public.set_feedback_status($1, 'talvez')`, [pub[0].id]), /Estado/);
+await as(A, `select public.mark_feedback_seen()`);
+ok('opening the list makes new ones seen', (await as(A, `select * from public.feedback_list()`)).every((f) => f.status === 'visto'));
+const mapa = pub.find((f) => f.message === 'Mapa da loja') ?? (await as(C, `select * from public.feedback_public_list()`))[0];
+await as(A, `select public.set_feedback_status($1, 'em_curso')`, [mapa.id]);
+ok('everyone sees the state', (await as(C, `select * from public.feedback_public_list()`))[0].status === 'em_curso');
+await as(A, `select public.set_feedback_status($1, 'recusado')`, [mapa.id]);
+let fbRow = (await as(A, `select * from public.feedback_list()`)).find((f) => f.id === mapa.id);
+ok('a closed state is dealt with', fbRow.done_at !== null);
+await as(A, `select public.set_feedback_done($1, false)`, [mapa.id]);
+fbRow = (await as(A, `select * from public.feedback_list()`)).find((f) => f.id === mapa.id);
+ok('older apps reopen it as seen', fbRow.status === 'visto' && fbRow.done_at === null);
+await as(A, `select public.delete_feedback($1)`, [mapa.id]);
+
 // Administração: the admin sees every store, account and request at once.
 const [{ store_join_code: adminCode }] = await as(A, `select public.store_join_code($1)`, [store]);
 await as(K, 'select public.join_store($1, null, $2)', [adminCode, 'Kátia']);

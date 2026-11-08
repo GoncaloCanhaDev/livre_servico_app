@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
+import '../models/feedback_status.dart';
 import '../models/privacy_policy.dart';
 import '../models/store_access.dart';
 import 'demo_mode.dart';
@@ -110,8 +111,8 @@ typedef TransferRequest = ({
   DateTime createdAt,
 });
 
-/// What someone sends from "Reportar erro ou sugestão" (`feedback` online,
-/// by [name]).
+/// What someone sends from "Erros e sugestões" (`feedback` online, by
+/// [name]).
 enum FeedbackKind {
   erro('Erro'),
   sugestao('Sugestão');
@@ -127,7 +128,8 @@ enum FeedbackKind {
 
 /// An error report or a suggestion, as the admin sees it: who sent it
 /// ([email], their person [personName] in [storeName]), from which version
-/// and platform, and when it was dealt with ([doneAt]).
+/// and platform, its [status], when it was closed ([doneAt]) and whether
+/// everyone reads it ([isPublic]; not those sent before 0.88.0).
 typedef FeedbackItem = ({
   String id,
   FeedbackKind kind,
@@ -139,6 +141,19 @@ typedef FeedbackItem = ({
   String platform,
   DateTime createdAt,
   DateTime? doneAt,
+  FeedbackStatus status,
+  bool isPublic,
+});
+
+/// An error report or a suggestion as everyone reads it: no sender, only
+/// whether it was this account's ([mine]).
+typedef PublicFeedback = ({
+  String id,
+  FeedbackKind kind,
+  String message,
+  FeedbackStatus status,
+  DateTime createdAt,
+  bool mine,
 });
 
 /// A request to join the current store, waiting for approval: as the
@@ -546,7 +561,8 @@ class AccountService extends ChangeNotifier {
       );
 
   /// Sends an error report or a suggestion to the app's admin, with the
-  /// store in use, the app's [version] and [platform].
+  /// store in use, the app's [version] and [platform]. Everyone reads its
+  /// text and state ([feedbackPublicList]), never who sent it.
   Future<void> sendFeedback(
     FeedbackKind kind,
     String message, {
@@ -560,6 +576,7 @@ class AccountService extends ChangeNotifier {
       'p_store': store?.id,
       'p_version': version,
       'p_platform': platform,
+      'p_public': true,
     },
   );
 
@@ -582,13 +599,38 @@ class AccountService extends ChangeNotifier {
             final String d => DateTime.parse(d).toLocal(),
             _ => null,
           },
+          status: FeedbackStatus.fromName(r['status']),
+          isPublic: r['is_public'] == true,
         ),
     ];
   }
 
-  /// Marks a report or suggestion as dealt with, or not. The admin only.
-  Future<void> setFeedbackDone(String id, bool done) =>
-      _api.rpc<void>('set_feedback_done', params: {'p_id': id, 'p_done': done});
+  /// The public reports and suggestions and this account's own, newest
+  /// first, without who sent them. Anyone signed in.
+  Future<List<PublicFeedback>> feedbackPublicList() async {
+    final rows = await _api.rpc<List<dynamic>>('feedback_public_list');
+    return [
+      for (final r in rows.cast<Map<String, dynamic>>())
+        (
+          id: r['id'] as String,
+          kind: FeedbackKind.fromName(r['kind']),
+          message: r['message'] as String? ?? '',
+          status: FeedbackStatus.fromName(r['status']),
+          createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
+          mine: r['mine'] == true,
+        ),
+    ];
+  }
+
+  /// Sets a report's or suggestion's state. The admin only.
+  Future<void> setFeedbackStatus(String id, FeedbackStatus status) =>
+      _api.rpc<void>(
+        'set_feedback_status',
+        params: {'p_id': id, 'p_status': status.dbName},
+      );
+
+  /// Makes every new report and suggestion Visto: the admin opened them.
+  Future<void> markFeedbackSeen() => _api.rpc<void>('mark_feedback_seen');
 
   /// Removes a report or suggestion. The admin only.
   Future<void> deleteFeedback(String id) =>

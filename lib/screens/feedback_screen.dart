@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_version.dart';
+import '../models/feedback_status.dart';
 import '../services/account_service.dart';
 import '../services/share_file.dart';
 import '../theme.dart';
@@ -23,11 +24,11 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
   final when = DateFormat('d/M/y HH:mm', 'pt_PT');
   final open = [
     for (final f in items)
-      if (f.doneAt == null) f,
+      if (f.status.isOpen) f,
   ];
   final done = [
     for (final f in items)
-      if (f.doneAt != null) f,
+      if (!f.status.isOpen) f,
   ];
   final out = StringBuffer()
     ..writeln('Livre Serviço — Erros e sugestões')
@@ -56,10 +57,13 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
       ].join(' · ');
       out
         ..writeln()
-        ..writeln('[$n] ${f.kind.label} · ${when.format(f.createdAt)}')
+        ..writeln(
+          '[$n] ${f.kind.label} · ${when.format(f.createdAt)} · '
+          '${f.status.label}',
+        )
         ..writeln('De: $who');
       if (from.isNotEmpty) out.writeln('Versão: $from');
-      if (f.doneAt != null) out.writeln('Tratado em ${when.format(f.doneAt!)}');
+      if (f.doneAt != null) out.writeln('Fechado em ${when.format(f.doneAt!)}');
       out
         ..writeln()
         ..writeln(f.message.trim())
@@ -73,9 +77,34 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
   return out.toString();
 }
 
-/// "Erros e sugestões" (a Home button): anyone signed in writes to the
-/// app's admin, who is the only one to read it ([FeedbackInboxScreen],
-/// opened from here too).
+/// A state badge: white on its colour.
+class FeedbackStatusBadge extends StatelessWidget {
+  const FeedbackStatusBadge(this.status, {super.key});
+
+  final FeedbackStatus status;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: status.color,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      status.label,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
+}
+
+/// "Erros e sugestões" (a Home button): Escrever, where anyone signed in
+/// writes to the app's admin, and Todos, where everyone reads the messages
+/// and their state, without who sent them. The admin reads everything, with
+/// the senders, in [FeedbackInboxScreen], opened from the app bar.
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
@@ -84,6 +113,47 @@ class FeedbackScreen extends StatefulWidget {
 }
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
+  /// Goes up on every send, so Todos reads the list again.
+  final _sent = ValueNotifier(0);
+
+  @override
+  void dispose() {
+    _sent.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ResponsiveTabs(
+    title: const Text('Erros e sugestões'),
+    actions: [
+      if (AccountService.instance.store != null &&
+          AccountService.instance.access.admin)
+        IconButton(
+          tooltip: 'Ver os recebidos',
+          icon: const Icon(Icons.inbox_outlined),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const FeedbackInboxScreen()),
+          ),
+        ),
+    ],
+    tabs: [
+      ('Escrever', _WriteTab(onSent: () => _sent.value++)),
+      ('Todos', _AllTab(sent: _sent)),
+    ],
+  );
+}
+
+class _WriteTab extends StatefulWidget {
+  const _WriteTab({required this.onSent});
+
+  final VoidCallback onSent;
+
+  @override
+  State<_WriteTab> createState() => _WriteTabState();
+}
+
+class _WriteTabState extends State<_WriteTab> {
   final _message = TextEditingController();
   var _kind = FeedbackKind.erro;
   var _sending = false;
@@ -117,7 +187,12 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Enviado. Obrigado!')));
-      Navigator.pop(context);
+      setState(() {
+        _sending = false;
+        _message.clear();
+      });
+      widget.onSent();
+      DefaultTabController.maybeOf(context)?.animateTo(1);
     } catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
@@ -133,93 +208,220 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     final ready = _canSend && !_sending && _message.text.trim().isNotEmpty;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Erros e sugestões'),
-        actions: [
-          if (AccountService.instance.store != null &&
-              AccountService.instance.access.admin)
-            IconButton(
-              tooltip: 'Ver os recebidos',
-              icon: const Icon(Icons.inbox_outlined),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const FeedbackInboxScreen()),
+    return ReadableWidth(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Encontrou um erro ou tem uma ideia para melhorar a aplicação? '
+            'Escreva aqui. Todos os utilizadores podem ler a mensagem e o seu '
+            'estado em Todos, sem o seu nome nem a sua loja; só o '
+            'administrador da aplicação vê quem a enviou.',
+            style: TextStyle(color: context.muted),
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<FeedbackKind>(
+            segments: const [
+              ButtonSegment(
+                value: FeedbackKind.erro,
+                label: Text('Erro'),
+                icon: Icon(Icons.bug_report_outlined),
               ),
-            ),
-        ],
-      ),
-      body: ReadableWidth(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                'Encontrou um erro ou tem uma ideia para melhorar a '
-                'aplicação? Escreva aqui. Só o administrador da aplicação '
-                'lê esta mensagem, com o seu email e a sua loja.',
-                style: TextStyle(color: context.muted),
-              ),
-              const SizedBox(height: 16),
-              SegmentedButton<FeedbackKind>(
-                segments: const [
-                  ButtonSegment(
-                    value: FeedbackKind.erro,
-                    label: Text('Erro'),
-                    icon: Icon(Icons.bug_report_outlined),
-                  ),
-                  ButtonSegment(
-                    value: FeedbackKind.sugestao,
-                    label: Text('Sugestão'),
-                    icon: Icon(Icons.lightbulb_outline),
-                  ),
-                ],
-                selected: {_kind},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _kind = s.single),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _message,
-                enabled: _canSend && !_sending,
-                minLines: 5,
-                maxLines: 12,
-                maxLength: _maxLength,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: 'Mensagem',
-                  hintText: _kind == FeedbackKind.erro
-                      ? 'O que aconteceu, em que ecrã, e o que esperava.'
-                      : 'O que gostava que a aplicação fizesse.',
-                  alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              if (!_canSend) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Para enviar, inicie sessão em Definições → Conta e '
-                  'Sincronização.',
-                  style: TextStyle(color: context.warningText),
-                ),
-              ],
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: ready ? _send : null,
-                icon: _sending
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
-                label: const Text('Enviar'),
+              ButtonSegment(
+                value: FeedbackKind.sugestao,
+                label: Text('Sugestão'),
+                icon: Icon(Icons.lightbulb_outline),
               ),
             ],
+            selected: {_kind},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setState(() => _kind = s.single),
           ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _message,
+            enabled: _canSend && !_sending,
+            minLines: 5,
+            maxLines: 12,
+            maxLength: _maxLength,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: 'Mensagem',
+              hintText: _kind == FeedbackKind.erro
+                  ? 'O que aconteceu, em que ecrã, e o que esperava.'
+                  : 'O que gostava que a aplicação fizesse.',
+              alignLabelWithHint: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          if (!_canSend) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Para enviar, inicie sessão em Definições → Conta e '
+              'Sincronização.',
+              style: TextStyle(color: context.warningText),
+            ),
+          ],
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: ready ? _send : null,
+            icon: _sending
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send),
+            label: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Todos: every public message and this account's own, with their state.
+/// Read again every 30 seconds while open, when the app comes back and
+/// after a send.
+class _AllTab extends StatefulWidget {
+  const _AllTab({required this.sent});
+
+  final ValueListenable<int> sent;
+
+  @override
+  State<_AllTab> createState() => _AllTabState();
+}
+
+class _AllTabState extends State<_AllTab> with WidgetsBindingObserver {
+  final _account = AccountService.instance;
+  List<PublicFeedback>? _items;
+  Object? _error;
+  Timer? _timer;
+
+  bool get _signedIn => _account.isConfigured && _account.isSignedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_signedIn) return;
+    WidgetsBinding.instance.addObserver(this);
+    widget.sent.addListener(_load);
+    _timer = Timer.periodic(FeedbackInboxScreen.refreshEvery, (_) => _load());
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    widget.sent.removeListener(_load);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
+
+  /// Keeps what is shown when a read fails, once there is something.
+  Future<void> _load() async {
+    try {
+      final list = await _account.feedbackPublicList();
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted && _items == null) setState(() => _error = e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _items;
+    if (!_signedIn) {
+      return _centred(
+        'Para ver os erros e sugestões, inicie sessão em Definições → Conta '
+        'e Sincronização.',
+      );
+    }
+    if (_error case final e? when items == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(accountErrorText(e)),
+            TextButton(onPressed: _load, child: const Text('Tentar outra vez')),
+          ],
+        ),
+      );
+    }
+    if (items == null) return const Center(child: CircularProgressIndicator());
+    if (items.isEmpty) {
+      return _centred('Ainda não há erros nem sugestões.');
+    }
+    final when = DateFormat('d/M/y', 'pt_PT');
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ReadableWidth(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final f in items)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            f.kind == FeedbackKind.erro
+                                ? Icons.bug_report_outlined
+                                : Icons.lightbulb_outline,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              [
+                                f.kind.label,
+                                when.format(f.createdAt),
+                                if (f.mine) 'Enviado por si',
+                              ].join(' · '),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          FeedbackStatusBadge(f.status),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SelectableText(f.message),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _centred(String text) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: context.muted),
+      ),
+    ),
+  );
 }
 
 /// "Erros e sugestões", for the app's admin: everything sent, those still
@@ -238,8 +440,18 @@ class FeedbackInboxScreen extends StatefulWidget {
 class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     with WidgetsBindingObserver {
   final _account = AccountService.instance;
-  late Future<List<FeedbackItem>> _items = _account.feedbackList();
+  late Future<List<FeedbackItem>> _items = _openList();
   late final Timer _timer;
+
+  /// The list, after making every new message Visto (the admin opened it).
+  Future<List<FeedbackItem>> _openList() async {
+    try {
+      await _account.markFeedbackSeen();
+    } catch (_) {
+      // Offline: the list says so.
+    }
+    return _account.feedbackList();
+  }
 
   @override
   void initState() {
@@ -282,9 +494,9 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     ),
   );
 
-  Future<void> _setDone(FeedbackItem f, bool done) async {
+  Future<void> _setStatus(FeedbackItem f, FeedbackStatus status) async {
     try {
-      await _account.setFeedbackDone(f.id, done);
+      await _account.setFeedbackStatus(f.id, status);
     } catch (e) {
       if (mounted) _showError(e);
     }
@@ -354,8 +566,9 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
       when.format(f.createdAt),
       if (f.appVersion.isNotEmpty) 'v${f.appVersion}',
       if (f.platform.isNotEmpty) f.platform,
+      if (!f.isPublic) 'só o administrador',
     ].join(' · ');
-    final done = f.doneAt != null;
+    final done = !f.status.isOpen;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -382,16 +595,20 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
                     ),
                   ),
                 ),
+                FeedbackStatusBadge(f.status),
                 PopupMenuButton<String>(
-                  onSelected: (a) => switch (a) {
-                    'done' => _setDone(f, !done),
-                    _ => _delete(f),
-                  },
+                  tooltip: 'Estado',
+                  onSelected: (v) => v == 'delete'
+                      ? _delete(f)
+                      : _setStatus(f, FeedbackStatus.fromName(v)),
                   itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'done',
-                      child: Text(done ? 'Reabrir' : 'Marcar como tratado'),
-                    ),
+                    for (final s in FeedbackStatus.values)
+                      CheckedPopupMenuItem(
+                        value: s.dbName,
+                        checked: s == f.status,
+                        child: Text(s.label),
+                      ),
+                    const PopupMenuDivider(),
                     const PopupMenuItem(value: 'delete', child: Text('Apagar')),
                   ],
                 ),
@@ -466,11 +683,11 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
             }
             final open = [
               for (final f in list)
-                if (f.doneAt == null) f,
+                if (f.status.isOpen) f,
             ];
             final done = [
               for (final f in list)
-                if (f.doneAt != null) f,
+                if (!f.status.isOpen) f,
             ];
             return RefreshIndicator(
               onRefresh: () async {

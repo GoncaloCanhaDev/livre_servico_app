@@ -4,7 +4,7 @@
 library;
 
 /// The date of this text; saved with each new account (`privacy_policy`).
-const privacyPolicyVersion = '2026-11-04';
+const privacyPolicyVersion = '2026-11-08';
 
 /// One part of the policy: a heading and its paragraphs.
 typedef PolicySection = ({String title, List<String> paragraphs});
@@ -87,8 +87,12 @@ const privacyPolicy = <PolicySection>[
           'equipa e a função por quem tiver uma função acima da sua.',
       'Um aviso só o vêem quem o enviou, as pessoas a quem foi enviado e o '
           'administrador da aplicação.',
-      'Os erros e sugestões que enviar só os vê o administrador da '
-          'aplicação.',
+      'O texto dos erros e sugestões que enviar, o tipo, a data e o estado '
+          '(Novo, Visto, Em curso, Resolvido, Não será feito) vêem-nos todos '
+          'os utilizadores da aplicação, de qualquer loja, sem o seu nome, '
+          'email nem loja: não escreva na mensagem dados pessoais. Quem a '
+          'enviou só o vê o administrador da aplicação. Os enviados antes de '
+          '8 de novembro de 2026 continuam a ser só do administrador.',
       'O administrador da aplicação vê também a lista de todas as contas: o '
           'email, a loja, a pessoa a que cada conta está ligada, quando foi '
           'criada e quando iniciou sessão pela última vez.',

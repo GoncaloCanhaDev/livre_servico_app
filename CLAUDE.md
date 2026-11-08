@@ -181,7 +181,13 @@ multi-tenant product.
   the `documents_cache` pref, each opened PDF in `LocalDb`'s `local_files` table (dropped when
   no longer listed). The demo and tests use `MemoryDocumentRemote` with PDFs from `simplePdf`.
 - Erros e sugestões (`lib/screens/feedback_screen.dart`, a Home button, `feedbackDestination`,
-  not in the demo; its app bar opens the inbox for the admin): `FeedbackScreen` sends an
+  not in the demo; its app bar opens the inbox for the admin): `FeedbackScreen` has two tabs,
+  Escrever and Todos (`feedbackPublicList`: everyone signed in reads the public messages and
+  their own, kind, text, state and date, never the sender). Each has a `FeedbackStatus`
+  (`lib/models/feedback_status.dart`, by `dbName`) the admin sets (`setFeedbackStatus`;
+  opening the inbox makes new ones Visto, `markFeedbackSeen`); `done_at` is set while closed.
+  Messages are public only when sent with `p_public` (from 0.88.0;
+  `20261108120000_feedback_status.sql`). Escrever sends an
   error report or a suggestion (`AccountService.sendFeedback`, signed in only, not in the demo)
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
   `deleteFeedback`; both re-read on a timer and on resume, since the table has no Realtime;

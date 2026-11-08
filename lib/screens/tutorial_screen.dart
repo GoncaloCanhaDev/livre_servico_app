@@ -38,7 +38,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'inicio',
     title: 'Início',
-    version: 4,
+    version: 5,
     steps: [
       TutorialStep(
         icon: Icons.waving_hand_outlined,
@@ -73,7 +73,8 @@ const tutorialSections = [
           'O cartão Hoje, com o resumo do dia.',
           'Os botões de cada área: Camiões, Listas 2.0, Inventários, Tarefas, '
               'Pedidos, Informações, Documentos, Histórico, Pessoas e Erros e '
-              'sugestões (para escrever ao administrador).',
+              'sugestões (para escrever ao administrador e ver o estado de '
+              'todos os que foram enviados).',
         ],
       ),
       TutorialStep(
