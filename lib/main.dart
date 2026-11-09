@@ -12,11 +12,17 @@ import 'services/demo_mode.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
 import 'services/settings_service.dart';
+import 'services/web_loader_stub.dart'
+    if (dart.library.js_interop) 'services/web_loader_web.dart';
 import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_PT');
+
+  // The website's loading screen (web/index.html) stays up through the
+  // download and the startup below, until the app's first frame is drawn.
+  WidgetsBinding.instance.addPostFrameCallback((_) => hideWebLoader());
 
   String? bootError;
   try {

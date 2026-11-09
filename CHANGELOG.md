@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.88.7] — 2026-11-09
+
+### Improved
+- Website: a loading screen (icon, name, spinner, "A carregar…") instead of a blank page while
+  the app downloads and starts, also when entering or leaving the demo, which reloads the
+  page. It is plain HTML in `web/index.html`, in the theme chosen in Aparência, and `main()`
+  hides it after the app's first frame (`hideWebLoader`, a conditional import).
+
 ## [0.88.6] — 2026-11-09
 
 ### Fixed
