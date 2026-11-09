@@ -1,5 +1,8 @@
 # Browsers only run WebAssembly served as application/wasm (sqlite3.wasm, canvaskit).
 AddType application/wasm .wasm
+# The WebAssembly build loads main.dart.mjs as a JavaScript module; served as
+# application/octet-stream, the browser refuses it and the page stays blank.
+AddType text/javascript .mjs
 
 # Flutter keeps the same file names on every build (main.dart.js, drift_worker.js...),
 # so browsers must check with the server before reusing a copy, or an update stays
