@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../models/person.dart';
 import '../models/teams.dart';
@@ -12,6 +11,7 @@ import 'privacy_policy_screen.dart';
 import 'person_detail_screen.dart';
 import 'start_screen.dart';
 import 'store_members_screen.dart';
+import 'widgets/sync_status.dart';
 import 'widgets/wide_layout.dart';
 
 /// Definições → Conta: sign in to the online database, choose the store
@@ -545,17 +545,6 @@ class _Connected extends StatelessWidget {
   final AccountService account;
   final SyncService sync;
 
-  String _status() {
-    if (sync.isSyncing) return 'A sincronizar…';
-    if (sync.lastError case final e?) {
-      return 'Não sincronizou: ${accountErrorText(e)}';
-    }
-    if (sync.lastSyncedAt case final t?) {
-      return 'Sincronizado às ${DateFormat.Hm('pt_PT').format(t)}.';
-    }
-    return 'Ainda não sincronizou.';
-  }
-
   Future<void> _confirm(
     BuildContext context, {
     required String title,
@@ -602,7 +591,10 @@ class _Connected extends StatelessWidget {
             sync.lastError == null ? Icons.cloud_done : Icons.cloud_off,
             color: sync.lastError == null ? null : context.warningText,
           ),
-          title: Text(_status()),
+          title: Text(syncStatusText(sync)),
+          subtitle: sync.canPush
+              ? Text(pendingText(sync.pendingCount))
+              : null,
         ),
         const Divider(),
         _MyProfileTile(personId: store.personId),

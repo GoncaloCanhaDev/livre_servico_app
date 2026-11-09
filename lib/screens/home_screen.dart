@@ -15,6 +15,7 @@ import 'widgets/beta_badge.dart';
 import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/release_notes_dialog.dart';
+import 'widgets/sync_status.dart';
 import 'widgets/today_card.dart';
 import 'widgets/wide_layout.dart';
 
@@ -57,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          const SyncStatusButton(),
           ListenableBuilder(
             listenable: AccountService.instance,
             builder: (context, _) =>

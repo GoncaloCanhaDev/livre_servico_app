@@ -428,6 +428,20 @@ void main() {
       expect((await b.db.persons.all()).single.fullName, 'Ana');
     });
 
+    test('counts the changes waiting to be sent until they are', () async {
+      final service = SyncService.instance;
+      expect(service.pendingCount, 0, reason: 'not connected');
+      await service.start(remote, 'serviceA', db: a.db);
+      expect(service.pendingCount, 0);
+
+      await a.db.persons.put(person('Ana'));
+      await a.db.persons.put(person('Rui'));
+      expect(service.pendingCount, 2);
+
+      await service.syncNow();
+      expect(service.pendingCount, 0);
+    });
+
     test('a save here is pushed a few seconds later', () async {
       await SyncService.instance.start(remote, 'serviceA', db: a.db);
       await a.db.persons.put(person('Ana'));

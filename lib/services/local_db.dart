@@ -126,6 +126,10 @@ class LocalDb {
     avisoVistos,
   ];
 
+  /// How many rows, in every collection, wait to be pushed.
+  int get pendingCount =>
+      collections.fold(0, (sum, c) => sum + c.pendingCount);
+
   /// Set once [backfillSync] has run at startup: rows saved since are
   /// stamped when written, so it isn't needed again.
   static const _backfilledKey = 'syncBackfilled';
@@ -510,6 +514,10 @@ class LocalCollection<T extends SyncedRow> {
   Map<String, dynamic> syncData(T row) => row.toJson()
     ..remove('id')
     ..remove('synced');
+
+  /// How many rows (deletes included) are saved here and not yet pushed.
+  int get pendingCount =>
+      _rows.values.where((r) => r['synced'] == false).length;
 
   /// The rows to push, tombstones included: those pending, or with [all]
   /// every row (the first sync with a store).

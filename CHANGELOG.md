@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.89.0] — 2026-11-09
+
+### Added
+- Sync status on Home: while a store is connected, a cloud in the app bar shows whether
+  everything was sent, a sync is running, the last one failed (amber, offline) or changes wait
+  to be sent, with their count as a badge (`SyncStatusButton`,
+  `lib/screens/widgets/sync_status.dart`). Tapping it opens a sheet with when it last synced,
+  how many changes wait, and "Sincronizar agora". Conta shows the same count under its sync
+  line. The count is the rows not yet pushed, deletes included (`LocalDb.pendingCount`,
+  `SyncService.pendingCount`; 0 for an account that doesn't push).
+
 ## [0.88.7] — 2026-11-09
 
 ### Improved

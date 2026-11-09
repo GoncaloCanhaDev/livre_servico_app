@@ -32,6 +32,17 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   bool get isConnected => _engine != null;
   bool get isSyncing => _running != null;
 
+  /// Whether this device sends its changes (false for an account that may
+  /// only read, whose saved rows never leave the device).
+  bool get canPush => _engine?.canPush ?? false;
+
+  /// How many changes saved here still wait to be sent; 0 when this device
+  /// doesn't send (not connected, or [canPush] false).
+  int get pendingCount => switch (_engine) {
+    final e? when e.canPush => e.db.pendingCount,
+    _ => 0,
+  };
+
   /// When the last sync finished without an error.
   DateTime? lastSyncedAt;
 
