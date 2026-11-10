@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -440,6 +441,22 @@ void main() {
 
       await service.syncNow();
       expect(service.pendingCount, 0);
+    });
+
+    test('counts the photos waiting to be uploaded', () async {
+      final service = SyncService.instance;
+      await service.start(remote, 'serviceA', db: a.db);
+      expect(service.pendingPhotos, 0);
+
+      await a.db.putPhoto('ana.jpg', Uint8List(4), uploaded: false);
+      await a.db.persons.put(person('Ana')..photoPath = 'photo:ana.jpg');
+      await pumpEventQueue();
+      expect(service.pendingPhotos, 1);
+
+      // Uploaded (by PhotoStore, with the sync).
+      await a.db.markPhotoUploaded('ana.jpg');
+      await service.syncNow();
+      expect(service.pendingPhotos, 0);
     });
 
     test('a save here is pushed a few seconds later', () async {

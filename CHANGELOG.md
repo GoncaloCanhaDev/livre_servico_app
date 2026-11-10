@@ -7,6 +7,13 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.89.1] — 2026-11-10
+
+### Improved
+- Sync status: photos taken here and not yet uploaded count too ("2 alterações e 1 foto por
+  enviar"), in the app bar's badge, its sheet and Conta (`SyncService.pendingPhotos`, counted
+  after each sync and each save).
+
 ## [0.89.0] — 2026-11-09
 
 ### Added

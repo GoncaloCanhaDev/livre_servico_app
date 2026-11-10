@@ -43,6 +43,21 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     _ => 0,
   };
 
+  int _pendingPhotos = 0;
+
+  /// How many photos taken here still wait to be uploaded; 0 when this
+  /// device doesn't send. Counted after each sync and each save.
+  int get pendingPhotos => canPush ? _pendingPhotos : 0;
+
+  Future<void> _countPhotos() async {
+    final engine = _engine;
+    if (engine == null) return;
+    final count = (await engine.db.photosToUpload()).length;
+    if (_engine != engine || count == _pendingPhotos) return;
+    _pendingPhotos = count;
+    notifyListeners();
+  }
+
   /// When the last sync finished without an error.
   DateTime? lastSyncedAt;
 
@@ -65,7 +80,10 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       prefs: await SharedPreferences.getInstance(),
       canPush: canPush,
     );
-    _writes = LocalDb.localWrites.listen((_) => _syncIn(_afterSave));
+    _writes = LocalDb.localWrites.listen((_) {
+      _syncIn(_afterSave);
+      _countPhotos();
+    });
     _remoteChanges = remote.changes.listen(
       (_) => _syncIn(_afterRemote),
       // Realtime down: the minute timer still syncs.
@@ -98,6 +116,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     _timer = null;
     _soon = null;
     _engine = null;
+    _pendingPhotos = 0;
     notifyListeners();
   }
 
@@ -127,6 +146,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       _running = null;
       notifyListeners();
     }
+    await _countPhotos();
     if (_again) {
       _again = false;
       await syncNow();

@@ -10,6 +10,8 @@ void main() {
     expect(pendingText(0), 'Tudo enviado.');
     expect(pendingText(1), '1 alteração por enviar.');
     expect(pendingText(4), '4 alterações por enviar.');
+    expect(pendingText(0, photos: 1), '1 foto por enviar.');
+    expect(pendingText(2, photos: 3), '2 alterações e 3 fotos por enviar.');
   });
 
   test('syncStatusText says the day only when it was not today', () {

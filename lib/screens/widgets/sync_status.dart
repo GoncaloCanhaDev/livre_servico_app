@@ -27,18 +27,25 @@ String syncStatusText(SyncService sync, {DateTime? now}) {
   return 'Ainda não sincronizou.';
 }
 
-/// "Tudo enviado." or how many changes this device still has to send.
-String pendingText(int pending) => switch (pending) {
-  0 => 'Tudo enviado.',
-  1 => '1 alteração por enviar.',
-  _ => '$pending alterações por enviar.',
-};
+/// "Tudo enviado." or how many changes and photos this device still has
+/// to send.
+String pendingText(int changes, {int photos = 0}) {
+  if (changes == 0 && photos == 0) return 'Tudo enviado.';
+  final parts = [
+    if (changes == 1) '1 alteração',
+    if (changes > 1) '$changes alterações',
+    if (photos == 1) '1 foto',
+    if (photos > 1) '$photos fotos',
+  ];
+  return '${parts.join(' e ')} por enviar.';
+}
 
 /// Rebuilds [builder] when a sync starts or ends and when the app saves
 /// something, with the number of changes waiting to be sent.
 class _SyncListener extends StatefulWidget {
   const _SyncListener({required this.builder});
 
+  /// [pending] counts the changes and the photos waiting to be sent.
   final Widget Function(BuildContext context, SyncService sync, int pending)
   builder;
 
@@ -70,7 +77,7 @@ class _SyncListenerState extends State<_SyncListener> {
   @override
   Widget build(BuildContext context) {
     final sync = SyncService.instance;
-    final pending = sync.pendingCount;
+    final pending = sync.pendingCount + sync.pendingPhotos;
     return widget.builder(context, sync, pending);
   }
 }
@@ -145,7 +152,12 @@ class _SyncSheet extends StatelessWidget {
                   leading: Icon(
                     pending == 0 ? Icons.check_circle_outline : Icons.upload,
                   ),
-                  title: Text(pendingText(pending)),
+                  title: Text(
+                    pendingText(
+                      sync.pendingCount,
+                      photos: sync.pendingPhotos,
+                    ),
+                  ),
                   subtitle: pending == 0
                       ? null
                       : Text(
