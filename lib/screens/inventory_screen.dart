@@ -428,7 +428,10 @@ class _InventoryCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 13),
               ),
             const SizedBox(height: 2),
-            Row(
+            // Wraps: a long status and a two-digit day don't fit a narrow
+            // phone's card on one line.
+            Wrap(
+              spacing: 8,
               children: [
                 Text(
                   statusText,
@@ -438,7 +441,6 @@ class _InventoryCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
                 Text(
                   dateFmt.format(inv.createdAt),
                   style: TextStyle(color: context.faint, fontSize: 12),
