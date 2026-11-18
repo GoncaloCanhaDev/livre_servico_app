@@ -12,6 +12,7 @@ import '../../models/teams.dart';
 import '../../models/today.dart';
 import '../../models/truck_reception.dart';
 import '../../services/daily_tasks_service.dart';
+import '../../services/horario_service.dart';
 import '../../services/pedido_service.dart';
 import '../../services/person_service.dart';
 import '../../services/truck_service.dart';
@@ -91,6 +92,7 @@ class _TodayCardState extends State<TodayCard> {
     Visivel2Service.instance,
     PedidoService.instance,
     TruckService.instance,
+    HorarioService.instance,
   ];
 
   @override
@@ -145,6 +147,7 @@ class _TodayCardState extends State<TodayCard> {
     if (rows == null || !mounted) return;
     final now = DateTime.now();
     final day = rows.day;
+    final horario = HorarioService.instance.index;
     final people = [
       for (final p in rows.everyone)
         if (p.team == livreServicoId) p,
@@ -152,9 +155,11 @@ class _TodayCardState extends State<TodayCard> {
     setState(() {
       _data = _TodayData(
         serviceDay: day,
-        hasShifts: people.any((p) => shiftSpanOn(p, day) != null),
-        onShift: onShiftAt(people, now),
-        counts: shiftCountsOn(people, day),
+        hasShifts: people.any(
+          (p) => shiftSpanOn(p, day, horario: horario) != null,
+        ),
+        onShift: onShiftAt(people, now, horario: horario),
+        counts: shiftCountsOn(people, day, horario: horario),
         pending: pendingDailyTasks(
           rows.tasks,
           visivelDone: rows.visivelDone,

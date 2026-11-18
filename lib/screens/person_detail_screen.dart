@@ -13,6 +13,7 @@ import '../models/visual_list.dart';
 import '../services/account_service.dart';
 import '../services/auto_list_service.dart';
 import '../services/daily_tasks_service.dart';
+import '../services/horario_service.dart';
 import '../services/inventory_service.dart';
 import '../services/opening_list_service.dart';
 import '../services/person_service.dart';
@@ -22,6 +23,7 @@ import '../services/visual_list_service.dart';
 import '../theme.dart';
 import 'person_form_screen.dart';
 import 'widgets/wide_layout.dart';
+import 'widgets/my_horario_card.dart';
 import 'widgets/person_avatar.dart';
 import 'widgets/person_picker.dart';
 import 'widgets/role_badge.dart';
@@ -52,6 +54,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.addListener(_reload);
     TruckService.instance.addListener(_reload);
     PersonService.instance.addListener(_reload);
+    HorarioService.instance.addListener(_reload);
   }
 
   @override
@@ -64,6 +67,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     InventoryService.instance.removeListener(_reload);
     TruckService.instance.removeListener(_reload);
     PersonService.instance.removeListener(_reload);
+    HorarioService.instance.removeListener(_reload);
     super.dispose();
   }
 
@@ -440,13 +444,15 @@ class _DetailsTab extends StatelessWidget {
     // The service day, so a night shift still counts as today after midnight.
     final today = currentServiceDay();
     final away = ausenciaOn(p, today);
-    final awayTag = awayTagOn(p, today);
-    final offToday = offLabelOn(p, today);
+    final schedule = HorarioService.instance.index;
+    final awayTag = awayTagOn(p, today, horario: schedule);
+    final offToday = offLabelOn(p, today, horario: schedule);
     final tags = roleTagsOf(p);
     final tenure = tenureTagOf(p, today);
     final birthday = isBirthdayOn(p, today);
     final upcoming = upcomingAusencias(p, today);
     final horario = horarioText(p);
+    final shiftToday = shiftTextOn(p, today, horario: schedule);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
@@ -506,7 +512,7 @@ class _DetailsTab extends StatelessWidget {
             value: offToday,
             highlight: true,
           )
-        else if (horario case final shift?)
+        else if (shiftToday case final shift?)
           _InfoRow(icon: Icons.work_outline, label: 'Hoje', value: shift),
         _InfoRow(
           icon: Icons.groups_outlined,
@@ -528,6 +534,13 @@ class _DetailsTab extends StatelessWidget {
               'pt_PT',
             ).format(DateTime(2024, m, d)),
           ),
+        if (schedule.nextDays(p, today, 7).isNotEmpty) ...[
+          const _DetailHeading('Próximos dias'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: HorarioDaysList(person: p, index: schedule, from: today),
+          ),
+        ],
         const _DetailHeading('Planeamento'),
         _InfoRow(
           icon: Icons.schedule,

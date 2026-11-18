@@ -16,6 +16,7 @@ import 'widgets/join_requests_card.dart';
 import 'widgets/profile_request_card.dart';
 import 'widgets/release_notes_dialog.dart';
 import 'widgets/sync_status.dart';
+import 'widgets/my_horario_card.dart';
 import 'widgets/today_card.dart';
 import 'widgets/wide_layout.dart';
 
@@ -126,6 +127,7 @@ const _cards = [
   AdminCard(),
   JoinRequestsCard(),
   TutorialCard(),
+  MyHorarioCard(),
   TodayCard(),
 ];
 

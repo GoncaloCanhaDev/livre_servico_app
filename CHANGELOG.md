@@ -7,6 +7,34 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.90.0] — 2026-11-18
+
+### Added
+- **Horários from Excel.** Level 3 and up (and the admin) import a month straight from the
+  store's `.xlsx` file (Horários → Importar horário): the "Plano" sheet gives each person's code
+  per day, the "Horário" sheet each code's entrada and saída (pausas ignored). Off codes: `FO` /
+  `.FO` Folga, `F` Férias, `A` Ausência, `LP` Licença parental; any other code without hours is
+  off, shown as the code (`DC`, `DO`, `LIBR`), and an unknown one is warned about on import.
+  Excel names are matched to people (remembering earlier imports, never guessing between two);
+  unmatched lines get a picker. One synced `HorarioMes` row per month (keyed online by the
+  month); re-importing replaces it. Parsed with `archive` + `xml` (now direct dependencies), in
+  the background, on the phone and the web.
+- Horários screen (Home button and side menu) with Dia (Hoje / Amanhã, by Dia / Noite, then
+  Fora), Semana (Monday–Sunday grid) and Mês (the whole month, names fixed, days scrolling),
+  coloured by Abertura / Intermédio / Fecho / Noite / ausente.
+- "Os meus próximos dias" card on Home for an account linked to a person on the horário, and
+  "Próximos dias" on each person's page.
+- Demo: this month's and next month's horário for Livre Serviço.
+- Tutorial: a Horários section; Início updated.
+
+### Changed
+- "A trabalhar agora", the Hoje card's counts, the task picker, Pessoas' "Hoje · 06:00–15:00"
+  and the folga / férias tags read the horário on the days it covers: an ausência in the app
+  wins, then the horário, then the fixed folgas and entrada/saída (`horario:` on `offLabelOn`,
+  `awayTagOn`, `offNoteOn`, `shiftSpanOn`, `onShiftAt`, `shiftCountsOn`,
+  `buildPeopleSections`; new `shiftTextOn`).
+- Política de Privacidade (2026-11-18): every member of the store sees its horário.
+
 ## [0.89.2] — 2026-11-10
 
 ### Fixed

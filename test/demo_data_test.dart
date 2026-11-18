@@ -5,6 +5,7 @@ import 'package:livre_servico_app/models/planning.dart';
 import 'package:livre_servico_app/models/teams.dart';
 import 'package:livre_servico_app/services/account_service.dart';
 import 'package:livre_servico_app/services/demo_data.dart';
+import 'package:livre_servico_app/services/horario_service.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 
 import 'helpers/app_db.dart';
@@ -25,6 +26,29 @@ void main() {
     expect(people.length, greaterThanOrEqualTo(15));
     expect(people.map(roleOf).toSet(), Role.values.toSet());
     expect(people.every((p) => p.syncUuid.isNotEmpty), isTrue);
+  });
+
+  test("this and next month's horário cover Livre Serviço, the visitor on it", () async {
+    final me = await seedDemo(now: now);
+    await HorarioService.instance.load();
+    final months = await db().horarioMeses.all();
+    expect(months.map((m) => m.month).toSet(), {
+      DateTime(2026, 10),
+      DateTime(2026, 11),
+    });
+    final month = months.first;
+    final ls = (await db().persons.all()).where(
+      (p) => p.team == livreServicoId,
+    );
+    expect(month.linhas.map((l) => l.personId).toSet(),
+        ls.map((p) => p.syncUuid).toSet());
+    final p = (await db().persons.firstWhere((p) => p.syncUuid == me))!;
+    final index = HorarioService.instance.index;
+    expect(index.nextDays(p, currentServiceDay(now), 7), hasLength(7));
+    expect(
+      index.nextDays(p, currentServiceDay(now), 7).where((d) => d.isShift),
+      isNotEmpty,
+    );
   });
 
   test('the visitor is the Livre Serviço Chefe de Secção, dia', () async {

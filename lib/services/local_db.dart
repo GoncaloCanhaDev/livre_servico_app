@@ -11,6 +11,7 @@ import '../models/auto_list.dart';
 import '../models/aviso.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
+import '../models/horario.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
 import '../models/local_row.dart';
@@ -106,6 +107,12 @@ class LocalDb {
     syncKey: (v) => '${v.avisoId}/${v.personId}',
   );
 
+  final horarioMeses = LocalCollection<HorarioMes>._(
+    'HorarioMes',
+    HorarioMes.fromJson,
+    syncKey: (m) => monthKey(m.month),
+  );
+
   late final List<LocalCollection<SyncedRow>> collections = [
     truckReceptions,
     openingLists,
@@ -124,6 +131,7 @@ class LocalDb {
     customTaskEntries,
     avisos,
     avisoVistos,
+    horarioMeses,
   ];
 
   /// How many rows, in every collection, wait to be pushed.

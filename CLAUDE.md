@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Livre Serviço Companion — a Flutter app for recording inventories (name, code, final value),
 truck receptions, opening/report/visual/auto checklists, daily/weekly/custom tasks, "pedidos"
-(order headers: number, supplier, expected date), and the store's people, grouped into fixed teams with chefes, used at a
+(order headers: number, supplier, expected date), the monthly horários (imported from the
+store's Excel file), and the store's people, grouped into fixed teams with chefes, used at a
 single site. There is no product catalogue, no barcode scanning and no points system. UI text
 and user-facing strings are in Portuguese (pt_PT locale). The app is fully offline/local: all
 data lives in an on-device SQLite database (Drift), and optionally syncs with an online
@@ -37,11 +38,13 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
+  `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/horario.dart` and
+  `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/inventory_screen_test.dart` plans
+  `test/truck_form_screen_test.dart` saves a camião, `test/horario_import_screen_test.dart`
+  imports a horário and `test/horarios_screen_test.dart` shows it, `test/inventory_screen_test.dart` plans
   and marks done an inventory, `test/automaticas2_tab_test.dart` sends
   Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível, `test/daily_lists2_test.dart` the Diárias from them, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
@@ -160,10 +163,27 @@ multi-tenant product.
   Quebra and Benefício: each Finalizar saves one `Visivel2Entry` (itens picados, who), shown in
   Histórico's Visível 2.0 tab; one ticks the Diárias' Lista Visível. The order is a round of Automáticas, one Visível, then
   Automáticas all day, but neither is ever locked (not feasible in practice).
-- There are no horários (the monthly shift sheet was removed in 0.61.0, since it showed
-  everyone's folgas and absences): who works when comes from each person's `folgas`,
-  `ausencias` and own `shiftStart`/`shiftEnd`. `shiftSpanOn`, `onShiftAt` and `shiftCountsOn`
-  (`lib/models/today.dart`) read those for the "A trabalhar agora" line and the picker.
+- Horários (since 0.90.0; the old JSON-edited sheet was removed in 0.61.0) are imported from
+  the store's monthly Excel file as it is: `parseHorarioXlsx` (`lib/models/horario_xlsx.dart`,
+  `archive` + `xml`, no dart:io, run through `compute`) reads the "Plano" sheet (month in A1,
+  day columns from C while row 2 reads like "Q\n31", the first being the day before the month;
+  `Dia`/`Noite` group rows in column A, names in B, stop at `Resumo`) and each used code's
+  entrada (B) and saída (E) from the "Horário" sheet, finding both by name through
+  `workbook.xml`. Off codes are `horarioOffCodes` (FO/.FO Folga, F, A, LP); any other code
+  without hours is off, shown as the code (`ignoredOffCodes` DC/DO/LIBR are never warned
+  about). Each month is one self-contained `HorarioMes` row (`lib/models/horario.dart`: its
+  codes' hours and one `HorarioLinha` per Excel line with the linked person's `syncUuid`),
+  keyed online by the month. `matchHorarioNames` links names (an earlier import's choice,
+  exact folded name, first + last word; never between two); `HorarioImportScreen` asks for the
+  rest. Import is `StoreAccess.canImportHorarios` (level 3+, app-side only); every member sees
+  horários (the privacy policy says so). `HorarioService.index` (a `HorarioIndex`, loaded in
+  `main()`, reloaded on saves, remote changes, backup import and wipe) answers `dayOf(person,
+  day)`: a day two months cover comes from the month it belongs to. Who works when: an
+  ausência in the app wins, then the horário day, then the person's `folgas` and own
+  `shiftStart`/`shiftEnd`; pass `horario: HorarioService.instance.index` to `offLabelOn`,
+  `awayTagOn`, `offNoteOn`, `shiftSpanOn`, `onShiftAt`, `shiftCountsOn`, `shiftTextOn`,
+  `buildPeopleSections` (null keeps the old behaviour). `HorariosScreen` (Dia, Semana, Mês)
+  and `MyHorarioCard` / `HorarioDaysList` (Home, person page) show them.
 - Avisos (`lib/models/aviso.dart`, `AvisoService`): a short notice from level 2 and up
   (`StoreAccess.canSendAvisos`, linked to a person) to people they reach, resolved to person
   uuids when sent (`recipientsFor`); each recipient's "Visto" is its own `AvisoVisto` row
@@ -315,7 +335,8 @@ multi-tenant product.
 `main()` in `lib/main.dart` awaits, in order: `SettingsService.instance.init()`,
 `LocalDb.init()`, `PhotoStore.instance.migrateLegacy()` (its own try/catch: a failure there
 doesn't stop the app), `AccountService.instance.init()`
-(which restores the saved session in the background, so it never waits for the network).
+(which restores the saved session in the background, so it never waits for the network),
+then `HorarioService.instance.load()`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 

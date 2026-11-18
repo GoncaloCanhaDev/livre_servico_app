@@ -5,6 +5,7 @@ import '../services/demo_mode.dart';
 import 'documents_screen.dart';
 import 'feedback_screen.dart';
 import 'historico_screen.dart';
+import 'horarios_screen.dart';
 import 'info_screen.dart';
 import 'inventory_screen.dart';
 import 'listas2_screen.dart';
@@ -48,6 +49,11 @@ List<Destination> get homeDestinations => [
   ),
   Destination(Icons.history, 'Histórico', () => const HistoricoScreen()),
   Destination(Icons.people, 'Pessoas', () => const PeopleScreen()),
+  Destination(
+    Icons.calendar_month,
+    'Horários',
+    () => const HorariosScreen(),
+  ),
   if (!DemoMode.active) feedbackDestination,
 ];
 

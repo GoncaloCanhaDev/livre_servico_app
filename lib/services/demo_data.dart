@@ -2,6 +2,7 @@ import '../models/auto2_entry.dart';
 import '../models/aviso.dart';
 import '../models/custom_task.dart';
 import '../models/daily_tasks.dart';
+import '../models/horario.dart';
 import '../models/info_contacts.dart';
 import '../models/info_entry.dart';
 import '../models/inventory.dart';
@@ -474,8 +475,65 @@ Future<String> seedDemo({DateTime? now}) async {
       ),
   ];
 
+  // This month's and next month's horário for Livre Serviço, as if imported
+  // from the Excel file: codes like the file's ("0614" is 06:00–14:00),
+  // each person on their own shift (the day operadores on 13:00–22:00 every
+  // other week), off on their folgas.
+  String hh(int m) => (m ~/ 60 % 24).toString().padLeft(2, '0');
+  final livreServico = [
+    for (final p in people)
+      if (p.team == livreServicoId) p,
+  ];
+  HorarioMes horarioFor(DateTime month) {
+    final first = DateTime(month.year, month.month, 0);
+    final columns = DateTime(month.year, month.month + 1, 0).day + 4;
+    final codigos = <String, ({int entrada, int saida})>{};
+    String codeFor(int start, int end) {
+      final code = '${hh(start)}${hh(end)}';
+      codigos[code] = (entrada: start, saida: end);
+      return code;
+    }
+
+    return stamped(
+      HorarioMes()
+        ..month = month
+        ..firstDay = first
+        ..linhas = [
+          for (final p in livreServico)
+            HorarioLinha()
+              ..nome = p.fullName
+              ..grupo = p.turno == 'noite' ? 'Noite' : 'Dia'
+              ..personId = p.syncUuid
+              ..codigos = [
+                for (var i = 0; i < columns; i++)
+                  () {
+                    final d = DateTime(first.year, first.month, first.day + i);
+                    if (p.folgas.contains(d.weekday)) return 'FO';
+                    final lateWeek =
+                        p.turno != 'noite' &&
+                        roleOf(p) == Role.operador &&
+                        !p.partTime &&
+                        (d.difference(DateTime(2026)).inDays ~/ 7).isOdd;
+                    return lateWeek
+                        ? codeFor(minutes(13), minutes(22))
+                        : codeFor(p.shiftStart!, p.shiftEnd!);
+                  }(),
+              ],
+        ]
+        ..codigos = codigos
+        ..importedAt = day(-20, 10)
+        ..importedBy = me.fullName,
+    );
+  }
+
+  final horarios = [
+    horarioFor(DateTime(today.year, today.month)),
+    horarioFor(DateTime(today.year, today.month + 1)),
+  ];
+
   await db.transaction(() async {
     await db.persons.putAll(people);
+    await db.horarioMeses.putAll(horarios);
     await db.dailyTasks.putAll([daily, yesterday]);
     await db.weeklyTasks.put(weekly);
     await db.openingLists.put(opening);

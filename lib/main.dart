@@ -9,6 +9,7 @@ import 'screens/widgets/demo_banner.dart';
 import 'services/account_service.dart';
 import 'services/demo_data.dart';
 import 'services/demo_mode.dart';
+import 'services/horario_service.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
 import 'services/settings_service.dart';
@@ -46,6 +47,7 @@ void main() async {
       // Restores the session in the background: never waits for the network.
       await AccountService.instance.init();
     }
+    await HorarioService.instance.load();
   } catch (e) {
     bootError = '$e';
   }

@@ -1126,6 +1126,101 @@ class _InventoryDiagram extends StatelessWidget {
   }
 }
 
+class _HorariosDiagram extends StatelessWidget {
+  const _HorariosDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget cell(String text, Color? color) => Expanded(
+      child: Container(
+        height: 18,
+        margin: const EdgeInsets.all(1),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: color == null ? null : FontWeight.w700,
+            color: color == null ? context.muted : context.colors.onSurface,
+          ),
+        ),
+      ),
+    );
+    final abertura = context.tint(Colors.lightBlue, 100);
+    final fecho = context.tint(Colors.amber, 100);
+    final noite = context.tint(Colors.indigo, 100);
+    final ferias = context.tint(Colors.orange, 100);
+    Widget row(String name, List<(String, Color?)> days) => Row(
+      children: [
+        SizedBox(
+          width: 44,
+          child: Text(name, style: const TextStyle(fontSize: 9)),
+        ),
+        for (final (t, c) in days) cell(t, c),
+      ],
+    );
+    return _Screen(
+      title: 'Horários',
+      actions: const [_BarIcon(Icons.upload_file, 4)],
+      children: [
+        const Row(
+          children: [
+            Expanded(child: _Tabs(['Semana', 'Dia', 'Mês'])),
+            _Marker(1),
+          ],
+        ),
+        _Box(
+          marker: 2,
+          child: Column(
+            children: [
+              row('', [
+                for (final d in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'])
+                  (d, null),
+              ]),
+              row('Ana', [
+                ('06–14', abertura),
+                ('06–14', abertura),
+                ('FO', null),
+                ('13–22', fecho),
+                ('13–22', fecho),
+              ]),
+              row('Rui', [
+                ('22–07', noite),
+                ('FO', null),
+                ('22–07', noite),
+                ('22–07', noite),
+                ('22–07', noite),
+              ]),
+              row('Inês', [
+                ('F', ferias),
+                ('F', ferias),
+                ('F', ferias),
+                ('06–14', abertura),
+                ('FO', null),
+              ]),
+            ],
+          ),
+        ),
+        _gap,
+        const _Box(
+          marker: 3,
+          child: Column(
+            children: [
+              _Line('Fora', icon: Icons.event_busy),
+              _Line('     Inês Rodrigues · Férias'),
+              _Line('     Ana Costa · Folga'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PeopleDiagram extends StatelessWidget {
   const _PeopleDiagram();
 

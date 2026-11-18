@@ -38,7 +38,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'inicio',
     title: 'Início',
-    version: 5,
+    version: 6,
     steps: [
       TutorialStep(
         icon: Icons.waving_hand_outlined,
@@ -69,10 +69,12 @@ const tutorialSections = [
           'Definições: conta, tutorial, aparência e as funções antigas '
               '(Listas 1.0).',
           'Cartões que pedem atenção: avisos novos, pedidos de atualização do '
-              'perfil, pedidos para entrar na loja.',
+              'perfil, pedidos para entrar na loja; e os seus próximos dias no '
+              'horário.',
           'O cartão Hoje, com o resumo do dia.',
           'Os botões de cada área: Camiões, Listas 2.0, Inventários, Tarefas, '
-              'Pedidos, Informações, Documentos, Histórico, Pessoas e Erros e '
+              'Pedidos, Informações, Documentos, Histórico, Pessoas, Horários e '
+              'Erros e '
               'sugestões (para escrever ao administrador e ver o estado de '
               'todos os que foram enviados).',
         ],
@@ -286,6 +288,36 @@ const tutorialSections = [
           'Toque em Feito: escolha quem o fez e escreva o valor final. Passa '
               'para Feitos e para o Histórico.',
         ],
+      ),
+    ],
+  ),
+  TutorialSection(
+    id: 'horarios',
+    title: 'Horários',
+    version: 1,
+    steps: [
+      TutorialStep(
+        icon: Icons.calendar_month,
+        title: 'Horários',
+        intro:
+            'O horário do mês, importado do Excel: quem trabalha em cada dia, '
+            'de que horas a que horas, e quem está de folga ou fora. Toda a '
+            'loja o vê.',
+        diagram: _HorariosDiagram(),
+        steps: [
+          'Dia, Semana e Mês: quem trabalha num dia (com Hoje e Amanhã), na '
+              'semana de segunda a domingo, e o mês inteiro, como no Excel.',
+          'As cores dizem o turno: abertura, intermédio, fecho e noite; a '
+              'laranja, férias ou ausência.',
+          'Quem está de folga ou fora aparece no fim do dia, com o motivo.',
+          'O chefe de secção (ou acima) importa o Excel do mês aqui. A app lê a '
+              'folha Plano e as horas de cada código, e pergunta quem é quem '
+              'quando um nome não bate certo.',
+        ],
+        tip:
+            'No Início, o cartão "Os meus próximos dias" mostra os seus próximos '
+            'sete dias. "A trabalhar agora" e as folgas em Pessoas seguem o '
+            'horário importado.',
       ),
     ],
   ),

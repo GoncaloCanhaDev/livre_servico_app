@@ -88,7 +88,15 @@ void main() {
       expect(find.text('Novidades'), findsOneWidget);
       expect(
         [for (final s in pendingTutorialSections()) s.id],
-        ['inicio', 'tarefas', 'listas2', 'listas', 'inventarios', 'documentos'],
+        [
+          'inicio',
+          'tarefas',
+          'listas2',
+          'listas',
+          'inventarios',
+          'horarios',
+          'documentos',
+        ],
       );
 
       await tapAndSettle(tester, find.text('Novidades'));

@@ -1,4 +1,5 @@
 import '../models/fold_text.dart';
+import '../models/horario.dart';
 import '../models/person.dart';
 import '../models/planning.dart';
 import '../models/teams.dart';
@@ -75,6 +76,7 @@ List<PeopleSection> buildPeopleSections(
   String query = '',
   DateTime? offDay,
   DateTime? today,
+  HorarioIndex? horario,
 }) {
   final q = foldText(query.trim());
   final now = today ?? DateTime.now();
@@ -86,7 +88,8 @@ List<PeopleSection> buildPeopleSections(
 
   int byRank(Team? team, Person a, Person b) {
     if (offDay != null) {
-      int isOff(Person p) => offLabelOn(p, offDay) != null ? 1 : 0;
+      int isOff(Person p) =>
+          offLabelOn(p, offDay, horario: horario) != null ? 1 : 0;
       final off = isOff(a).compareTo(isOff(b));
       if (off != 0) return off;
     }

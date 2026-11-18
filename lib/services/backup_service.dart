@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/local_row.dart';
 import '../models/vasilhame.dart';
+import 'horario_service.dart';
 import 'local_db.dart';
 import 'settings_service.dart';
 import 'share_file.dart';
@@ -62,6 +63,7 @@ class BackupService {
     for (final c in _backedUp) {
       await c.softDeleteAll();
     }
+    await HorarioService.instance.load();
   }
 
   Future<Map<String, dynamic>> _buildPayload() async {
@@ -104,6 +106,7 @@ class BackupService {
       }
     });
     await _db.backfillSync();
+    await HorarioService.instance.load();
     // The import replaced rows here without the server: the next sync
     // pushes them all and pulls the store's rows again, keeping whichever
     // copy of each was saved last.

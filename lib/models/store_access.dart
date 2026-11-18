@@ -76,6 +76,10 @@ class StoreAccess {
   /// fazer); anyone marks them done.
   bool get canPlanInventories => admin || level >= 3;
 
+  /// Whether this account imports the month's horário from its Excel file;
+  /// every member sees it.
+  bool get canImportHorarios => admin || level >= 3;
+
   /// Whether this account shares the join code and adds, links and removes
   /// members.
   bool get canManageMembers => admin || level >= 4;

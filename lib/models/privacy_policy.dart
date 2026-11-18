@@ -4,7 +4,7 @@
 library;
 
 /// The date of this text; saved with each new account (`privacy_policy`).
-const privacyPolicyVersion = '2026-11-08';
+const privacyPolicyVersion = '2026-11-18';
 
 /// One part of the policy: a heading and its paragraphs.
 typedef PolicySection = ({String title, List<String> paragraphs});
@@ -42,6 +42,10 @@ const privacyPolicy = <PolicySection>[
           'semana, horário de entrada e saída, folgas, ausências (o tipo, por '
           'exemplo férias ou baixa, e as datas, sem outros pormenores) e '
           'notas.',
+      'Horário da loja: o que a chefia importa do ficheiro Excel do mês, '
+          'para cada pessoa e cada dia: o turno (hora de entrada e de saída) '
+          'ou o motivo de não trabalhar (folga, férias, ausência, licença '
+          'parental), como está no ficheiro.',
       'Registos de trabalho: o que é feito na aplicação (listas, tarefas, '
           'camiões, inventários, pedidos, informações da loja e contactos '
           'úteis), com quem o fez e quando.',
@@ -75,8 +79,9 @@ const privacyPolicy = <PolicySection>[
     title: 'Quem vê os seus dados',
     paragraphs: [
       'Toda a gente da sua loja vê o nome, a fotografia, o género, o '
-          'aniversário (dia e mês), a equipa e a função de cada pessoa, e os '
-          'registos de trabalho.',
+          'aniversário (dia e mês), a equipa e a função de cada pessoa, os '
+          'registos de trabalho e o horário da loja (os turnos, as folgas, '
+          'as férias e as ausências de cada dia, como no ficheiro importado).',
       'O resto do perfil vê-o só a própria pessoa, a chefia da sua equipa '
           '(o chefe de secção da equipa; os gestores de área e a secretária de '
           'loja, para todas as equipas menos a gerência; o gerente de loja, '

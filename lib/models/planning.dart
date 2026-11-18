@@ -1,3 +1,4 @@
+import 'horario.dart';
 import 'person.dart';
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -17,8 +18,13 @@ Ausencia? ausenciaOn(Person p, DateTime day) {
 /// 14/10", "Folga"), the orange [tag] ("Férias"; none for a folga) and the
 /// [note] beside the tag ("até 14/10", "Folga"). Null when working.
 ///
-/// An ausência wins over the fixed weekly folgas.
-({String label, String? tag, String note})? _offOn(Person p, DateTime day) {
+/// An ausência wins, then the [horario] for that day (a shift there means
+/// working, even on a fixed folga), then the fixed weekly folgas.
+({String label, String? tag, String note})? _offOn(
+  Person p,
+  DateTime day,
+  HorarioIndex? horario,
+) {
   String until(DateTime end) => 'até ${end.day}/${end.month}';
   if (ausenciaOn(p, day) case final a?) {
     return (
@@ -27,6 +33,15 @@ Ausencia? ausenciaOn(Person p, DateTime day) {
       note: until(a.end),
     );
   }
+  if (horario?.dayOf(p, day) case final d?) {
+    if (d.isShift) return null;
+    if (d.tipo == HorarioTipo.folga) {
+      return (label: 'Folga', tag: null, note: 'Folga');
+    }
+    final end = horario!.lastDayOfSameCode(p, day)!;
+    final label = d.offLabel!;
+    return (label: '$label ${until(end)}', tag: label, note: until(end));
+  }
   if (p.folgas.contains(day.weekday)) {
     return (label: 'Folga', tag: null, note: 'Folga');
   }
@@ -34,16 +49,20 @@ Ausencia? ausenciaOn(Person p, DateTime day) {
 }
 
 /// Why [p] is not working on [day]: "Férias até 14/10" (an ausência wins),
-/// "Folga", or null when they are working.
-String? offLabelOn(Person p, DateTime day) => _offOn(p, day)?.label;
+/// "Folga", or null when they are working. With [horario], its day counts
+/// before the fixed folgas.
+String? offLabelOn(Person p, DateTime day, {HorarioIndex? horario}) =>
+    _offOn(p, day, horario)?.label;
 
 /// The tag shown on [p] while an ausência covers [day] ("Férias", "Baixa"…),
 /// or null. A folga gets no tag.
-String? awayTagOn(Person p, DateTime day) => _offOn(p, day)?.tag;
+String? awayTagOn(Person p, DateTime day, {HorarioIndex? horario}) =>
+    _offOn(p, day, horario)?.tag;
 
 /// [offLabelOn] without the part the tag already says: "até 14/10" during an
 /// ausência, "Folga", or null when they are working.
-String? offNoteOn(Person p, DateTime day) => _offOn(p, day)?.note;
+String? offNoteOn(Person p, DateTime day, {HorarioIndex? horario}) =>
+    _offOn(p, day, horario)?.note;
 
 /// [p]'s ausências that have not ended before [today], by start date.
 List<Ausencia> upcomingAusencias(Person p, DateTime today) {
@@ -126,6 +145,13 @@ String folgasText(List<int> weekdays) =>
 String timeText(int minutes) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(minutes ~/ 60)}:${two(minutes % 60)}';
+}
+
+/// [p]'s shift on [day] as "06:00–15:00": from the [horario] when it has a
+/// shift that day, else [horarioText].
+String? shiftTextOn(Person p, DateTime day, {HorarioIndex? horario}) {
+  final d = horario?.dayOf(p, day);
+  return d != null && d.isShift ? d.text : horarioText(p);
 }
 
 /// "07:00–15:00", or null unless both ends of [p]'s horário are set.

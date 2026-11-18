@@ -6,6 +6,7 @@ import '../../models/person.dart';
 import '../../models/planning.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
+import '../../services/horario_service.dart';
 import '../../services/person_service.dart';
 import '../../theme.dart';
 import '../people_sections.dart';
@@ -184,6 +185,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
       people,
       query: _searchCtrl.text,
       offDay: _selectedDay,
+      horario: HorarioService.instance.index,
     );
     if (sections.isEmpty) {
       return const Padding(
@@ -201,7 +203,7 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             for (final s in onShiftAt([
               for (final p in people)
                 if (p.team == livreServicoId) p,
-            ], DateTime.now()))
+            ], DateTime.now(), horario: HorarioService.instance.index))
               if (shown.contains(s.person.id)) s,
           ];
 
@@ -248,7 +250,8 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
   /// [p]'s row: greyed out with the reason when off on the selected day,
   /// else with their shift (or nº de colaborador).
   Widget _tile(Person p) {
-    if (offNoteOn(p, _selectedDay) case final off?) {
+    if (offNoteOn(p, _selectedDay, horario: HorarioService.instance.index)
+        case final off?) {
       return CheckboxListTile(
         secondary: PersonInitialsBadge(
           name: p.fullName,
@@ -262,7 +265,8 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             Text(p.fullName, style: TextStyle(color: context.muted)),
             if (tenureTagOf(p, _selectedDay) case final tenure?)
               RoleBadge(tenure, tenure: true),
-            if (awayTagOn(p, _selectedDay) case final away?)
+            if (awayTagOn(p, _selectedDay, horario: HorarioService.instance.index)
+                case final away?)
               RoleBadge(away, away: true),
           ],
         ),
@@ -271,7 +275,11 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
         onChanged: (checked) => _toggle(p, checked),
       );
     }
-    final shift = horarioText(p);
+    final shift = shiftTextOn(
+      p,
+      _selectedDay,
+      horario: HorarioService.instance.index,
+    );
     return CheckboxListTile(
       secondary: PersonInitialsBadge(name: p.fullName),
       title: switch (tenureTagOf(p, _selectedDay)) {

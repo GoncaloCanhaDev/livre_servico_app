@@ -84,6 +84,14 @@ void main() {
     );
   });
 
+  test('importing horários: level 3 and up, and the admin', () {
+    expect(member.canImportHorarios, isFalse);
+    expect(seg.canImportHorarios, isFalse);
+    expect(chefe.canImportHorarios, isTrue);
+    expect(gerenteAcc.canImportHorarios, isTrue);
+    expect(admin.canImportHorarios, isTrue);
+  });
+
   test('delete, add, approve, members', () {
     expect(chefe.canDeletePerson(talho1), isTrue);
     expect(chefe.canDeletePerson(peixe), isFalse);
