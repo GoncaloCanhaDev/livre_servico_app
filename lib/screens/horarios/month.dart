@@ -107,14 +107,26 @@ class _MonthTabState extends State<_MonthTab> {
             child: Row(
               children: [
                 for (final d in days)
-                  _Cell(
-                    switch (m.columnOf(d)) {
-                      final col? => m.dayAt(l, col),
-                      null => null,
-                    },
-                    width: cell,
-                    today: d == today,
-                  ),
+                  () {
+                    final person = view.people[l.personId];
+                    final dia = person != null
+                        ? view.index.dayOf(person, d)
+                        : switch (m.columnOf(d)) {
+                            final col? => m.dayAt(l, col),
+                            null => null,
+                          };
+                    final key = l.personId == null
+                        ? null
+                        : alteracaoKey(l.personId!, d);
+                    return _Cell(
+                      dia,
+                      key: key == null ? null : ValueKey('cell-$key'),
+                      width: cell,
+                      today: d == today,
+                      changeKey: key,
+                      onTap: view.tapOf(context, l, d, dia),
+                    );
+                  }(),
               ],
             ),
           ),

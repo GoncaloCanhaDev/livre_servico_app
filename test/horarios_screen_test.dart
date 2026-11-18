@@ -28,10 +28,12 @@ void main() {
     return p;
   }
 
+  late Person ana;
+
   /// This month with Ana on G82 and Rui on W82 every day, and Bia off;
   /// with [columns], a file with only that many day columns.
   Future<void> seedMonth(WidgetTester tester, {int columns = 35}) async {
-    final ana = await addPerson(tester, 'Ana Lopes');
+    ana = await addPerson(tester, 'Ana Lopes');
     final rui = await addPerson(tester, 'Rui Sá');
     final bia = await addPerson(tester, 'Bia Reis');
     final today = currentServiceDay();
@@ -111,5 +113,32 @@ void main() {
     await open(tester);
     expect(find.textContaining('Ainda não há horário'), findsOneWidget);
     expect(find.text('Importar horário'), findsOneWidget);
+  });
+
+  testWidgets('a day is changed from the week and marked', (tester) async {
+    await seedMonth(tester);
+    await open(tester);
+    await tapAndSettle(tester, find.text('Semana'));
+    final today = currentServiceDay();
+    final key = alteracaoKey(ana.syncUuid, today);
+    await tapAndSettle(tester, find.byKey(ValueKey('cell-$key')));
+    expect(find.textContaining('No ficheiro: G82'), findsOneWidget);
+    await tapAndSettle(tester, find.byKey(const ValueKey('code-A')));
+    expect(HorarioService.instance.index.dayOf(ana, today)!.offLabel, 'Ausência');
+    expect(find.byKey(ValueKey('changed-$key')), findsOneWidget);
+  });
+
+  testWidgets('a changed day can be put back', (tester) async {
+    await seedMonth(tester);
+    final today = currentServiceDay();
+    await dbCall(
+      tester,
+      () => HorarioService.instance.change(ana, today, 'FO', by: 'Gonçalo'),
+    );
+    await open(tester);
+    await tapAndSettle(tester, find.text('Ana Lopes'));
+    expect(find.textContaining('Alterado por Gonçalo'), findsOneWidget);
+    await tapAndSettle(tester, find.text('Repor o do ficheiro'));
+    expect(HorarioService.instance.index.dayOf(ana, today)!.code, 'G82');
   });
 }

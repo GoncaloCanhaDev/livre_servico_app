@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/horario.dart';
+import 'package:livre_servico_app/models/horario_xlsx.dart';
 import 'package:livre_servico_app/models/person.dart';
 
 Person _p(String name, String uuid) => Person()
@@ -197,6 +198,87 @@ void main() {
       final m = matchHorarioNames(['Rui Sá', 'rui sa'], [rui]);
       expect(m['Rui Sá'], rui);
       expect(m['rui sa'], isNull);
+    });
+  });
+
+  group('changes', () {
+    HorarioAlteracao change(String code, DateTime date, {int? e, int? s}) =>
+        HorarioAlteracao()
+          ..date = date
+          ..personId = 'ana'
+          ..code = code
+          ..entrada = e
+          ..saida = s
+          ..fileCode = 'G82'
+          ..changedBy = 'Gonçalo'
+          ..changedAt = DateTime(2027, 1, 1, 9);
+
+    final month = _month(jan, ['G82', 'G82', 'G82']);
+
+    test('a change wins over the file and is marked', () {
+      final index = HorarioIndex([month], changes: [change('FO', DateTime(2027, 1, 1))]);
+      final d = index.dayOf(ana, DateTime(2027, 1, 1, 15))!;
+      expect(d.offLabel, 'Folga');
+      expect(d.changed!.changedBy, 'Gonçalo');
+      expect(index.fileDayOf(ana, DateTime(2027, 1, 1))!.code, 'G82');
+      expect(index.dayOf(ana, DateTime(2027, 1, 2))!.changed, isNull);
+    });
+
+    test('a change to a shift carries its hours', () {
+      final index = HorarioIndex([month],
+          changes: [change('X99', DateTime(2027, 1, 1), e: 600, s: 1080)]);
+      expect(index.dayOf(ana, DateTime(2027, 1, 1))!.text, '10:00–18:00');
+    });
+
+    test('an empty change means nothing that day', () {
+      final index = HorarioIndex([month], changes: [change('', DateTime(2027, 1, 1))]);
+      expect(index.dayOf(ana, DateTime(2027, 1, 1)), isNull);
+    });
+
+    test('a change on a day no month covers', () {
+      final index = HorarioIndex([month],
+          changes: [change('G82', DateTime(2027, 3, 3), e: 360, s: 900)]);
+      expect(index.dayOf(ana, DateTime(2027, 3, 3))!.code, 'G82');
+      expect(index.nextDays(ana, DateTime(2027, 3, 3), 1), hasLength(1));
+    });
+
+    test('linesOn shows the change', () {
+      final index = HorarioIndex([month], changes: [change('A', DateTime(2027, 1, 1))]);
+      expect(index.linesOn(DateTime(2027, 1, 1)).single.dia!.offLabel, 'Ausência');
+    });
+
+    test('changesIn and codeUsage', () {
+      final index = HorarioIndex([month], changes: [change('A', DateTime(2027, 1, 1))]);
+      expect(index.changesIn(jan), hasLength(1));
+      expect(index.changesIn(DateTime(2027, 2)), isEmpty);
+      expect(index.codeUsage(jan)['G82'], 3);
+    });
+
+    test('round-trips through JSON', () {
+      final c = change('X99', DateTime(2027, 1, 1), e: 600, s: 1080);
+      final back = HorarioAlteracao.fromJson(c.toJson());
+      expect((back.code, back.entrada, back.saida, back.fileCode, back.personId),
+          ('X99', 600, 1080, 'G82', 'ana'));
+      expect(back.date, DateTime(2027, 1, 1));
+      expect(alteracaoKey('ana', DateTime(2027, 1, 12, 8)), 'ana/2027-01-12');
+    });
+
+    test('changesAgainstFile lists only changes the new file disagrees with', () {
+      final parsed = ParsedHorario(
+        month: jan,
+        firstDay: DateTime(2026, 12, 31),
+        days: 3,
+        codigos: const {'G82': (entrada: 360, saida: 900)},
+        linhas: [ParsedLinha(nome: 'Ana Lopes', grupo: 'Dia', codigos: ['G82', 'FO', 'G82'])],
+        semHorario: const {},
+      );
+      final found = changesAgainstFile(parsed, {'Ana Lopes': 'ana'}, [
+        change('A', DateTime(2026, 12, 31)), // file G82: differs
+        change('FO', DateTime(2027, 1, 1)), // file FO: equal
+        change('A', DateTime(2027, 2, 10)), // outside the file
+      ]);
+      expect(found.single.change.date, DateTime(2026, 12, 31));
+      expect(found.single.newFileCode, 'G82');
     });
   });
 }

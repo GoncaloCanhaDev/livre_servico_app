@@ -51,6 +51,24 @@ void main() {
     );
   });
 
+  test('the horário has changes made in the app', () async {
+    await seedDemo(now: now);
+    await HorarioService.instance.load();
+    final people = await db().persons.all();
+    final today = currentServiceDay(now);
+    final index = HorarioService.instance.index;
+    final joao = people.firstWhere((p) => p.fullName == 'João Pereira');
+    expect(index.dayOf(joao, today)!.offLabel, 'Ausência');
+    expect(index.dayOf(joao, today)!.changed, isNotNull);
+    final ines = people.firstWhere((p) => p.fullName == 'Inês Rodrigues');
+    final calledIn = [
+      for (var i = 0; i < 7; i++)
+        index.dayOf(ines, DateTime(today.year, today.month, today.day + i)),
+    ].where((d) => d?.changed != null);
+    expect(calledIn.single!.isShift, isTrue);
+    expect(calledIn.single!.changed!.fileCode, 'FO');
+  });
+
   test('the visitor is the Livre Serviço Chefe de Secção, dia', () async {
     final me = await seedDemo(now: now);
     final p = (await db().persons.firstWhere((p) => p.syncUuid == me))!;

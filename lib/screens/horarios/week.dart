@@ -131,11 +131,20 @@ class _WeekTabState extends State<_WeekTab> {
                         ),
                       ),
                       for (var i = 0; i < 7; i++)
-                        _Cell(
-                          dayOf(l.personId ?? 'nome:${l.nome}', i),
-                          width: cell,
-                          today: days[i] == today,
-                        ),
+                        () {
+                          final dia = dayOf(l.personId ?? 'nome:${l.nome}', i);
+                          final key = l.personId == null
+                              ? null
+                              : alteracaoKey(l.personId!, days[i]);
+                          return _Cell(
+                            dia,
+                            key: key == null ? null : ValueKey('cell-$key'),
+                            width: cell,
+                            today: days[i] == today,
+                            changeKey: key,
+                            onTap: view.tapOf(context, l, days[i], dia),
+                          );
+                        }(),
                     ],
                   ),
                 ),

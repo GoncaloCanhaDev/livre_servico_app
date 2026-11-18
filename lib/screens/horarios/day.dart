@@ -66,11 +66,20 @@ class _DayTabState extends State<_DayTab> {
                       final s = dias[a]!.entrada!.compareTo(dias[b]!.entrada!);
                       return s != 0 ? s : view.nameOf(a).compareTo(view.nameOf(b));
                     }))
-                _DayRow(name: view.nameOf(l), dia: dias[l]!),
+                _DayRow(
+                  name: view.nameOf(l),
+                  dia: dias[l]!,
+                  onTap: view.tapOf(context, l, _day, dias[l]),
+                ),
             ],
           if (off.isNotEmpty) ...[
             const _Heading('Fora'),
-            for (final l in off) _DayRow(name: view.nameOf(l.linha), dia: l.dia!),
+            for (final l in off)
+              _DayRow(
+                name: view.nameOf(l.linha),
+                dia: l.dia!,
+                onTap: view.tapOf(context, l.linha, _day, l.dia),
+              ),
           ],
         ],
       ),
@@ -93,17 +102,34 @@ class _Heading extends StatelessWidget {
 }
 
 class _DayRow extends StatelessWidget {
-  const _DayRow({required this.name, required this.dia});
+  const _DayRow({required this.name, required this.dia, this.onTap});
 
   final String name;
   final HorarioDia dia;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => ListTile(
     dense: true,
-    title: Text(
-      name,
-      style: TextStyle(color: dia.isShift ? null : context.muted),
+    onTap: onTap,
+    title: Wrap(
+      spacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          name,
+          style: TextStyle(color: dia.isShift ? null : context.muted),
+        ),
+        if (dia.changed != null)
+          Text(
+            'alterado',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.orange.shade800,
+            ),
+          ),
+      ],
     ),
     trailing: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -113,6 +113,12 @@ class LocalDb {
     syncKey: (m) => monthKey(m.month),
   );
 
+  final horarioAlteracoes = LocalCollection<HorarioAlteracao>._(
+    'HorarioAlteracao',
+    HorarioAlteracao.fromJson,
+    syncKey: (a) => alteracaoKey(a.personId, a.date),
+  );
+
   late final List<LocalCollection<SyncedRow>> collections = [
     truckReceptions,
     openingLists,
@@ -132,6 +138,7 @@ class LocalDb {
     avisos,
     avisoVistos,
     horarioMeses,
+    horarioAlteracoes,
   ];
 
   /// How many rows, in every collection, wait to be pushed.

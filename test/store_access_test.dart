@@ -90,6 +90,9 @@ void main() {
     expect(chefe.canImportHorarios, isTrue);
     expect(gerenteAcc.canImportHorarios, isTrue);
     expect(admin.canImportHorarios, isTrue);
+    expect(seg.canEditHorarios, isFalse);
+    expect(chefe.canEditHorarios, isTrue);
+    expect(admin.canEditHorarios, isTrue);
   });
 
   test('delete, add, approve, members', () {

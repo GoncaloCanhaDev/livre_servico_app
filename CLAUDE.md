@@ -184,6 +184,15 @@ multi-tenant product.
   `awayTagOn`, `offNoteOn`, `shiftSpanOn`, `onShiftAt`, `shiftCountsOn`, `shiftTextOn`,
   `buildPeopleSections` (null keeps the old behaviour). `HorariosScreen` (Dia, Semana, Mês)
   and `MyHorarioCard` / `HorarioDaysList` (Home, person page) show them.
+  Changes made in the app (since 0.91.0; the Excel file is never written) are
+  `HorarioAlteracao` rows, one per person and day (`alteracaoKey`, also their key online),
+  with the code, its hours, the file's code then, who and when; `HorarioIndex.dayOf` returns
+  a change before the file (`fileDayOf` skips them; a change with code '' means nothing that
+  day) and `HorarioDia.changed` marks it. `HorarioService.change` (back to the file's code
+  removes the change), `swap` and `revert`, behind `StoreAccess.canEditHorarios` (level 3+,
+  app-side), from the day sheet (`horarios/edit_sheet.dart`). On a re-import,
+  `changesAgainstFile` lists the changes the new file contradicts and
+  `HorarioImportScreen` asks which to keep (`save(drop:)`); those the file agrees with go.
 - Avisos (`lib/models/aviso.dart`, `AvisoService`): a short notice from level 2 and up
   (`StoreAccess.canSendAvisos`, linked to a person) to people they reach, resolved to person
   uuids when sent (`recipientsFor`); each recipient's "Visto" is its own `AvisoVisto` row

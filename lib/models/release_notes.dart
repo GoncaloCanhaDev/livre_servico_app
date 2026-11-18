@@ -7,6 +7,15 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
+    version: '0.91.0',
+    items: [
+      'Horários: o chefe de secção (ou acima) muda o dia de alguém na app, '
+          'pelo código (baixa, chamado na folga, trocas). Os dias mudados têm '
+          'um ponto laranja e, ao importar de novo o Excel, a app pergunta '
+          'quais ficam.',
+    ],
+  ),
+  (
     version: '0.90.0',
     items: [
       'Horários: o chefe de secção importa o Excel do mês e todos na loja veem '

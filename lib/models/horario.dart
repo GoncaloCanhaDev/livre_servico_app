@@ -164,7 +164,21 @@ class HorarioDia {
     this.entrada,
     this.saida,
     this.offLabel,
+    this.changed,
   });
+
+  /// The day as changed in the app by [c].
+  factory HorarioDia.fromChange(HorarioAlteracao c) {
+    final shift = c.entrada != null && c.saida != null;
+    return HorarioDia(
+      date: _dateOnly(c.date),
+      code: c.code,
+      entrada: shift ? c.entrada : null,
+      saida: shift ? c.saida : null,
+      offLabel: shift ? null : (horarioOffCodes[c.code] ?? c.code),
+      changed: c,
+    );
+  }
 
   final DateTime date;
   final String code;
@@ -173,6 +187,10 @@ class HorarioDia {
 
   /// "Folga", "Férias"… or the code itself; null for a shift.
   final String? offLabel;
+
+  /// The change made in the app this day comes from; null when it is the
+  /// imported file's.
+  final HorarioAlteracao? changed;
 
   bool get isShift => entrada != null && saida != null;
 
@@ -221,14 +239,38 @@ String _hhmm(int m) => '${_two(m ~/ 60 % 24)}:${_two(m % 60)}';
 /// covered by two months (the columns just outside a month) is read from
 /// the month it belongs to; from the other only while that one is missing.
 class HorarioIndex {
-  HorarioIndex(List<HorarioMes> months)
-    : _months = [...months]..sort((a, b) => a.month.compareTo(b.month)),
-      _byKey = {for (final m in months) monthKey(m.month): m};
+  HorarioIndex(
+    List<HorarioMes> months, {
+    List<HorarioAlteracao> changes = const [],
+  }) : _months = [...months]..sort((a, b) => a.month.compareTo(b.month)),
+       _byKey = {for (final m in months) monthKey(m.month): m},
+       _changes = {for (final c in changes) alteracaoKey(c.personId, c.date): c};
 
   static final empty = HorarioIndex(const []);
 
   final List<HorarioMes> _months;
   final Map<String, HorarioMes> _byKey;
+  final Map<String, HorarioAlteracao> _changes;
+
+  /// The changes made in the app to days of [month] (its own days).
+  List<HorarioAlteracao> changesIn(DateTime month) => [
+    for (final c in _changes.values)
+      if (c.date.year == month.year && c.date.month == month.month) c,
+  ]..sort((a, b) => a.date.compareTo(b.date));
+
+  /// How many times each shift code is used in [month]'s file, for offering
+  /// the usual ones first.
+  Map<String, int> codeUsage(DateTime month) {
+    final m = monthOf(month);
+    final counts = <String, int>{};
+    if (m == null) return counts;
+    for (final l in m.linhas) {
+      for (final c in l.codigos) {
+        if (m.codigos.containsKey(c)) counts[c] = (counts[c] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
 
   List<HorarioMes> get months => List.unmodifiable(_months);
 
@@ -246,8 +288,18 @@ class HorarioIndex {
     return null;
   }
 
-  /// [p]'s day on [day]'s date, or null when the horário says nothing.
+  /// [p]'s day on [day]'s date, or null when the horário says nothing: a
+  /// change made in the app, else the imported file's.
   HorarioDia? dayOf(Person p, DateTime day) {
+    if (p.syncUuid.isEmpty) return null;
+    if (_changes[alteracaoKey(p.syncUuid, day)] case final c?) {
+      return c.code.isEmpty ? null : HorarioDia.fromChange(c);
+    }
+    return fileDayOf(p, day);
+  }
+
+  /// [p]'s day on [day]'s date as the imported file has it.
+  HorarioDia? fileDayOf(Person p, DateTime day) {
     if (p.syncUuid.isEmpty) return null;
     final m = monthCovering(day);
     if (m == null) return null;
@@ -285,7 +337,18 @@ class HorarioIndex {
     final m = monthCovering(day);
     if (m == null) return const [];
     final col = m.columnOf(day)!;
-    return [for (final l in m.linhas) (linha: l, dia: m.dayAt(l, col))];
+    return [
+      for (final l in m.linhas)
+        (
+          linha: l,
+          dia: switch (l.personId == null
+              ? null
+              : _changes[alteracaoKey(l.personId!, day)]) {
+            final c? => c.code.isEmpty ? null : HorarioDia.fromChange(c),
+            null => m.dayAt(l, col),
+          },
+        ),
+    ];
   }
 }
 
@@ -335,4 +398,87 @@ Map<String, Person?> matchHorarioNames(
     result[name] = p;
   }
   return result;
+}
+
+/// "ana/2027-01-12": a change's key online, one per person and day.
+String alteracaoKey(String personId, DateTime date) =>
+    '$personId/${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
+/// A person's day changed in the app (someone off sick, called in on a
+/// folga, a swap): wins over the imported file until undone, and survives
+/// a re-import when the importer keeps it.
+class HorarioAlteracao with SyncFields {
+  HorarioAlteracao();
+
+  factory HorarioAlteracao.fromJson(Map<String, dynamic> j) {
+    final a = HorarioAlteracao()
+      ..date = dateFromJsonOr(j['date'], DateTime(2000))
+      ..personId = stringFromJson(j['personId'])
+      ..code = stringFromJson(j['code'])
+      ..entrada = intOrNull(j['entrada'])
+      ..saida = intOrNull(j['saida'])
+      ..fileCode = stringFromJson(j['fileCode'])
+      ..changedBy = stringFromJson(j['changedBy'])
+      ..changedAt = dateFromJsonOr(j['changedAt'], DateTime(2000));
+    syncFieldsFromJson(a, j);
+    return a;
+  }
+
+  /// The day (midnight).
+  late DateTime date;
+
+  /// The person's `syncUuid`.
+  String personId = '';
+
+  /// The code now ('' for nothing that day).
+  String code = '';
+
+  /// The code's entrada and saída when it is a shift.
+  int? entrada;
+  int? saida;
+
+  /// What the imported file said that day ('' for nothing).
+  String fileCode = '';
+
+  String changedBy = '';
+  late DateTime changedAt;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...syncFieldsToJson(this),
+    'date': dateToJson(date),
+    'personId': personId,
+    'code': code,
+    'entrada': entrada,
+    'saida': saida,
+    'fileCode': fileCode,
+    'changedBy': changedBy,
+    'changedAt': dateToJson(changedAt),
+  };
+}
+
+/// The [changes] a newly read file disagrees with: on a day inside its
+/// columns, for a person on it ([personIds]: Excel name → `syncUuid`),
+/// with another code than the file's that day.
+List<({HorarioAlteracao change, String newFileCode})> changesAgainstFile(
+  ParsedHorario parsed,
+  Map<String, String?> personIds,
+  List<HorarioAlteracao> changes,
+) {
+  final codesOf = <String, List<String>>{
+    for (final l in parsed.linhas)
+      ?personIds[l.nome]: l.codigos,
+  };
+  final found = <({HorarioAlteracao change, String newFileCode})>[];
+  for (final c in changes) {
+    final codes = codesOf[c.personId];
+    if (codes == null) continue;
+    final col = (_dateOnly(c.date).difference(parsed.firstDay).inHours / 24)
+        .round();
+    if (col < 0 || col >= codes.length) continue;
+    if (codes[col] != c.code) found.add((change: c, newFileCode: codes[col]));
+  }
+  return found..sort((a, b) => a.change.date.compareTo(b.change.date));
 }

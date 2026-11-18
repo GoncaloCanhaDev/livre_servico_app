@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/horario.dart';
+import '../models/horario_xlsx.dart';
 import '../models/opening_list.dart';
 import '../models/person.dart';
 import '../models/today.dart';
@@ -16,6 +17,7 @@ import 'widgets/wide_layout.dart';
 part 'horarios/day.dart';
 part 'horarios/week.dart';
 part 'horarios/month.dart';
+part 'horarios/edit_sheet.dart';
 
 /// The store's horário, imported from its monthly Excel file: who works on
 /// a day, a week and the month. Every member sees it; level 3 and up
@@ -87,6 +89,7 @@ class _HorariosScreenState extends State<HorariosScreen> {
       index: HorarioService.instance.index,
       people: _people,
       canImport: _canImport,
+      canEdit: AccountService.instance.access.canEditHorarios,
       onImport: _import,
     );
     return DefaultTabController(
@@ -125,6 +128,7 @@ class _HorarioView {
     required this.index,
     required this.people,
     required this.canImport,
+    required this.canEdit,
     required this.onImport,
   });
 
@@ -133,7 +137,21 @@ class _HorarioView {
   /// The store's people by `syncUuid`.
   final Map<String, Person> people;
   final bool canImport;
+  final bool canEdit;
   final VoidCallback onImport;
+
+  /// What tapping [l]'s [dia] on [day] does: editors change it, everyone
+  /// sees who changed a changed day; null when there is nothing to do.
+  VoidCallback? tapOf(
+    BuildContext context,
+    HorarioLinha l,
+    DateTime day,
+    HorarioDia? dia,
+  ) {
+    final p = people[l.personId];
+    if (p == null || (!canEdit && dia?.changed == null)) return null;
+    return () => _openDaySheet(context, this, p, day);
+  }
 
   /// The linked person's name, or the name in the Excel file.
   String nameOf(HorarioLinha l) => people[l.personId]?.fullName ?? l.nome;
@@ -267,15 +285,49 @@ class _Legend extends StatelessWidget {
 
 /// One cell of the Semana and Mês grids.
 class _Cell extends StatelessWidget {
-  const _Cell(this.dia, {required this.width, this.today = false});
+  const _Cell(
+    this.dia, {
+    super.key,
+    required this.width,
+    this.today = false,
+    this.onTap,
+    this.changeKey,
+  });
 
   final HorarioDia? dia;
   final double width;
   final bool today;
+  final VoidCallback? onTap;
+
+  /// The person and day ([alteracaoKey]), naming the changed marker.
+  final String? changeKey;
 
   @override
   Widget build(BuildContext context) {
     final d = dia;
+    final cell = _box(context, d);
+    final marked = d?.changed == null
+        ? cell
+        : Stack(
+            children: [
+              cell,
+              Positioned(
+                top: 3,
+                right: 3,
+                child: _ChangedDot(key: ValueKey('changed-$changeKey')),
+              ),
+            ],
+          );
+    return onTap == null
+        ? marked
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: marked,
+          );
+  }
+
+  Widget _box(BuildContext context, HorarioDia? d) {
     return Container(
       width: width,
       height: 36,
@@ -304,6 +356,21 @@ class _Cell extends StatelessWidget {
             ),
     );
   }
+}
+
+/// The orange dot on a day changed in the app.
+class _ChangedDot extends StatelessWidget {
+  const _ChangedDot({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 7,
+    height: 7,
+    decoration: BoxDecoration(
+      color: Colors.orange.shade800,
+      shape: BoxShape.circle,
+    ),
+  );
 }
 
 /// The lines of the month read for [day], grouped as in the Excel file

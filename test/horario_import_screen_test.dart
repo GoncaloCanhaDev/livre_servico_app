@@ -73,4 +73,50 @@ void main() {
     final m = (await dbCall(tester, HorarioService.instance.months)).single;
     expect(m.linhas[1].personId, bruno.syncUuid);
   });
+
+  testWidgets('a re-import asks about each change made in the app', (
+    tester,
+  ) async {
+    final ana = await addPerson(tester, 'Ana Lopes');
+    final service = HorarioService.instance;
+    await dbCall(
+      tester,
+      () => service.save(parsed, {'Ana Lopes': ana}, importedBy: 'A'),
+    );
+    await dbCall(
+      tester,
+      () => service.change(ana, DateTime(2026, 12, 31), 'A', by: 'Gonçalo'),
+    );
+    await dbCall(
+      tester,
+      () => service.change(ana, DateTime(2027, 1, 1), 'G82', by: 'Gonçalo'),
+    );
+    await pumpApp(
+      tester,
+      MaterialApp(
+        theme: buildAppTheme(Brightness.light),
+        home: HorarioImportScreen(parsed: parsed),
+      ),
+    );
+
+    expect(find.text('Alterações feitas na app'), findsOneWidget);
+    final first = find.textContaining('Ficheiro G82 → app A');
+    await scrollTo(tester, find.textContaining('Ficheiro FO → app G82'));
+    // Let the file have 31/12 back; keep 1/1.
+    await scrollTo(tester, first);
+    await tapAndSettle(
+      tester,
+      find.ancestor(of: first, matching: find.byType(SwitchListTile)),
+    );
+    await scrollTo(tester, find.text('Importar'));
+    await tapAndSettle(tester, find.text('Importar'));
+    await tapAndSettle(tester, find.text('Substituir'));
+
+    expect(service.index.dayOf(ana, DateTime(2026, 12, 31))!.code, 'G82');
+    expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.code, 'G82');
+    expect(
+      service.index.dayOf(ana, DateTime(2027, 1, 1))!.changed,
+      isNotNull,
+    );
+  });
 }

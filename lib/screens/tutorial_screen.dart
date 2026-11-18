@@ -294,7 +294,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'horarios',
     title: 'Horários',
-    version: 1,
+    version: 2,
     steps: [
       TutorialStep(
         icon: Icons.calendar_month,
@@ -318,6 +318,25 @@ const tutorialSections = [
             'No Início, o cartão "Os meus próximos dias" mostra os seus próximos '
             'sete dias. "A trabalhar agora" e as folgas em Pessoas seguem o '
             'horário importado.',
+      ),
+      TutorialStep(
+        icon: Icons.edit_calendar_outlined,
+        title: 'Mudar um dia',
+        intro:
+            'Quando o dia não corre como no Excel (alguém de baixa, alguém '
+            'chamado na folga, uma troca), o chefe de secção (ou acima) muda-o '
+            'aqui. O Excel não é alterado.',
+        diagram: _HorarioEditDiagram(),
+        steps: [
+          'Toque no dia da pessoa (em Dia, Semana ou Mês) e escolha o código: '
+              'os turnos do mês, FO, F, A (baixa, por agora) ou LP. Um código '
+              'novo pede a entrada e a saída.',
+          '"Trocar com…" troca o dia de duas pessoas de uma vez.',
+          'Os dias mudados têm um ponto laranja; tocar mostra quem mudou, '
+              'quando e o que dizia o ficheiro. "Repor o do ficheiro" desfaz.',
+          'Ao importar outra vez o mesmo mês, a app mostra as alterações que '
+              'o ficheiro contradiz e pergunta, uma a uma, se ficam.',
+        ],
       ),
     ],
   ),

@@ -7,6 +7,23 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.91.0] — 2026-11-18
+
+### Added
+- **Horário changes in the app.** Level 3 and up (and the admin, `canEditHorarios`) tap a
+  linked person's day in Horários (Dia, Semana, Mês) and set another code: the month's shift
+  codes (most used first, with their hours), `FO`, `F`, `A` (sick, for now) or `LP`, or "Outro
+  código" (a shift code the month doesn't know asks for its entrada and saída). "Trocar com…"
+  swaps two people's days; "Repor o do ficheiro" undoes. Each change is a synced
+  `HorarioAlteracao` row (one per person and day, keyed online `'<person>/<yyyy-mm-dd>'`) with
+  who, when and what the file said; it wins over the imported file everywhere the horário is
+  read. Changed days get an orange dot (an "alterado" tag in Dia), and tapping one shows who
+  changed it, for everyone.
+- Re-importing a month lists the changes the new file contradicts, each with a "Manter"
+  switch (on by default); changes the file now agrees with are dropped on their own.
+- Demo: a person off sick today and another called in on a folga. Tutorial: Horários → "Mudar
+  um dia".
+
 ## [0.90.0] — 2026-11-18
 
 ### Added

@@ -531,9 +531,46 @@ Future<String> seedDemo({DateTime? now}) async {
     horarioFor(DateTime(today.year, today.month + 1)),
   ];
 
+  // Changes made in the app: João off sick today, Inês called in on her
+  // next folga.
+  HorarioAlteracao change(Person p, DateTime d, String code, String file) {
+    final hours = horarios.first.codigos[code];
+    return stamped(
+      HorarioAlteracao()
+        ..date = d
+        ..personId = p.syncUuid
+        ..code = code
+        ..entrada = hours?.entrada
+        ..saida = hours?.saida
+        ..fileCode = file
+        ..changedBy = me.fullName
+        ..changedAt = day(0, 7, 40),
+    );
+  }
+
+  Person named(String name) => people.firstWhere((p) => p.fullName == name);
+  final joao = named('João Pereira');
+  final ines = named('Inês Rodrigues');
+  final inesFolga = [
+    for (var i = 1; i < 8; i++) DateTime(today.year, today.month, today.day + i),
+  ].firstWhere((d) => ines.folgas.contains(d.weekday));
+  final inesShift = '${hh(ines.shiftStart!)}${hh(ines.shiftEnd!)}';
+  final alteracoes = [
+    change(
+      joao,
+      today,
+      'A',
+      joao.folgas.contains(today.weekday)
+          ? 'FO'
+          : '${hh(joao.shiftStart!)}${hh(joao.shiftEnd!)}',
+    ),
+    change(ines, inesFolga, inesShift, 'FO'),
+  ];
+
   await db.transaction(() async {
     await db.persons.putAll(people);
     await db.horarioMeses.putAll(horarios);
+    await db.horarioAlteracoes.putAll(alteracoes);
     await db.dailyTasks.putAll([daily, yesterday]);
     await db.weeklyTasks.put(weekly);
     await db.openingLists.put(opening);

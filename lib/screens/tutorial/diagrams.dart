@@ -1221,6 +1221,86 @@ class _HorariosDiagram extends StatelessWidget {
   }
 }
 
+class _HorarioEditDiagram extends StatelessWidget {
+  const _HorarioEditDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String text, {bool selected = false}) => Container(
+      margin: const EdgeInsets.only(right: 4, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: selected ? context.tint(Colors.orange, 100) : null,
+        border: Border.all(color: context.hairline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 9)),
+    );
+    return _Screen(
+      title: 'Horários',
+      children: [
+        _Box(
+          marker: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'João Pereira · sáb, 31 out',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'No ficheiro: 0614 · 06:00–14:00',
+                style: TextStyle(fontSize: 9, color: context.muted),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                children: [
+                  chip('0614 · 06:00–14:00'),
+                  chip('1322 · 13:00–22:00'),
+                  chip('FO · Folga'),
+                  chip('A · Ausência', selected: true),
+                ],
+              ),
+            ],
+          ),
+        ),
+        _gap,
+        const Row(
+          children: [
+            Expanded(child: _Button('Trocar com…', icon: Icons.swap_horiz)),
+            SizedBox(width: 4),
+            _Marker(2, size: 15),
+          ],
+        ),
+        _gap,
+        Row(
+          children: [
+            const Expanded(child: _Line('João Pereira · A  (alterado)')),
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade800,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const _Marker(3, size: 15),
+          ],
+        ),
+        _gap,
+        const Row(
+          children: [
+            Expanded(child: _Line('Importar: Manter alterações?', icon: Icons.upload_file)),
+            SizedBox(width: 4),
+            _Marker(4, size: 15),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _PeopleDiagram extends StatelessWidget {
   const _PeopleDiagram();
 

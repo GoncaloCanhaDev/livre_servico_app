@@ -80,6 +80,10 @@ class StoreAccess {
   /// every member sees it.
   bool get canImportHorarios => admin || level >= 3;
 
+  /// Whether this account changes a person's day in the horário (off sick,
+  /// called in on a folga, a swap).
+  bool get canEditHorarios => admin || level >= 3;
+
   /// Whether this account shares the join code and adds, links and removes
   /// members.
   bool get canManageMembers => admin || level >= 4;
