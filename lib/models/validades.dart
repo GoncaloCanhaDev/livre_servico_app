@@ -34,3 +34,28 @@ ValidadesState validadesStateAt(ValidadesTurno turno, DateTime now) {
   if (h < closes) return ValidadesState.open;
   return ValidadesState.closed;
 }
+
+/// Where the artigos left in [turno] of [serviceDay] go: the Manhã's to the
+/// same day's Noite, the Noite's to the next service day's Manhã.
+(DateTime, ValidadesTurno) nextValidadesWindow(
+  DateTime serviceDay,
+  ValidadesTurno turno,
+) => switch (turno) {
+  ValidadesTurno.manha => (serviceDay, ValidadesTurno.noite),
+  ValidadesTurno.noite => (
+    DateTime(serviceDay.year, serviceDay.month, serviceDay.day + 1, 5),
+    ValidadesTurno.manha,
+  ),
+};
+
+/// Says where [left] artigos go, for the leftover question and the notes.
+String carriedToText(ValidadesTurno turno) => switch (turno) {
+  ValidadesTurno.manha => 'passam para a Noite',
+  ValidadesTurno.noite => 'passam para a Manhã seguinte',
+};
+
+/// Under a window's count: where its carried artigos came from.
+String carriedFromText(ValidadesTurno turno, int n) => switch (turno) {
+  ValidadesTurno.manha => 'Inclui $n da Noite anterior',
+  ValidadesTurno.noite => 'Inclui $n da Manhã',
+};

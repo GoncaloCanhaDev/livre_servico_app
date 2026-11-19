@@ -7,6 +7,18 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.94.0] — 2026-11-19
+
+### Added
+- **Validades: what was left passes on.** Marking a Validades window feita or não feita first
+  asks how many artigos were left (`askValidadesLeft`; empty is 0). They are kept on the row
+  (`validadesManhaLeft` / `validadesNoiteLeft`) and added to the next window's count
+  (`DailyTasksService.carryValidades`, `nextValidadesWindow`: Manhã → the same day's Noite,
+  Noite → the next service day's Manhã), noted there as `validades*Carried` ("Inclui 4 da
+  Manhã"). A next window already marked takes nothing (a snackbar says so). The left amount
+  shows under the task, in the WhatsApp message and in Histórico. Demo rows show both.
+  Tutorial section `tarefas` raised to version 4.
+
 ## [0.93.0] — 2026-11-19
 
 ### Added

@@ -227,6 +227,10 @@ Future<String> seedDemo({DateTime? now}) async {
       ..verificacaoValidades = true
       ..verificacaoValidadesByNames = ['Beatriz Costa']
       ..verificacaoValidadesCount = 12
+      ..validadesManhaCarried = 3
+      ..validadesManhaLeft = 4
+      ..validadesNoiteCount = 4
+      ..validadesNoiteCarried = 4
       ..lastUpdatedAt = day(0, 9, 40),
   );
   final yesterday = stamped(
@@ -242,6 +246,8 @@ Future<String> seedDemo({DateTime? now}) async {
       ..verificacaoValidadesByNames = ['Inês Rodrigues']
       ..validadesNoite = true
       ..validadesNoiteByNames = ['Carla Mendes']
+      ..validadesNoiteCount = 9
+      ..validadesNoiteLeft = 3
       ..kiwiFecho = true
       ..kiwiFechoByNames = ['Ricardo Matos']
       ..notDone = {

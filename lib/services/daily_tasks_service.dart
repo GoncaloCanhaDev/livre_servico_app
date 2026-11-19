@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
+import '../models/validades.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -61,6 +62,25 @@ class DailyTasksService extends ChangeNotifier {
     SyncMeta.stamp(t);
     await _db.dailyTasks.put(t);
     notifyListeners();
+  }
+
+  /// Passes the [left] artigos of [from]'s [turno] (already saved there) to
+  /// the next window's count (see [nextValidadesWindow]), unless that one
+  /// was already marked. Returns whether they were added.
+  Future<bool> carryValidades(
+    DailyTasks from,
+    ValidadesTurno turno,
+    int left,
+  ) async {
+    if (left <= 0) return false;
+    final (day, next) = nextValidadesWindow(from.serviceDay, turno);
+    final target = day.isAtSameMomentAs(from.serviceDay)
+        ? from
+        : await forDay(day);
+    if (target.validadesClosed(next)) return false;
+    target.carryInto(next, left);
+    await save(target);
+    return true;
   }
 
   Future<void> deleteAll() async {

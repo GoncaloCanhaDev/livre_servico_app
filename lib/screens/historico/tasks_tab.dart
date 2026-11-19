@@ -134,7 +134,8 @@ class _TasksTabState extends State<_TasksTab>
                     r.visiveis.every((v) => v.backdated),
               ),
               _TaskEntry(
-                '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})',
+                '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})'
+                    '${_leftText(t, ValidadesTurno.manha)}',
                 notDone: t.notDone['verificacao_validades'],
                 t.verificacaoValidades,
                 byNames: resolveNames(
@@ -146,7 +147,8 @@ class _TasksTabState extends State<_TasksTab>
                 ),
               ),
               _TaskEntry(
-                '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})',
+                '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})'
+                    '${_leftText(t, ValidadesTurno.noite)}',
                 notDone: t.notDone['validades_noite'],
                 t.validadesNoite,
                 byNames: t.validadesNoiteByNames,
@@ -330,4 +332,10 @@ Widget _taskTile(
       ],
     ),
   );
+}
+
+/// " · ficaram 5" when [turno] left artigos for the next window.
+String _leftText(DailyTasks t, ValidadesTurno turno) {
+  final left = t.validadesLeft(turno);
+  return left > 0 ? ' · ficaram $left' : '';
 }

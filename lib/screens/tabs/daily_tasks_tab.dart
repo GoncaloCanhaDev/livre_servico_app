@@ -121,6 +121,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     required String taskKey,
     required void Function(DailyTasks target, List<String> who) apply,
     required String Function(List<String> who) message,
+    Future<void> Function(DailyTasks target)? after,
   }) async {
     final tasks = _tasks;
     if (tasks == null) return;
@@ -147,6 +148,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     if (targetDay == tasks.serviceDay) {
       setState(() => apply(tasks, who));
       await _saveTasks();
+      await after?.call(tasks);
       _sendMsg(message(who));
       return;
     }
@@ -165,6 +167,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
     await DailyTasksService.instance.save(other);
+    await after?.call(other);
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
     _sendMsg('${message(who)} — $dayFmt');
     if (!mounted) return;
@@ -178,6 +181,9 @@ class _DailyTasksTabState extends State<DailyTasksTab>
   Future<void> _markNotDone({
     required String taskName,
     required String taskKey,
+    void Function(DailyTasks target)? apply,
+    Future<void> Function(DailyTasks target)? after,
+    String suffix = '',
   }) async {
     final tasks = _tasks;
     if (tasks == null) return;
@@ -204,9 +210,13 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       5,
     );
     if (targetDay == tasks.serviceDay) {
-      setState(() => tasks.notDone = {...tasks.notDone, taskKey: notDone});
+      setState(() {
+        tasks.notDone = {...tasks.notDone, taskKey: notDone};
+        apply?.call(tasks);
+      });
       await _saveTasks();
-      _sendMsg(notDoneMessage(taskName, notDone));
+      await after?.call(tasks);
+      _sendMsg('${notDoneMessage(taskName, notDone)}$suffix');
       return;
     }
     final other = await DailyTasksService.instance.forDay(targetDay);
@@ -218,12 +228,14 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       return;
     }
     other.notDone = {...other.notDone, taskKey: notDone};
+    apply?.call(other);
     if (!other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
     await DailyTasksService.instance.save(other);
+    await after?.call(other);
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
-    _sendMsg('${notDoneMessage(taskName, notDone)} — $dayFmt');
+    _sendMsg('${notDoneMessage(taskName, notDone)}$suffix — $dayFmt');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Tarefa marcada como não feita em $dayFmt.')),
@@ -244,6 +256,8 @@ class _DailyTasksTabState extends State<DailyTasksTab>
   /// One part of the Verificação de Validades: it can be marked from when
   /// its window opens (see [validadesStateAt]) until the service day ends,
   /// so a check done but not ticked in time can still be ticked later.
+  /// Marking it (feita or não feita) asks how many artigos were left, which
+  /// are added to the next window's count ([nextValidadesWindow]).
   Widget _validadesTask(DailyTasks tasks, ValidadesTurno turno) {
     final manha = turno == ValidadesTurno.manha;
     final done = manha ? tasks.verificacaoValidades : tasks.validadesNoite;
@@ -252,7 +266,30 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         : tasks.validadesNoiteCount;
     final taskKey = manha ? 'verificacao_validades' : 'validades_noite';
     final notDone = tasks.notDone[taskKey];
+    final left = tasks.validadesLeft(turno);
+    final carried = tasks.validadesCarried(turno);
     final state = validadesStateAt(turno, DateTime.now());
+    String leftSuffix(int n) =>
+        n > 0 ? ' · ficaram $n por fazer (${carriedToText(turno)})' : '';
+    Future<void> carry(DailyTasks target) async {
+      final n = target.validadesLeft(turno);
+      final added = await DailyTasksService.instance.carryValidades(
+        target,
+        turno,
+        n,
+      );
+      if (n > 0 && !added && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'A validade seguinte já estava marcada: as que ficaram não '
+              'foram somadas.',
+            ),
+          ),
+        );
+      }
+    }
+
     return _CountTask(
       label: turno.label,
       checked: done,
@@ -265,6 +302,20 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         ValidadesState.closed => turno.lateNote,
       },
       noteWarn: !done && state == ValidadesState.closed,
+      extraNotes: [
+        if (carried > 0)
+          (
+            Icons.subdirectory_arrow_right,
+            carriedFromText(turno, carried),
+            false,
+          ),
+        if (left > 0)
+          (
+            Icons.redo,
+            'Ficaram $left por fazer — ${carriedToText(turno)}',
+            true,
+          ),
+      ],
       byNames: manha
           ? resolveNames(
               tasks.verificacaoValidadesByNames,
@@ -274,32 +325,52 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       backdated: tasks.backdatedTaskKeys.contains(taskKey),
       countController: manha ? _validadesCtrl : _validadesNoiteCtrl,
       onLongPress: done
-          ? () => _sendMsg('✅ Tarefa concluída: ${turno.label} ($count)')
+          ? () => _sendMsg(
+              '✅ Tarefa concluída: ${turno.label} ($count)${leftSuffix(left)}',
+            )
           : notDone != null
-          ? () => _sendMsg(notDoneMessage(turno.label, notDone))
+          ? () => _sendMsg(
+              '${notDoneMessage(turno.label, notDone)}${leftSuffix(left)}',
+            )
           : null,
       onDone: state == ValidadesState.notYet
           ? null
-          : () => _completeTask(
-              taskName: turno.label,
-              taskKey: taskKey,
-              apply: (t, who) {
-                if (manha) {
-                  t.verificacaoValidades = true;
-                  t.verificacaoValidadesByNames = who;
-                  t.verificacaoValidadesCount = count;
-                } else {
-                  t.validadesNoite = true;
-                  t.validadesNoiteByNames = who;
-                  t.validadesNoiteCount = count;
-                }
-              },
-              message: (who) =>
-                  '✅ Tarefa concluída: ${turno.label} ($count) (por ${joinNames(who)})',
-            ),
+          : () async {
+              final n = await askValidadesLeft(context, turno);
+              if (n == null || !mounted) return;
+              await _completeTask(
+                taskName: turno.label,
+                taskKey: taskKey,
+                apply: (t, who) {
+                  if (manha) {
+                    t.verificacaoValidades = true;
+                    t.verificacaoValidadesByNames = who;
+                    t.verificacaoValidadesCount = count;
+                  } else {
+                    t.validadesNoite = true;
+                    t.validadesNoiteByNames = who;
+                    t.validadesNoiteCount = count;
+                  }
+                  t.setValidadesLeft(turno, n);
+                },
+                after: carry,
+                message: (who) =>
+                    '✅ Tarefa concluída: ${turno.label} ($count) (por ${joinNames(who)})${leftSuffix(n)}',
+              );
+            },
       onNotDone: state == ValidadesState.notYet
           ? null
-          : () => _markNotDone(taskName: turno.label, taskKey: taskKey),
+          : () async {
+              final n = await askValidadesLeft(context, turno);
+              if (n == null || !mounted) return;
+              await _markNotDone(
+                taskName: turno.label,
+                taskKey: taskKey,
+                apply: (t) => t.setValidadesLeft(turno, n),
+                after: carry,
+                suffix: leftSuffix(n),
+              );
+            },
       onCountChanged: (n) {
         if (manha) {
           tasks.verificacaoValidadesCount = n;
@@ -679,7 +750,11 @@ class _CountTask extends StatelessWidget {
     this.locked = false,
     this.note,
     this.noteWarn = false,
+    this.extraNotes = const [],
   });
+
+  /// More lines under the subtitle: icon, text, and whether in orange.
+  final List<(IconData, String, bool)> extraNotes;
 
   final String label;
   final bool checked;
@@ -700,6 +775,41 @@ class _CountTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
+
+  Widget? _withExtraNotes(BuildContext context, Widget? subtitle) {
+    if (extraNotes.isEmpty) return subtitle;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ?subtitle,
+        for (final (icon, text, warn) in extraNotes)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 12,
+                  color: warn ? context.warningText : context.faintest,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: warn ? context.warningText : context.muted,
+                      fontWeight: warn ? FontWeight.w600 : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -733,37 +843,40 @@ class _CountTask extends StatelessWidget {
               ],
             ],
           ),
-          subtitle: notDone != null && !checked
-              ? NotDoneNote(notDone, backdated: backdated)
-              : (checked && backdated)
-              ? const _BackdatedNote()
-              : switch (note) {
-                  null => null,
-                  final note => Row(
-                    children: [
-                      Icon(
-                        locked ? Icons.lock_outline : Icons.schedule,
-                        size: 12,
-                        color: noteWarn
-                            ? Colors.orange.shade800
-                            : context.faintest,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          note,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: noteWarn
-                                ? Colors.orange.shade800
-                                : context.muted,
-                            fontWeight: noteWarn ? FontWeight.w600 : null,
+          subtitle: _withExtraNotes(
+            context,
+            notDone != null && !checked
+                ? NotDoneNote(notDone, backdated: backdated)
+                : (checked && backdated)
+                ? const _BackdatedNote()
+                : switch (note) {
+                    null => null,
+                    final note => Row(
+                      children: [
+                        Icon(
+                          locked ? Icons.lock_outline : Icons.schedule,
+                          size: 12,
+                          color: noteWarn
+                              ? Colors.orange.shade800
+                              : context.faintest,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            note,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: noteWarn
+                                  ? Colors.orange.shade800
+                                  : context.muted,
+                              fontWeight: noteWarn ? FontWeight.w600 : null,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                },
+                      ],
+                    ),
+                  },
+          ),
           trailing: SizedBox(
             width: 72,
             child: TextField(
@@ -783,6 +896,73 @@ class _CountTask extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Asks how many artigos of [turno] were left to check; null when
+/// cancelled, 0 when none.
+Future<int?> askValidadesLeft(BuildContext context, ValidadesTurno turno) =>
+    showDialog<int>(
+      context: context,
+      builder: (_) => _ValidadesLeftDialog(turno),
+    );
+
+class _ValidadesLeftDialog extends StatefulWidget {
+  const _ValidadesLeftDialog(this.turno);
+
+  final ValidadesTurno turno;
+
+  @override
+  State<_ValidadesLeftDialog> createState() => _ValidadesLeftDialogState();
+}
+
+class _ValidadesLeftDialogState extends State<_ValidadesLeftDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.pop(context, int.tryParse(_ctrl.text) ?? 0);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.turno.label),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quantos artigos ficaram por fazer? '
+            'Estes ${carriedToText(widget.turno)}.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('validadesLeft'),
+            controller: _ctrl,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              hintText: '0',
+              labelText: 'Ficaram por fazer',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Continuar')),
+      ],
     );
   }
 }

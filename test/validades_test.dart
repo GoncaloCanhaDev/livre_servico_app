@@ -46,4 +46,22 @@ void main() {
       'Era até às 14h — ainda se pode marcar',
     );
   });
+
+  group('nextValidadesWindow', () {
+    final day = DateTime(2026, 10, 31, 5);
+
+    test('the Manhã passes to the same day\'s Noite', () {
+      expect(nextValidadesWindow(day, ValidadesTurno.manha), (
+        day,
+        ValidadesTurno.noite,
+      ));
+    });
+
+    test('the Noite passes to the next service day\'s Manhã', () {
+      expect(nextValidadesWindow(day, ValidadesTurno.noite), (
+        DateTime(2026, 11, 1, 5),
+        ValidadesTurno.manha,
+      ));
+    });
+  });
 }

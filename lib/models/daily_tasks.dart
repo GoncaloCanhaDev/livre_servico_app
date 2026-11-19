@@ -1,5 +1,6 @@
 import 'local_row.dart';
 import 'not_done.dart';
+import 'validades.dart';
 
 class DailyTasks with SyncFields {
   DailyTasks();
@@ -33,6 +34,10 @@ class DailyTasks with SyncFields {
       ..validadesNoite = boolFromJson(j['validadesNoite'])
       ..validadesNoiteByNames = stringsFromJson(j['validadesNoiteByNames'])
       ..validadesNoiteCount = intFromJson(j['validadesNoiteCount'])
+      ..validadesManhaLeft = intFromJson(j['validadesManhaLeft'])
+      ..validadesManhaCarried = intFromJson(j['validadesManhaCarried'])
+      ..validadesNoiteLeft = intFromJson(j['validadesNoiteLeft'])
+      ..validadesNoiteCarried = intFromJson(j['validadesNoiteCarried'])
       ..kiwiFecho = boolFromJson(j['kiwiFecho'])
       ..kiwiFechoBy = stringOrNull(j['kiwiFechoBy'])
       ..kiwiFechoByNames = stringsFromJson(j['kiwiFechoByNames'])
@@ -80,6 +85,16 @@ class DailyTasks with SyncFields {
   bool validadesNoite = false;
   List<String> validadesNoiteByNames = [];
   int validadesNoiteCount = 0;
+
+  /// Artigos left to check when the Manhã / Noite was marked (feita or não
+  /// feita); they pass to the next window (see `nextValidadesWindow`).
+  int validadesManhaLeft = 0;
+  int validadesNoiteLeft = 0;
+
+  /// Of each window's count, how many came from the window before.
+  int validadesManhaCarried = 0;
+  int validadesNoiteCarried = 0;
+
   bool kiwiFecho = false;
 
   /// Legacy — kept for historical read fallback only, do not write.
@@ -119,6 +134,10 @@ class DailyTasks with SyncFields {
     'validadesNoite': validadesNoite,
     'validadesNoiteByNames': validadesNoiteByNames,
     'validadesNoiteCount': validadesNoiteCount,
+    'validadesManhaLeft': validadesManhaLeft,
+    'validadesManhaCarried': validadesManhaCarried,
+    'validadesNoiteLeft': validadesNoiteLeft,
+    'validadesNoiteCarried': validadesNoiteCarried,
     'kiwiFecho': kiwiFecho,
     'kiwiFechoBy': kiwiFechoBy,
     'kiwiFechoByNames': kiwiFechoByNames,
@@ -126,4 +145,42 @@ class DailyTasks with SyncFields {
     'notDone': notDoneMapToJson(notDone),
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
+}
+
+/// The Validades fields of one window, read and written by [ValidadesTurno].
+extension DailyTasksValidades on DailyTasks {
+  /// Marked feita or não feita: its count no longer changes.
+  bool validadesClosed(ValidadesTurno turno) => switch (turno) {
+    ValidadesTurno.manha =>
+      verificacaoValidades || notDone.containsKey('verificacao_validades'),
+    ValidadesTurno.noite =>
+      validadesNoite || notDone.containsKey('validades_noite'),
+  };
+
+  int validadesLeft(ValidadesTurno turno) => switch (turno) {
+    ValidadesTurno.manha => validadesManhaLeft,
+    ValidadesTurno.noite => validadesNoiteLeft,
+  };
+
+  int validadesCarried(ValidadesTurno turno) => switch (turno) {
+    ValidadesTurno.manha => validadesManhaCarried,
+    ValidadesTurno.noite => validadesNoiteCarried,
+  };
+
+  void setValidadesLeft(ValidadesTurno turno, int left) => switch (turno) {
+    ValidadesTurno.manha => validadesManhaLeft = left,
+    ValidadesTurno.noite => validadesNoiteLeft = left,
+  };
+
+  /// Adds [n] artigos from the window before to [turno]'s count.
+  void carryInto(ValidadesTurno turno, int n) {
+    switch (turno) {
+      case ValidadesTurno.manha:
+        verificacaoValidadesCount += n;
+        validadesManhaCarried += n;
+      case ValidadesTurno.noite:
+        validadesNoiteCount += n;
+        validadesNoiteCarried += n;
+    }
+  }
 }

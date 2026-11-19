@@ -141,7 +141,10 @@ multi-tenant product.
 - Daily tasks belong to a service day (05:00 to 05:00, `currentServiceDay`). The Verificação de
   Validades is split into two windows inside that day, `ValidadesTurno` in
   `lib/models/validades.dart`: Manhã (05–14, the original `verificacaoValidades*` fields) and
-  Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open.
+  Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open. Marking either (feita or
+  não feita) asks how many artigos were left (`validades*Left`); `carryValidades` adds them to
+  the next window's count (`nextValidadesWindow`: Manhã → Noite, Noite → next day's Manhã),
+  recorded as `validades*Carried`, unless that window was already marked.
 - Each manual task has two markers (`TaskMarkers` in `widgets/task_markers.dart`): ✓ Feita
   (the old done flags) and ✗ Não feita, a `NotDone` (`lib/models/not_done.dart`: who, reason,
   when) kept in `DailyTasks.notDone` / `WeeklyTasks.notDone` by task key (the keys of
