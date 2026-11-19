@@ -13,9 +13,8 @@ class _DayTab extends StatefulWidget {
 class _DayTabState extends State<_DayTab> {
   DateTime _day = currentServiceDay();
 
-  void _move(int days) => setState(
-    () => _day = DateTime(_day.year, _day.month, _day.day + days),
-  );
+  void _move(int days) =>
+      setState(() => _day = DateTime(_day.year, _day.month, _day.day + days));
 
   String get _label {
     final today = currentServiceDay();
@@ -30,7 +29,7 @@ class _DayTabState extends State<_DayTab> {
   @override
   Widget build(BuildContext context) {
     final view = widget.view;
-    final lines = view.index.linesOn(_day);
+    final lines = view.index.linesOn(_day, people: view.people);
     final stepper = _Stepper(
       label: _label,
       onPrevious: () => _move(-1),
@@ -64,7 +63,9 @@ class _DayTabState extends State<_DayTab> {
                   in g.linhas.where((l) => dias[l]?.isShift ?? false).toList()
                     ..sort((a, b) {
                       final s = dias[a]!.entrada!.compareTo(dias[b]!.entrada!);
-                      return s != 0 ? s : view.nameOf(a).compareTo(view.nameOf(b));
+                      return s != 0
+                          ? s
+                          : view.nameOf(a).compareTo(view.nameOf(b));
                     }))
                 _DayRow(
                   name: view.nameOf(l),
@@ -116,10 +117,7 @@ class _DayRow extends StatelessWidget {
       spacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(
-          name,
-          style: TextStyle(color: dia.isShift ? null : context.muted),
-        ),
+        Text(name, style: TextStyle(color: dia.isShift ? null : context.muted)),
         if (dia.changed != null)
           Text(
             'alterado',

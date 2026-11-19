@@ -71,10 +71,7 @@ void main() {
       expect(index.dayOf(ana, DateTime(2027, 1, 1))!.offLabel, 'Folga');
       expect(index.dayOf(ana, DateTime(2027, 1, 1))!.tipo, HorarioTipo.folga);
       expect(index.dayOf(ana, DateTime(2027, 1, 2))!.offLabel, 'Férias');
-      expect(
-        index.dayOf(ana, DateTime(2027, 1, 2))!.tipo,
-        HorarioTipo.ausente,
-      );
+      expect(index.dayOf(ana, DateTime(2027, 1, 2))!.tipo, HorarioTipo.ausente);
       expect(index.dayOf(ana, DateTime(2027, 1, 3))!.offLabel, 'LIBR');
       expect(index.dayOf(ana, DateTime(2027, 1, 6))!.offLabel, 'XYZ');
       expect(index.dayOf(ana, DateTime(2027, 1, 3))!.isShift, isFalse);
@@ -94,8 +91,9 @@ void main() {
   });
 
   test('tipo from the entrada', () {
-    HorarioTipo tipo(String code) =>
-        HorarioIndex([_month(jan, [code])]).dayOf(ana, DateTime(2026, 12, 31))!.tipo;
+    HorarioTipo tipo(String code) => HorarioIndex([
+      _month(jan, [code]),
+    ]).dayOf(ana, DateTime(2026, 12, 31))!.tipo;
     expect(tipo('F82'), HorarioTipo.abertura);
     expect(tipo('J74'), HorarioTipo.intermedio);
     expect(tipo('M79'), HorarioTipo.fecho);
@@ -114,13 +112,22 @@ void main() {
         [january, february],
         [february, january],
       ]) {
-        expect(HorarioIndex(months).dayOf(ana, DateTime(2027, 2, 1))!.code, 'G82');
-        expect(HorarioIndex(months).dayOf(ana, DateTime(2027, 1, 31))!.code, 'J74');
+        expect(
+          HorarioIndex(months).dayOf(ana, DateTime(2027, 2, 1))!.code,
+          'G82',
+        );
+        expect(
+          HorarioIndex(months).dayOf(ana, DateTime(2027, 1, 31))!.code,
+          'J74',
+        );
       }
     });
 
     test('a spill day is used when its own month is missing', () {
-      expect(HorarioIndex([january]).dayOf(ana, DateTime(2027, 2, 1))!.code, 'FO');
+      expect(
+        HorarioIndex([january]).dayOf(ana, DateTime(2027, 2, 1))!.code,
+        'FO',
+      );
     });
   });
 
@@ -128,8 +135,14 @@ void main() {
     final index = HorarioIndex([
       _month(jan, ['G82', 'F', 'F', 'F', 'G82']),
     ]);
-    expect(index.lastDayOfSameCode(ana, DateTime(2027, 1, 1)), DateTime(2027, 1, 3));
-    expect(index.lastDayOfSameCode(ana, DateTime(2027, 1, 3)), DateTime(2027, 1, 3));
+    expect(
+      index.lastDayOfSameCode(ana, DateTime(2027, 1, 1)),
+      DateTime(2027, 1, 3),
+    );
+    expect(
+      index.lastDayOfSameCode(ana, DateTime(2027, 1, 3)),
+      DateTime(2027, 1, 3),
+    );
   });
 
   test('nextDays lists the covered days from a date', () {
@@ -164,20 +177,26 @@ void main() {
     });
 
     test('first and last name', () {
-      expect(matchHorarioNames(['Américo David'], [americo, rui])['Américo David'], americo);
+      expect(
+        matchHorarioNames(['Américo David'], [americo, rui])['Américo David'],
+        americo,
+      );
     });
 
     test('an exact match beats first and last', () {
       final short = _p('Ana Lopes', 'x1');
       final long = _p('Ana Maria Lopes', 'x2');
-      expect(matchHorarioNames(['Ana Lopes'], [long, short])['Ana Lopes'], short);
+      expect(
+        matchHorarioNames(['Ana Lopes'], [long, short])['Ana Lopes'],
+        short,
+      );
     });
 
     test('two possible people: no match', () {
-      final m = matchHorarioNames(['Ana Lopes'], [
-        _p('Ana Rita Lopes', 'x1'),
-        _p('Ana Sofia Lopes', 'x2'),
-      ]);
+      final m = matchHorarioNames(
+        ['Ana Lopes'],
+        [_p('Ana Rita Lopes', 'x1'), _p('Ana Sofia Lopes', 'x2')],
+      );
       expect(m['Ana Lopes'], isNull);
       expect(m.containsKey('Ana Lopes'), isTrue);
     });
@@ -185,13 +204,23 @@ void main() {
     test("a previous month's choice is remembered", () {
       final previous = _month(jan, ['G82'], uuid: 'r1')
         ..linhas.single.nome = 'Zé';
-      expect(matchHorarioNames(['Zé'], [americo, rui], previous: [previous])['Zé'], rui);
+      expect(
+        matchHorarioNames(['Zé'], [americo, rui], previous: [previous])['Zé'],
+        rui,
+      );
     });
 
     test('a previous choice of someone no longer here is dropped', () {
       final previous = _month(jan, ['G82'], uuid: 'gone')
         ..linhas.single.nome = 'Rui Sá';
-      expect(matchHorarioNames(['Rui Sá'], [americo, rui], previous: [previous])['Rui Sá'], rui);
+      expect(
+        matchHorarioNames(
+          ['Rui Sá'],
+          [americo, rui],
+          previous: [previous],
+        )['Rui Sá'],
+        rui,
+      );
     });
 
     test('never the same person for two names', () {
@@ -216,7 +245,10 @@ void main() {
     final month = _month(jan, ['G82', 'G82', 'G82']);
 
     test('a change wins over the file and is marked', () {
-      final index = HorarioIndex([month], changes: [change('FO', DateTime(2027, 1, 1))]);
+      final index = HorarioIndex(
+        [month],
+        changes: [change('FO', DateTime(2027, 1, 1))],
+      );
       final d = index.dayOf(ana, DateTime(2027, 1, 1, 15))!;
       expect(d.offLabel, 'Folga');
       expect(d.changed!.changedBy, 'Gonçalo');
@@ -225,30 +257,46 @@ void main() {
     });
 
     test('a change to a shift carries its hours', () {
-      final index = HorarioIndex([month],
-          changes: [change('X99', DateTime(2027, 1, 1), e: 600, s: 1080)]);
+      final index = HorarioIndex(
+        [month],
+        changes: [change('X99', DateTime(2027, 1, 1), e: 600, s: 1080)],
+      );
       expect(index.dayOf(ana, DateTime(2027, 1, 1))!.text, '10:00–18:00');
     });
 
     test('an empty change means nothing that day', () {
-      final index = HorarioIndex([month], changes: [change('', DateTime(2027, 1, 1))]);
+      final index = HorarioIndex(
+        [month],
+        changes: [change('', DateTime(2027, 1, 1))],
+      );
       expect(index.dayOf(ana, DateTime(2027, 1, 1)), isNull);
     });
 
     test('a change on a day no month covers', () {
-      final index = HorarioIndex([month],
-          changes: [change('G82', DateTime(2027, 3, 3), e: 360, s: 900)]);
+      final index = HorarioIndex(
+        [month],
+        changes: [change('G82', DateTime(2027, 3, 3), e: 360, s: 900)],
+      );
       expect(index.dayOf(ana, DateTime(2027, 3, 3))!.code, 'G82');
       expect(index.nextDays(ana, DateTime(2027, 3, 3), 1), hasLength(1));
     });
 
     test('linesOn shows the change', () {
-      final index = HorarioIndex([month], changes: [change('A', DateTime(2027, 1, 1))]);
-      expect(index.linesOn(DateTime(2027, 1, 1)).single.dia!.offLabel, 'Ausência');
+      final index = HorarioIndex(
+        [month],
+        changes: [change('A', DateTime(2027, 1, 1))],
+      );
+      expect(
+        index.linesOn(DateTime(2027, 1, 1)).single.dia!.offLabel,
+        'Ausência',
+      );
     });
 
     test('changesIn and codeUsage', () {
-      final index = HorarioIndex([month], changes: [change('A', DateTime(2027, 1, 1))]);
+      final index = HorarioIndex(
+        [month],
+        changes: [change('A', DateTime(2027, 1, 1))],
+      );
       expect(index.changesIn(jan), hasLength(1));
       expect(index.changesIn(DateTime(2027, 2)), isEmpty);
       expect(index.codeUsage(jan)['G82'], 3);
@@ -257,28 +305,172 @@ void main() {
     test('round-trips through JSON', () {
       final c = change('X99', DateTime(2027, 1, 1), e: 600, s: 1080);
       final back = HorarioAlteracao.fromJson(c.toJson());
-      expect((back.code, back.entrada, back.saida, back.fileCode, back.personId),
-          ('X99', 600, 1080, 'G82', 'ana'));
+      expect(
+        (back.code, back.entrada, back.saida, back.fileCode, back.personId),
+        ('X99', 600, 1080, 'G82', 'ana'),
+      );
       expect(back.date, DateTime(2027, 1, 1));
       expect(alteracaoKey('ana', DateTime(2027, 1, 12, 8)), 'ana/2027-01-12');
     });
 
-    test('changesAgainstFile lists only changes the new file disagrees with', () {
+    test(
+      'changesAgainstFile lists only changes the new file disagrees with',
+      () {
+        final parsed = ParsedHorario(
+          month: jan,
+          firstDay: DateTime(2026, 12, 31),
+          days: 3,
+          codigos: const {'G82': (entrada: 360, saida: 900)},
+          linhas: [
+            ParsedLinha(
+              nome: 'Ana Lopes',
+              grupo: 'Dia',
+              codigos: ['G82', 'FO', 'G82'],
+            ),
+          ],
+          semHorario: const {},
+        );
+        final found = changesAgainstFile(
+          parsed,
+          {'Ana Lopes': 'ana'},
+          [
+            change('A', DateTime(2026, 12, 31)), // file G82: differs
+            change('FO', DateTime(2027, 1, 1)), // file FO: equal
+            change('A', DateTime(2027, 2, 10)), // outside the file
+          ],
+        );
+        expect(found.single.change.date, DateTime(2026, 12, 31));
+        expect(found.single.newFileCode, 'G82');
+      },
+    );
+  });
+
+  group('the profile over the file', () {
+    // Columns: 31/12 Thu, 1/1 Fri, 2/1 Sat, 3/1 Sun, 4/1 Mon, 5/1 Tue.
+    final month = _month(jan, ['G82', 'FO', 'F', 'J74', 'FO', '']);
+    Person profile({List<int> folgas = const [], int? start, int? end}) =>
+        _p('Ana Lopes', 'ana')
+          ..folgas = [...folgas]
+          ..shiftStart = start
+          ..shiftEnd = end;
+
+    test('folgas and hours both win', () {
+      final index = HorarioIndex([month]);
+      final p = profile(folgas: [7], start: 540, end: 960);
+      final sun = index.dayOf(p, DateTime(2027, 1, 3))!;
+      expect((sun.code, sun.offLabel, sun.fromProfile), ('FO', 'Folga', true));
+      final fri = index.dayOf(p, DateTime(2027, 1, 1))!;
+      expect((fri.code, fri.text, fri.fromProfile), ('', '09:00–16:00', true));
+      final thu = index.dayOf(p, DateTime(2026, 12, 31))!;
+      expect((thu.text, thu.fromProfile), ('09:00–16:00', true));
+      expect(index.fileDayOf(p, DateTime(2026, 12, 31))!.text, '06:00–15:00');
+    });
+
+    test('an absence in the file stays', () {
+      final index = HorarioIndex([month]);
+      final p = profile(folgas: [7], start: 540, end: 960);
+      final sat = index.dayOf(p, DateTime(2027, 1, 2))!;
+      expect((sat.offLabel, sat.fromProfile), ('Férias', false));
+    });
+
+    test('folgas with no hours keep a file folga on a working weekday', () {
+      final index = HorarioIndex([month]);
+      final p = profile(folgas: [7]);
+      expect(index.dayOf(p, DateTime(2027, 1, 1))!.offLabel, 'Folga');
+      expect(index.dayOf(p, DateTime(2026, 12, 31))!.text, '06:00–15:00');
+      expect(index.dayOf(p, DateTime(2027, 1, 3))!.fromProfile, isTrue);
+    });
+
+    test('hours with no folgas keep the file folgas', () {
+      final index = HorarioIndex([month]);
+      final p = profile(start: 540, end: 960);
+      expect(index.dayOf(p, DateTime(2027, 1, 1))!.offLabel, 'Folga');
+      expect(index.dayOf(p, DateTime(2027, 1, 3))!.text, '09:00–16:00');
+    });
+
+    test('the same hours as the code keep the code', () {
+      final index = HorarioIndex([month]);
+      final d = index.dayOf(
+        profile(start: 540, end: 1080),
+        DateTime(2027, 1, 3),
+      )!;
+      expect((d.code, d.fromProfile), ('J74', false));
+    });
+
+    test('nothing in the profile, nothing changes', () {
+      final index = HorarioIndex([month]);
+      final d = index.dayOf(profile(), DateTime(2026, 12, 31))!;
+      expect((d.code, d.fromProfile), ('G82', false));
+      expect(index.dayOf(profile(folgas: [2]), DateTime(2027, 1, 5)), isNull);
+    });
+
+    test('a change still wins over the profile', () {
+      final index = HorarioIndex(
+        [month],
+        changes: [
+          HorarioAlteracao()
+            ..date = DateTime(2027, 1, 1)
+            ..personId = 'ana'
+            ..code = ''
+            ..entrada = 540
+            ..saida = 1080
+            ..fileCode = 'FO'
+            ..changedBy = 'Gonçalo'
+            ..changedAt = DateTime(2027, 1, 1),
+        ],
+      );
+      final d = index.dayOf(
+        profile(start: 540, end: 960),
+        DateTime(2027, 1, 1),
+      )!;
+      expect((d.code, d.text, d.isShift), ('', '09:00–18:00', true));
+      expect(d.changed, isNotNull);
+    });
+
+    test('linesOn applies the profile of the people given', () {
+      final index = HorarioIndex([month]);
+      final p = profile(start: 540, end: 960);
+      expect(
+        index.linesOn(DateTime(2026, 12, 31)).single.dia!.text,
+        '06:00–15:00',
+      );
+      expect(
+        index
+            .linesOn(DateTime(2026, 12, 31), people: {'ana': p})
+            .single
+            .dia!
+            .text,
+        '09:00–16:00',
+      );
+    });
+
+    test('changesAgainstFile always lists a change of hours only', () {
       final parsed = ParsedHorario(
         month: jan,
         firstDay: DateTime(2026, 12, 31),
-        days: 3,
-        codigos: const {'G82': (entrada: 360, saida: 900)},
-        linhas: [ParsedLinha(nome: 'Ana Lopes', grupo: 'Dia', codigos: ['G82', 'FO', 'G82'])],
+        days: 2,
+        codigos: const {},
+        linhas: [
+          ParsedLinha(nome: 'Ana Lopes', grupo: 'Dia', codigos: ['', '']),
+        ],
         semHorario: const {},
       );
-      final found = changesAgainstFile(parsed, {'Ana Lopes': 'ana'}, [
-        change('A', DateTime(2026, 12, 31)), // file G82: differs
-        change('FO', DateTime(2027, 1, 1)), // file FO: equal
-        change('A', DateTime(2027, 2, 10)), // outside the file
-      ]);
-      expect(found.single.change.date, DateTime(2026, 12, 31));
-      expect(found.single.newFileCode, 'G82');
+      final found = changesAgainstFile(
+        parsed,
+        {'Ana Lopes': 'ana'},
+        [
+          HorarioAlteracao()
+            ..date = DateTime(2027, 1, 1)
+            ..personId = 'ana'
+            ..code = ''
+            ..entrada = 540
+            ..saida = 1080
+            ..fileCode = ''
+            ..changedBy = ''
+            ..changedAt = DateTime(2027, 1, 1),
+        ],
+      );
+      expect(found, hasLength(1));
     });
   });
 }

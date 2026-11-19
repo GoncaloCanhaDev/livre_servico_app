@@ -20,7 +20,11 @@ class _WeekTabState extends State<_WeekTab> {
   DateTime _monday = _mondayOf(currentServiceDay());
 
   void _move(int weeks) => setState(
-    () => _monday = DateTime(_monday.year, _monday.month, _monday.day + 7 * weeks),
+    () => _monday = DateTime(
+      _monday.year,
+      _monday.month,
+      _monday.day + 7 * weeks,
+    ),
   );
 
   @override
@@ -42,7 +46,9 @@ class _WeekTabState extends State<_WeekTab> {
     );
 
     // Every line in any of the week's months, once (by person, else name).
-    final perDay = [for (final d in days) view.index.linesOn(d)];
+    final perDay = [
+      for (final d in days) view.index.linesOn(d, people: view.people),
+    ];
     final keys = <String>[];
     final linhaOf = <String, HorarioLinha>{};
     for (final lines in perDay) {

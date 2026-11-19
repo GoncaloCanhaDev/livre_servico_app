@@ -72,7 +72,8 @@ class HorarioMes with SyncFields {
   String importedBy = '';
 
   /// How many day columns the lines have.
-  int get days => linhas.fold(0, (n, l) => l.codigos.length > n ? l.codigos.length : n);
+  int get days =>
+      linhas.fold(0, (n, l) => l.codigos.length > n ? l.codigos.length : n);
 
   /// The column of [day], or null outside this month's columns.
   int? columnOf(DateTime day) {
@@ -165,9 +166,11 @@ class HorarioDia {
     this.saida,
     this.offLabel,
     this.changed,
+    this.fromProfile = false,
   });
 
-  /// The day as changed in the app by [c].
+  /// The day as changed in the app by [c]: a shift when it has hours (its
+  /// code may then be '', hours only).
   factory HorarioDia.fromChange(HorarioAlteracao c) {
     final shift = c.entrada != null && c.saida != null;
     return HorarioDia(
@@ -192,6 +195,9 @@ class HorarioDia {
   /// imported file's.
   final HorarioAlteracao? changed;
 
+  /// Whether the person's profile (folgas, hours) changed the file's day.
+  final bool fromProfile;
+
   bool get isShift => entrada != null && saida != null;
 
   /// When the shift runs: from the entrada on [date] to the saída, the next
@@ -203,7 +209,13 @@ class HorarioDia {
     // the day the clocks change still starts at its own hour.
     return (
       start: DateTime(date.year, date.month, date.day, 0, e),
-      end: DateTime(date.year, date.month, date.day, 0, s <= e ? s + 24 * 60 : s),
+      end: DateTime(
+        date.year,
+        date.month,
+        date.day,
+        0,
+        s <= e ? s + 24 * 60 : s,
+      ),
     );
   }
 
@@ -221,13 +233,15 @@ class HorarioDia {
   }
 
   /// "06:00–15:00", or the [offLabel].
-  String get text => isShift ? '${_hhmm(entrada!)}–${_hhmm(saida!)}' : offLabel!;
+  String get text =>
+      isShift ? '${_hhmm(entrada!)}–${_hhmm(saida!)}' : offLabel!;
 
   /// "06–15", "06:30–15", or the code of a day off: for narrow grids.
   String get shortText {
     if (!isShift) return code;
-    String t(int m) =>
-        m % 60 == 0 ? _two(m ~/ 60 % 24) : '${_two(m ~/ 60 % 24)}:${_two(m % 60)}';
+    String t(int m) => m % 60 == 0
+        ? _two(m ~/ 60 % 24)
+        : '${_two(m ~/ 60 % 24)}:${_two(m % 60)}';
     return '${t(entrada!)}–${t(saida!)}';
   }
 }
@@ -244,7 +258,9 @@ class HorarioIndex {
     List<HorarioAlteracao> changes = const [],
   }) : _months = [...months]..sort((a, b) => a.month.compareTo(b.month)),
        _byKey = {for (final m in months) monthKey(m.month): m},
-       _changes = {for (final c in changes) alteracaoKey(c.personId, c.date): c};
+       _changes = {
+         for (final c in changes) alteracaoKey(c.personId, c.date): c,
+       };
 
   static final empty = HorarioIndex(const []);
 
@@ -289,14 +305,58 @@ class HorarioIndex {
   }
 
   /// [p]'s day on [day]'s date, or null when the horário says nothing: a
-  /// change made in the app, else the imported file's.
+  /// change made in the app, else [baseDayOf].
   HorarioDia? dayOf(Person p, DateTime day) {
     if (p.syncUuid.isEmpty) return null;
     if (_changes[alteracaoKey(p.syncUuid, day)] case final c?) {
-      return c.code.isEmpty ? null : HorarioDia.fromChange(c);
+      return _fromChange(c);
     }
-    return fileDayOf(p, day);
+    return baseDayOf(p, day);
   }
+
+  /// [p]'s day as the file has it, with their profile on top: their folgas
+  /// (when they have some) decide which days are folgas, and their hours
+  /// (both set) those of every working day. The file's other days off
+  /// (férias, ausências) stay, and so does a folga there is no shift for.
+  HorarioDia? baseDayOf(Person p, DateTime day) {
+    final file = fileDayOf(p, day);
+    if (file == null) return null;
+    final off = !file.isShift;
+    final folga = off && file.tipo == HorarioTipo.folga;
+    if (off && !folga) return file;
+    final start = p.shiftStart;
+    final end = p.shiftEnd;
+    final hasHours = start != null && end != null;
+    if (p.folgas.isNotEmpty) {
+      if (p.folgas.contains(file.date.weekday)) {
+        return folga
+            ? file
+            : HorarioDia(
+                date: file.date,
+                code: 'FO',
+                offLabel: 'Folga',
+                fromProfile: true,
+              );
+      }
+      if (folga && !hasHours) return file;
+    } else if (folga) {
+      return file;
+    }
+    if (!hasHours || (file.entrada == start && file.saida == end)) return file;
+    return HorarioDia(
+      date: file.date,
+      code: '',
+      entrada: start,
+      saida: end,
+      fromProfile: true,
+    );
+  }
+
+  /// A change's day: null for '' with no hours (nothing that day).
+  static HorarioDia? _fromChange(HorarioAlteracao c) =>
+      c.code.isEmpty && (c.entrada == null || c.saida == null)
+      ? null
+      : HorarioDia.fromChange(c);
 
   /// [p]'s day on [day]'s date as the imported file has it.
   HorarioDia? fileDayOf(Person p, DateTime day) {
@@ -332,8 +392,12 @@ class HorarioIndex {
     ];
   }
 
-  /// Every line of the month read for [day], with its day (null: empty).
-  List<({HorarioLinha linha, HorarioDia? dia})> linesOn(DateTime day) {
+  /// Every line of the month read for [day], with its day (null: empty);
+  /// for a line whose person is in [people] (by `syncUuid`), as [dayOf].
+  List<({HorarioLinha linha, HorarioDia? dia})> linesOn(
+    DateTime day, {
+    Map<String, Person> people = const {},
+  }) {
     final m = monthCovering(day);
     if (m == null) return const [];
     final col = m.columnOf(day)!;
@@ -341,11 +405,14 @@ class HorarioIndex {
       for (final l in m.linhas)
         (
           linha: l,
-          dia: switch (l.personId == null
-              ? null
-              : _changes[alteracaoKey(l.personId!, day)]) {
-            final c? => c.code.isEmpty ? null : HorarioDia.fromChange(c),
-            null => m.dayAt(l, col),
+          dia: switch (people[l.personId]) {
+            final p? => dayOf(p, day),
+            null => switch (l.personId == null
+                ? null
+                : _changes[alteracaoKey(l.personId!, day)]) {
+              final c? => _fromChange(c),
+              null => m.dayAt(l, col),
+            },
           },
         ),
     ];
@@ -468,8 +535,7 @@ List<({HorarioAlteracao change, String newFileCode})> changesAgainstFile(
   List<HorarioAlteracao> changes,
 ) {
   final codesOf = <String, List<String>>{
-    for (final l in parsed.linhas)
-      ?personIds[l.nome]: l.codigos,
+    for (final l in parsed.linhas) ?personIds[l.nome]: l.codigos,
   };
   final found = <({HorarioAlteracao change, String newFileCode})>[];
   for (final c in changes) {
@@ -478,7 +544,10 @@ List<({HorarioAlteracao change, String newFileCode})> changesAgainstFile(
     final col = (_dateOnly(c.date).difference(parsed.firstDay).inHours / 24)
         .round();
     if (col < 0 || col >= codes.length) continue;
-    if (codes[col] != c.code) found.add((change: c, newFileCode: codes[col]));
+    final hoursOnly = c.code.isEmpty && c.entrada != null;
+    if (hoursOnly || codes[col] != c.code) {
+      found.add((change: c, newFileCode: codes[col]));
+    }
   }
   return found..sort((a, b) => a.change.date.compareTo(b.change.date));
 }

@@ -27,8 +27,10 @@ void main() {
   );
 
   test('save makes the month readable through the index', () async {
-    await service.save(parsed(), {'Ana Lopes': ana, 'Rui Sá': null},
-        importedBy: 'Gonçalo');
+    await service.save(parsed(), {
+      'Ana Lopes': ana,
+      'Rui Sá': null,
+    }, importedBy: 'Gonçalo');
     expect(service.index.dayOf(ana, DateTime(2026, 12, 31))!.code, 'G82');
     final m = (await service.months()).single;
     expect(m.importedBy, 'Gonçalo');
@@ -52,10 +54,10 @@ void main() {
   });
 
   test('a month from the server updates the index', () async {
-    final m = HorarioMes.fromParsed(parsed(), {'Ana Lopes': 'ana'},
-        importedBy: 'X')
-      ..syncUuid = 'srv'
-      ..syncUpdatedAt = DateTime.now();
+    final m =
+        HorarioMes.fromParsed(parsed(), {'Ana Lopes': 'ana'}, importedBy: 'X')
+          ..syncUuid = 'srv'
+          ..syncUpdatedAt = DateTime.now();
     final c = LocalDb.instance.horarioMeses;
     await c.applyRemote([
       (key: '2027-01', data: c.syncData(m), updatedAt: m.syncUpdatedAt),
@@ -68,32 +70,47 @@ void main() {
   group('changes', () {
     final rui = _p('Rui Sá', 'rui');
     final dec31 = DateTime(2026, 12, 31);
-    Future<void> imported() => service.save(
-      parsed(),
-      {'Ana Lopes': ana, 'Rui Sá': rui},
-      importedBy: 'A',
-    );
+    Future<void> imported() => service.save(parsed(), {
+      'Ana Lopes': ana,
+      'Rui Sá': rui,
+    }, importedBy: 'A');
 
     test('change wins, a change back to the file removes it', () async {
       await imported();
       await service.change(ana, dec31, 'A', by: 'Gonçalo');
       final d = service.index.dayOf(ana, dec31)!;
-      expect((d.offLabel, d.changed!.fileCode, d.changed!.changedBy),
-          ('Ausência', 'G82', 'Gonçalo'));
+      expect(
+        (d.offLabel, d.changed!.fileCode, d.changed!.changedBy),
+        ('Ausência', 'G82', 'Gonçalo'),
+      );
       await service.change(ana, dec31, 'G82', by: 'Gonçalo');
       expect(service.index.dayOf(ana, dec31)!.changed, isNull);
       expect(await LocalDb.instance.horarioAlteracoes.all(), isEmpty);
     });
 
-    test('a known code takes its hours from the month, a new one keeps its own',
-        () async {
-      await imported();
-      await service.change(ana, DateTime(2027, 1, 1), 'w82', by: 'G');
-      expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.text, '22:00–07:00');
-      await service.change(ana, DateTime(2027, 1, 2), 'X10',
-          entrada: 600, saida: 1080, by: 'G');
-      expect(service.index.dayOf(ana, DateTime(2027, 1, 2))!.text, '10:00–18:00');
-    });
+    test(
+      'a known code takes its hours from the month, a new one keeps its own',
+      () async {
+        await imported();
+        await service.change(ana, DateTime(2027, 1, 1), 'w82', by: 'G');
+        expect(
+          service.index.dayOf(ana, DateTime(2027, 1, 1))!.text,
+          '22:00–07:00',
+        );
+        await service.change(
+          ana,
+          DateTime(2027, 1, 2),
+          'X10',
+          entrada: 600,
+          saida: 1080,
+          by: 'G',
+        );
+        expect(
+          service.index.dayOf(ana, DateTime(2027, 1, 2))!.text,
+          '10:00–18:00',
+        );
+      },
+    );
 
     test('swap exchanges two days, an empty side included', () async {
       await imported();
@@ -107,6 +124,36 @@ void main() {
       expect(service.index.dayOf(rui, jan3), isNull);
     });
 
+    test('a change of hours only, no code', () async {
+      await imported();
+      final jan2 = DateTime(2027, 1, 2);
+      await service.change(ana, jan2, '', entrada: 540, saida: 1080, by: 'G');
+      final d = service.index.dayOf(ana, jan2)!;
+      expect((d.code, d.text, d.changed != null), ('', '09:00–18:00', true));
+    });
+
+    test('the profile is what a change is compared with', () async {
+      final anaP = _p('Ana Lopes', 'ana')
+        ..shiftStart = 540
+        ..shiftEnd = 960;
+      await imported();
+      await service.change(anaP, dec31, '', entrada: 540, saida: 960, by: 'G');
+      expect(await LocalDb.instance.horarioAlteracoes.all(), isEmpty);
+      await service.change(anaP, dec31, 'G82', by: 'G');
+      expect(service.index.dayOf(anaP, dec31)!.text, '06:00–15:00');
+      expect(service.index.dayOf(anaP, dec31)!.changed, isNotNull);
+    });
+
+    test('swap carries a day of the profile hours', () async {
+      final anaP = _p('Ana Lopes', 'ana')
+        ..shiftStart = 540
+        ..shiftEnd = 960;
+      await imported();
+      await service.swap(anaP, rui, dec31, by: 'G');
+      expect(service.index.dayOf(rui, dec31)!.text, '09:00–16:00');
+      expect(service.index.dayOf(anaP, dec31)!.code, 'W82');
+    });
+
     test('revert goes back to the file', () async {
       await imported();
       await service.change(ana, dec31, 'FO', by: 'G');
@@ -114,31 +161,39 @@ void main() {
       expect(service.index.dayOf(ana, dec31)!.code, 'G82');
     });
 
-    test('re-import: dropped and caught-up changes go, the rest stay', () async {
-      await imported();
-      await service.change(ana, dec31, 'A', by: 'G'); // kept
-      await service.change(rui, dec31, 'FO', by: 'G'); // dropped
-      // The file still says FO here: kept.
-      await service.change(ana, DateTime(2027, 1, 1), 'G82', by: 'G');
-      await service.save(
-        parsed(),
-        {'Ana Lopes': ana, 'Rui Sá': rui},
-        importedBy: 'B',
-        drop: {alteracaoKey('rui', dec31)},
-      );
-      expect(service.index.dayOf(ana, dec31)!.offLabel, 'Ausência');
-      expect(service.index.dayOf(rui, dec31)!.code, 'W82');
-      expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.code, 'G82');
-    });
+    test(
+      're-import: dropped and caught-up changes go, the rest stay',
+      () async {
+        await imported();
+        await service.change(ana, dec31, 'A', by: 'G'); // kept
+        await service.change(rui, dec31, 'FO', by: 'G'); // dropped
+        // The file still says FO here: kept.
+        await service.change(ana, DateTime(2027, 1, 1), 'G82', by: 'G');
+        await service.save(
+          parsed(),
+          {'Ana Lopes': ana, 'Rui Sá': rui},
+          importedBy: 'B',
+          drop: {alteracaoKey('rui', dec31)},
+        );
+        expect(service.index.dayOf(ana, dec31)!.offLabel, 'Ausência');
+        expect(service.index.dayOf(rui, dec31)!.code, 'W82');
+        expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.code, 'G82');
+      },
+    );
 
     test('re-import drops a change the file now agrees with', () async {
       await imported();
       await service.change(ana, dec31, 'A', by: 'G');
-      final again = parseHorarioXlsx(buildXlsx(
-        plano: samplePlano()..[4] = [null, 'Ana Lopes', 'A', 'FO', 711, ''],
-        horario: sampleHorario(),
-      ));
-      await service.save(again, {'Ana Lopes': ana, 'Rui Sá': rui}, importedBy: 'B');
+      final again = parseHorarioXlsx(
+        buildXlsx(
+          plano: samplePlano()..[4] = [null, 'Ana Lopes', 'A', 'FO', 711, ''],
+          horario: sampleHorario(),
+        ),
+      );
+      await service.save(again, {
+        'Ana Lopes': ana,
+        'Rui Sá': rui,
+      }, importedBy: 'B');
       expect(await LocalDb.instance.horarioAlteracoes.all(), isEmpty);
       expect(service.index.dayOf(ana, dec31)!.offLabel, 'Ausência');
     });

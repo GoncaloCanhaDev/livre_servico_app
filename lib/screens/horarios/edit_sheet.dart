@@ -18,7 +18,11 @@ Future<void> _openDaySheet(
 }
 
 class _DaySheet extends StatefulWidget {
-  const _DaySheet({required this.view, required this.person, required this.day});
+  const _DaySheet({
+    required this.view,
+    required this.person,
+    required this.day,
+  });
 
   final _HorarioView view;
   final Person person;
@@ -61,10 +65,20 @@ class _DaySheetState extends State<_DaySheet> {
     await _set(result.code, entrada: result.entrada, saida: result.saida);
   }
 
+  /// A shift with no code: only its entrada and saída.
+  Future<void> _hoursOnly() async {
+    final result = await showDialog<({String code, int? entrada, int? saida})>(
+      context: context,
+      builder: (_) => const _OtherCodeDialog(known: {}, hoursOnly: true),
+    );
+    if (result == null) return;
+    await _set(result.code, entrada: result.entrada, saida: result.saida);
+  }
+
   Future<void> _swap() async {
     final view = widget.view;
     final others = [
-      for (final l in view.index.linesOn(widget.day))
+      for (final l in view.index.linesOn(widget.day, people: view.people))
         if (view.people[l.linha.personId] case final p?)
           if (p.syncUuid != widget.person.syncUuid) (person: p, dia: l.dia),
     ]..sort((a, b) => a.person.fullName.compareTo(b.person.fullName));
@@ -91,6 +105,7 @@ class _DaySheetState extends State<_DaySheet> {
     final index = _service.index;
     final now = index.dayOf(widget.person, widget.day);
     final file = index.fileDayOf(widget.person, widget.day);
+    final base = index.baseDayOf(widget.person, widget.day);
     final changed = now?.changed;
     final usage = index.codeUsage(widget.day).entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -115,13 +130,16 @@ class _DaySheetState extends State<_DaySheet> {
           children: [
             Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
+            Text('Agora: ${_describe(now)}'),
             Text(
-              'Agora: ${now == null ? 'nada' : '${now.code} · ${now.text}'}',
-            ),
-            Text(
-              'No ficheiro: ${file == null ? 'nada' : '${file.code} · ${file.text}'}',
+              'No ficheiro: ${_describe(file)}',
               style: TextStyle(color: context.muted),
             ),
+            if (base != null && base.fromProfile)
+              Text(
+                'Perfil: ${_describe(base)}',
+                style: TextStyle(color: context.muted),
+              ),
             if (changed != null)
               Text(
                 'Alterado por ${changed.changedBy.isEmpty ? '—' : changed.changedBy}'
@@ -147,10 +165,7 @@ class _DaySheetState extends State<_DaySheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Fora',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
+              const Text('Fora', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 6,
@@ -169,6 +184,11 @@ class _DaySheetState extends State<_DaySheet> {
                     icon: const Icon(Icons.edit_outlined),
                     label: const Text('Outro código'),
                     onPressed: _busy ? null : _otherCode,
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.schedule),
+                    label: const Text('Só horas'),
+                    onPressed: _busy ? null : _hoursOnly,
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.swap_horiz),
@@ -195,12 +215,20 @@ class _DaySheetState extends State<_DaySheet> {
   }
 }
 
+/// "G82 · 06:00–15:00", "09:00–18:00" (hours only) or "nada".
+String _describe(HorarioDia? d) => d == null
+    ? 'nada'
+    : d.code.isEmpty
+    ? d.text
+    : '${d.code} · ${d.text}';
+
 /// Asks for a code; for a shift code the month doesn't know, its entrada
-/// and saída too.
+/// and saída too. With [hoursOnly], only the entrada and saída.
 class _OtherCodeDialog extends StatefulWidget {
-  const _OtherCodeDialog({required this.known});
+  const _OtherCodeDialog({required this.known, this.hoursOnly = false});
 
   final Map<String, ({int entrada, int saida})> known;
+  final bool hoursOnly;
 
   @override
   State<_OtherCodeDialog> createState() => _OtherCodeDialogState();
@@ -224,6 +252,7 @@ class _OtherCodeDialogState extends State<_OtherCodeDialog> {
 
   /// A code the app knows (its hours or an off code) needs no hours.
   bool get _needsHours {
+    if (widget.hoursOnly) return true;
     final c = _normalized;
     return c.isNotEmpty &&
         !widget.known.containsKey(c) &&
@@ -240,8 +269,8 @@ class _OtherCodeDialogState extends State<_OtherCodeDialog> {
   }
 
   void _ok() {
-    final code = _normalized;
-    if (code.isEmpty) {
+    final code = widget.hoursOnly ? '' : _normalized;
+    if (code.isEmpty && !widget.hoursOnly) {
       setState(() => _error = 'Escreva o código.');
       return;
     }
@@ -260,21 +289,24 @@ class _OtherCodeDialogState extends State<_OtherCodeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Outro código'),
+    title: Text(widget.hoursOnly ? 'Só horas' : 'Outro código'),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _code,
-          autofocus: true,
-          textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(labelText: 'Código (ex.: H73)'),
-          onChanged: (_) => setState(() => _error = null),
-        ),
+        if (!widget.hoursOnly)
+          TextField(
+            controller: _code,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(labelText: 'Código (ex.: H73)'),
+            onChanged: (_) => setState(() => _error = null),
+          ),
         if (_needsHours) ...[
           const SizedBox(height: 8),
           Text(
-            'Código novo neste mês: indique as horas.',
+            widget.hoursOnly
+                ? 'Um turno sem código: indique a entrada e a saída.'
+                : 'Código novo neste mês: indique as horas.',
             style: TextStyle(color: context.muted),
           ),
           Row(
@@ -282,6 +314,7 @@ class _OtherCodeDialogState extends State<_OtherCodeDialog> {
               Expanded(
                 child: TextField(
                   controller: _entrada,
+                  autofocus: widget.hoursOnly,
                   keyboardType: TextInputType.datetime,
                   decoration: const InputDecoration(labelText: 'Entrada'),
                 ),

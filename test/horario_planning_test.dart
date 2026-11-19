@@ -35,17 +35,19 @@ void main() {
   // 4 January 2027 is a Monday; column 4.
   final monday = DateTime(2027, 1, 4);
 
-  test('a scheduled shift beats a fixed folga', () {
+  test('a fixed folga beats a scheduled shift', () {
     final ana = _p('Ana', 'ana', folgas: [DateTime.monday]);
     final h = _index({
       'ana': ['', '', '', '', 'G82'],
     });
-    expect(offLabelOn(ana, monday), 'Folga');
-    expect(offLabelOn(ana, monday, horario: h), isNull);
-    final span = shiftSpanOn(ana, monday, horario: h)!;
+    expect(offLabelOn(ana, monday, horario: h), 'Folga');
+    expect(shiftSpanOn(ana, monday, horario: h), isNull);
+    final bia = _p('Bia', 'ana');
+    expect(offLabelOn(bia, monday, horario: h), isNull);
+    final span = shiftSpanOn(bia, monday, horario: h)!;
     expect(span.start, DateTime(2027, 1, 4, 6));
     expect(span.end, DateTime(2027, 1, 4, 15));
-    expect(shiftTextOn(ana, monday, horario: h), '06:00–15:00');
+    expect(shiftTextOn(bia, monday, horario: h), '06:00–15:00');
   });
 
   test('a scheduled folga with no fixed folga', () {
@@ -85,14 +87,15 @@ void main() {
     expect(onShiftAt([ana], DateTime(2027, 1, 4, 10), horario: h), isEmpty);
   });
 
-  test("a person's own hours don't replace a scheduled shift", () {
+  test("a person's own hours replace a scheduled shift's", () {
     final ana = _p('Ana', 'ana')
       ..shiftStart = 8 * 60
       ..shiftEnd = 12 * 60;
     final h = _index({
       'ana': ['', '', '', '', 'G82'],
     });
-    expect(shiftSpanOn(ana, monday, horario: h)!.start, DateTime(2027, 1, 4, 6));
+    expect(shiftSpanOn(ana, monday, horario: h)!.start, DateTime(2027, 1, 4, 8));
+    expect(shiftTextOn(ana, monday, horario: h), '08:00–12:00');
     expect(shiftSpanOn(ana, DateTime(2027, 1, 10), horario: h)!.start,
         DateTime(2027, 1, 10, 8));
   });

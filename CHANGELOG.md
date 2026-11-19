@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.92.0] — 2026-11-19
+
+### Changed
+- **The profile before the Excel.** A day is now: an ausência, then a change made in the app,
+  then the person's profile, then the imported file (`HorarioIndex.baseDayOf`). Profile folgas
+  (when set) decide the folgas: a folga weekday is Folga, a file Folga on another weekday is a
+  working day (unless the profile has no hours, so there is no shift to show). Profile hours
+  (both set) replace the hours of every working day. The file's other days off (F, A, LP,
+  unknown codes) stay. `HorarioDia.fromProfile` marks those days; the day sheet shows a
+  "Perfil" line. A change equal to that day is not kept; `linesOn(people:)` gives the same days.
+
+### Added
+- **"Só horas"** on the day sheet: a change with entrada and saída and no code (code '' with
+  hours is a shift; with none, nothing). A re-import always lists such a change. A swap carries
+  a day of hours only.
+
 ## [0.91.0] — 2026-11-18
 
 ### Added

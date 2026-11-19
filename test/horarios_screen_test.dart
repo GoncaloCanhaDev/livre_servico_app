@@ -124,7 +124,10 @@ void main() {
     await tapAndSettle(tester, find.byKey(ValueKey('cell-$key')));
     expect(find.textContaining('No ficheiro: G82'), findsOneWidget);
     await tapAndSettle(tester, find.byKey(const ValueKey('code-A')));
-    expect(HorarioService.instance.index.dayOf(ana, today)!.offLabel, 'Ausência');
+    expect(
+      HorarioService.instance.index.dayOf(ana, today)!.offLabel,
+      'Ausência',
+    );
     expect(find.byKey(ValueKey('changed-$key')), findsOneWidget);
   });
 
@@ -140,5 +143,42 @@ void main() {
     expect(find.textContaining('Alterado por Gonçalo'), findsOneWidget);
     await tapAndSettle(tester, find.text('Repor o do ficheiro'));
     expect(HorarioService.instance.index.dayOf(ana, today)!.code, 'G82');
+  });
+
+  testWidgets('a day is changed to hours only', (tester) async {
+    await seedMonth(tester);
+    await open(tester);
+    await tapAndSettle(tester, find.text('Semana'));
+    final today = currentServiceDay();
+    final key = alteracaoKey(ana.syncUuid, today);
+    await tapAndSettle(tester, find.byKey(ValueKey('cell-$key')));
+    await tapAndSettle(tester, find.text('Só horas'));
+    await tester.enterText(find.widgetWithText(TextField, 'Entrada'), '9:00');
+    await tester.enterText(find.widgetWithText(TextField, 'Saída'), '18');
+    await tapAndSettle(tester, find.text('Guardar'));
+    final d = HorarioService.instance.index.dayOf(ana, today)!;
+    expect((d.code, d.text), ('', '09:00–18:00'));
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('cell-$key')),
+        matching: find.text('09–18'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(ValueKey('changed-$key')), findsOneWidget);
+  });
+
+  testWidgets('the profile hours show over the file', (tester) async {
+    await seedMonth(tester);
+    ana
+      ..shiftStart = 540
+      ..shiftEnd = 960;
+    SyncMeta.stamp(ana);
+    await dbCall(tester, () => PersonService.instance.save(ana));
+    await open(tester);
+    expect(find.text('09:00–16:00'), findsOneWidget);
+    await tapAndSettle(tester, find.text('Ana Lopes'));
+    expect(find.textContaining('Perfil: 09:00–16:00'), findsOneWidget);
+    expect(find.textContaining('No ficheiro: G82'), findsOneWidget);
   });
 }

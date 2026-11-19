@@ -178,9 +178,12 @@ multi-tenant product.
   rest. Import is `StoreAccess.canImportHorarios` (level 3+, app-side only); every member sees
   horários (the privacy policy says so). `HorarioService.index` (a `HorarioIndex`, loaded in
   `main()`, reloaded on saves, remote changes, backup import and wipe) answers `dayOf(person,
-  day)`: a day two months cover comes from the month it belongs to. Who works when: an
-  ausência in the app wins, then the horário day, then the person's `folgas` and own
-  `shiftStart`/`shiftEnd`; pass `horario: HorarioService.instance.index` to `offLabelOn`,
+  day)`: a day two months cover comes from the month it belongs to. Who works when (since
+  0.92.0): an ausência in the app wins, then a change made in the app, then the person's
+  profile (`folgas`, when set, decide the folgas; `shiftStart`/`shiftEnd`, both set, the hours
+  of every working day; the file's other days off stay), then the imported file
+  (`HorarioIndex.baseDayOf` is the file with the profile on top, `HorarioDia.fromProfile`;
+  with no horário day, the profile alone as before); pass `horario: HorarioService.instance.index` to `offLabelOn`,
   `awayTagOn`, `offNoteOn`, `shiftSpanOn`, `onShiftAt`, `shiftCountsOn`, `shiftTextOn`,
   `buildPeopleSections` (null keeps the old behaviour). `HorariosScreen` (Dia, Semana, Mês)
   and `MyHorarioCard` / `HorarioDaysList` (Home, person page) show them.
@@ -188,7 +191,7 @@ multi-tenant product.
   `HorarioAlteracao` rows, one per person and day (`alteracaoKey`, also their key online),
   with the code, its hours, the file's code then, who and when; `HorarioIndex.dayOf` returns
   a change before the file (`fileDayOf` skips them; a change with code '' means nothing that
-  day) and `HorarioDia.changed` marks it. `HorarioService.change` (back to the file's code
+  day, unless it has hours: a shift with no code, "Só horas") and `HorarioDia.changed` marks it. `HorarioService.change` (back to the file's code
   removes the change), `swap` and `revert`, behind `StoreAccess.canEditHorarios` (level 3+,
   app-side), from the day sheet (`horarios/edit_sheet.dart`). On a re-import,
   `changesAgainstFile` lists the changes the new file contradicts and

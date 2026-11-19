@@ -18,8 +18,9 @@ Ausencia? ausenciaOn(Person p, DateTime day) {
 /// 14/10", "Folga"), the orange [tag] ("Férias"; none for a folga) and the
 /// [note] beside the tag ("até 14/10", "Folga"). Null when working.
 ///
-/// An ausência wins, then the [horario] for that day (a shift there means
-/// working, even on a fixed folga), then the fixed weekly folgas.
+/// An ausência wins, then the [horario] for that day (a change made in the
+/// app, then the profile's folgas and hours over the imported file; see
+/// [HorarioIndex.dayOf]), then the fixed weekly folgas.
 ({String label, String? tag, String note})? _offOn(
   Person p,
   DateTime day,

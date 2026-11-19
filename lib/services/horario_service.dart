@@ -50,9 +50,7 @@ class HorarioService extends ChangeNotifier {
     Set<String> drop = const {},
   }) async {
     final key = monthKey(parsed.month);
-    final old = await _db.horarioMeses.where(
-      (m) => monthKey(m.month) == key,
-    );
+    final old = await _db.horarioMeses.where((m) => monthKey(m.month) == key);
     final row = HorarioMes.fromParsed(parsed, {
       for (final e in matches.entries) e.key: e.value?.syncUuid,
     }, importedBy: importedBy);
@@ -103,9 +101,10 @@ class HorarioService extends ChangeNotifier {
     await load();
   }
 
-  /// Sets [p]'s day [day] to [code] (normalized; '' for nothing), with
-  /// [entrada] and [saida] for a shift code the month doesn't know. The
-  /// same as the imported file: the change goes.
+  /// Sets [p]'s day [day] to [code] (normalized; '' with no hours for
+  /// nothing, with hours for a shift with no code), with [entrada] and
+  /// [saida] for a shift code the month doesn't know. The same as the day
+  /// would be without it (the file with the profile on top): the change goes.
   Future<void> change(
     Person p,
     DateTime day,
@@ -117,22 +116,34 @@ class HorarioService extends ChangeNotifier {
     final d = DateTime(day.year, day.month, day.day);
     final c = normalizeHorarioCode(code);
     final file = _index.fileDayOf(p, d);
+    final base = _index.baseDayOf(p, d);
+    final known = c.isEmpty ? null : _index.monthCovering(d)?.codigos[c];
+    final e = known?.entrada ?? entrada;
+    final s = known?.saida ?? saida;
+    final shift = e != null && s != null;
+    final sameAsBase = base == null
+        ? c.isEmpty && !shift
+        : base.isShift
+        ? shift &&
+              base.entrada == e &&
+              base.saida == s &&
+              (c.isEmpty || c == base.code)
+        : !shift && c == base.code;
     final key = alteracaoKey(p.syncUuid, d);
     final existing = await _db.horarioAlteracoes.firstWhere(
       (a) => alteracaoKey(a.personId, a.date) == key,
     );
-    if (c == (file?.code ?? '')) {
+    if (sameAsBase) {
       if (existing != null) await _db.horarioAlteracoes.softDelete(existing.id);
       await load();
       return;
     }
-    final known = _index.monthCovering(d)?.codigos[c];
     final row = (existing ?? HorarioAlteracao())
       ..date = d
       ..personId = p.syncUuid
       ..code = c
-      ..entrada = known?.entrada ?? entrada
-      ..saida = known?.saida ?? saida
+      ..entrada = shift ? e : null
+      ..saida = shift ? s : null
       ..fileCode = file?.code ?? ''
       ..changedBy = by
       ..changedAt = DateTime.now();

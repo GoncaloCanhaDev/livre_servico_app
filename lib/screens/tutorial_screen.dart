@@ -294,7 +294,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'horarios',
     title: 'Horários',
-    version: 2,
+    version: 3,
     steps: [
       TutorialStep(
         icon: Icons.calendar_month,
@@ -330,7 +330,8 @@ const tutorialSections = [
         steps: [
           'Toque no dia da pessoa (em Dia, Semana ou Mês) e escolha o código: '
               'os turnos do mês, FO, F, A (baixa, por agora) ou LP. Um código '
-              'novo pede a entrada e a saída.',
+              'novo pede a entrada e a saída; "Só horas" marca um turno sem '
+              'código (ficou até às 18h, por exemplo).',
           '"Trocar com…" troca o dia de duas pessoas de uma vez.',
           'Os dias mudados têm um ponto laranja; tocar mostra quem mudou, '
               'quando e o que dizia o ficheiro. "Repor o do ficheiro" desfaz.',
