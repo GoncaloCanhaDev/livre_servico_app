@@ -84,6 +84,14 @@ class StoreAccess {
   /// called in on a folga, a swap).
   bool get canEditHorarios => admin || level >= 3;
 
+  /// Whether this account confirms or corrects the tasks the app marked by
+  /// itself (`AutoMark`): level 2 and up.
+  bool get canConfirmTasks => admin || level >= 2;
+
+  /// Whether this account changes the tasks' hours (Definições → Horas das
+  /// tarefas).
+  bool get canEditTaskWindows => admin || level >= 3;
+
   /// Whether this account shares the join code and adds, links and removes
   /// members.
   bool get canManageMembers => admin || level >= 4;

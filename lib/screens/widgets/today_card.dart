@@ -11,6 +11,7 @@ import '../../models/opening_list.dart';
 import '../../models/teams.dart';
 import '../../models/today.dart';
 import '../../models/truck_reception.dart';
+import '../../services/task_window_service.dart';
 import '../../services/daily_tasks_service.dart';
 import '../../services/horario_service.dart';
 import '../../services/pedido_service.dart';
@@ -164,6 +165,7 @@ class _TodayCardState extends State<TodayCard> {
           rows.tasks,
           visivelDone: rows.visivelDone,
           now: now,
+          windowFor: TaskWindowService.instance.windowFor,
         ),
         overduePedidos: rows.pedidos.where((p) => p.isOverdue).length,
         trucks: rows.trucks.length,

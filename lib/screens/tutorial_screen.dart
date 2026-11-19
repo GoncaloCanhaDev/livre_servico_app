@@ -100,7 +100,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'tarefas',
     title: 'Tarefas',
-    version: 4,
+    version: 5,
     steps: [
       TutorialStep(
         icon: Icons.task_alt,
@@ -131,6 +131,31 @@ const tutorialSections = [
             'Personalizadas, o + cria uma tarefa nova (diária, semanal ou '
             'pontual). A Lista Visível marca-se sozinha com um Visível de '
             'Listas 2.0; a Lista Automática só conta as automáticas do dia.',
+      ),
+      TutorialStep(
+        icon: Icons.auto_mode,
+        title: 'Tarefas marcadas sozinhas',
+        intro:
+            'Cada tarefa tem uma hora para ser feita. Quando essa hora acaba '
+            'e ninguém a marcou, a aplicação marca-a como feita por quem '
+            'estava a trabalhar no Livre Serviço, segundo o horário.',
+        diagram: _AutoMarkDiagram(),
+        steps: [
+          'A tarefa fica feita com esses nomes e a nota "Automática · por '
+              'confirmar".',
+          'Supervisores e chefes tocam em "Rever": confirmam, mudam quem '
+              'fez ou marcam como não feita. Na página inicial, "Tarefas '
+              'automáticas por confirmar" mostra todas da última semana.',
+          'Se a tarefa tem um número, fica "Número por preencher": qualquer '
+              'pessoa o preenche depois. Também se pode marcar à mão com o '
+              'número vazio.',
+          'Os chefes mudam as horas de cada tarefa, ou desligam a marcação '
+              'automática, em Definições → Horas das tarefas.',
+        ],
+        tip:
+            'Marcar à mão continua a funcionar a qualquer hora, dentro ou '
+            'fora da hora da tarefa, e ganha sempre. Se ninguém do Livre '
+            'Serviço estava a trabalhar, a tarefa não é marcada.',
       ),
     ],
   ),

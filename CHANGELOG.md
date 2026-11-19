@@ -7,6 +7,29 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.95.0] — 2026-11-19
+
+### Added
+- **Tarefas marcadas sozinhas.** Each task has a window in the service day (`TaskWindow`, a new
+  synced collection keyed by task key, with `defaultTaskWindow`: Kiwi Abertura 05–09, Alterações
+  de Preço 05–07:30, Temperaturas 05–12, Quadro 05–14, Validades Manhã 05–14 / Noite 19–05, Kiwi
+  Fecho 19–22; the Semanais their whole weekday; custom daily tasks the whole day, weekly ones the
+  whole week, one-off never). `AutoMarkService` (at start, on resume, every minute and after each
+  sync; while a store is connected only once this session synced) marks every task whose window
+  closed and nobody marked (feita or não feita), by the Livre Serviço people whose shift overlaps
+  it (`autoMarkPeople`, from the horário); nobody working leaves it pending. Up to 7 days back,
+  never before the device's first run (`autoMarkSince`). An automatic mark keeps an `AutoMark`
+  (`autoMarks` on `DailyTasks` / `WeeklyTasks`, `autoMark` on `CustomTaskEntry`).
+- Tarefas and Histórico show "Automática · por confirmar"; level 2 and up (`canConfirmTasks`)
+  "Rever" it: Confirmar (who confirmed), Alterar quem fez (becomes a manual mark) or Não foi
+  feita. Home's `AutoMarksCard` opens `AutoMarksScreen`, every unconfirmed mark of the week.
+- A number can be left empty: `pendingCounts` on the Diárias / Semanais rows (and a null custom
+  count) shows "Número por preencher" with "Preencher"; an automatic Validades mark also asks
+  later how many artigos were left, carried as before.
+- Definições → Horas das tarefas (`TaskWindowsScreen`, level 3 and up, `canEditTaskWindows`):
+  each task's hours and an on/off switch for marking it by itself. The Validades windows follow
+  them (`validadesStateAt(window:)`). Demo rows and a tutorial page (`tarefas` version 5).
+
 ## [0.94.0] — 2026-11-19
 
 ### Added

@@ -19,6 +19,7 @@ import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/person.dart';
 import '../models/report_list.dart';
+import '../models/task_window.dart';
 import '../models/truck_reception.dart';
 import '../models/visivel2_entry.dart';
 import '../models/visual_list.dart';
@@ -119,6 +120,12 @@ class LocalDb {
     syncKey: (a) => alteracaoKey(a.personId, a.date),
   );
 
+  final taskWindows = LocalCollection<TaskWindow>._(
+    'TaskWindow',
+    TaskWindow.fromJson,
+    syncKey: (w) => w.taskKey,
+  );
+
   late final List<LocalCollection<SyncedRow>> collections = [
     truckReceptions,
     openingLists,
@@ -139,6 +146,7 @@ class LocalDb {
     avisoVistos,
     horarioMeses,
     horarioAlteracoes,
+    taskWindows,
   ];
 
   /// How many rows, in every collection, wait to be pushed.

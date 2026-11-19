@@ -73,6 +73,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     LocalDb? db,
   }) async {
     stop();
+    // A new connection: nothing synced yet (`AutoMarkService` waits for it).
+    lastSyncedAt = null;
     _engine = SyncEngine(
       db: db ?? LocalDb.instance,
       remote: remote,

@@ -1,3 +1,4 @@
+import 'auto_mark.dart';
 import 'local_row.dart';
 import 'not_done.dart';
 import 'opening_list.dart';
@@ -23,6 +24,8 @@ class WeeklyTasks with SyncFields {
       ..verificar4aCount = intFromJson(j['verificar4aCount'])
       ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
       ..notDone = notDoneMapFromJson(j['notDone'])
+      ..autoMarks = autoMarkMapFromJson(j['autoMarks'])
+      ..pendingCounts = stringsFromJson(j['pendingCounts'])
       ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
     syncFieldsFromJson(w, j);
     return w;
@@ -60,6 +63,13 @@ class WeeklyTasks with SyncFields {
   /// Tasks marked "Não feita", by the same keys as [backdatedTaskKeys].
   Map<String, NotDone> notDone = {};
 
+  /// Tasks the app marked done by itself, by the same keys (see `AutoMark`).
+  Map<String, AutoMark> autoMarks = {};
+
+  /// Done tasks whose number is still to be filled in (task keys; a
+  /// Validades window's artigos left as `leftKey`).
+  List<String> pendingCounts = [];
+
   DateTime? lastUpdatedAt;
 
   @override
@@ -79,6 +89,8 @@ class WeeklyTasks with SyncFields {
     'verificar4aCount': verificar4aCount,
     'backdatedTaskKeys': backdatedTaskKeys,
     'notDone': notDoneMapToJson(notDone),
+    'autoMarks': autoMarkMapToJson(autoMarks),
+    'pendingCounts': pendingCounts,
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
 }

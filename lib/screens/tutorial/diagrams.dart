@@ -549,6 +549,76 @@ class _TodayDiagram extends StatelessWidget {
   }
 }
 
+/// A task the app marked from the horário, its review, and a number to
+/// fill in later.
+class _AutoMarkDiagram extends StatelessWidget {
+  const _AutoMarkDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Screen(
+      title: 'Tarefas',
+      children: [
+        _Box(
+          marker: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _TaskMark(Icons.check, context.colors.primary, filled: true),
+                  const SizedBox(width: 6),
+                  const Expanded(child: _Line('Kiwi Abertura · Ana, Rui')),
+                ],
+              ),
+              _Line(
+                'Automática · por confirmar',
+                icon: Icons.auto_mode,
+                trailing: Text(
+                  'Rever',
+                  style: TextStyle(color: context.colors.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const _Arrow(),
+        const _Box(
+          marker: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Line('Confirmar', icon: Icons.verified_outlined),
+              _Line('Alterar quem fez', icon: Icons.people_outline),
+              _Line('Não foi feita', icon: Icons.close),
+            ],
+          ),
+        ),
+        _gap,
+        _Box(
+          marker: 3,
+          child: _Line(
+            'Alterações de Preço · Número por preencher',
+            icon: Icons.pin_outlined,
+            trailing: Text(
+              'Preencher',
+              style: TextStyle(color: context.colors.primary),
+            ),
+          ),
+        ),
+        _gap,
+        const _Box(
+          marker: 4,
+          child: _Line(
+            'Definições → Horas das tarefas: Kiwi Fecho 19:00–22:00',
+            icon: Icons.schedule,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _TaskDiagram extends StatelessWidget {
   const _TaskDiagram();
 

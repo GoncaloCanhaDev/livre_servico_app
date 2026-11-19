@@ -1,3 +1,4 @@
+import '../models/auto_mark.dart';
 import '../models/auto2_entry.dart';
 import '../models/aviso.dart';
 import '../models/custom_task.dart';
@@ -231,6 +232,8 @@ Future<String> seedDemo({DateTime? now}) async {
       ..validadesManhaLeft = 4
       ..validadesNoiteCount = 4
       ..validadesNoiteCarried = 4
+      // Marked by the app from the horário, waiting to be confirmed.
+      ..autoMarks = {'kiwi_abertura': AutoMark(at: day(0, 9))}
       ..lastUpdatedAt = day(0, 9, 40),
   );
   final yesterday = stamped(
@@ -250,6 +253,14 @@ Future<String> seedDemo({DateTime? now}) async {
       ..validadesNoiteLeft = 3
       ..kiwiFecho = true
       ..kiwiFechoByNames = ['Ricardo Matos']
+      ..autoMarks = {
+        'preenchimento_quadro': AutoMark(at: day(-1, 14)),
+        'kiwi_fecho': AutoMark(
+          at: day(-1, 22),
+          confirmedByNames: ['Sofia Almeida'],
+          confirmedAt: day(0, 7, 30),
+        ),
+      }
       ..notDone = {
         'alteracoes_preco': NotDone(
           byNames: ['Sofia Almeida'],
@@ -263,7 +274,12 @@ Future<String> seedDemo({DateTime? now}) async {
       ..serviceWeek = currentServiceWeek(n)
       ..verificar1a = true
       ..verificar1aByNames = ['Inês Rodrigues']
-      ..verificar1aCount = 18,
+      ..verificar1aCount = 18
+      // Marked by the app; its number is still to be filled in.
+      ..verificar4a = true
+      ..verificar4aByNames = ['Inês Rodrigues', 'João Pereira']
+      ..autoMarks = {'verificar_4a': AutoMark(at: day(0, 5))}
+      ..pendingCounts = ['verificar_4a'],
   );
   final opening = stamped(
     OpeningList()

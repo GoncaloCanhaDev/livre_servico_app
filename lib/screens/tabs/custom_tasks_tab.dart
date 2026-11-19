@@ -6,9 +6,12 @@ import '../../models/custom_task.dart';
 import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/weekly_tasks.dart';
+import '../../services/account_service.dart';
 import '../../services/custom_task_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
+import '../widgets/auto_mark_note.dart';
+import '../widgets/auto_mark_review.dart';
 import '../widgets/person_picker.dart';
 import '../widgets/task_markers.dart';
 
@@ -311,6 +314,41 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     ];
   }
 
+  /// The notes under a task the app marked by itself, and under a count
+  /// task done with its number left to fill in.
+  List<Widget> _autoNotes(_TaskRow row) {
+    final entry = row.entry;
+    if (entry == null) return const [];
+    final mark = entry.autoMark;
+    final canReview = AccountService.instance.access.canConfirmTasks;
+    return [
+      if (mark != null)
+        AutoMarkNote(
+          mark,
+          onReview: canReview
+              ? () => reviewCustomMark(
+                  context,
+                  entry,
+                  row.task.title,
+                  row.periodKey,
+                )
+              : null,
+        ),
+      if (row.task.inputType == CustomTaskInputType.count &&
+          entry.done &&
+          entry.count == null)
+        PendingNumberNote(
+          text: 'Número por preencher',
+          onFill: () async {
+            final n = await askNumber(context, row.task.title);
+            if (n == null) return;
+            entry.count = n;
+            await CustomTaskService.instance.saveEntry(entry);
+          },
+        ),
+    ];
+  }
+
   Widget _tileFor(_TaskRow row) {
     final names = resolveNames(
       row.entry?.doneByNames ?? const [],
@@ -323,6 +361,7 @@ class _CustomTasksTabState extends State<CustomTasksTab>
       return _CustomCountTile(
         key: ValueKey(row.task.syncUuid),
         row: row,
+        notes: _autoNotes(row),
         onComplete: (count) => _complete(row, count: count),
         onNotDone: (count) => _markNotDone(row, count: count),
         onDelete: () => _confirmDelete(row.task),
@@ -336,6 +375,7 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     return _CustomManualTile(
       key: ValueKey(row.task.syncUuid),
       row: row,
+      notes: _autoNotes(row),
       onComplete: () => _complete(row),
       onNotDone: () => _markNotDone(row),
       onDelete: () => _confirmDelete(row.task),
@@ -350,6 +390,15 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     final n => () => _sendMsg(notDoneMessage(row.task.title, n)),
   };
 }
+
+/// [subtitle] with [notes] under it.
+Widget? _withNotes(Widget? subtitle, List<Widget> notes) => notes.isEmpty
+    ? subtitle
+    : Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [?subtitle, ...notes],
+      );
 
 class _BackdatedNote extends StatelessWidget {
   const _BackdatedNote();
@@ -381,8 +430,11 @@ class _CustomManualTile extends StatelessWidget {
     required this.onNotDone,
     required this.onDelete,
     this.onSendWhatsApp,
+    this.notes = const [],
   });
 
+  /// More lines under the subtitle (an automatic mark, a number to fill).
+  final List<Widget> notes;
   final _TaskRow row;
   final VoidCallback onComplete;
   final VoidCallback onNotDone;
@@ -413,11 +465,14 @@ class _CustomManualTile extends StatelessWidget {
               decoration: done ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: notDone != null
-              ? NotDoneNote(notDone, backdated: row.entry!.backdated)
-              : (done && row.entry!.backdated)
-              ? const _BackdatedNote()
-              : null,
+          subtitle: _withNotes(
+            notDone != null
+                ? NotDoneNote(notDone, backdated: row.entry!.backdated)
+                : (done && row.entry!.backdated)
+                ? const _BackdatedNote()
+                : null,
+            notes,
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -446,11 +501,14 @@ class _CustomCountTile extends StatefulWidget {
     required this.onNotDone,
     required this.onDelete,
     this.onSendWhatsApp,
+    this.notes = const [],
   });
 
+  /// More lines under the subtitle (an automatic mark, a number to fill).
+  final List<Widget> notes;
   final _TaskRow row;
-  final ValueChanged<int> onComplete;
-  final ValueChanged<int> onNotDone;
+  final ValueChanged<int?> onComplete;
+  final ValueChanged<int?> onNotDone;
   final VoidCallback onDelete;
   final VoidCallback? onSendWhatsApp;
 
@@ -471,12 +529,23 @@ class _CustomCountTileState extends State<_CustomCountTile> {
   }
 
   @override
+  void didUpdateWidget(covariant _CustomCountTile old) {
+    super.didUpdateWidget(old);
+    // A number filled in later (or from another phone) shows here.
+    final count = widget.row.entry?.count;
+    if (count != null && count != old.row.entry?.count) {
+      _countCtrl.text = '$count';
+    }
+  }
+
+  @override
   void dispose() {
     _countCtrl.dispose();
     super.dispose();
   }
 
-  int get _count => int.tryParse(_countCtrl.text) ?? 0;
+  /// Null when left empty: the number is filled in later.
+  int? get _count => int.tryParse(_countCtrl.text.trim());
 
   @override
   Widget build(BuildContext context) {
@@ -513,11 +582,14 @@ class _CustomCountTileState extends State<_CustomCountTile> {
               ],
             ],
           ),
-          subtitle: notDone != null
-              ? NotDoneNote(notDone, backdated: row.entry!.backdated)
-              : (done && row.entry!.backdated)
-              ? const _BackdatedNote()
-              : null,
+          subtitle: _withNotes(
+            notDone != null
+                ? NotDoneNote(notDone, backdated: row.entry!.backdated)
+                : (done && row.entry!.backdated)
+                ? const _BackdatedNote()
+                : null,
+            widget.notes,
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

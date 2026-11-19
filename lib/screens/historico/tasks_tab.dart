@@ -89,6 +89,7 @@ class _TasksTabState extends State<_TasksTab>
               _TaskEntry(
                 'Kiwi Abertura',
                 notDone: t.notDone['kiwi_abertura'],
+                autoMark: t.autoMarks['kiwi_abertura'],
                 t.kiwiAbertura,
                 byNames: resolveNames(t.kiwiAberturaByNames, t.kiwiAberturaBy),
                 backdated: t.backdatedTaskKeys.contains('kiwi_abertura'),
@@ -96,6 +97,7 @@ class _TasksTabState extends State<_TasksTab>
               _TaskEntry(
                 'Alterações de Preço (${t.alteracoesPrecoCount})',
                 notDone: t.notDone['alteracoes_preco'],
+                autoMark: t.autoMarks['alteracoes_preco'],
                 t.alteracoesPreco,
                 byNames: resolveNames(
                   t.alteracoesPrecoByNames,
@@ -106,6 +108,7 @@ class _TasksTabState extends State<_TasksTab>
               _TaskEntry(
                 'Verificação de Temperaturas',
                 notDone: t.notDone['verificacao_temperaturas'],
+                autoMark: t.autoMarks['verificacao_temperaturas'],
                 t.verificacaoTemperaturas,
                 byNames: resolveNames(
                   t.verificacaoTemperaturasByNames,
@@ -118,6 +121,7 @@ class _TasksTabState extends State<_TasksTab>
               _TaskEntry(
                 'Preenchimento do Quadro',
                 notDone: t.notDone['preenchimento_quadro'],
+                autoMark: t.autoMarks['preenchimento_quadro'],
                 t.preenchimentoQuadro,
                 byNames: resolveNames(
                   t.preenchimentoQuadroByNames,
@@ -137,6 +141,7 @@ class _TasksTabState extends State<_TasksTab>
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})'
                     '${_leftText(t, ValidadesTurno.manha)}',
                 notDone: t.notDone['verificacao_validades'],
+                autoMark: t.autoMarks['verificacao_validades'],
                 t.verificacaoValidades,
                 byNames: resolveNames(
                   t.verificacaoValidadesByNames,
@@ -150,6 +155,7 @@ class _TasksTabState extends State<_TasksTab>
                 '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})'
                     '${_leftText(t, ValidadesTurno.noite)}',
                 notDone: t.notDone['validades_noite'],
+                autoMark: t.autoMarks['validades_noite'],
                 t.validadesNoite,
                 byNames: t.validadesNoiteByNames,
                 backdated: t.backdatedTaskKeys.contains('validades_noite'),
@@ -157,6 +163,7 @@ class _TasksTabState extends State<_TasksTab>
               _TaskEntry(
                 'Kiwi Fecho',
                 notDone: t.notDone['kiwi_fecho'],
+                autoMark: t.autoMarks['kiwi_fecho'],
                 t.kiwiFecho,
                 byNames: resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy),
                 backdated: t.backdatedTaskKeys.contains('kiwi_fecho'),
@@ -218,6 +225,7 @@ class _TasksTabState extends State<_TasksTab>
                           byNames: e.byNames,
                           backdated: e.backdated,
                           notDone: e.done ? null : e.notDone,
+                          autoMark: e.done ? e.autoMark : null,
                         ),
                       ListTile(
                         dense: true,
@@ -254,6 +262,7 @@ class _TaskEntry {
     this.byNames = const [],
     this.backdated = false,
     this.notDone,
+    this.autoMark,
   });
   final String label;
   final bool done;
@@ -262,6 +271,9 @@ class _TaskEntry {
 
   /// Set when marked Não feita (and not done after all).
   final NotDone? notDone;
+
+  /// Set when the app marked it by itself.
+  final AutoMark? autoMark;
 }
 
 class _TasksRow {
@@ -282,6 +294,7 @@ Widget _taskTile(
   List<String> byNames = const [],
   bool backdated = false,
   NotDone? notDone,
+  AutoMark? autoMark,
 }) {
   final names = done ? byNames : notDone?.byNames ?? const <String>[];
   return ListTile(
@@ -316,6 +329,16 @@ Widget _taskTile(
         ? Text(
             'Preenchido a posteriori',
             style: TextStyle(fontSize: 11, color: context.faint),
+          )
+        : autoMark != null
+        ? Text(
+            autoMark.confirmed
+                ? 'Automática · confirmada por ${joinNames(autoMark.confirmedByNames)}'
+                : 'Automática · por confirmar',
+            style: TextStyle(
+              fontSize: 11,
+              color: autoMark.confirmed ? context.faint : context.warningText,
+            ),
           )
         : null,
     trailing: Row(

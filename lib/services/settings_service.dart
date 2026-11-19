@@ -140,6 +140,16 @@ class SettingsService extends ChangeNotifier {
       ? _prefs.remove('docTurns:$fileName')
       : _prefs.setInt('docTurns:$fileName', turns & 3);
 
+  /// The service day this device first marked tasks by itself
+  /// (`AutoMarkService`): it never marks the days before. Not synced.
+  DateTime? get autoMarkSince => switch (_prefs.getInt('autoMarkSince')) {
+    final ms? => DateTime.fromMillisecondsSinceEpoch(ms),
+    null => null,
+  };
+
+  Future<void> setAutoMarkSince(DateTime day) =>
+      _prefs.setInt('autoMarkSince', day.millisecondsSinceEpoch);
+
   Future<void> setVisualGoal(int goal) async {
     _visualGoal = goal;
     await _prefs.setInt('visualGoal', goal);

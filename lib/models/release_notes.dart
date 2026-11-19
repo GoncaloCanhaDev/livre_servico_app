@@ -7,6 +7,22 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
+    version: '0.95.0',
+    items: [
+      'Tarefas marcadas sozinhas: quando acaba a hora de uma tarefa e ninguém '
+          'a marcou, a app marca-a como feita por quem estava a trabalhar no '
+          'Livre Serviço, segundo o horário. Fica "Automática · por '
+          'confirmar".',
+      'Supervisores e chefes confirmam ou corrigem em "Rever" (quem fez, ou '
+          'não foi feita). Na página inicial aparecem as que faltam '
+          'confirmar.',
+      'As tarefas com número podem ficar marcadas com o número por '
+          'preencher, para preencher depois.',
+      'Os chefes mudam a hora de cada tarefa em Definições → Horas das '
+          'tarefas.',
+    ],
+  ),
+  (
     version: '0.94.0',
     items: [
       'Validades: ao marcar a Manhã ou a Noite (feita ou não feita), diga '

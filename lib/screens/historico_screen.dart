@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/auto2_entry.dart';
 import '../models/auto_list.dart';
+import '../models/auto_mark.dart';
 import '../models/daily_tasks.dart';
 import '../models/historico_search.dart';
 import '../models/inventory.dart';

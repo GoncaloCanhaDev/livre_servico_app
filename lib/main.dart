@@ -7,12 +7,14 @@ import 'screens/start_screen.dart';
 import 'screens/widgets/app_frame.dart';
 import 'screens/widgets/demo_banner.dart';
 import 'services/account_service.dart';
+import 'services/auto_mark_service.dart';
 import 'services/demo_data.dart';
 import 'services/demo_mode.dart';
 import 'services/horario_service.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
 import 'services/settings_service.dart';
+import 'services/task_window_service.dart';
 import 'services/web_loader_stub.dart'
     if (dart.library.js_interop) 'services/web_loader_web.dart';
 import 'theme.dart';
@@ -48,6 +50,7 @@ void main() async {
       await AccountService.instance.init();
     }
     await HorarioService.instance.load();
+    await TaskWindowService.instance.load();
   } catch (e) {
     bootError = '$e';
   }
@@ -71,6 +74,7 @@ void main() async {
     return;
   }
   runApp(const LivreServicoApp());
+  AutoMarkService.instance.start();
 }
 
 /// Every page in [AppFrame], but the website's presentation page, which

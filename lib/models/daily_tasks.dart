@@ -1,3 +1,4 @@
+import 'auto_mark.dart';
 import 'local_row.dart';
 import 'not_done.dart';
 import 'validades.dart';
@@ -43,6 +44,8 @@ class DailyTasks with SyncFields {
       ..kiwiFechoByNames = stringsFromJson(j['kiwiFechoByNames'])
       ..backdatedTaskKeys = stringsFromJson(j['backdatedTaskKeys'])
       ..notDone = notDoneMapFromJson(j['notDone'])
+      ..autoMarks = autoMarkMapFromJson(j['autoMarks'])
+      ..pendingCounts = stringsFromJson(j['pendingCounts'])
       ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
     syncFieldsFromJson(t, j);
     return t;
@@ -108,6 +111,13 @@ class DailyTasks with SyncFields {
   /// Tasks marked "Não feita", by the same keys as [backdatedTaskKeys].
   Map<String, NotDone> notDone = {};
 
+  /// Tasks the app marked done by itself, by the same keys (see `AutoMark`).
+  Map<String, AutoMark> autoMarks = {};
+
+  /// Done tasks whose number is still to be filled in (task keys; a
+  /// Validades window's artigos left as `leftKey`).
+  List<String> pendingCounts = [];
+
   DateTime? lastUpdatedAt;
 
   @override
@@ -143,6 +153,8 @@ class DailyTasks with SyncFields {
     'kiwiFechoByNames': kiwiFechoByNames,
     'backdatedTaskKeys': backdatedTaskKeys,
     'notDone': notDoneMapToJson(notDone),
+    'autoMarks': autoMarkMapToJson(autoMarks),
+    'pendingCounts': pendingCounts,
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
 }

@@ -38,12 +38,15 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
+  `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/services/auto_mark_service.dart`
+  (`test/auto_mark_service_test.dart`),
   `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/horario.dart` and
   `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/horario_import_screen_test.dart`
+  `test/truck_form_screen_test.dart` saves a camião, `test/auto_mark_tasks_test.dart` reviews
+  an automatic mark, fills a number later and edits the task hours, `test/horario_import_screen_test.dart`
   imports a horário and `test/horarios_screen_test.dart` shows it, `test/inventory_screen_test.dart` plans
   and marks done an inventory, `test/automaticas2_tab_test.dart` sends
   Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível, `test/daily_lists2_test.dart` the Diárias from them, `test/claim_person_screen_test.dart`
@@ -141,7 +144,8 @@ multi-tenant product.
 - Daily tasks belong to a service day (05:00 to 05:00, `currentServiceDay`). The Verificação de
   Validades is split into two windows inside that day, `ValidadesTurno` in
   `lib/models/validades.dart`: Manhã (05–14, the original `verificacaoValidades*` fields) and
-  Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open. Marking either (feita or
+  Noite (19–05, `validadesNoite*`); `validadesStateAt` says whether each is open (from its
+  `TaskWindow` when passed, below). Marking either (feita or
   não feita) asks how many artigos were left (`validades*Left`); `carryValidades` adds them to
   the next window's count (`nextValidadesWindow`: Manhã → Noite, Noite → next day's Manhã),
   recorded as `validades*Carried`, unless that window was already marked.
@@ -150,6 +154,27 @@ multi-tenant product.
   when) kept in `DailyTasks.notDone` / `WeeklyTasks.notDone` by task key (the keys of
   `backdatedTaskKeys`) and `CustomTaskEntry.notDone`. Only one is ever set; a Não feita task
   isn't pending (`pendingDailyTasks`).
+- Tarefas marcadas sozinhas (since 0.95.0): each task has a window (`TaskWindow`,
+  `lib/models/task_window.dart`, a synced collection keyed by task key, a custom task by its
+  `syncUuid`; with no row `defaultTaskWindow`; minutes after midnight inside the 05:00–05:00
+  service day, `windowSpan`), read through `TaskWindowService.windowFor` (in memory, loaded in
+  `main()`, reloaded on saves, remote changes, backup import and wipe) and edited in Definições →
+  Horas das tarefas (`StoreAccess.canEditTaskWindows`, level 3+, app-side). `AutoMarkService`
+  (`start()` from `main()`: at once, on resume, every minute, after each sync; never before a
+  sync of this session while a store is connected, so stale rows can't overwrite another
+  phone's marks) marks every task whose window closed with no feita and no Não feita, up to 7
+  days back and never before the device's `autoMarkSince` pref: done by the Livre Serviço
+  people whose shift overlaps the window (`autoMarkPeople` in `lib/models/auto_mark.dart`, on
+  the horário index), nobody → stays pending. Semanais on their weekday (`taskDueWeekday`),
+  custom weekly tasks when their week ends, one-off never. It keeps an `AutoMark` (when, who
+  confirmed) in `DailyTasks.autoMarks` / `WeeklyTasks.autoMarks` by task key and
+  `CustomTaskEntry.autoMark`. Level 2+ (`canConfirmTasks`) review it (`auto_mark_review.dart`:
+  Confirmar, Alterar quem fez, which makes it manual, or Não foi feita), in Tarefas or in
+  `AutoMarksScreen` (Home's `AutoMarksCard`, the week's unconfirmed `unconfirmedMarks`). A done
+  task's number can wait: its key in `pendingCounts` (a Validades window's artigos left as
+  `leftKey`; a custom count task's null `count`) shows "Número por preencher". A new fixed task
+  goes in `fixedDailyTaskKeys` / `fixedWeeklyTaskKeys`, `fixedTaskLabels`, `defaultTaskWindow`
+  and the `dailyDone`/`setDailyDone`/`dailyNames` switches.
 - The Abertura and Automáticas lists are sent per `ListSection` (Congelados, OPLS, Não
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it once all three are sent. Each
@@ -352,7 +377,8 @@ multi-tenant product.
 `LocalDb.init()`, `PhotoStore.instance.migrateLegacy()` (its own try/catch: a failure there
 doesn't stop the app), `AccountService.instance.init()`
 (which restores the saved session in the background, so it never waits for the network),
-then `HorarioService.instance.load()`.
+then `HorarioService.instance.load()` and `TaskWindowService.instance.load()`;
+`AutoMarkService.instance.start()` runs after `runApp`.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 

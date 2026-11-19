@@ -2,6 +2,7 @@ import 'daily_tasks.dart';
 import 'horario.dart';
 import 'person.dart';
 import 'planning.dart';
+import 'task_window.dart';
 import 'teams.dart';
 import 'validades.dart';
 
@@ -104,13 +105,16 @@ List<OnShift> onShiftAt(
 /// isn't pending. A Validades part counts from when its window opens (it
 /// can still be marked after the window, until the day ends).
 /// The Lista Automática only shows a count, so it is never pending.
+/// [windowFor] gives the windows a Chefe set (`TaskWindowService`).
 List<String> pendingDailyTasks(
   DailyTasks? t, {
   required bool visivelDone,
   required DateTime now,
+  TaskWindow Function(String key)? windowFor,
 }) {
   bool open(ValidadesTurno turno) =>
-      validadesStateAt(turno, now) != ValidadesState.notYet;
+      validadesStateAt(turno, now, window: windowFor?.call(turno.taskKey)) !=
+      ValidadesState.notYet;
   // Done, or marked Não feita (`DailyTasks.notDone`).
   bool settled(bool? done, String key) =>
       (done ?? false) || (t?.notDone.containsKey(key) ?? false);

@@ -8,6 +8,7 @@ import 'admin_screen.dart';
 import 'destinations.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'task_windows_screen.dart';
 import 'tutorial_screen.dart';
 import 'widgets/wide_layout.dart';
 
@@ -112,6 +113,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
+              if (AccountService.instance.access.canEditTaskWindows)
+                ListTile(
+                  title: const Text(
+                    'Horas das tarefas',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Quando se faz cada tarefa e se é marcada sozinha.',
+                  ),
+                  trailing: const Icon(Icons.schedule),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TaskWindowsScreen(),
+                    ),
+                  ),
+                ),
               if (AccountService.instance.store != null &&
                   AccountService.instance.access.admin)
                 ListTile(

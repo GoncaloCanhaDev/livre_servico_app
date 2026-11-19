@@ -4,16 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../widgets/auto_mark_note.dart';
+import '../widgets/auto_mark_review.dart';
 import '../widgets/person_picker.dart';
 import '../widgets/task_markers.dart';
 
+import '../../models/auto_mark.dart';
 import '../../models/daily_tasks.dart';
 import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/validades.dart';
 import '../../models/visivel2_entry.dart';
+import '../../services/account_service.dart';
 import '../../services/auto2_service.dart';
 import '../../services/daily_tasks_service.dart';
+import '../../services/task_window_service.dart';
 import '../../services/visivel2_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
@@ -253,6 +258,64 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     _ => false,
   };
 
+  /// The notes under a task the app marked by itself, and under one whose
+  /// number (or, for a Validades window, the artigos left) is still to be
+  /// filled in.
+  List<Widget> _autoNotes(
+    DailyTasks tasks,
+    String key,
+    String label, {
+    void Function(int n)? setCount,
+    ValidadesTurno? turno,
+  }) {
+    final mark = tasks.autoMarks[key];
+    final canReview = AccountService.instance.access.canConfirmTasks;
+    return [
+      if (mark != null)
+        AutoMarkNote(
+          mark,
+          onReview: canReview
+              ? () => reviewDailyMark(context, tasks, key, label)
+              : null,
+        ),
+      if (setCount != null && tasks.pendingCounts.contains(key))
+        PendingNumberNote(
+          text: 'Número por preencher',
+          onFill: () async {
+            final n = await askNumber(context, label);
+            if (n == null) return;
+            setCount(n);
+            tasks.pendingCounts = [...tasks.pendingCounts]..remove(key);
+            await _saveTasks();
+          },
+        ),
+      if (turno != null && tasks.pendingCounts.contains(leftKey(key)))
+        PendingNumberNote(
+          text: 'Falta dizer quantos ficaram por fazer',
+          onFill: () async {
+            final n = await askValidadesLeft(context, turno);
+            if (n == null) return;
+            tasks.setValidadesLeft(turno, n);
+            tasks.pendingCounts = [...tasks.pendingCounts]
+              ..remove(leftKey(key));
+            await _saveTasks();
+            await DailyTasksService.instance.carryValidades(tasks, turno, n);
+          },
+        ),
+    ];
+  }
+
+  /// Adds [key] to `pendingCounts` when its number field was left empty.
+  static void _pendingIfEmpty(
+    DailyTasks t,
+    String key,
+    TextEditingController ctrl,
+  ) {
+    if (ctrl.text.trim().isEmpty && !t.pendingCounts.contains(key)) {
+      t.pendingCounts = [...t.pendingCounts, key];
+    }
+  }
+
   /// One part of the Verificação de Validades: it can be marked from when
   /// its window opens (see [validadesStateAt]) until the service day ends,
   /// so a check done but not ticked in time can still be ticked later.
@@ -268,7 +331,8 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     final notDone = tasks.notDone[taskKey];
     final left = tasks.validadesLeft(turno);
     final carried = tasks.validadesCarried(turno);
-    final state = validadesStateAt(turno, DateTime.now());
+    final window = TaskWindowService.instance.windowFor(turno.taskKey);
+    final state = validadesStateAt(turno, DateTime.now(), window: window);
     String leftSuffix(int n) =>
         n > 0 ? ' · ficaram $n por fazer (${carriedToText(turno)})' : '';
     Future<void> carry(DailyTasks target) async {
@@ -290,16 +354,26 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       }
     }
 
+    final ctrl = manha ? _validadesCtrl : _validadesNoiteCtrl;
     return _CountTask(
       label: turno.label,
+      notes: _autoNotes(
+        tasks,
+        taskKey,
+        turno.label,
+        setCount: (n) => manha
+            ? tasks.verificacaoValidadesCount = n
+            : tasks.validadesNoiteCount = n,
+        turno: turno,
+      ),
       checked: done,
       notDone: notDone,
       locked: state == ValidadesState.notYet,
       note: switch (state) {
         _ when done => null,
-        ValidadesState.notYet => turno.notYetNote,
-        ValidadesState.open => turno.openNote,
-        ValidadesState.closed => turno.lateNote,
+        ValidadesState.notYet => window.notYetNote,
+        ValidadesState.open => window.openNote,
+        ValidadesState.closed => window.lateNote,
       },
       noteWarn: !done && state == ValidadesState.closed,
       extraNotes: [
@@ -352,6 +426,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                     t.validadesNoiteCount = count;
                   }
                   t.setValidadesLeft(turno, n);
+                  _pendingIfEmpty(t, taskKey, ctrl);
                 },
                 after: carry,
                 message: (who) =>
@@ -394,6 +469,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     final notDone = tasks.notDone[taskKey];
     return _ManualTask(
       label: label,
+      notes: _autoNotes(tasks, taskKey, label),
       checked: checked,
       notDone: notDone,
       byNames: byNames,
@@ -449,6 +525,12 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           ),
           _CountTask(
             label: 'Alterações de Preço',
+            notes: _autoNotes(
+              tasks,
+              'alteracoes_preco',
+              'Alterações de Preço',
+              setCount: (n) => tasks.alteracoesPrecoCount = n,
+            ),
             checked: tasks.alteracoesPreco,
             notDone: precoNotDone,
             byNames: resolveNames(
@@ -475,6 +557,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                   t.alteracoesPreco = true;
                   t.alteracoesPrecoByNames = who;
                   t.alteracoesPrecoCount = count;
+                  _pendingIfEmpty(t, 'alteracoes_preco', _alteracoesCtrl);
                 },
                 message: (who) =>
                     '✅ Tarefa concluída: Alterações de Preço ($count) (por ${joinNames(who)})',
@@ -576,6 +659,15 @@ class _BackdatedNote extends StatelessWidget {
   }
 }
 
+/// [subtitle] with [notes] under it.
+Widget? _withNotes(Widget? subtitle, List<Widget> notes) => notes.isEmpty
+    ? subtitle
+    : Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [?subtitle, ...notes],
+      );
+
 TaskOutcome _outcome(bool checked, NotDone? notDone) => checked
     ? TaskOutcome.done
     : notDone != null
@@ -592,6 +684,7 @@ class _ManualTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
+    this.notes = const [],
   });
 
   final String label;
@@ -602,6 +695,9 @@ class _ManualTask extends StatelessWidget {
   final VoidCallback? onLongPress;
   final List<String> byNames;
   final bool backdated;
+
+  /// More lines under the subtitle (an automatic mark).
+  final List<Widget> notes;
 
   @override
   Widget build(BuildContext context) {
@@ -624,11 +720,14 @@ class _ManualTask extends StatelessWidget {
               decoration: checked ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: notDone != null && !checked
-              ? NotDoneNote(notDone, backdated: backdated)
-              : (checked && backdated)
-              ? const _BackdatedNote()
-              : null,
+          subtitle: _withNotes(
+            notDone != null && !checked
+                ? NotDoneNote(notDone, backdated: backdated)
+                : (checked && backdated)
+                ? const _BackdatedNote()
+                : null,
+            notes,
+          ),
           trailing: names.isNotEmpty
               ? PersonInitialsRow(names: names, size: 30)
               : null,
@@ -751,7 +850,11 @@ class _CountTask extends StatelessWidget {
     this.note,
     this.noteWarn = false,
     this.extraNotes = const [],
+    this.notes = const [],
   });
+
+  /// More lines under the subtitle (an automatic mark, a number to fill).
+  final List<Widget> notes;
 
   /// More lines under the subtitle: icon, text, and whether in orange.
   final List<(IconData, String, bool)> extraNotes;
@@ -777,6 +880,7 @@ class _CountTask extends StatelessWidget {
   final bool backdated;
 
   Widget? _withExtraNotes(BuildContext context, Widget? subtitle) {
+    subtitle = _withNotes(subtitle, notes);
     if (extraNotes.isEmpty) return subtitle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

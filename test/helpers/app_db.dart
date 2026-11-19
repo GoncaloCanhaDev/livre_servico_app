@@ -5,6 +5,7 @@ import 'package:livre_servico_app/services/account_service.dart';
 import 'package:livre_servico_app/services/horario_service.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/settings_service.dart';
+import 'package:livre_servico_app/services/task_window_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Starts the app's services the way `main()` does, on a fresh in-memory
@@ -21,6 +22,7 @@ Future<void> openAppDb({Map<String, Object> prefs = const {}}) async {
   await LocalDb.init(executor: NativeDatabase.memory());
   await AccountService.instance.init();
   await HorarioService.instance.load();
+  await TaskWindowService.instance.load();
 }
 
 Future<void> closeAppDb() => LocalDb.instance.close();

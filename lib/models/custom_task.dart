@@ -1,3 +1,4 @@
+import 'auto_mark.dart';
 import 'local_row.dart';
 import 'not_done.dart';
 
@@ -55,7 +56,8 @@ class CustomTaskEntry with SyncFields {
       ..count = intOrNull(j['count'])
       ..doneAt = dateFromJson(j['doneAt'])
       ..backdated = boolFromJson(j['backdated'])
-      ..notDone = notDoneFromJson(j['notDone']);
+      ..notDone = notDoneFromJson(j['notDone'])
+      ..autoMark = autoMarkFromJson(j['autoMark']);
     syncFieldsFromJson(e, j);
     return e;
   }
@@ -86,6 +88,9 @@ class CustomTaskEntry with SyncFields {
   /// then false).
   NotDone? notDone;
 
+  /// Set when the app marked it done by itself (see `AutoMark`).
+  AutoMark? autoMark;
+
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
@@ -98,6 +103,7 @@ class CustomTaskEntry with SyncFields {
     'doneAt': dateToJson(doneAt),
     'backdated': backdated,
     'notDone': notDone?.toJson(),
+    'autoMark': autoMark?.toJson(),
   };
 }
 

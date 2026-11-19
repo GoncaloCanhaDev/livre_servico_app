@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/auto_mark.dart';
 import '../models/custom_task.dart';
 import '../models/not_done.dart';
 import 'local_db.dart';
@@ -73,6 +74,7 @@ class CustomTaskService extends ChangeNotifier {
     entry.count = count;
     entry.backdated = backdated;
     entry.notDone = null;
+    entry.autoMark = null;
     SyncMeta.stamp(entry);
     await _db.customTaskEntries.put(entry);
     notifyListeners();
@@ -92,9 +94,40 @@ class CustomTaskService extends ChangeNotifier {
       ..taskUuid = taskUuid
       ..periodKey = periodKey;
     entry.done = false;
+    entry.doneByNames = [];
+    entry.autoMark = null;
     entry.notDone = notDone;
     entry.count = count;
     entry.backdated = backdated;
+    SyncMeta.stamp(entry);
+    await _db.customTaskEntries.put(entry);
+    notifyListeners();
+  }
+
+  /// The automatic mark (`AutoMarkService`): done by [who], the count left
+  /// to fill in, with an [AutoMark] at [at].
+  Future<void> autoComplete({
+    required String taskUuid,
+    required DateTime periodKey,
+    required List<String> who,
+    required DateTime at,
+  }) async {
+    final entry =
+        await entryFor(taskUuid, periodKey) ??
+        (CustomTaskEntry()
+          ..taskUuid = taskUuid
+          ..periodKey = periodKey);
+    entry
+      ..done = true
+      ..doneByNames = who
+      ..doneAt = at
+      ..autoMark = AutoMark(at: at);
+    await saveEntry(entry);
+  }
+
+  /// Saves [entry] as changed on a screen (a count filled in later, an
+  /// automatic mark confirmed).
+  Future<void> saveEntry(CustomTaskEntry entry) async {
     SyncMeta.stamp(entry);
     await _db.customTaskEntries.put(entry);
     notifyListeners();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_version.dart';
 import '../services/account_service.dart';
 import 'avisos_screen.dart';
+import 'auto_marks_screen.dart';
 import 'destinations.dart';
 import 'settings_screen.dart';
 import 'tabs/abertura_tab.dart';
@@ -126,6 +127,7 @@ const _cards = [
   ProfileRequestCard(),
   AdminCard(),
   JoinRequestsCard(),
+  AutoMarksCard(),
   TutorialCard(),
   MyHorarioCard(),
   TodayCard(),

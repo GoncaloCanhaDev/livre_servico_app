@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../widgets/auto_mark_note.dart';
+import '../widgets/auto_mark_review.dart';
 import '../widgets/person_picker.dart';
 import '../widgets/task_markers.dart';
 
 import '../../models/not_done.dart';
+import '../../models/task_window.dart';
 import '../../models/opening_list.dart';
 import '../../models/weekly_tasks.dart';
+import '../../services/account_service.dart';
 import '../../services/weekly_tasks_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
@@ -196,6 +200,42 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     );
   }
 
+  /// The notes under a task the app marked by itself, and under one whose
+  /// number is still to be filled in ([setCount]).
+  List<Widget> _autoNotes(
+    WeeklyTasks tasks,
+    String key,
+    String label, {
+    void Function(int n)? setCount,
+  }) {
+    final mark = tasks.autoMarks[key];
+    final canReview = AccountService.instance.access.canConfirmTasks;
+    // The day it is due in this week (Monday + weekday − 1).
+    final due = tasks.serviceWeek.add(
+      Duration(days: (taskDueWeekday[key] ?? DateTime.monday) - 1),
+    );
+    return [
+      if (mark != null)
+        AutoMarkNote(
+          mark,
+          onReview: canReview
+              ? () => reviewWeeklyMark(context, tasks, key, label, due)
+              : null,
+        ),
+      if (setCount != null && tasks.pendingCounts.contains(key))
+        PendingNumberNote(
+          text: 'Número por preencher',
+          onFill: () async {
+            final n = await askNumber(context, label);
+            if (n == null) return;
+            setCount(n);
+            tasks.pendingCounts = [...tasks.pendingCounts]..remove(key);
+            await _saveTasks();
+          },
+        ),
+    ];
+  }
+
   /// One of the Verificar tasks, due on Tuesday.
   Widget _verificar(
     WeeklyTasks tasks, {
@@ -213,6 +253,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     final notDone = tasks.notDone[taskKey];
     return _WeeklyCountTask(
       label: label,
+      notes: _autoNotes(tasks, taskKey, label, setCount: setCount),
       checked: checked,
       notDone: notDone,
       byNames: byNames,
@@ -230,7 +271,13 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
         _completeTask(
           taskName: label,
           taskKey: taskKey,
-          apply: (t, who) => apply(t, who, n),
+          apply: (t, who) {
+            apply(t, who, n);
+            if (controller.text.trim().isEmpty &&
+                !t.pendingCounts.contains(taskKey)) {
+              t.pendingCounts = [...t.pendingCounts, taskKey];
+            }
+          },
           message: (who) =>
               '✅ Tarefa concluída: $label ($n) (por ${joinNames(who)})',
         );
@@ -312,6 +359,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           ),
           _WeeklyManualTask(
             label: limpeza,
+            notes: _autoNotes(tasks, 'limpeza_maquina_voltas', limpeza),
             checked: tasks.limpezaMaquinaVoltas,
             notDone: limpezaNotDone,
             byNames: resolveNames(
@@ -375,6 +423,15 @@ class _BackdatedNote extends StatelessWidget {
   }
 }
 
+/// [subtitle] with [notes] under it.
+Widget? _withNotes(Widget? subtitle, List<Widget> notes) => notes.isEmpty
+    ? subtitle
+    : Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [?subtitle, ...notes],
+      );
+
 TaskOutcome _outcome(bool checked, NotDone? notDone) => checked
     ? TaskOutcome.done
     : notDone != null
@@ -393,7 +450,11 @@ class _WeeklyManualTask extends StatelessWidget {
     this.backdated = false,
     this.enabled = true,
     this.note,
+    this.notes = const [],
   });
+
+  /// More lines under the subtitle (an automatic mark).
+  final List<Widget> notes;
 
   final String label;
   final bool checked;
@@ -430,11 +491,14 @@ class _WeeklyManualTask extends StatelessWidget {
               decoration: checked ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: notDone != null && !checked
-              ? NotDoneNote(notDone, backdated: backdated)
-              : (checked && backdated)
-              ? const _BackdatedNote()
-              : (note == null || checked ? null : Text(note!)),
+          subtitle: _withNotes(
+            notDone != null && !checked
+                ? NotDoneNote(notDone, backdated: backdated)
+                : (checked && backdated)
+                ? const _BackdatedNote()
+                : (note == null || checked ? null : Text(note!)),
+            notes,
+          ),
           trailing: names.isNotEmpty
               ? PersonInitialsRow(names: names, size: 30)
               : null,
@@ -458,7 +522,11 @@ class _WeeklyCountTask extends StatelessWidget {
     this.backdated = false,
     this.goalNote,
     this.late = false,
+    this.notes = const [],
   });
+
+  /// More lines under the subtitle (an automatic mark, a number to fill).
+  final List<Widget> notes;
 
   final String label;
   final bool checked;
@@ -511,37 +579,40 @@ class _WeeklyCountTask extends StatelessWidget {
               ],
             ],
           ),
-          subtitle: notDone != null && !checked
-              ? NotDoneNote(notDone, backdated: backdated)
-              : (checked && backdated)
-              ? const _BackdatedNote()
-              : late
-              ? Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 14,
-                      color: Colors.red.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Atrasada — devia ter sido concluída à 3ª feira',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red.shade700,
-                          fontWeight: FontWeight.w600,
+          subtitle: _withNotes(
+            notDone != null && !checked
+                ? NotDoneNote(notDone, backdated: backdated)
+                : (checked && backdated)
+                ? const _BackdatedNote()
+                : late
+                ? Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 14,
+                        color: Colors.red.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Atrasada — devia ter sido concluída à 3ª feira',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : (goalNote == null
-                    ? null
-                    : Text(
-                        goalNote!,
-                        style: TextStyle(fontSize: 12, color: context.muted),
-                      )),
+                    ],
+                  )
+                : (goalNote == null
+                      ? null
+                      : Text(
+                          goalNote!,
+                          style: TextStyle(fontSize: 12, color: context.muted),
+                        )),
+            notes,
+          ),
           trailing: SizedBox(
             width: 72,
             child: TextField(
