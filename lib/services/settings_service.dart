@@ -131,6 +131,15 @@ class SettingsService extends ChangeNotifier {
       ? _prefs.remove('draft:$key')
       : _prefs.setString('draft:$key', value);
 
+  /// Quarter turns clockwise (0–3) a document's pages were rotated on this
+  /// device, by its file name (a new version starts upright). Not synced.
+  int documentTurns(String fileName) =>
+      (_prefs.getInt('docTurns:$fileName') ?? 0) & 3;
+
+  Future<void> setDocumentTurns(String fileName, int turns) => turns & 3 == 0
+      ? _prefs.remove('docTurns:$fileName')
+      : _prefs.setInt('docTurns:$fileName', turns & 3);
+
   Future<void> setVisualGoal(int goal) async {
     _visualGoal = goal;
     await _prefs.setInt('visualGoal', goal);

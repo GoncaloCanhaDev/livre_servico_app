@@ -209,7 +209,8 @@ multi-tenant product.
   not synced by `SyncEngine`. They live online in the `documents` table and bucket
   (`20261101090000_documents.sql`: read by the admin and approved members of any store, written
   only by the admin, `DocumentService.canManage`); `AccountService` sets
-  `DocumentService.remote` (`SupabaseDocumentRemote`) with the store sync. The list is cached in
+  `DocumentService.remote` (`SupabaseDocumentRemote`) with the store sync. The viewer's "Rodar"
+  turns every page a quarter, kept per file on the device (`SettingsService.documentTurns`). The list is cached in
   the `documents_cache` pref, each opened PDF in `LocalDb`'s `local_files` table (dropped when
   no longer listed). The demo and tests use `MemoryDocumentRemote` with PDFs from `simplePdf`.
 - Erros e sugestões (`lib/screens/feedback_screen.dart`, a Home button, `feedbackDestination`,

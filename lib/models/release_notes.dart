@@ -7,6 +7,13 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
+    version: '0.93.0',
+    items: [
+      'Documentos: um PDF de lado roda-se com o botão no topo. O telemóvel '
+          'lembra-se da posição na próxima vez.',
+    ],
+  ),
+  (
     version: '0.92.0',
     items: [
       'Horários: as folgas e o horário marcados no perfil da pessoa contam '

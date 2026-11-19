@@ -392,7 +392,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'documentos',
     title: 'Documentos',
-    version: 1,
+    version: 2,
     steps: [
       TutorialStep(
         icon: Icons.description_outlined,
@@ -408,8 +408,10 @@ const tutorialSections = [
               'sem internet.',
         ],
         tip:
-            'Os documentos são mantidos pelo administrador da aplicação: '
-            'aparecem depois de entrar numa loja.',
+            'Se um documento aparecer de lado, o botão de rodar no topo vira '
+            'as páginas; o telemóvel lembra-se da posição. Os documentos são '
+            'mantidos pelo administrador da aplicação: aparecem depois de '
+            'entrar numa loja.',
       ),
     ],
   ),
