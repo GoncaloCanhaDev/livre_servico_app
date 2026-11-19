@@ -158,6 +158,19 @@ Counted tasks (Alterações de Preço, Validades Manhã/Noite with their artigos
   filling in a pending number.
 - `local_db_test` round-trips the new fields.
 
+## Follow-up (0.95.1): the three limits
+
+- Only phones that see Livre Serviço's whole schedule create automatic marks
+  (`StoreAccess.canAutoMark`: admin or signed out, level 4+, level 3 of Livre Serviço), since
+  shifts, folgas and ausências are personal and redacted for others.
+- Per-task "pings": each mark and correction carries its time (`TaskStamp`, a custom entry's
+  `doneAt` / `editedAt`), in server time (`ServerClock`: the phone's clock plus the offset
+  measured with `server_now` at each sync, kept for offline). When two copies of a day meet,
+  sync merges task by task (marked beats unmarked; the latest correction; by hand beats the
+  app; the earliest mark), the same on every phone, and sends the result back. Offline marks
+  keep their time and are compared when the phone is back online.
+- The first run marks no window that closed before it (`autoMarkSince` is a moment).
+
 ## Left to the builder
 
 - Exact layout of the windows screen and the tag (follow `context` colour helpers, both widths).

@@ -109,14 +109,19 @@ void main() {
     expect(rows.map((r) => r.serviceDay.day).toSet(), {16, 17, 18});
   });
 
-  test('the first run starts from today', () async {
+  test('the first run marks no window closed before it', () async {
     await closeAppDb();
     await openAppDb();
     await _person('Ana Dia', 6 * 60, 15 * 60);
     await _run(DateTime(2026, 11, 18, 10));
-    final rows = await DailyTasksService.instance.history();
-    expect(rows.map((r) => r.serviceDay), [_day]);
+    expect(await DailyTasksService.instance.history(), isEmpty);
+    // Temperaturas closes at 12:00, after the first run.
+    await _run(DateTime(2026, 11, 18, 12, 30));
+    final t = (await DailyTasksService.instance.find(_day))!;
+    expect(t.verificacaoTemperaturas, isTrue);
+    expect(t.kiwiAbertura, isFalse);
   });
+
 
   test('a Semanal is marked after its weekday', () async {
     await _run(DateTime(2026, 11, 18, 10));

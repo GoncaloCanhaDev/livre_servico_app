@@ -6,6 +6,7 @@ import '../../models/custom_task.dart';
 import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/weekly_tasks.dart';
+import '../../services/server_clock.dart';
 import '../../services/account_service.dart';
 import '../../services/custom_task_service.dart';
 import '../../services/whatsapp_service.dart';
@@ -172,7 +173,7 @@ class _CustomTasksTabState extends State<CustomTasksTab>
     final notDone = NotDone(
       byNames: result.people.map((p) => p.fullName).toList(),
       reason: reason,
-      at: DateTime.now(),
+      at: ServerClock.now(),
     );
     final (targetPeriodKey, backdated) = _targetPeriod(
       row.task.frequency,

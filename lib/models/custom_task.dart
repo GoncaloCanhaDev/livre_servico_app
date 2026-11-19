@@ -57,7 +57,8 @@ class CustomTaskEntry with SyncFields {
       ..doneAt = dateFromJson(j['doneAt'])
       ..backdated = boolFromJson(j['backdated'])
       ..notDone = notDoneFromJson(j['notDone'])
-      ..autoMark = autoMarkFromJson(j['autoMark']);
+      ..autoMark = autoMarkFromJson(j['autoMark'])
+      ..editedAt = dateFromJson(j['editedAt']);
     syncFieldsFromJson(e, j);
     return e;
   }
@@ -91,6 +92,10 @@ class CustomTaskEntry with SyncFields {
   /// Set when the app marked it done by itself (see `AutoMark`).
   AutoMark? autoMark;
 
+  /// When it was last corrected (confirmed, who did it changed, its number
+  /// filled in), for `mergeEntries`.
+  DateTime? editedAt;
+
   @override
   Map<String, dynamic> toJson() => {
     ...syncFieldsToJson(this),
@@ -104,6 +109,7 @@ class CustomTaskEntry with SyncFields {
     'backdated': backdated,
     'notDone': notDone?.toJson(),
     'autoMark': autoMark?.toJson(),
+    'editedAt': dateToJson(editedAt),
   };
 }
 

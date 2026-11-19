@@ -8,11 +8,13 @@ import '../models/daily_tasks.dart';
 import '../models/opening_list.dart';
 import '../models/task_window.dart';
 import '../models/weekly_tasks.dart';
+import 'account_service.dart';
 import 'custom_task_service.dart';
 import 'daily_tasks_service.dart';
 import 'horario_service.dart';
 import 'local_db.dart';
 import 'person_service.dart';
+import 'server_clock.dart';
 import 'settings_service.dart';
 import 'sync_service.dart';
 import 'task_window_service.dart';
@@ -42,8 +44,12 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
     _timer = Timer.periodic(const Duration(minutes: 1), (_) => runNow());
     WidgetsBinding.instance.addObserver(this);
     SyncService.instance.addListener(_onSync);
+    // The access arrives after start: a Chefe's phone may then run.
+    AccountService.instance.addListener(_onAccess);
     runNow();
   }
+
+  void _onAccess() => runNow();
 
   void _onSync() {
     final at = SyncService.instance.lastSyncedAt;
@@ -58,10 +64,13 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) runNow();
   }
 
-  /// Whether a run may write: signed out, or a sync of this session done.
+  /// Whether a run may write: on a phone that sees everyone's schedule
+  /// (`StoreAccess.canAutoMark`; signed out, every phone), signed out or
+  /// after a sync of this session.
   bool get canRun =>
-      !SyncService.instance.isConnected ||
-      SyncService.instance.lastSyncedAt != null;
+      AccountService.instance.access.canAutoMark &&
+      (!SyncService.instance.isConnected ||
+          SyncService.instance.lastSyncedAt != null);
 
   Future<int> runNow() async {
     if (!canRun) return 0;
@@ -69,18 +78,24 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Marks every task whose window closed before [now], from [catchUpDays]
-  /// back (never before `SettingsService.autoMarkSince`, set to today's
-  /// service day the first time). Returns how many it marked.
+  /// back, but none that closed before `SettingsService.autoMarkSince` (the
+  /// first run here). The marks carry the server's time ([ServerClock]).
+  /// Returns how many it marked.
   Future<int> run(DateTime now) async {
     final settings = SettingsService.instance;
     final today = currentServiceDay(now);
     var since = settings.autoMarkSince;
     if (since == null) {
-      since = today;
-      await settings.setAutoMarkSince(today);
+      since = now;
+      await settings.setAutoMarkSince(now);
     }
     var first = DateTime(today.year, today.month, today.day - catchUpDays, 5);
-    if (first.isBefore(since)) first = since;
+    final sinceDay = currentServiceDay(since);
+    if (first.isBefore(sinceDay)) first = sinceDay;
+    final stampAt = ServerClock.now();
+    // Closed, and after the first run.
+    bool due(({DateTime start, DateTime end}) span) =>
+        !span.end.isAfter(now) && !span.end.isBefore(since!);
 
     final people = await PersonService.instance.all();
     final horario = HorarioService.instance.index;
@@ -103,11 +118,11 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
       for (final key in fixedDailyTaskKeys) {
         final w = windows.windowFor(key);
         final span = windowSpan(w, day);
-        if (!w.auto || span.end.isAfter(now)) continue;
+        if (!w.auto || !due(span)) continue;
         if (dailySettled(daily, key)) continue;
         final names = who(span);
         if (names.isEmpty) continue;
-        autoMarkDaily(daily, key, names, now);
+        autoMarkDaily(daily, key, names, stampAt);
         dailyChanged = true;
         marked++;
       }
@@ -119,13 +134,13 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
         if (taskDueWeekday[key] != day.weekday) continue;
         final w = windows.windowFor(key);
         final span = windowSpan(w, day);
-        if (!w.auto || span.end.isAfter(now)) continue;
+        if (!w.auto || !due(span)) continue;
         final weekly =
             await _weekly(week) ?? (WeeklyTasks()..serviceWeek = week);
         if (weeklySettled(weekly, key)) continue;
         final names = who(span);
         if (names.isEmpty) continue;
-        autoMarkWeekly(weekly, key, names, now);
+        autoMarkWeekly(weekly, key, names, stampAt);
         await WeeklyTasksService.instance.save(weekly);
         marked++;
       }
@@ -149,7 +164,7 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
             span = (start: week, end: week.add(const Duration(days: 7)));
             periodKey = week;
         }
-        if (span.end.isAfter(now)) continue;
+        if (!due(span)) continue;
         // Not for periods before the task existed.
         if (task.createdAt.isAfter(span.end)) continue;
         final entry = await CustomTaskService.instance.entryFor(
@@ -163,7 +178,7 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
           taskUuid: task.syncUuid,
           periodKey: periodKey,
           who: names,
-          at: now,
+          at: stampAt,
         );
         marked++;
       }
@@ -254,6 +269,7 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
     _timer = null;
     WidgetsBinding.instance.removeObserver(this);
     SyncService.instance.removeListener(_onSync);
+    AccountService.instance.removeListener(_onAccess);
   }
 }
 

@@ -7,6 +7,23 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.95.1] — 2026-11-19
+
+### Changed
+- **Tasks merge task by task, by one clock.** Each mark and correction keeps its time
+  (`TaskStamp` on `DailyTasks` / `WeeklyTasks`, `CustomTaskEntry.editedAt`), in the server's
+  time (`ServerClock`, the phone's clock plus the offset measured each sync with the new
+  `server_now` RPC, migration `20261119120000_server_now.sql`, kept for offline use;
+  `SyncMeta.stamp` uses it too). When sync meets two copies of a day, week or custom entry, it
+  merges them task by task (`mergeTaskRows`, `mergeEntries`: marked beats unmarked, the latest
+  correction wins, by hand beats the app, then the earliest mark) instead of keeping one phone's
+  whole copy, and sends the result back in the same sync. A tick made offline is no longer
+  lost to an automatic mark from another phone.
+- Only phones that see Livre Serviço's whole schedule mark tasks by themselves
+  (`StoreAccess.canAutoMark`: the admin or signed out, level 4 and up, a level 3 of Livre
+  Serviço), so the right people are credited.
+- The first run marks no window that closed before it (`autoMarkSince` is now a moment).
+
 ## [0.95.0] — 2026-11-19
 
 ### Added

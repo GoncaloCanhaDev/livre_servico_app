@@ -4,6 +4,7 @@ import '../models/auto_mark.dart';
 import '../models/custom_task.dart';
 import '../models/not_done.dart';
 import 'local_db.dart';
+import 'server_clock.dart';
 import 'sync_meta.dart';
 
 class CustomTaskService extends ChangeNotifier {
@@ -70,7 +71,7 @@ class CustomTaskService extends ChangeNotifier {
       ..periodKey = periodKey;
     entry.done = true;
     entry.doneByNames = who;
-    entry.doneAt = DateTime.now();
+    entry.doneAt = ServerClock.now();
     entry.count = count;
     entry.backdated = backdated;
     entry.notDone = null;
@@ -122,12 +123,18 @@ class CustomTaskService extends ChangeNotifier {
       ..doneByNames = who
       ..doneAt = at
       ..autoMark = AutoMark(at: at);
-    await saveEntry(entry);
+    await _put(entry);
   }
 
-  /// Saves [entry] as changed on a screen (a count filled in later, an
-  /// automatic mark confirmed).
+  /// Saves [entry] as corrected on a screen (a count filled in later, an
+  /// automatic mark confirmed or changed): `editedAt` makes it win over
+  /// older copies (`mergeEntries`).
   Future<void> saveEntry(CustomTaskEntry entry) async {
+    entry.editedAt = ServerClock.now();
+    await _put(entry);
+  }
+
+  Future<void> _put(CustomTaskEntry entry) async {
     SyncMeta.stamp(entry);
     await _db.customTaskEntries.put(entry);
     notifyListeners();

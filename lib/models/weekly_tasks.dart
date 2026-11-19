@@ -1,6 +1,7 @@
 import 'auto_mark.dart';
 import 'local_row.dart';
 import 'not_done.dart';
+import 'task_merge.dart';
 import 'opening_list.dart';
 
 class WeeklyTasks with SyncFields {
@@ -26,6 +27,7 @@ class WeeklyTasks with SyncFields {
       ..notDone = notDoneMapFromJson(j['notDone'])
       ..autoMarks = autoMarkMapFromJson(j['autoMarks'])
       ..pendingCounts = stringsFromJson(j['pendingCounts'])
+      ..taskStamps = taskStampMapFromJson(j['taskStamps'])
       ..lastUpdatedAt = dateFromJson(j['lastUpdatedAt']);
     syncFieldsFromJson(w, j);
     return w;
@@ -70,6 +72,9 @@ class WeeklyTasks with SyncFields {
   /// Validades window's artigos left as `leftKey`).
   List<String> pendingCounts = [];
 
+  /// When each task was marked and last corrected (see `TaskStamp`).
+  Map<String, TaskStamp> taskStamps = {};
+
   DateTime? lastUpdatedAt;
 
   @override
@@ -91,6 +96,7 @@ class WeeklyTasks with SyncFields {
     'notDone': notDoneMapToJson(notDone),
     'autoMarks': autoMarkMapToJson(autoMarks),
     'pendingCounts': pendingCounts,
+    'taskStamps': taskStampMapToJson(taskStamps),
     'lastUpdatedAt': dateToJson(lastUpdatedAt),
   };
 }

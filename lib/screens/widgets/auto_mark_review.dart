@@ -5,6 +5,7 @@ import '../../models/custom_task.dart';
 import '../../models/daily_tasks.dart';
 import '../../models/not_done.dart';
 import '../../models/weekly_tasks.dart';
+import '../../services/server_clock.dart';
 import '../../services/custom_task_service.dart';
 import '../../services/daily_tasks_service.dart';
 import '../../services/weekly_tasks_service.dart';
@@ -67,7 +68,7 @@ Future<_Outcome?> _ask(
         NotDone(
           byNames: [for (final p in result.people) p.fullName],
           reason: reason,
-          at: DateTime.now(),
+          at: ServerClock.now(),
         ),
       );
   }
@@ -108,7 +109,7 @@ Future<void> reviewDailyMark(
         t.pendingCounts = [...t.pendingCounts]..remove(key);
       }
   }
-  await DailyTasksService.instance.save(t);
+  await DailyTasksService.instance.save(t, edited: key);
 }
 
 /// Reviews the automatic mark of [key] on the Semanais row [t].
@@ -141,7 +142,7 @@ Future<void> reviewWeeklyMark(
       t.notDone = {...t.notDone, key: notDone};
       t.pendingCounts = [...t.pendingCounts]..remove(key);
   }
-  await WeeklyTasksService.instance.save(t);
+  await WeeklyTasksService.instance.save(t, edited: key);
 }
 
 /// Reviews the automatic mark of a custom task's [entry].

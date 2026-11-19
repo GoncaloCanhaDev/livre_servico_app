@@ -88,6 +88,13 @@ class StoreAccess {
   /// itself (`AutoMark`): level 2 and up.
   bool get canConfirmTasks => admin || level >= 2;
 
+  /// Whether this phone marks tasks by itself (`AutoMarkService`): only
+  /// where the whole schedule of Livre Serviço is seen (shifts, folgas and
+  /// ausências are personal), so it credits the right people: the admin
+  /// (and signed out, [full]), level 4 and up, a level 3 of Livre Serviço.
+  bool get canAutoMark =>
+      admin || level >= 4 || (level == 3 && team == livreServicoId);
+
   /// Whether this account changes the tasks' hours (Definições → Horas das
   /// tarefas).
   bool get canEditTaskWindows => admin || level >= 3;

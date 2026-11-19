@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'local_db.dart';
 import 'photo_store.dart';
+import 'server_clock.dart';
+import 'settings_service.dart';
 import 'sync_engine.dart';
 
 /// Runs [SyncEngine] while a store is connected: right away, a few seconds
@@ -107,6 +109,21 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) syncNow();
   }
 
+  /// How far this phone's clock is from the server's ([ServerClock]),
+  /// once per sync; kept for when it is offline. Never stops a sync.
+  Future<void> _measureClock(SyncRemote remote) async {
+    if (remote is! ServerTimeSource) return;
+    try {
+      final sent = DateTime.now();
+      final server = await (remote as ServerTimeSource).serverNow();
+      final offset = ServerClock.measure(sent, server, DateTime.now());
+      ServerClock.offset = offset;
+      await SettingsService.instance.setServerClockOffset(offset);
+    } catch (_) {
+      // Offline, or a server without `server_now` yet: keep the last one.
+    }
+  }
+
   void stop() {
     if (_engine != null) WidgetsBinding.instance.removeObserver(this);
     _writes?.cancel();
@@ -137,6 +154,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _run(SyncEngine engine) async {
     try {
+      await _measureClock(engine.remote);
       await engine.run();
       if (engine.canPush) await PhotoStore.instance.uploadPending();
       lastSyncedAt = DateTime.now();

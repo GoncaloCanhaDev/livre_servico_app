@@ -11,6 +11,7 @@ import '../../models/not_done.dart';
 import '../../models/task_window.dart';
 import '../../models/opening_list.dart';
 import '../../models/weekly_tasks.dart';
+import '../../services/server_clock.dart';
 import '../../services/account_service.dart';
 import '../../services/weekly_tasks_service.dart';
 import '../../services/whatsapp_service.dart';
@@ -162,7 +163,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     final notDone = NotDone(
       byNames: result.people.map((p) => p.fullName).toList(),
       reason: reason,
-      at: DateTime.now(),
+      at: ServerClock.now(),
     );
     final targetWeek = currentServiceWeek(
       DateTime(result.day.year, result.day.month, result.day.day, 12),
@@ -230,7 +231,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
             if (n == null) return;
             setCount(n);
             tasks.pendingCounts = [...tasks.pendingCounts]..remove(key);
-            await _saveTasks();
+            await WeeklyTasksService.instance.save(tasks, edited: key);
           },
         ),
     ];

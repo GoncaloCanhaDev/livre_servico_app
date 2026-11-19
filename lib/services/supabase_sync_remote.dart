@@ -7,13 +7,14 @@ import 'package:uuid/uuid.dart';
 import '../models/app_document.dart';
 import 'document_service.dart';
 import 'photo_store.dart';
+import 'server_clock.dart';
 import 'sync_engine.dart';
 
 /// [SyncRemote] on the Supabase database in `supabase/migrations`: pushes
 /// through `push_records`, pulls through `pull_records` (people redacted to
 /// what this account may read). [client] must be signed in
 /// as a member of [storeId].
-class SupabaseSyncRemote implements SyncRemote {
+class SupabaseSyncRemote implements SyncRemote, ServerTimeSource {
   SupabaseSyncRemote(this.client, this.storeId);
 
   final SupabaseClient client;
@@ -49,6 +50,11 @@ class SupabaseSyncRemote implements SyncRemote {
         SyncRecord.fromServerJson(Map<String, dynamic>.from(r as Map)),
     ];
   }
+
+  /// The database's `now()` (`server_now`).
+  @override
+  Future<DateTime> serverNow() async =>
+      DateTime.parse(await client.rpc<String>('server_now')).toLocal();
 
   /// Supabase Realtime on `records` (published by the first migration),
   /// for this store's rows; the access rules still apply.

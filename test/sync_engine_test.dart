@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:livre_servico_app/models/auto_mark.dart';
 import 'package:livre_servico_app/models/daily_tasks.dart';
 import 'package:livre_servico_app/models/person.dart';
+import 'package:livre_servico_app/models/task_merge.dart';
 import 'package:livre_servico_app/services/local_db.dart';
 import 'package:livre_servico_app/services/sync_engine.dart';
 import 'package:livre_servico_app/services/sync_meta.dart';
@@ -320,6 +322,86 @@ void main() {
       expect(rows.single.alteracoesPrecoCount, 5);
     }
   });
+
+  test(
+    'a day marked on two phones keeps every task, by its own time',
+    () async {
+      final day = DateTime(2026, 11, 18, 5);
+      DailyTasks copy(DateTime savedAt) {
+        final t = DailyTasks()..serviceDay = day;
+        SyncMeta.stamp(t);
+        return t..syncUpdatedAt = savedAt;
+      }
+
+      // Offline, A ticks Kiwi Fecho by hand at 21:50.
+      final onA = copy(DateTime(2026, 11, 18, 21, 50));
+      setDailyDone(onA, 'kiwi_fecho', ['Ana']);
+      onA.taskStamps = {
+        'kiwi_fecho': TaskStamp(markedAt: DateTime(2026, 11, 18, 21, 50)),
+      };
+      await a.db.dailyTasks.put(onA);
+      // B, online, marks the day by itself at 22:01 and syncs first.
+      final onB = copy(DateTime(2026, 11, 18, 22, 1));
+      for (final k in ['kiwi_fecho', 'preenchimento_quadro']) {
+        autoMarkDaily(onB, k, ['Rui'], DateTime(2026, 11, 18, 22, 1));
+        onB.taskStamps = {
+          ...onB.taskStamps,
+          k: TaskStamp(markedAt: DateTime(2026, 11, 18, 22, 1)),
+        };
+      }
+      await b.db.dailyTasks.put(onB);
+      await b.sync();
+
+      // A comes online: its copy loses on the server, then merges.
+      await a.sync();
+      await b.sync();
+
+      for (final d in [a, b]) {
+        final t = (await d.db.dailyTasks.all()).single;
+        expect(t.kiwiFechoByNames, ['Ana'], reason: 'by hand beats the app');
+        expect(t.autoMarks.keys, ['preenchimento_quadro']);
+        expect(t.preenchimentoQuadroByNames, ['Rui']);
+      }
+      final server = DailyTasks.fromJson(remote.of('DailyTasks').single.data);
+      expect(server.kiwiFechoByNames, ['Ana']);
+      // Settled: nothing more to send.
+      expect(a.db.pendingCount + b.db.pendingCount, 0);
+    },
+  );
+
+  test(
+    'a newer copy that lacks a task gets it back from the other phone',
+    () async {
+      final day = DateTime(2026, 11, 18, 5);
+      // A marks Quadro by itself at 14:01 and syncs.
+      final onA = DailyTasks()..serviceDay = day;
+      SyncMeta.stamp(onA);
+      autoMarkDaily(onA, 'preenchimento_quadro', [
+        'Rui',
+      ], DateTime(2026, 11, 18, 14, 1));
+      onA.syncUpdatedAt = DateTime(2026, 11, 18, 14, 1);
+      await a.db.dailyTasks.put(onA);
+      await a.sync();
+      // B, offline since morning, ticks Kiwi Abertura later: its copy is
+      // newer and replaces A's on the server.
+      final onB = DailyTasks()..serviceDay = day;
+      SyncMeta.stamp(onB);
+      setDailyDone(onB, 'kiwi_abertura', ['Ana']);
+      onB.syncUpdatedAt = DateTime(2026, 11, 18, 15);
+      await b.db.dailyTasks.put(onB);
+      await b.sync();
+      // A pulls it, adds back what it lacks and sends it; B gets it.
+      await a.sync();
+      await b.sync();
+
+      for (final d in [a, b]) {
+        final t = (await d.db.dailyTasks.all()).single;
+        expect(t.kiwiAberturaByNames, ['Ana']);
+        expect(t.preenchimentoQuadroByNames, ['Rui']);
+      }
+      expect(a.db.pendingCount + b.db.pendingCount, 0);
+    },
+  );
 
   test('a row saved again during its push stays pending', () async {
     final ana = person('Ana');

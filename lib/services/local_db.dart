@@ -19,11 +19,13 @@ import '../models/opening_list.dart';
 import '../models/pedido.dart';
 import '../models/person.dart';
 import '../models/report_list.dart';
+import '../models/task_merge.dart';
 import '../models/task_window.dart';
 import '../models/truck_reception.dart';
 import '../models/visivel2_entry.dart';
 import '../models/visual_list.dart';
 import '../models/weekly_tasks.dart';
+import 'server_clock.dart';
 import 'sync_meta.dart';
 
 /// The app's local database: SQLite through Drift, on the phone and (with
@@ -75,11 +77,13 @@ class LocalDb {
     'DailyTasks',
     DailyTasks.fromJson,
     syncKey: (t) => dayKey(t.serviceDay),
+    merge: (a, b) => mergeTaskRows(a, b, dailyTaskFields),
   );
   final weeklyTasks = LocalCollection<WeeklyTasks>._(
     'WeeklyTasks',
     WeeklyTasks.fromJson,
     syncKey: (t) => dayKey(t.serviceWeek),
+    merge: (a, b) => mergeTaskRows(a, b, weeklyTaskFields),
   );
   final inventories = LocalCollection<Inventory>._(
     'Inventory',
@@ -99,6 +103,7 @@ class LocalDb {
     'CustomTaskEntry',
     CustomTaskEntry.fromJson,
     syncKey: (e) => '${e.taskUuid}/${dayKey(e.periodKey)}',
+    merge: mergeEntries,
   );
 
   final avisos = LocalCollection<Aviso>._('Aviso', Aviso.fromJson);
@@ -346,7 +351,13 @@ class LocalCollection<T extends SyncedRow> {
     this.name,
     this._fromJson, {
     String Function(T row)? syncKey,
-  }) : _syncKey = syncKey;
+    Map<String, dynamic> Function(
+      Map<String, dynamic> a,
+      Map<String, dynamic> b,
+    )?
+    merge,
+  }) : _syncKey = syncKey,
+       _merge = merge;
 
   /// The model's name, as stored in `local_rows` and in backups ("Person").
   final String name;
@@ -356,7 +367,27 @@ class LocalCollection<T extends SyncedRow> {
   /// day, week or month, that period, so two devices that each made one
   /// share it instead of having two.
   final String Function(T row)? _syncKey;
+
+  /// For rows two phones may change at once (a day's tasks): combines a
+  /// local and a remote copy (`syncData` JSON, `syncUpdatedAt` set) into
+  /// one, the same whichever is which (see `mergeTaskRows`). Without it,
+  /// the copy saved last wins whole.
+  final Map<String, dynamic> Function(
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+  )?
+  _merge;
   late _Database _db;
+
+  bool _mergedPending = false;
+
+  /// Whether a merge since the last call left a row to send back (see
+  /// [_mergeInto]); `SyncEngine` then pushes it in the same sync.
+  bool takeMergedPending() {
+    final was = _mergedPending;
+    _mergedPending = false;
+    return was;
+  }
 
   final _rows = <int, Map<String, dynamic>>{};
 
@@ -565,6 +596,54 @@ class LocalCollection<T extends SyncedRow> {
     await _write(done);
   }
 
+  /// [r] from the server over the local row [id] ([current] as stored),
+  /// combined by [_merge]: the row to write (pending when the server's copy
+  /// lacks something of this one's, so it goes back up), `{}` when nothing
+  /// changes, null for a tombstone (the usual rule decides).
+  Map<String, dynamic>? _mergeInto(
+    int id,
+    Map<String, dynamic> current,
+    ({String key, Map<String, dynamic> data, DateTime updatedAt}) r,
+  ) {
+    if (current['syncDeletedAt'] != null || r.data['syncDeletedAt'] != null) {
+      return null;
+    }
+    final local = {...current}
+      ..remove('id')
+      ..remove('synced');
+    final remote = {...r.data, 'syncUpdatedAt': dateToJson(r.updatedAt)};
+    final merged = _merge!(local, remote);
+    final T row;
+    if (_sameContent(merged, remote)) {
+      // The server's copy has it all: take it, unless this one is it.
+      if (current['synced'] != false && _sameContent(current, remote)) {
+        return const {};
+      }
+      row = _fromJson(remote)
+        ..syncUpdatedAt = r.updatedAt
+        ..synced = true;
+    } else {
+      final savedAt = dateFromJson(current['syncUpdatedAt']);
+      // This copy already holds the result and waits to be sent.
+      if (current['synced'] == false &&
+          _sameContent(merged, current) &&
+          savedAt != null &&
+          savedAt.isAfter(r.updatedAt)) {
+        return const {};
+      }
+      // Saved after the server's copy, so the server takes it.
+      final later = r.updatedAt.add(const Duration(milliseconds: 1));
+      final now = ServerClock.now();
+      row = _fromJson(merged)
+        ..syncUpdatedAt = now.isAfter(later) ? now : later
+        ..synced = false;
+      _mergedPending = true;
+    }
+    row.id = id;
+    final encoded = _encode([row])[id]!;
+    return jsonEncode(encoded) == jsonEncode(current) ? const {} : encoded;
+  }
+
   /// Saves rows from the server ([data] as [syncData] wrote it, under their
   /// [syncKeyOf] key), each over the local row with the same key unless the
   /// local one was saved at the same time or later. With [replaceSynced], a
@@ -582,6 +661,13 @@ class LocalCollection<T extends SyncedRow> {
     final staged = <int, Map<String, dynamic>>{};
     for (final r in rows) {
       final id = byKey[r.key];
+      if (id != null && _merge != null) {
+        final merged = _mergeInto(id, staged[id] ?? _rows[id]!, r);
+        if (merged != null) {
+          if (merged.isNotEmpty) staged[id] = merged;
+          continue;
+        }
+      }
       if (id != null) {
         final current = staged[id] ?? _rows[id]!;
         final savedAt = dateFromJson(current['syncUpdatedAt']);
@@ -611,6 +697,16 @@ class LocalCollection<T extends SyncedRow> {
     await _write(staged);
     return staged.length;
   }
+}
+
+/// Two copies are the same row, whatever their save times.
+bool _sameContent(Map<String, dynamic> a, Map<String, dynamic> b) {
+  Map<String, dynamic> strip(Map<String, dynamic> m) => {...m}
+    ..remove('id')
+    ..remove('synced')
+    ..remove('syncUpdatedAt')
+    ..remove('lastUpdatedAt');
+  return jsonEncode(strip(a)) == jsonEncode(strip(b));
 }
 
 List<Object?> _decodeAll(List<String> texts) => [

@@ -571,5 +571,10 @@ await throws('anon cannot send feedback', async () => { await db.exec(`set role 
 await db.exec('reset role');
 await throws('anon cannot call create_store', async () => { await db.exec(`set role anon`); await db.query(`select public.create_store('x')`); }, /permission denied/);
 
+await db.exec('reset role');
+ok('a member reads the server time', (await as(A, 'select public.server_now() t'))[0].t instanceof Date);
+await throws('anon cannot read the server time', async () => { await db.exec(`set role anon`); await db.query(`select public.server_now()`); }, /permission denied/);
+await db.exec('reset role');
+
 console.log(fails ? `\n${fails} FAILED` : '\nall passed');
 process.exit(fails ? 1 : 0);

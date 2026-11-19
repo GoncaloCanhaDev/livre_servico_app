@@ -1,9 +1,13 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/auto_mark.dart';
 import '../models/daily_tasks.dart';
+import '../models/task_merge.dart';
+import '../models/task_window.dart';
 import '../models/opening_list.dart';
 import '../models/validades.dart';
 import 'local_db.dart';
+import 'server_clock.dart';
 import 'sync_meta.dart';
 
 class DailyTasksService extends ChangeNotifier {
@@ -57,7 +61,16 @@ class DailyTasksService extends ChangeNotifier {
     return created;
   }
 
-  Future<void> save(DailyTasks t) async {
+  /// Saves [t]; a task marked since it was read gets its mark time
+  /// (`TaskStamp`). With [edited], that task was corrected (confirmed, who
+  /// did it changed, its number filled in) and wins over older copies.
+  Future<void> save(DailyTasks t, {String? edited}) async {
+    final now = ServerClock.now();
+    t.taskStamps = stampMarks(t.taskStamps, [
+      for (final k in fixedDailyTaskKeys)
+        if (dailySettled(t, k)) k,
+    ], now);
+    if (edited != null) t.taskStamps = stampEdit(t.taskStamps, edited, now);
     t.lastUpdatedAt = DateTime.now();
     SyncMeta.stamp(t);
     await _db.dailyTasks.put(t);

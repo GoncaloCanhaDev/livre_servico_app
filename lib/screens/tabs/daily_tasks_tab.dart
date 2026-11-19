@@ -15,6 +15,7 @@ import '../../models/not_done.dart';
 import '../../models/opening_list.dart';
 import '../../models/validades.dart';
 import '../../models/visivel2_entry.dart';
+import '../../services/server_clock.dart';
 import '../../services/account_service.dart';
 import '../../services/auto2_service.dart';
 import '../../services/daily_tasks_service.dart';
@@ -206,7 +207,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     final notDone = NotDone(
       byNames: result.people.map((p) => p.fullName).toList(),
       reason: reason,
-      at: DateTime.now(),
+      at: ServerClock.now(),
     );
     final targetDay = DateTime(
       result.day.year,
@@ -286,7 +287,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
             if (n == null) return;
             setCount(n);
             tasks.pendingCounts = [...tasks.pendingCounts]..remove(key);
-            await _saveTasks();
+            await DailyTasksService.instance.save(tasks, edited: key);
           },
         ),
       if (turno != null && tasks.pendingCounts.contains(leftKey(key)))
@@ -298,7 +299,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
             tasks.setValidadesLeft(turno, n);
             tasks.pendingCounts = [...tasks.pendingCounts]
               ..remove(leftKey(key));
-            await _saveTasks();
+            await DailyTasksService.instance.save(tasks, edited: key);
             await DailyTasksService.instance.carryValidades(tasks, turno, n);
           },
         ),

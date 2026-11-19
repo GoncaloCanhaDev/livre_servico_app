@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import '../models/local_row.dart';
+import 'server_clock.dart';
 
 /// Keeps the sync fields of a row up to date before it is saved.
 ///
@@ -15,7 +16,7 @@ class SyncMeta {
   /// timestamp and marks the row pending a push.
   static void stamp(SyncedRow row) {
     if (row.syncUuid.isEmpty) row.syncUuid = _uuid.v4();
-    row.syncUpdatedAt = DateTime.now();
+    row.syncUpdatedAt = ServerClock.now();
     row.synced = false;
   }
 
@@ -23,7 +24,7 @@ class SyncMeta {
   /// database and is filtered out by reads, so it can still be "restored"
   /// or audited.
   static void softDelete(SyncedRow row) {
-    final now = DateTime.now();
+    final now = ServerClock.now();
     if (row.syncUuid.isEmpty) row.syncUuid = _uuid.v4();
     row.syncDeletedAt = now;
     row.syncUpdatedAt = now;

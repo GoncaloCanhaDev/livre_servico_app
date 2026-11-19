@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/auto_mark.dart';
+import '../models/task_merge.dart';
+import '../models/task_window.dart';
 import '../models/weekly_tasks.dart';
 import 'local_db.dart';
+import 'server_clock.dart';
 import 'sync_meta.dart';
 
 class WeeklyTasksService extends ChangeNotifier {
@@ -50,7 +54,14 @@ class WeeklyTasksService extends ChangeNotifier {
     return created;
   }
 
-  Future<void> save(WeeklyTasks t) async {
+  /// Saves [t], stamping marks and corrections like `DailyTasksService.save`.
+  Future<void> save(WeeklyTasks t, {String? edited}) async {
+    final now = ServerClock.now();
+    t.taskStamps = stampMarks(t.taskStamps, [
+      for (final k in fixedWeeklyTaskKeys)
+        if (weeklySettled(t, k)) k,
+    ], now);
+    if (edited != null) t.taskStamps = stampEdit(t.taskStamps, edited, now);
     t.lastUpdatedAt = DateTime.now();
     SyncMeta.stamp(t);
     await _db.weeklyTasks.put(t);

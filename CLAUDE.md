@@ -160,10 +160,12 @@ multi-tenant product.
   service day, `windowSpan`), read through `TaskWindowService.windowFor` (in memory, loaded in
   `main()`, reloaded on saves, remote changes, backup import and wipe) and edited in Definições →
   Horas das tarefas (`StoreAccess.canEditTaskWindows`, level 3+, app-side). `AutoMarkService`
-  (`start()` from `main()`: at once, on resume, every minute, after each sync; never before a
-  sync of this session while a store is connected, so stale rows can't overwrite another
-  phone's marks) marks every task whose window closed with no feita and no Não feita, up to 7
-  days back and never before the device's `autoMarkSince` pref: done by the Livre Serviço
+  (`start()` from `main()`: at once, on resume, every minute, after each sync and access
+  change; only on phones that see Livre Serviço's whole schedule, `StoreAccess.canAutoMark`:
+  the admin or signed out, level 4+, a level 3 of Livre Serviço; never before a sync of this
+  session while a store is connected) marks every task whose window closed with no feita and no
+  Não feita, up to 7 days back and never one that closed before the device's first run
+  (`autoMarkSince`, a moment): done by the Livre Serviço
   people whose shift overlaps the window (`autoMarkPeople` in `lib/models/auto_mark.dart`, on
   the horário index), nobody → stays pending. Semanais on their weekday (`taskDueWeekday`),
   custom weekly tasks when their week ends, one-off never. It keeps an `AutoMark` (when, who
@@ -173,8 +175,23 @@ multi-tenant product.
   `AutoMarksScreen` (Home's `AutoMarksCard`, the week's unconfirmed `unconfirmedMarks`). A done
   task's number can wait: its key in `pendingCounts` (a Validades window's artigos left as
   `leftKey`; a custom count task's null `count`) shows "Número por preencher". A new fixed task
-  goes in `fixedDailyTaskKeys` / `fixedWeeklyTaskKeys`, `fixedTaskLabels`, `defaultTaskWindow`
-  and the `dailyDone`/`setDailyDone`/`dailyNames` switches.
+  goes in `fixedDailyTaskKeys` / `fixedWeeklyTaskKeys`, `fixedTaskLabels`, `defaultTaskWindow`,
+  the `dailyDone`/`setDailyDone`/`dailyNames` switches and `dailyTaskFields` (below).
+- Tasks merge task by task (since 0.95.1): each mark and correction has its time
+  (`TaskStamp` in `lib/models/task_merge.dart`, `DailyTasks.taskStamps` / `WeeklyTasks.taskStamps`
+  by task key, set by the services' `save` (a task newly marked gets `markedAt`; `save(edited:)`
+  sets `editedAt` for a correction); a custom entry's `doneAt` / Não feita `at` and `editedAt`,
+  set by `CustomTaskService.saveEntry`). When sync meets two copies of a `DailyTasks`,
+  `WeeklyTasks` or `CustomTaskEntry` (`LocalCollection` `merge`, `_mergeInto` in
+  `applyRemote`), `mergeTaskRows` / `mergeEntries` keep each task from the copy that wins it:
+  marked beats unmarked, then the latest correction, then by hand beats the app, then the
+  earliest mark; the rest of the row from the copy saved last. The result is the same on every
+  phone; when the server's copy lacks something it goes back up as pending in the same sync
+  (`takeMergedPending`). A task's JSON fields are listed in `dailyTaskFields` /
+  `weeklyTaskFields`: a new task field goes there too. The times are the server's
+  (`ServerClock` in `lib/services/server_clock.dart`: the phone's clock plus the offset
+  `SyncService` measures with the `server_now` RPC, `20261119120000_server_now.sql`, kept in
+  `SettingsService.serverClockOffset` for offline use); `SyncMeta.stamp` uses it too.
 - The Abertura and Automáticas lists are sent per `ListSection` (Congelados, OPLS, Não
   Perecíveis). An `OpeningList` records who sent each section and when; `markSectionDone`
   finalizes it once all three are sent. Each

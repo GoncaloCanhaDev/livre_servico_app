@@ -13,6 +13,7 @@ import 'services/demo_mode.dart';
 import 'services/horario_service.dart';
 import 'services/local_db.dart';
 import 'services/photo_store.dart';
+import 'services/server_clock.dart';
 import 'services/settings_service.dart';
 import 'services/task_window_service.dart';
 import 'services/web_loader_stub.dart'
@@ -51,6 +52,7 @@ void main() async {
     }
     await HorarioService.instance.load();
     await TaskWindowService.instance.load();
+    ServerClock.offset = SettingsService.instance.serverClockOffset;
   } catch (e) {
     bootError = '$e';
   }

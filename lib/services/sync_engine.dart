@@ -136,6 +136,15 @@ class SyncEngine {
       }
     }
     final pulled = await _pull(cursor, changed);
+    // Rows merged on the way (a day's tasks marked on two phones) go back
+    // up at once, so the other phone gets the combined copy.
+    if (canPush) {
+      for (final c in db.collections) {
+        if (c.takeMergedPending()) {
+          pushed += await _push(c, all: false, changed: changed);
+        }
+      }
+    }
     LocalDb.notifyRemoteChanges(changed);
     return (pushed: pushed, pulled: pulled);
   }
