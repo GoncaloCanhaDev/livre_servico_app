@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.3] — 2026-11-20
+
+### Fixed
+- Typing an hour after 12 in a time picker's keyboard mode (Horas das tarefas, a camião's
+  arrival, a person's shift) said "Introduza uma hora válida" in a browser or on a phone set to a
+  12-hour clock: the picker showed 24 hours but checked the device setting. The app now always
+  uses 24 hours (`alwaysUse24HourFormat` in `MaterialApp.builder`).
+
+### Added
+- Widget tests for Pedidos (create, finalize, late, cancel), Horas das tarefas (change and put
+  back a task's hours, a window ending before it starts, custom tasks) and Pessoas (search, open,
+  remove, an operador's limits).
+
 ## [0.97.2] — 2026-11-20
 
 ### Changed

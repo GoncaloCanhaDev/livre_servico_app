@@ -45,7 +45,10 @@ multi-tenant product.
   `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
-  `test/truck_form_screen_test.dart` saves a camião, `test/auto_mark_tasks_test.dart` reviews
+  `test/truck_form_screen_test.dart` saves a camião, `test/pedidos_screen_test.dart` creates
+  and finalizes a pedido, `test/people_screen_test.dart` searches and removes people,
+  `test/task_windows_screen_test.dart` changes a task's hours (through the time picker's
+  keyboard mode; 24 hours are forced in `main.dart`, so open screens in `LivreServicoApp`), `test/auto_mark_tasks_test.dart` reviews
   an automatic mark, fills a number later and edits the task hours, `test/horario_import_screen_test.dart`
   imports a horário and `test/horarios_screen_test.dart` shows it, `test/inventory_screen_test.dart` plans
   and marks done an inventory, `test/automaticas2_tab_test.dart` sends

@@ -132,9 +132,16 @@ class LivreServicoApp extends StatelessWidget {
         ],
         navigatorKey: appNavigatorKey,
         navigatorObservers: [_observer, appMenuObserver],
-        builder: (_, child) {
+        builder: (context, child) {
           final page = _FramedUnlessPresentation(child: child!);
-          return DemoMode.active ? DemoBanner(child: page) : page;
+          // Hours are 24h in Portugal, whatever the phone or browser says:
+          // the time pickers' keyboard mode reads only this to accept 18.
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(alwaysUse24HourFormat: true),
+            child: DemoMode.active ? DemoBanner(child: page) : page,
+          );
         },
         home: const StartScreen(),
       ),
