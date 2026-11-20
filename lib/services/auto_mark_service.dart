@@ -185,7 +185,10 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
           case CustomTaskFrequency.weekly:
             if (day.weekday != DateTime.sunday) continue;
             if (!windows.windowFor(task.syncUuid).auto) continue;
-            span = (start: week, end: week.add(const Duration(days: 7)));
+            span = (
+              start: week,
+              end: DateTime(week.year, week.month, week.day + 7, 5),
+            );
             periodKey = week;
         }
         if (!due(span)) continue;

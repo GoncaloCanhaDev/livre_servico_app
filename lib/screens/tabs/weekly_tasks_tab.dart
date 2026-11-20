@@ -7,6 +7,7 @@ import '../widgets/auto_mark_review.dart';
 import '../widgets/person_picker.dart';
 import '../widgets/task_markers.dart';
 
+import '../../models/auto_mark.dart';
 import '../../models/not_done.dart';
 import '../../models/task_window.dart';
 import '../../models/opening_list.dart';
@@ -125,6 +126,13 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
         const SnackBar(
           content: Text('Nessa semana a tarefa foi marcada como não feita.'),
         ),
+      );
+      return;
+    }
+    if (weeklyDone(other, taskKey)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nessa semana a tarefa já foi feita.')),
       );
       return;
     }

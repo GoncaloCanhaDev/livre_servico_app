@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/auto_list.dart';
+import '../models/opening_list.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -59,10 +60,11 @@ class AutoListService extends ChangeNotifier {
     DateTime day, {
     bool includeDeleted = false,
   }) {
+    // By service day, not by adding 24 hours: the day the clocks change
+    // keeps its own lists.
     final start = DateTime(day.year, day.month, day.day, 5);
-    final end = start.add(const Duration(days: 1));
     return _db.autoLists.where(
-      (a) => a.createdAt.isAfter(start) && a.createdAt.isBefore(end),
+      (a) => currentServiceDay(a.createdAt).isAtSameMomentAs(start),
       includeDeleted: includeDeleted,
     );
   }

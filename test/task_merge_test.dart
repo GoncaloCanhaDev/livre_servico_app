@@ -7,6 +7,7 @@ import 'package:livre_servico_app/models/daily_tasks.dart';
 import 'package:livre_servico_app/models/not_done.dart';
 import 'package:livre_servico_app/models/store_access.dart';
 import 'package:livre_servico_app/models/task_merge.dart';
+import 'package:livre_servico_app/models/validades.dart';
 import 'package:livre_servico_app/services/server_clock.dart';
 
 final _day = DateTime(2026, 11, 18, 5);
@@ -170,5 +171,40 @@ void main() {
       isFalse,
     );
     expect(const StoreAccess(admin: false, level: 4).canAutoMark, isTrue);
+  });
+
+  test('artigos carried to an unmarked Validades survive a later copy', () {
+    // Phone A marks the Manhã with 5 left, which go to the Noite.
+    final a = _row(_at(14));
+    _manual(a, 'verificacao_validades', ['Ana'], _at(14));
+    a.validadesManhaLeft = 5;
+    a.carryInto(ValidadesTurno.noite, 5);
+    // Phone B, not synced yet, ticks another task later.
+    final b = _row(_at(15));
+    _manual(b, 'kiwi_fecho', ['Rui'], _at(15));
+    final m = _merge(a, b);
+    expect(m.verificacaoValidades, isTrue);
+    expect(m.kiwiFecho, isTrue);
+    expect(m.validadesNoiteCount, 5);
+    expect(m.validadesNoiteCarried, 5);
+  });
+
+  test('a number typed in an unmarked task survives a later copy', () {
+    final a = _row(_at(9))..alteracoesPrecoCount = 12;
+    final b = _row(_at(10));
+    _manual(b, 'kiwi_abertura', ['Rui'], _at(10));
+    expect(_merge(a, b).alteracoesPrecoCount, 12);
+  });
+
+  test('the carried artigos go with the copy that marked the window', () {
+    final a = _row(_at(15))..validadesNoiteCarried = 5;
+    a.validadesNoiteCount = 5;
+    final b = _row(_at(14));
+    _manual(b, 'validades_noite', ['Rui'], _at(14));
+    b.validadesNoiteCount = 3;
+    final m = _merge(a, b);
+    expect(m.validadesNoite, isTrue);
+    expect(m.validadesNoiteCount, 3);
+    expect(m.validadesNoiteCarried, 0);
   });
 }

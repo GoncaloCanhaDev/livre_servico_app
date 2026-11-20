@@ -7,6 +7,23 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.5] — 2026-11-20
+
+### Fixed
+- When two phones changed the same day before syncing, a task neither had marked took its fields
+  whole from the copy saved last: artigos carried to the next Validades, or a number typed before
+  ticking, were lost when the other phone saved later without touching that task. Now the copy
+  that holds something wins over one that holds nothing (`_touched` in `task_merge.dart`), and a
+  Validades window's carried artigos travel with its count (`validades*Carried` in
+  `dailyTaskFields`).
+- The camiões and the 1.0 Automáticas of a service day are found by service day instead of by
+  adding 24 hours, so on the weekends the clocks change no entry shows under two days or none
+  (an Automáticas list saved at exactly 05:00 was also left out).
+- A weekly custom task's week ends at Monday 05:00 also in the weeks the clocks change, so the
+  automatic mark no longer comes an hour early or late.
+- Marking a Diária or Semanal as done on another day or week where it was already done no
+  longer replaces who did it ("já foi feita"), like Não feita already did.
+
 ## [0.97.4] — 2026-11-20
 
 ### Changed

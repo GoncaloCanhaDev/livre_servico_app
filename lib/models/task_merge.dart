@@ -93,12 +93,14 @@ const dailyTaskFields = {
     'verificacaoValidadesByNames',
     'verificacaoValidadesCount',
     'validadesManhaLeft',
+    'validadesManhaCarried',
   ],
   'validades_noite': [
     'validadesNoite',
     'validadesNoiteByNames',
     'validadesNoiteCount',
     'validadesNoiteLeft',
+    'validadesNoiteCarried',
   ],
   'kiwi_fecho': ['kiwiFecho', 'kiwiFechoBy', 'kiwiFechoByNames'],
 };
@@ -180,6 +182,25 @@ _Side? _winner(_Side a, _Side b) {
   return _slice(a).compareTo(_slice(b)) <= 0 ? a : b;
 }
 
+/// For a task neither copy marked: the copy whose fields hold something (a
+/// number typed in, artigos carried from the Validades before) when the
+/// other's are all empty, so a copy saved later that never touched the task
+/// doesn't wipe it. Null when both or neither hold something (the copy
+/// saved last then keeps its own).
+_Side? _touched(_Side a, _Side b) {
+  bool empty(_Side s) => _fieldsOf(s).every((f) => _isEmpty(s.row[f]));
+  final ea = empty(a);
+  final eb = empty(b);
+  if (ea == eb) return null;
+  return ea ? b : a;
+}
+
+bool _isEmpty(Object? v) => switch (v) {
+  null || false || 0 || '' => true,
+  final List l => l.isEmpty,
+  _ => false,
+};
+
 String _slice(_Side s) => jsonEncode([
   for (final f in _fieldsOf(s)) s.row[f],
   s.notDone,
@@ -213,7 +234,9 @@ Map<String, dynamic> mergeTaskRows(
   final pending = {...stringsFromJson(merged['pendingCounts'])};
   final backdated = {...stringsFromJson(merged['backdatedTaskKeys'])};
   for (final MapEntry(:key, value: keyFields) in fields.entries) {
-    final w = _winner(_Side(a, key, keyFields), _Side(b, key, keyFields));
+    final sa = _Side(a, key, keyFields);
+    final sb = _Side(b, key, keyFields);
+    final w = _winner(sa, sb) ?? _touched(sa, sb);
     if (w == null) continue;
     for (final f in keyFields) {
       merged[f] = w.row[f];

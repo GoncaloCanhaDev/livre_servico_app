@@ -171,6 +171,13 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       );
       return;
     }
+    if (_isDone(other, taskKey)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nesse dia a tarefa já foi feita.')),
+      );
+      return;
+    }
     apply(other, who);
     if (!other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];

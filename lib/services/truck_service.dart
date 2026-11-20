@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/opening_list.dart';
 import '../models/truck_reception.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
@@ -29,12 +30,11 @@ class TruckService extends ChangeNotifier {
 
   /// The camiões that arrived during the service day starting at [day]
   /// (05:00 to 05:00).
-  Future<List<TruckReception>> forServiceDay(DateTime day) {
-    final end = day.add(const Duration(days: 1));
-    return _db.truckReceptions.where(
-      (t) => !t.arrivalTime.isBefore(day) && t.arrivalTime.isBefore(end),
-    );
-  }
+  /// Compared by service day, not by adding 24 hours, so the day the clocks
+  /// change keeps its own camiões.
+  Future<List<TruckReception>> forServiceDay(DateTime day) => _db
+      .truckReceptions
+      .where((t) => currentServiceDay(t.arrivalTime).isAtSameMomentAs(day));
 
   Future<List<TruckReception>> all({bool includeDeleted = false}) async =>
       (await _db.truckReceptions.all(includeDeleted: includeDeleted))
