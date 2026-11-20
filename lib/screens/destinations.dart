@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'avisos_screen.dart';
+import '../services/account_service.dart';
 import '../services/demo_mode.dart';
 import 'documents_screen.dart';
 import 'feedback_screen.dart';
@@ -13,6 +14,7 @@ import 'pedidos_screen.dart';
 import 'people_screen.dart';
 import 'replenishment_lists_screen.dart';
 import 'settings_screen.dart';
+import 'stats_screen.dart';
 import 'tasks_screen.dart';
 import 'truck_form_screen.dart';
 import 'tutorial_screen.dart';
@@ -48,12 +50,10 @@ List<Destination> get homeDestinations => [
     () => const DocumentsScreen(),
   ),
   Destination(Icons.history, 'Histórico', () => const HistoricoScreen()),
+  if (AccountService.instance.access.canSeeStats)
+    Destination(Icons.insights, 'Estatísticas', () => const StatsScreen()),
   Destination(Icons.people, 'Pessoas', () => const PeopleScreen()),
-  Destination(
-    Icons.calendar_month,
-    'Horários',
-    () => const HorariosScreen(),
-  ),
+  Destination(Icons.calendar_month, 'Horários', () => const HorariosScreen()),
   if (!DemoMode.active) feedbackDestination,
 ];
 

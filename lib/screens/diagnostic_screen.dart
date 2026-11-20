@@ -95,11 +95,7 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
       else
         const DiagLine('Ligação', 'Sem loja escolhida', warn: true),
       if (sync.isConnected) ...[
-        DiagLine(
-          'Estado',
-          syncStatusText(sync),
-          warn: sync.lastError != null,
-        ),
+        DiagLine('Estado', syncStatusText(sync), warn: sync.lastError != null),
         DiagLine('Última com sucesso', diagTimeText(sync.lastSyncedAt)),
         if (sync.canPush)
           DiagLine(
@@ -139,8 +135,7 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
                   '${_tasks(auto.lastRunMarked)} marcada'
                   '${auto.lastRunMarked == 1 ? '' : 's'}',
       ),
-      if (auto.lastRunError case final e?)
-        DiagLine('Erro', '$e', warn: true),
+      if (auto.lastRunError case final e?) DiagLine('Erro', '$e', warn: true),
       DiagLine('Marcadas nesta sessão', '${auto.markedThisSession}'),
       DiagLine(
         'Por confirmar (7 dias)',

@@ -96,6 +96,7 @@ void main() {
           'inventarios',
           'horarios',
           'documentos',
+          'estatisticas',
         ],
       );
 

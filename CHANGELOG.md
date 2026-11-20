@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.0] — 2026-11-20
+
+### Added
+- **Estatísticas** (`StatsScreen`, a Home button for level 3 and up, `StoreAccess.canSeeStats`):
+  a service week (Monday to Sunday) or a month, with arrows to earlier ones. Each task (the fixed
+  Diárias and Semanais, then the custom daily and weekly ones) counts the times it was due once
+  its hours were over: done by hand, by the app (`AutoMark`), não feita or with no mark; a task
+  only counts from the first day anyone ever marked it, so days from before the app don't count
+  against it. Then the Diárias per day, the não feitas with their reasons, Validades (artigos and
+  how many were left, per turno), Listas 2.0 (Automáticas per item, Visível), camiões (paletes,
+  mistas, expositores), inventários done and late, pedidos created and finished, and what each
+  person did by the names on the rows. Shared by WhatsApp (`statsText`). The logic is pure
+  (`computeStats`, `StatsPeriod` in `lib/models/stats.dart`); `loadStatsInput`
+  (`lib/services/stats_service.dart`) reads the rows. Home's buttons now rebuild when the
+  account changes. Tutorial section `estatisticas` (version 1).
+
 ## [0.96.0] — 2026-11-20
 
 ### Added

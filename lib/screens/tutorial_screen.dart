@@ -463,6 +463,29 @@ const tutorialSections = [
     ],
   ),
   TutorialSection(
+    id: 'estatisticas',
+    title: 'Estatísticas',
+    version: 1,
+    steps: [
+      TutorialStep(
+        icon: Icons.insights,
+        title: 'Estatísticas',
+        intro:
+            'Para as chefias: como correu a semana ou o mês, a partir do que '
+            'já fica registado.',
+        diagram: _StatsDiagram(),
+        steps: [
+          'Escolha Semana ou Mês e mude de período com as setas.',
+          'Em Tarefas vê, para cada uma, quantas vezes foi feita das que '
+              'devia: à mão, pela app, não feita ou sem registo.',
+          'Mais abaixo: cada dia, as Validades, as Listas 2.0, os camiões, '
+              'os inventários, os pedidos e o que cada pessoa fez.',
+          'Toque em partilhar para enviar o resumo por WhatsApp.',
+        ],
+      ),
+    ],
+  ),
+  TutorialSection(
     id: 'avisos',
     title: 'Avisos',
     version: 1,

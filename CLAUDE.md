@@ -38,7 +38,7 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/models/diagnostic.dart`, `lib/services/auto_mark_service.dart`
+  `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/models/diagnostic.dart`, `lib/models/stats.dart`, `lib/services/auto_mark_service.dart`
   (`test/auto_mark_service_test.dart`),
   `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/horario.dart` and
   `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
@@ -177,6 +177,13 @@ multi-tenant product.
   `leftKey`; a custom count task's null `count`) shows "Número por preencher". A new fixed task
   goes in `fixedDailyTaskKeys` / `fixedWeeklyTaskKeys`, `fixedTaskLabels`, `defaultTaskWindow`,
   the `dailyDone`/`setDailyDone`/`dailyNames` switches and `dailyTaskFields` (below).
+- Estatísticas (since 0.97.0, `StatsScreen`, Home for `StoreAccess.canSeeStats`, level 3+,
+  app-side): pure `computeStats(StatsPeriod, StatsInput, now:)` in `lib/models/stats.dart` over
+  every row (`loadStatsInput`, reloaded on writes to `statsCollections` and remote changes). A
+  task is due on a day once its `TaskWindow` closed (or when marked), from the first day it was
+  ever marked; outcomes are by hand, by the app (`autoMarks`), não feita or unmarked. People are
+  counted by the names on the rows. `statsText` is the WhatsApp summary. A new task or kind of
+  record worth counting goes in `computeStats` (and `statsCollections`).
 - Diagnóstico (since 0.96.0, `DiagnosticScreen`, from Definições and the sync sheet): the
   sync state, `SyncService.log` (this session's last syncs), `pendingByCollection`, `cursor`,
   the clock offset, `AutoMarkService`'s last run (`lastRunAt`, `lastRunMarked`,

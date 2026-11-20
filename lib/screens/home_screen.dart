@@ -93,25 +93,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ..._cards,
-                    GridView.count(
-                      // Four across on a computer's wider column.
-                      crossAxisCount: MediaQuery.sizeOf(context).width >= 600
-                          ? 4
-                          : 2,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      mainAxisExtent: 76,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        for (final d in homeDestinations)
-                          _NavButton(
-                            icon: d.icon,
-                            label: d.label,
-                            onPressed: () =>
-                                Navigator.of(context).push(d.route()),
-                          ),
-                      ],
+                    // Some buttons depend on the account (Estatísticas).
+                    ListenableBuilder(
+                      listenable: AccountService.instance,
+                      builder: (context, _) => GridView.count(
+                        // Four across on a computer's wider column.
+                        crossAxisCount: MediaQuery.sizeOf(context).width >= 600
+                            ? 4
+                            : 2,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        mainAxisExtent: 76,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          for (final d in homeDestinations)
+                            _NavButton(
+                              icon: d.icon,
+                              label: d.label,
+                              onPressed: () =>
+                                  Navigator.of(context).push(d.route()),
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

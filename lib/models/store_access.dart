@@ -99,6 +99,10 @@ class StoreAccess {
   /// tarefas).
   bool get canEditTaskWindows => admin || level >= 3;
 
+  /// Whether this account opens Estatísticas (how the tasks went, who did
+  /// what): level 3 and up, like the rest of a Chefe's tools.
+  bool get canSeeStats => admin || level >= 3;
+
   /// Whether this account shares the join code and adds, links and removes
   /// members.
   bool get canManageMembers => admin || level >= 4;

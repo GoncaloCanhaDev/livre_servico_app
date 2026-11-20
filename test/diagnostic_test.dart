@@ -38,14 +38,22 @@ void main() {
   group('autoMarkBlockedReason', () {
     test('a phone that may not mark says so', () {
       expect(
-        autoMarkBlockedReason(canAutoMark: false, connected: true, synced: true),
+        autoMarkBlockedReason(
+          canAutoMark: false,
+          connected: true,
+          synced: true,
+        ),
         contains('não marca'),
       );
     });
 
     test('connected, it waits for this session to sync', () {
       expect(
-        autoMarkBlockedReason(canAutoMark: true, connected: true, synced: false),
+        autoMarkBlockedReason(
+          canAutoMark: true,
+          connected: true,
+          synced: false,
+        ),
         contains('primeira sincronização'),
       );
       expect(

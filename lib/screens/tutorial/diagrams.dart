@@ -1248,8 +1248,7 @@ class _HorariosDiagram extends StatelessWidget {
           child: Column(
             children: [
               row('', [
-                for (final d in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'])
-                  (d, null),
+                for (final d in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']) (d, null),
               ]),
               row('Ana', [
                 ('06–14', abertura),
@@ -1361,7 +1360,12 @@ class _HorarioEditDiagram extends StatelessWidget {
         _gap,
         const Row(
           children: [
-            Expanded(child: _Line('Importar: Manter alterações?', icon: Icons.upload_file)),
+            Expanded(
+              child: _Line(
+                'Importar: Manter alterações?',
+                icon: Icons.upload_file,
+              ),
+            ),
             SizedBox(width: 4),
             _Marker(4, size: 15),
           ],
@@ -1592,6 +1596,72 @@ class _HistoricoDiagram extends StatelessWidget {
         _gap,
         const _Box(
           child: _Line('Lista de Abertura · Total 20', icon: Icons.checklist),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsDiagram extends StatelessWidget {
+  const _StatsDiagram();
+
+  Widget _bar(BuildContext context, double rate, Color color) => ClipRRect(
+    borderRadius: BorderRadius.circular(3),
+    child: LinearProgressIndicator(
+      value: rate,
+      minHeight: 5,
+      backgroundColor: context.faint,
+      color: color,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return _Screen(
+      title: 'Estatísticas',
+      actions: const [_BarIcon(Icons.share, 4)],
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _Button('Semana', filled: true),
+            SizedBox(width: 4),
+            _Button('Mês'),
+            SizedBox(width: 6),
+            _Marker(1, size: 15),
+          ],
+        ),
+        const _Line('‹   16 a 22 de novembro   ›', bold: true),
+        _gap,
+        _Box(
+          marker: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _Line(
+                'Kiwi Abertura',
+                trailing: Text('7/7 · 100 %', style: TextStyle(fontSize: 11)),
+              ),
+              _bar(context, 1, Colors.green.shade600),
+              const SizedBox(height: 4),
+              const _Line(
+                'Validades · Noite',
+                trailing: Text('5/7 · 71 %', style: TextStyle(fontSize: 11)),
+              ),
+              _bar(context, 0.71, Colors.orange.shade600),
+              const _Line('     2 pela app · 1 não feita · 1 sem registo'),
+            ],
+          ),
+        ),
+        _gap,
+        const _Box(
+          marker: 3,
+          child: Column(
+            children: [
+              _Line('Ana Silva', bold: true),
+              _Line('     12 tarefas · 4 Automáticas · 1 camião'),
+            ],
+          ),
         ),
       ],
     );
