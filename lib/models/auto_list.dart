@@ -7,7 +7,7 @@ class AutoList with SyncFields {
     final a = AutoList()
       ..createdByInitials = stringOrNull(j['createdByInitials'])
       ..createdByNames = stringsFromJson(j['createdByNames'])
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..congelados = intFromJson(j['congelados'])
       ..opls = intFromJson(j['opls'])
       ..naoPereciveis = intFromJson(j['naoPereciveis'])

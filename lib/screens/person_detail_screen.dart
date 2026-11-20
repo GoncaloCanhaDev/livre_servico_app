@@ -205,18 +205,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       }
     }
 
-    final grouped = <DateTime, List<_ActivityItem>>{};
-    for (final item in items) {
-      final day = currentServiceDay(item.time);
-      (grouped[day] ??= []).add(item);
-    }
-    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final result = <DateTime, List<_ActivityItem>>{};
-    for (final key in sortedKeys) {
-      grouped[key]!.sort((a, b) => b.time.compareTo(a.time));
-      result[key] = grouped[key]!;
-    }
-    return result;
+    return groupByServiceDay(items, (item) => item.time);
   }
 
   List<({String label})> _tasksDoneByPerson(DailyTasks t, String name) {

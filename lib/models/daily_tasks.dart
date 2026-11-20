@@ -9,7 +9,7 @@ class DailyTasks with SyncFields {
 
   factory DailyTasks.fromJson(Map<String, dynamic> j) {
     final t = DailyTasks()
-      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], noDate)
       ..kiwiAbertura = boolFromJson(j['kiwiAbertura'])
       ..kiwiAberturaBy = stringOrNull(j['kiwiAberturaBy'])
       ..kiwiAberturaByNames = stringsFromJson(j['kiwiAberturaByNames'])

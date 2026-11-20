@@ -391,8 +391,8 @@ class LocalCollection<T extends SyncedRow> {
   final _rows = <int, Map<String, dynamic>>{};
 
   /// Each row of [_rows] decoded once, the first time a test or a sync key
-  /// needs it, and dropped when the row is written. Never handed out (reads
-  /// still build new objects), so nothing can change it.
+  /// needs it, and dropped when the row is written. Only handed out by
+  /// [allReadOnly] (other reads build new objects), so nothing changes it.
   final _decoded = <int, T>{};
   int _lastId = 0;
 
@@ -426,6 +426,14 @@ class LocalCollection<T extends SyncedRow> {
   Future<List<T>> all({bool includeDeleted = false}) async => [
     for (final e in _rows.entries)
       if (_visible(e.value, includeDeleted)) _read(e.key, e.value),
+  ];
+
+  /// Every row like [all], but the copies decoded once and shared with the
+  /// next reads, so a long history isn't built anew each time: only for
+  /// code that never changes them nor saves them (Estatísticas).
+  Future<List<T>> allReadOnly() async => [
+    for (final e in _rows.entries)
+      if (_visible(e.value, false)) _cached(e.key),
   ];
 
   /// The rows [test] accepts, in no particular order. [test] sees each row

@@ -236,21 +236,7 @@ class _AllTabState extends State<_AllTab>
       );
     }
 
-    // Group by service day
-    final grouped = <DateTime, List<_DayItem>>{};
-    for (final item in items) {
-      final day = currentServiceDay(item.time);
-      (grouped[day] ??= []).add(item);
-    }
-    // Sort days descending
-    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    // Sort items within each day by time descending
-    final result = <DateTime, List<_DayItem>>{};
-    for (final key in sortedKeys) {
-      grouped[key]!.sort((a, b) => b.time.compareTo(a.time));
-      result[key] = grouped[key]!;
-    }
-    return result;
+    return groupByServiceDay(items, (item) => item.time);
   }
 
   @override

@@ -9,7 +9,7 @@ class Inventory with SyncFields {
       ..createdByNames = stringsFromJson(j['createdByNames'])
       ..name = stringFromJson(j['name'])
       ..valueCents = intFromJson(j['valueCents'])
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..code = stringOrNull(j['code'])
       ..startedAt = dateFromJson(j['startedAt'])
       ..finishedAt = dateFromJson(j['finishedAt'])

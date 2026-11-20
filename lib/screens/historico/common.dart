@@ -142,11 +142,13 @@ class _Listas2ByDay {
     for (final v in await Visivel2Service.instance.history()) {
       (visiveis[v.serviceDay] ??= []).add(v);
     }
-    final autos = <DateTime, int>{};
-    for (final a in await Auto2Service.instance.history()) {
-      final day = currentServiceDay(a.createdAt);
-      autos[day] = (autos[day] ?? 0) + 1;
-    }
+    final autos = {
+      for (final MapEntry(:key, :value) in groupByServiceDay(
+        await Auto2Service.instance.history(),
+        (a) => a.createdAt,
+      ).entries)
+        key: value.length,
+    };
     return _Listas2ByDay._(visiveis, autos);
   }
 

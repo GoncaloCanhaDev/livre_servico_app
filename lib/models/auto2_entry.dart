@@ -35,7 +35,7 @@ class Auto2Entry with SyncFields {
 
   factory Auto2Entry.fromJson(Map<String, dynamic> j) {
     final e = Auto2Entry()
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..item = stringOrNull(j['item']) ?? ''
       ..value = intFromJson(j['value'])
       ..porTratar = intFromJson(j['porTratar'])

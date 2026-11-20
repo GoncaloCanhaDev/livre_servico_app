@@ -21,7 +21,7 @@ class Aviso with SyncFields {
   factory Aviso.fromJson(Map<String, dynamic> j) {
     final a = Aviso()
       ..text = stringFromJson(j['text'])
-      ..sentAt = dateFromJsonOr(j['sentAt'], DateTime(2000))
+      ..sentAt = dateFromJsonOr(j['sentAt'], noDate)
       ..fromPersonId = stringFromJson(j['fromPersonId'])
       ..fromName = stringFromJson(j['fromName'])
       ..toPersonIds = stringsFromJson(j['toPersonIds']);
@@ -63,7 +63,7 @@ class AvisoVisto with SyncFields {
     final v = AvisoVisto()
       ..avisoId = stringFromJson(j['avisoId'])
       ..personId = stringFromJson(j['personId'])
-      ..seenAt = dateFromJsonOr(j['seenAt'], DateTime(2000));
+      ..seenAt = dateFromJsonOr(j['seenAt'], noDate);
     syncFieldsFromJson(v, j);
     return v;
   }

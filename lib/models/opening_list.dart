@@ -7,7 +7,7 @@ class OpeningList with SyncFields {
     final l = OpeningList()
       ..createdByInitials = stringOrNull(j['createdByInitials'])
       ..createdByNames = stringsFromJson(j['createdByNames'])
-      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], noDate)
       ..congelados = intFromJson(j['congelados'])
       ..opls = intFromJson(j['opls'])
       ..naoPereciveis = intFromJson(j['naoPereciveis'])
@@ -143,4 +143,40 @@ DateTime currentServiceDay([DateTime? now]) {
   // The day before from the date, not by taking 24 hours: on the night
   // the clocks go forward, 00:30 minus 24 hours is two dates back.
   return DateTime(n.year, n.month, n.day - (n.hour < 5 ? 1 : 0), 5);
+}
+
+/// A test for "falls in the service day starting at [day] (05:00)": the same
+/// as `currentServiceDay(t).isAtSameMomentAs(day)`, but it builds the day's
+/// end once instead of a local date per row (each one costs a time zone
+/// lookup, which adds up over a long history).
+bool Function(DateTime t) inServiceDay(DateTime day) {
+  final start = DateTime(day.year, day.month, day.day, 5);
+  // By date, not by adding 24 hours: the day the clocks change is 23 or 25.
+  final end = DateTime(day.year, day.month, day.day + 1, 5);
+  return (t) => !t.isBefore(start) && t.isBefore(end);
+}
+
+/// [items] grouped by the service day of [timeOf], newest day first and
+/// each day's items newest first. Walks them sorted, so it works out a
+/// service day once per day instead of once per item.
+Map<DateTime, List<T>> groupByServiceDay<T>(
+  Iterable<T> items,
+  DateTime Function(T item) timeOf,
+) {
+  final sorted = items.toList()
+    ..sort((a, b) => timeOf(b).compareTo(timeOf(a)));
+  final grouped = <DateTime, List<T>>{};
+  List<T>? current;
+  DateTime? start, end;
+  for (final item in sorted) {
+    final t = timeOf(item);
+    if (current == null || t.isBefore(start!) || !t.isBefore(end!)) {
+      final day = currentServiceDay(t);
+      start = day;
+      end = DateTime(day.year, day.month, day.day + 1, 5);
+      current = grouped[day] ??= [];
+    }
+    current.add(item);
+  }
+  return grouped;
 }

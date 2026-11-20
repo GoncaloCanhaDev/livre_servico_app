@@ -34,8 +34,10 @@ mixin SyncFields implements SyncedRow {
   @override
   String syncUuid = '';
 
+  // One shared date: building a local one costs a time zone lookup, and
+  // every row read makes a new object.
   @override
-  DateTime syncUpdatedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime syncUpdatedAt = _epoch;
 
   @override
   DateTime? syncDeletedAt;
@@ -82,6 +84,10 @@ DateTime? dateFromJson(Object? v) {
   if (v is String) return DateTime.tryParse(v)?.toLocal();
   return null;
 }
+
+/// The fallback date of a required date a row lacks (only on rows from
+/// before the field existed). Shared, so reading a row doesn't build one.
+final noDate = DateTime(2000);
 
 /// [dateFromJson], or [fallback] when [v] holds no date.
 DateTime dateFromJsonOr(Object? v, DateTime fallback) =>

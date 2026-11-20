@@ -9,7 +9,7 @@ class WeeklyTasks with SyncFields {
 
   factory WeeklyTasks.fromJson(Map<String, dynamic> j) {
     final w = WeeklyTasks()
-      ..serviceWeek = dateFromJsonOr(j['serviceWeek'], DateTime(2000))
+      ..serviceWeek = dateFromJsonOr(j['serviceWeek'], noDate)
       ..limpezaMaquinaVoltas = boolFromJson(j['limpezaMaquinaVoltas'])
       ..limpezaMaquinaVoltasBy = stringOrNull(j['limpezaMaquinaVoltasBy'])
       ..limpezaMaquinaVoltasByNames = stringsFromJson(

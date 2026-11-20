@@ -20,7 +20,7 @@ class CustomTask with SyncFields {
       ..inputType =
           enumFromJson(CustomTaskInputType.values, j['inputType']) ??
           CustomTaskInputType.simple
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000));
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate);
     syncFieldsFromJson(t, j);
     return t;
   }

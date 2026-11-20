@@ -7,6 +7,21 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.8] — 2026-11-20
+
+### Changed
+
+- Faster reads over a long history (measured on two years of rows, about 22 700): each row
+  read no longer builds throwaway local dates (`noDate` and the sync fields' epoch are shared;
+  every local `DateTime` costs a time zone lookup), so building rows takes about half the time.
+- One day's Automáticas, camiões and 1.0 Automáticas are found by comparing with the day's
+  05:00–05:00 range (`inServiceDay`) instead of working out each row's service day: about
+  100 ms → 2 ms. `StatsPeriod.holds` compares the same way.
+- Histórico (Tudo, the Diárias' Listas 2.0 counts) and a person's activity group by service
+  day through `groupByServiceDay`, once per day instead of once per row.
+- Estatísticas read the rows `LocalDb` already keeps decoded (`allReadOnly`), so reloading them
+  after a change takes about 5 ms instead of 280 ms; computing a month, 145 → 26 ms.
+
 ## [0.97.7] — 2026-11-20
 
 ### Fixed

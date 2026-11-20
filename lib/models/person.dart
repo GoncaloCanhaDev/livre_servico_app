@@ -9,7 +9,7 @@ class Person with SyncFields {
     final p = Person()
       ..fullName = stringFromJson(j['fullName'])
       ..collaboratorNumber = stringFromJson(j['collaboratorNumber'])
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..birthDay = intOrNull(j['birthDay']) ?? born?.day
       ..birthMonth = intOrNull(j['birthMonth']) ?? born?.month
       ..hireDate = dateFromJson(j['hireDate'])
@@ -171,8 +171,8 @@ class Ausencia {
 
   factory Ausencia.fromJson(Map<String, dynamic> j) => Ausencia()
     ..tipo = enumFromJson(AusenciaTipo.values, j['tipo']) ?? AusenciaTipo.outra
-    ..start = dateFromJsonOr(j['start'], DateTime(2000))
-    ..end = dateFromJsonOr(j['end'], DateTime(2000));
+    ..start = dateFromJsonOr(j['start'], noDate)
+    ..end = dateFromJsonOr(j['end'], noDate);
 
   Map<String, dynamic> toJson() => {
     'tipo': tipo.name,
@@ -181,6 +181,6 @@ class Ausencia {
   };
 
   AusenciaTipo tipo = AusenciaTipo.ferias;
-  DateTime start = DateTime(2000);
-  DateTime end = DateTime(2000);
+  DateTime start = noDate;
+  DateTime end = noDate;
 }

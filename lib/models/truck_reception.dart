@@ -155,7 +155,7 @@ class TruckReception with SyncFields {
     final t = TruckReception()
       ..createdByInitials = stringOrNull(j['createdByInitials'])
       ..createdByNames = stringsFromJson(j['createdByNames'])
-      ..arrivalTime = dateFromJsonOr(j['arrivalTime'], DateTime(2000))
+      ..arrivalTime = dateFromJsonOr(j['arrivalTime'], noDate)
       ..type = enumFromJson(TruckType.values, j['type'])
       ..licensePlate = stringOrNull(j['licensePlate'])
       ..supplier = stringOrNull(j['supplier'])

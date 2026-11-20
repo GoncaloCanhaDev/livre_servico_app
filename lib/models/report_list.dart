@@ -7,7 +7,7 @@ class ReportList with SyncFields {
     final r = ReportList()
       ..createdByInitials = stringOrNull(j['createdByInitials'])
       ..createdByNames = stringsFromJson(j['createdByNames'])
-      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], noDate)
       ..diasSemVendas = intFromJson(j['diasSemVendas'])
       ..regularizacoes = intFromJson(j['regularizacoes'])
       ..massiva = intFromJson(j['massiva'])

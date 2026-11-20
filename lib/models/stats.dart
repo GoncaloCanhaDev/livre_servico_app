@@ -52,11 +52,10 @@ class StatsPeriod {
   StatsPeriod get next =>
       StatsPeriod.containing(kind, DateTime(end.year, end.month, end.day, 12));
 
-  /// Whether the service day [day] (any time in it) belongs here.
-  bool holds(DateTime day) {
-    final d = currentServiceDay(day);
-    return !d.isBefore(start) && d.isBefore(end);
-  }
+  /// Whether the service day [day] (any time in it) belongs here. [start]
+  /// and [end] are both 05:00, so comparing [day] itself is the same as
+  /// comparing its service day, without building a date per row.
+  bool holds(DateTime day) => !day.isBefore(start) && day.isBefore(end);
 
   /// Its service days, at 05:00.
   List<DateTime> get days => [

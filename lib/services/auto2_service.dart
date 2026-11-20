@@ -42,8 +42,10 @@ class Auto2Service extends ChangeNotifier {
   }
 
   /// The sends of service [day] (one backdated to it included).
-  Future<List<Auto2Entry>> forServiceDay(DateTime day) => _db.auto2Entries
-      .where((e) => currentServiceDay(e.createdAt).isAtSameMomentAs(day));
+  Future<List<Auto2Entry>> forServiceDay(DateTime day) {
+    final inDay = inServiceDay(day);
+    return _db.auto2Entries.where((e) => inDay(e.createdAt));
+  }
 
   Future<void> delete(int id) async {
     if (await _db.auto2Entries.softDelete(id)) notifyListeners();

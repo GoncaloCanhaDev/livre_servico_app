@@ -32,9 +32,10 @@ class TruckService extends ChangeNotifier {
   /// (05:00 to 05:00).
   /// Compared by service day, not by adding 24 hours, so the day the clocks
   /// change keeps its own camiões.
-  Future<List<TruckReception>> forServiceDay(DateTime day) => _db
-      .truckReceptions
-      .where((t) => currentServiceDay(t.arrivalTime).isAtSameMomentAs(day));
+  Future<List<TruckReception>> forServiceDay(DateTime day) {
+    final inDay = inServiceDay(day);
+    return _db.truckReceptions.where((t) => inDay(t.arrivalTime));
+  }
 
   Future<List<TruckReception>> all({bool includeDeleted = false}) async =>
       (await _db.truckReceptions.all(includeDeleted: includeDeleted))

@@ -6,7 +6,7 @@ class Pedido with SyncFields {
   factory Pedido.fromJson(Map<String, dynamic> j) {
     final p = Pedido()
       ..createdByInitials = stringOrNull(j['createdByInitials'])
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..finishedAt = dateFromJson(j['finishedAt'])
       ..numero = stringOrNull(j['numero'])
       ..supplier = stringOrNull(j['supplier'])

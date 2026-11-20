@@ -16,8 +16,8 @@ class HorarioMes with SyncFields {
 
   factory HorarioMes.fromJson(Map<String, dynamic> j) {
     final m = HorarioMes()
-      ..month = dateFromJsonOr(j['month'], DateTime(2000))
-      ..firstDay = dateFromJsonOr(j['firstDay'], DateTime(2000))
+      ..month = dateFromJsonOr(j['month'], noDate)
+      ..firstDay = dateFromJsonOr(j['firstDay'], noDate)
       ..codigos = {
         if (j['codigos'] case final Map<String, dynamic> c)
           for (final e in c.entries)
@@ -30,7 +30,7 @@ class HorarioMes with SyncFields {
       ..linhas = [
         for (final l in mapsFromJson(j['linhas'])) HorarioLinha.fromJson(l),
       ]
-      ..importedAt = dateFromJsonOr(j['importedAt'], DateTime(2000))
+      ..importedAt = dateFromJsonOr(j['importedAt'], noDate)
       ..importedBy = stringFromJson(j['importedBy']);
     syncFieldsFromJson(m, j);
     return m;
@@ -481,14 +481,14 @@ class HorarioAlteracao with SyncFields {
 
   factory HorarioAlteracao.fromJson(Map<String, dynamic> j) {
     final a = HorarioAlteracao()
-      ..date = dateFromJsonOr(j['date'], DateTime(2000))
+      ..date = dateFromJsonOr(j['date'], noDate)
       ..personId = stringFromJson(j['personId'])
       ..code = stringFromJson(j['code'])
       ..entrada = intOrNull(j['entrada'])
       ..saida = intOrNull(j['saida'])
       ..fileCode = stringFromJson(j['fileCode'])
       ..changedBy = stringFromJson(j['changedBy'])
-      ..changedAt = dateFromJsonOr(j['changedAt'], DateTime(2000));
+      ..changedAt = dateFromJsonOr(j['changedAt'], noDate);
     syncFieldsFromJson(a, j);
     return a;
   }

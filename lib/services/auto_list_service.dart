@@ -60,11 +60,9 @@ class AutoListService extends ChangeNotifier {
     DateTime day, {
     bool includeDeleted = false,
   }) {
-    // By service day, not by adding 24 hours: the day the clocks change
-    // keeps its own lists.
-    final start = DateTime(day.year, day.month, day.day, 5);
+    final inDay = inServiceDay(day);
     return _db.autoLists.where(
-      (a) => currentServiceDay(a.createdAt).isAtSameMomentAs(start),
+      (a) => inDay(a.createdAt),
       includeDeleted: includeDeleted,
     );
   }

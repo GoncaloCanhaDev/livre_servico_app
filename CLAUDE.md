@@ -79,7 +79,12 @@ multi-tenant product.
   `all`, `where`, `firstWhere` and `get`; every read builds new objects, so a row changes
   nothing until it is `put`. Each row is also kept decoded once (`_decoded`, dropped on
   write): `where`/`firstWhere` tests run on those, so a test must never change the row it
-  gets, and only matches are built anew. Prefer `where` to filtering `all()` for one day. Writes go to
+  gets, and only matches are built anew. Prefer `where` to filtering `all()` for one day.
+  `allReadOnly` hands out those shared copies (for code that never changes or saves them:
+  Estatísticas). Building a local `DateTime` costs a time zone lookup, which adds up over a
+  long history: in per-row tests use `inServiceDay(day)` (one range) rather than
+  `currentServiceDay(row.x)`, group by day with `groupByServiceDay`, and share fallback
+  dates (`noDate`). Writes go to
   SQLite first; `LocalDb.transaction` groups several.
 - Every persisted model in `lib/models/*.dart` mixes in `SyncFields` (`lib/models/local_row.dart`:
   the local `id`, 0 until saved, and the sync fields) and has `toJson` / `fromJson`. Adding a

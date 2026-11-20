@@ -8,8 +8,8 @@ class Visivel2Entry with SyncFields {
 
   factory Visivel2Entry.fromJson(Map<String, dynamic> j) {
     final v = Visivel2Entry()
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
-      ..serviceDay = dateFromJsonOr(j['serviceDay'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
+      ..serviceDay = dateFromJsonOr(j['serviceDay'], noDate)
       ..itens = intFromJson(j['itens'])
       ..byNames = stringsFromJson(j['byNames'])
       ..backdated = boolFromJson(j['backdated']);

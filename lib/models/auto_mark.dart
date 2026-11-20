@@ -22,7 +22,7 @@ class AutoMark {
   });
 
   factory AutoMark.fromJson(Map<String, dynamic> j) => AutoMark(
-    at: dateFromJsonOr(j['at'], DateTime(2000)),
+    at: dateFromJsonOr(j['at'], noDate),
     confirmedByNames: stringsFromJson(j['confirmedByNames']),
     confirmedAt: dateFromJson(j['confirmedAt']),
   );

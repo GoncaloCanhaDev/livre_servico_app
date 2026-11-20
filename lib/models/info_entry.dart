@@ -10,7 +10,7 @@ class InfoEntry with SyncFields {
       ..title = stringFromJson(j['title'])
       ..description = stringFromJson(j['description'])
       ..contact = stringOrNull(j['contact'])
-      ..createdAt = dateFromJsonOr(j['createdAt'], DateTime(2000))
+      ..createdAt = dateFromJsonOr(j['createdAt'], noDate)
       ..group = stringOrNull(j['group'])
       ..phone = stringOrNull(j['phone'])
       ..email = stringOrNull(j['email'])
