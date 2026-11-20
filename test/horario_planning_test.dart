@@ -83,7 +83,10 @@ void main() {
     final h = _index({
       'ana': ['', '', '', '', 'G82'],
     });
-    expect(offLabelOn(ana, monday, horario: h), startsWith(AusenciaTipo.baixa.label));
+    expect(
+      offLabelOn(ana, monday, horario: h),
+      startsWith(AusenciaTipo.baixa.label),
+    );
     expect(onShiftAt([ana], DateTime(2027, 1, 4, 10), horario: h), isEmpty);
   });
 
@@ -94,10 +97,15 @@ void main() {
     final h = _index({
       'ana': ['', '', '', '', 'G82'],
     });
-    expect(shiftSpanOn(ana, monday, horario: h)!.start, DateTime(2027, 1, 4, 8));
+    expect(
+      shiftSpanOn(ana, monday, horario: h)!.start,
+      DateTime(2027, 1, 4, 8),
+    );
     expect(shiftTextOn(ana, monday, horario: h), '08:00–12:00');
-    expect(shiftSpanOn(ana, DateTime(2027, 1, 10), horario: h)!.start,
-        DateTime(2027, 1, 10, 8));
+    expect(
+      shiftSpanOn(ana, DateTime(2027, 1, 10), horario: h)!.start,
+      DateTime(2027, 1, 10, 8),
+    );
   });
 
   test('a night shift is on at 03:00 the next morning', () {

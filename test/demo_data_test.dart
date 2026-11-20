@@ -28,28 +28,33 @@ void main() {
     expect(people.every((p) => p.syncUuid.isNotEmpty), isTrue);
   });
 
-  test("this and next month's horário cover Livre Serviço, the visitor on it", () async {
-    final me = await seedDemo(now: now);
-    await HorarioService.instance.load();
-    final months = await db().horarioMeses.all();
-    expect(months.map((m) => m.month).toSet(), {
-      DateTime(2026, 10),
-      DateTime(2026, 11),
-    });
-    final month = months.first;
-    final ls = (await db().persons.all()).where(
-      (p) => p.team == livreServicoId,
-    );
-    expect(month.linhas.map((l) => l.personId).toSet(),
-        ls.map((p) => p.syncUuid).toSet());
-    final p = (await db().persons.firstWhere((p) => p.syncUuid == me))!;
-    final index = HorarioService.instance.index;
-    expect(index.nextDays(p, currentServiceDay(now), 7), hasLength(7));
-    expect(
-      index.nextDays(p, currentServiceDay(now), 7).where((d) => d.isShift),
-      isNotEmpty,
-    );
-  });
+  test(
+    "this and next month's horário cover Livre Serviço, the visitor on it",
+    () async {
+      final me = await seedDemo(now: now);
+      await HorarioService.instance.load();
+      final months = await db().horarioMeses.all();
+      expect(months.map((m) => m.month).toSet(), {
+        DateTime(2026, 10),
+        DateTime(2026, 11),
+      });
+      final month = months.first;
+      final ls = (await db().persons.all()).where(
+        (p) => p.team == livreServicoId,
+      );
+      expect(
+        month.linhas.map((l) => l.personId).toSet(),
+        ls.map((p) => p.syncUuid).toSet(),
+      );
+      final p = (await db().persons.firstWhere((p) => p.syncUuid == me))!;
+      final index = HorarioService.instance.index;
+      expect(index.nextDays(p, currentServiceDay(now), 7), hasLength(7));
+      expect(
+        index.nextDays(p, currentServiceDay(now), 7).where((d) => d.isShift),
+        isNotEmpty,
+      );
+    },
+  );
 
   test('the horário has changes made in the app', () async {
     await seedDemo(now: now);

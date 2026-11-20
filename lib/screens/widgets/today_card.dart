@@ -261,11 +261,13 @@ class _TodayCardState extends State<TodayCard> {
 
 /// "hoje", "amanhã" or the weekday and date ("sábado, 10/10") of [date].
 String _whenText(DateTime date, DateTime today) {
-  final days = DateTime(
+  // In UTC: a local midnight-to-midnight is 23 hours when the clocks go
+  // forward, and tomorrow would read as 0 days away.
+  final days = DateTime.utc(
     date.year,
     date.month,
     date.day,
-  ).difference(DateTime(today.year, today.month, today.day)).inDays;
+  ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
   if (days == 0) return 'hoje 🎂';
   if (days == 1) return 'amanhã';
   return DateFormat("EEEE, d/M", 'pt_PT').format(date);

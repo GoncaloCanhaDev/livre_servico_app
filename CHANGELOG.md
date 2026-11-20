@@ -7,6 +7,16 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.7] — 2026-11-20
+
+### Fixed
+
+- On the days the clocks change, shifts from a person's own hours (no horário day) started and
+  ended an hour off: `shiftSpanOn` builds them from the date's fields, like `HorarioDia.spanOn`.
+- The day before the clocks go forward, Home's birthday line said "hoje" for tomorrow's
+  birthday (midnight to midnight is 23 hours then): the days apart are counted in UTC.
+- A pedido became overdue an hour early or late on those days.
+
 ## [0.97.6] — 2026-11-20
 
 ### Fixed

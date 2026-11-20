@@ -38,8 +38,8 @@ class Pedido with SyncFields {
     final endOfExpectedDay = DateTime(
       expectedDate!.year,
       expectedDate!.month,
-      expectedDate!.day,
-    ).add(const Duration(days: 1));
+      expectedDate!.day + 1,
+    );
     return today.isAfter(endOfExpectedDay);
   }
 

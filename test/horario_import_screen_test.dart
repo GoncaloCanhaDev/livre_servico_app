@@ -114,9 +114,6 @@ void main() {
 
     expect(service.index.dayOf(ana, DateTime(2026, 12, 31))!.code, 'G82');
     expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.code, 'G82');
-    expect(
-      service.index.dayOf(ana, DateTime(2027, 1, 1))!.changed,
-      isNotNull,
-    );
+    expect(service.index.dayOf(ana, DateTime(2027, 1, 1))!.changed, isNotNull);
   });
 }

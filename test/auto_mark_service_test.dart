@@ -101,9 +101,7 @@ void main() {
   });
 
   test('never before autoMarkSince', () async {
-    await SettingsService.instance.setAutoMarkSince(
-      DateTime(2026, 11, 16, 5),
-    );
+    await SettingsService.instance.setAutoMarkSince(DateTime(2026, 11, 16, 5));
     await _run(DateTime(2026, 11, 18, 10));
     final rows = await DailyTasksService.instance.history();
     expect(rows.map((r) => r.serviceDay.day).toSet(), {16, 17, 18});
@@ -121,7 +119,6 @@ void main() {
     expect(t.verificacaoTemperaturas, isTrue);
     expect(t.kiwiAbertura, isFalse);
   });
-
 
   test('a Semanal is marked after its weekday', () async {
     await _run(DateTime(2026, 11, 18, 10));

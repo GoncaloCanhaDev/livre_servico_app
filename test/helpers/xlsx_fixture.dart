@@ -99,9 +99,20 @@ Uint8List buildXlsx({
 }
 
 /// The Plano of a small January 2027, like the real file's layout.
-List<List<Object?>> samplePlano({Object? a1 = 'Janeiro 2027', String firstHeader = 'Q\n31'}) => [
+List<List<Object?>> samplePlano({
+  Object? a1 = 'Janeiro 2027',
+  String firstHeader = 'Q\n31',
+}) => [
   [a1],
-  ['Secção / Nº Colaborador', 'Nome Colaborador', firstHeader, 'S\n01', 'S\n02', 'D\n03', 46388],
+  [
+    'Secção / Nº Colaborador',
+    'Nome Colaborador',
+    firstHeader,
+    'S\n01',
+    'S\n02',
+    'D\n03',
+    46388,
+  ],
   ['0129 Livre Serviço'],
   ['Dia'],
   [null, 'Ana Lopes', 'G82', 'FO', 711, ''],

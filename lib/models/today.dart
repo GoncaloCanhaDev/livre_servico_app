@@ -26,10 +26,17 @@ DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
   final start = p.shiftStart;
   final end = p.shiftEnd;
   if (start == null || end == null) return null;
-  final d = _dateOnly(day);
+  // From the date's fields, not by adding minutes, so on the day the
+  // clocks change the shift still starts at its own hour (as `spanOn`).
   return (
-    start: d.add(Duration(minutes: start)),
-    end: d.add(Duration(minutes: end <= start ? end + 24 * 60 : end)),
+    start: DateTime(day.year, day.month, day.day, 0, start),
+    end: DateTime(
+      day.year,
+      day.month,
+      day.day,
+      0,
+      end <= start ? end + 24 * 60 : end,
+    ),
   );
 }
 

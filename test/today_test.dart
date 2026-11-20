@@ -39,6 +39,16 @@ void main() {
       expect(span.end, DateTime(2026, 10, 2, 7));
     });
 
+    test('keeps its hours on the day the clocks change', () {
+      // 28 March 2027: 01:00 → 02:00 in Lisbon (and 31 October back).
+      for (final day in [DateTime(2027, 3, 28), DateTime(2027, 10, 31)]) {
+        final p = _shift(_p(1, 'Ana'), '07:00', '16:00');
+        final span = shiftSpanOn(p, day)!;
+        expect(span.start, DateTime(day.year, day.month, day.day, 7));
+        expect(span.end, DateTime(day.year, day.month, day.day, 16));
+      }
+    });
+
     test('needs both ends', () {
       expect(
         shiftSpanOn(_p(1, 'Ana')..shiftStart = 420, DateTime(2026)),
