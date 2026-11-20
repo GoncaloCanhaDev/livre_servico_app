@@ -275,7 +275,10 @@ class _Legend extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Text(t.label, style: TextStyle(color: context.muted, fontSize: 12)),
+                Text(
+                  t.label,
+                  style: TextStyle(color: context.muted, fontSize: 12),
+                ),
               ],
             ),
       ],
@@ -336,7 +339,9 @@ class _Cell extends StatelessWidget {
       decoration: BoxDecoration(
         color: d == null ? null : horarioColor(context, d.tipo),
         borderRadius: BorderRadius.circular(4),
-        border: today ? Border.all(color: context.colors.primary, width: 2) : null,
+        border: today
+            ? Border.all(color: context.colors.primary, width: 2)
+            : null,
       ),
       child: d == null
           ? null

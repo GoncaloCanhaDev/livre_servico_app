@@ -137,9 +137,7 @@ class LivreServicoApp extends StatelessWidget {
           // Hours are 24h in Portugal, whatever the phone or browser says:
           // the time pickers' keyboard mode reads only this to accept 18.
           return MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(alwaysUse24HourFormat: true),
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: DemoMode.active ? DemoBanner(child: page) : page,
           );
         },

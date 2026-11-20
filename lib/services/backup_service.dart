@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/local_row.dart';
+import '../models/teams.dart';
 import '../models/vasilhame.dart';
 import 'horario_service.dart';
 import 'local_db.dart';
@@ -124,9 +125,13 @@ class BackupService {
 }
 
 /// [json] (a Person row from a backup file) without the fields removed in
-/// 0.32.0 (cargo and manager links), so older backups still import.
-Map<String, dynamic> personJsonForImport(Map<String, dynamic> json) =>
-    Map.of(json)
-      ..remove('role')
-      ..remove('managerUuid')
-      ..remove('managerUuids');
+/// 0.32.0 (cargo and manager links), so older backups still import. The
+/// old cargo was also called `role`: dropped unless it is a [Role] name,
+/// which `role` holds since 0.68.0 and must keep.
+Map<String, dynamic> personJsonForImport(Map<String, dynamic> json) {
+  final out = Map.of(json)
+    ..remove('managerUuid')
+    ..remove('managerUuids');
+  if (!Role.values.asNameMap().containsKey(out['role'])) out.remove('role');
+  return out;
+}

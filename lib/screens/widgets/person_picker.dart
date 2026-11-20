@@ -200,10 +200,14 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
     final onShift = !_isNow
         ? const <OnShift>[]
         : [
-            for (final s in onShiftAt([
-              for (final p in people)
-                if (p.team == livreServicoId) p,
-            ], DateTime.now(), horario: HorarioService.instance.index))
+            for (final s in onShiftAt(
+              [
+                for (final p in people)
+                  if (p.team == livreServicoId) p,
+              ],
+              DateTime.now(),
+              horario: HorarioService.instance.index,
+            ))
               if (shown.contains(s.person.id)) s,
           ];
 
@@ -265,7 +269,11 @@ class _MultiPersonPickerDialogState extends State<_MultiPersonPickerDialog> {
             Text(p.fullName, style: TextStyle(color: context.muted)),
             if (tenureTagOf(p, _selectedDay) case final tenure?)
               RoleBadge(tenure, tenure: true),
-            if (awayTagOn(p, _selectedDay, horario: HorarioService.instance.index)
+            if (awayTagOn(
+                  p,
+                  _selectedDay,
+                  horario: HorarioService.instance.index,
+                )
                 case final away?)
               RoleBadge(away, away: true),
           ],

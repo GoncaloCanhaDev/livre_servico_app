@@ -78,14 +78,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     });
   }
 
-  DateTime _toServiceDay(DateTime dt) {
-    if (dt.hour < 5) {
-      final y = dt.subtract(const Duration(days: 1));
-      return DateTime(y.year, y.month, y.day, 5);
-    }
-    return DateTime(dt.year, dt.month, dt.day, 5);
-  }
-
   Future<Map<DateTime, List<_ActivityItem>>> _load() async {
     final name = _person.fullName;
     final items = <_ActivityItem>[];
@@ -215,7 +207,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
     final grouped = <DateTime, List<_ActivityItem>>{};
     for (final item in items) {
-      final day = _toServiceDay(item.time);
+      final day = currentServiceDay(item.time);
       (grouped[day] ??= []).add(item);
     }
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));

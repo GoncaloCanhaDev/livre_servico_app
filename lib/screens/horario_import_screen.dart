@@ -15,7 +15,9 @@ import 'widgets/wide_layout.dart';
 Future<String> horarioAuthorName() async {
   final account = AccountService.instance;
   final me = account.access.personId;
-  final person = me == null ? null : await PersonService.instance.bySyncUuid(me);
+  final person = me == null
+      ? null
+      : await PersonService.instance.bySyncUuid(me);
   return person?.fullName ?? account.email ?? '';
 }
 
@@ -117,7 +119,9 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Substituir horário?'),
-          content: Text('Já há um horário de $month. Substituir pelo deste ficheiro?'),
+          content: Text(
+            'Já há um horário de $month. Substituir pelo deste ficheiro?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -190,7 +194,9 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    for (final grupo in {for (final l in parsed.linhas) l.grupo}) ...[
+                    for (final grupo in {
+                      for (final l in parsed.linhas) l.grupo,
+                    }) ...[
                       if (grupo.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
@@ -216,7 +222,10 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
                             onPressed: () => setState(() {
                               final keys = {
                                 for (final a in against)
-                                  alteracaoKey(a.change.personId, a.change.date),
+                                  alteracaoKey(
+                                    a.change.personId,
+                                    a.change.date,
+                                  ),
                               };
                               _drop.containsAll(keys)
                                   ? _drop.removeAll(keys)
@@ -225,7 +234,10 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
                             child: Text(
                               against.every(
                                     (a) => _drop.contains(
-                                      alteracaoKey(a.change.personId, a.change.date),
+                                      alteracaoKey(
+                                        a.change.personId,
+                                        a.change.date,
+                                      ),
                                     ),
                                   )
                                   ? 'Manter todas'
@@ -243,7 +255,8 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
                         () {
                           final c = a.change;
                           final key = alteracaoKey(c.personId, c.date);
-                          String show(String code) => code.isEmpty ? 'nada' : code;
+                          String show(String code) =>
+                              code.isEmpty ? 'nada' : code;
                           return SwitchListTile(
                             contentPadding: EdgeInsets.zero,
                             value: !_drop.contains(key),
@@ -281,7 +294,9 @@ class _HorarioImportScreenState extends State<HorarioImportScreen> {
       title: Text(nome),
       subtitle: Text(
         p?.fullName ?? 'Sem correspondência',
-        style: TextStyle(color: p == null ? context.warningText : context.muted),
+        style: TextStyle(
+          color: p == null ? context.warningText : context.muted,
+        ),
       ),
       leading: Icon(
         p == null ? Icons.help_outline : Icons.check_circle_outline,

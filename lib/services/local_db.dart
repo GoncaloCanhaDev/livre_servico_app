@@ -155,8 +155,7 @@ class LocalDb {
   ];
 
   /// How many rows, in every collection, wait to be pushed.
-  int get pendingCount =>
-      collections.fold(0, (sum, c) => sum + c.pendingCount);
+  int get pendingCount => collections.fold(0, (sum, c) => sum + c.pendingCount);
 
   /// Set once [backfillSync] has run at startup: rows saved since are
   /// stamped when written, so it isn't needed again.

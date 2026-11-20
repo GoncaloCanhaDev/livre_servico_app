@@ -55,14 +55,6 @@ class _AllTabState extends State<_AllTab>
     });
   }
 
-  DateTime _toServiceDay(DateTime dt) {
-    if (dt.hour < 5) {
-      final y = dt.subtract(const Duration(days: 1));
-      return DateTime(y.year, y.month, y.day, 5);
-    }
-    return DateTime(dt.year, dt.month, dt.day, 5);
-  }
-
   Future<Map<DateTime, List<_DayItem>>> _load() async {
     final items = <_DayItem>[];
 
@@ -247,7 +239,7 @@ class _AllTabState extends State<_AllTab>
     // Group by service day
     final grouped = <DateTime, List<_DayItem>>{};
     for (final item in items) {
-      final day = _toServiceDay(item.time);
+      final day = currentServiceDay(item.time);
       (grouped[day] ??= []).add(item);
     }
     // Sort days descending

@@ -14,6 +14,11 @@ void main() {
     expect(old.containsKey('role'), isTrue, reason: 'input is not mutated');
   });
 
+  test('keeps a role saved since 0.68.0', () {
+    final row = {'id': 2, 'fullName': 'Rita', 'role': 'chefeSeccao'};
+    expect(personJsonForImport(row), row);
+  });
+
   test('leaves current rows untouched', () {
     final row = {'id': 1, 'fullName': 'Rui', 'team': 'talho', 'chefe': null};
     expect(personJsonForImport(row), row);

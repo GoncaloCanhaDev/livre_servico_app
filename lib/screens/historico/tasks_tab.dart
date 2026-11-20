@@ -139,7 +139,7 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})'
-                    '${_leftText(t, ValidadesTurno.manha)}',
+                '${_leftText(t, ValidadesTurno.manha)}',
                 notDone: t.notDone['verificacao_validades'],
                 autoMark: t.autoMarks['verificacao_validades'],
                 t.verificacaoValidades,
@@ -153,7 +153,7 @@ class _TasksTabState extends State<_TasksTab>
               ),
               _TaskEntry(
                 '${ValidadesTurno.noite.label} (${t.validadesNoiteCount})'
-                    '${_leftText(t, ValidadesTurno.noite)}',
+                '${_leftText(t, ValidadesTurno.noite)}',
                 notDone: t.notDone['validades_noite'],
                 autoMark: t.autoMarks['validades_noite'],
                 t.validadesNoite,

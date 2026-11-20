@@ -574,7 +574,8 @@ Future<String> seedDemo({DateTime? now}) async {
   final joao = named('João Pereira');
   final ines = named('Inês Rodrigues');
   final inesFolga = [
-    for (var i = 1; i < 8; i++) DateTime(today.year, today.month, today.day + i),
+    for (var i = 1; i < 8; i++)
+      DateTime(today.year, today.month, today.day + i),
   ].firstWhere((d) => ines.folgas.contains(d.weekday));
   final inesShift = '${hh(ines.shiftStart!)}${hh(ines.shiftEnd!)}';
   final alteracoes = [

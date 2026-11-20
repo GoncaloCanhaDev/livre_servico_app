@@ -140,9 +140,7 @@ enum ListSection {
 
 DateTime currentServiceDay([DateTime? now]) {
   final n = now ?? DateTime.now();
-  if (n.hour < 5) {
-    final y = n.subtract(const Duration(days: 1));
-    return DateTime(y.year, y.month, y.day, 5);
-  }
-  return DateTime(n.year, n.month, n.day, 5);
+  // The day before from the date, not by taking 24 hours: on the night
+  // the clocks go forward, 00:30 minus 24 hours is two dates back.
+  return DateTime(n.year, n.month, n.day - (n.hour < 5 ? 1 : 0), 5);
 }

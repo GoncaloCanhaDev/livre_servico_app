@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.6] — 2026-11-20
+
+### Fixed
+
+- Importing a backup no longer strips every person's role (`role` holds a `Role` name since
+  0.68.0; only an old pre-0.32.0 cargo string is dropped), which made every Chefe, Gestor and
+  Gerente an Operador.
+- The service day between 00:00 and 01:00 on the Monday after the clocks go forward was the
+  Saturday (24 hours back is two dates then): `currentServiceDay` takes the day before from the
+  date. Histórico's Tudo and the person page group by it too instead of their own copies.
+- A sync still running for the previous store no longer counts as this connection's first
+  sync after switching store, so the automatic marks wait for the new store's data.
+
 ## [0.97.5] — 2026-11-20
 
 ### Fixed

@@ -190,6 +190,9 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       await _measureClock(engine.remote);
       final report = await engine.run();
       if (engine.canPush) await PhotoStore.instance.uploadPending();
+      // A sync of a connection [start] replaced meanwhile (another store)
+      // says nothing about the new one: `AutoMarkService` waits for it.
+      if (_engine != engine) return;
       lastSyncedAt = DateTime.now();
       lastError = null;
       _record(
@@ -201,6 +204,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
         ),
       );
     } catch (e) {
+      if (_engine != engine) return;
       // Offline or a server error: the rows stay pending for the next try.
       lastError = e;
       _record(

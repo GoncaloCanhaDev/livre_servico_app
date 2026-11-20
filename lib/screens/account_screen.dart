@@ -593,9 +593,7 @@ class _Connected extends StatelessWidget {
           ),
           title: Text(syncStatusText(sync)),
           subtitle: sync.canPush
-              ? Text(
-                  pendingText(sync.pendingCount, photos: sync.pendingPhotos),
-                )
+              ? Text(pendingText(sync.pendingCount, photos: sync.pendingPhotos))
               : null,
         ),
         const Divider(),

@@ -12,7 +12,10 @@ class _MonthTab extends StatefulWidget {
 }
 
 class _MonthTabState extends State<_MonthTab> {
-  DateTime _month = DateTime(currentServiceDay().year, currentServiceDay().month);
+  DateTime _month = DateTime(
+    currentServiceDay().year,
+    currentServiceDay().month,
+  );
 
   void _move(int months) =>
       setState(() => _month = DateTime(_month.year, _month.month + months));
@@ -21,7 +24,10 @@ class _MonthTabState extends State<_MonthTab> {
   Widget build(BuildContext context) {
     final view = widget.view;
     final m = view.index.monthOf(_month);
-    final thisMonth = DateTime(currentServiceDay().year, currentServiceDay().month);
+    final thisMonth = DateTime(
+      currentServiceDay().year,
+      currentServiceDay().month,
+    );
     final stepper = _Stepper(
       label: monthTitle(_month),
       onPrevious: () => _move(-1),

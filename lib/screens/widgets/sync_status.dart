@@ -154,10 +154,7 @@ class _SyncSheet extends StatelessWidget {
                     pending == 0 ? Icons.check_circle_outline : Icons.upload,
                   ),
                   title: Text(
-                    pendingText(
-                      sync.pendingCount,
-                      photos: sync.pendingPhotos,
-                    ),
+                    pendingText(sync.pendingCount, photos: sync.pendingPhotos),
                   ),
                   subtitle: pending == 0
                       ? null
