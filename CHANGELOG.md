@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.1] — 2026-11-20
+
+### Changed
+- Packages upgraded within their current constraints (`flutter pub upgrade`: 34 in the lock
+  file, among them pdfrx 2.11.0 → 2.13.1, file_picker 13.1.0 → 13.4.0, archive 4.3.0 → 4.7.1,
+  shared_preferences_android 2.4.28 → 2.5.5). drift and sqlite3 are unchanged, so the web's
+  `sqlite3.wasm` and `drift_worker.js` stay as they are.
+
 ## [0.97.0] — 2026-11-20
 
 ### Added
