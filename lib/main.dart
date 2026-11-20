@@ -76,6 +76,11 @@ void main() async {
     return;
   }
   runApp(const LivreServicoApp());
+  // What the first page reads is decoded as it reads it; the rest of the
+  // history once it is drawn.
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => LocalDb.instance.preload(),
+  );
   AutoMarkService.instance.start();
 }
 

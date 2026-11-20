@@ -241,6 +241,52 @@ void main() {
       );
     });
 
+    test('collections decode when first read; counts before match', () async {
+      final dir = await Directory.systemTemp.createTemp('local_db_test');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/db.sqlite');
+
+      await LocalDb.instance.close();
+      await LocalDb.init(executor: NativeDatabase(file));
+      final db = LocalDb.instance;
+      // Over 1 MB of text, so it decodes in a background isolate.
+      final long = 'x' * 5000;
+      await db.persons.putAll([
+        for (var i = 0; i < 250; i++)
+          ana()
+            ..fullName = 'P$i'
+            ..notes = [long]
+            ..synced = i.isEven,
+      ]);
+      await db.persons.softDelete(3);
+      await db.truckReceptions.put(
+        TruckReception()..arrivalTime = DateTime(2026, 1, 1, 8),
+      );
+      final count = db.persons.count;
+      final pending = db.persons.pendingCount;
+      await db.close();
+
+      await LocalDb.init(executor: NativeDatabase(file));
+      final again = LocalDb.instance;
+      // Not decoded yet: counted from the text.
+      expect(again.persons.count, count);
+      expect(again.persons.pendingCount, pending);
+      expect(again.truckReceptions.count, 1);
+      // A write before any read takes the next id.
+      expect(
+        await again.truckReceptions.put(
+          TruckReception()..arrivalTime = DateTime(2026, 1, 2, 8),
+        ),
+        2,
+      );
+      await again.preload();
+      expect(again.persons.count, 249);
+      expect(again.persons.pendingCount, pending);
+      final p = await again.persons.firstWhere((p) => p.fullName == 'P10');
+      expect(p!.notes.single, long);
+      expect(await again.persons.put(ana()), 251);
+    });
+
     test('a failed transaction leaves nothing behind', () async {
       final db = LocalDb.instance;
       await expectLater(
@@ -276,7 +322,7 @@ void main() {
           'dateOfBirth': micros(DateTime(1990, 5, 20)),
         },
       ]);
-      final row = db.persons.exportJson().single;
+      final row = (await db.persons.exportJson()).single;
       expect(row.keys, isNot(contains('phoneNumber')));
       expect(row.keys, isNot(contains('dateOfBirth')));
       expect((row['birthDay'], row['birthMonth']), (20, 5));
@@ -290,7 +336,7 @@ void main() {
       await db.persons.importJson([row]);
       final all = await db.persons.all();
       expect(all.single.id, 42);
-      expect(db.persons.exportJson().single['id'], 42);
+      expect((await db.persons.exportJson()).single['id'], 42);
       expect(await db.persons.put(ana()), 43);
     });
 

@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' show min;
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'package:flutter/foundation.dart' show compute;
+import 'package:flutter/foundation.dart' show compute, kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auto2_entry.dart';
@@ -33,8 +34,11 @@ import 'sync_meta.dart';
 ///
 /// Every row is one JSON document in a single table, `local_rows`, keyed by
 /// (collection, id), the way the online database keeps them (`records`).
-/// Each collection is read into memory when the app starts and queried in
-/// Dart; writes go to SQLite first, then to memory.
+/// Every row is read into memory when the app starts, as text, and each
+/// collection is decoded the first time it is read (the rest in the
+/// background after the first frame, [preload]), so a long history doesn't
+/// hold up the start. Collections are queried in Dart; writes go to SQLite
+/// first, then to memory.
 ///
 /// For sync (see `SyncEngine`), a row saved by the app is pending until
 /// pushed ([SyncedRow.synced] false); rows from the server are written with
@@ -188,7 +192,8 @@ class LocalDb {
   }
 
   /// Opens the database (on the device, or [executor] in tests, e.g.
-  /// `NativeDatabase.memory()`) and reads every collection into memory.
+  /// `NativeDatabase.memory()`) and reads every row into memory, as text
+  /// until its collection is first read (see [preload]).
   static Future<void> init({QueryExecutor? executor}) async {
     final local = await open(executor: executor);
     instance = local;
@@ -222,6 +227,17 @@ class LocalDb {
 
   Future<void> close() => _db.close();
 
+  /// Decodes every collection not read yet, one after another (a long one
+  /// off the main thread): called after the app's first frame, so later
+  /// screens find theirs ready. Errors stay for the read that needs it.
+  Future<void> preload() async {
+    for (final c in collections) {
+      try {
+        await c._ensure();
+      } catch (_) {}
+    }
+  }
+
   /// Runs [action] in one SQLite transaction: either every write in it is
   /// saved or none is.
   Future<T> transaction<T>(Future<T> Function() action) async {
@@ -234,30 +250,23 @@ class LocalDb {
     }
   }
 
+  /// Reads every row as text; each collection decodes its own when first
+  /// read ([LocalCollection._ensure]). Decoding is most of the time a start
+  /// takes, and most rows are history nothing reads at once.
   Future<void> _load() async {
-    final byName = {for (final c in collections) c.name: c};
-    for (final c in collections) {
-      c._clearMemory();
-    }
+    final byName = {for (final c in collections) c.name: <int, String>{}};
     final rows = await _db
         .customSelect('SELECT collection, id, data FROM local_rows')
         .get();
-    final texts = [for (final r in rows) r.read<String>('data')];
-    // Decoding a long history takes a while: off the main thread, so the
-    // app doesn't freeze meanwhile (on the web, compute runs it in place).
-    final decoded = texts.length < _decodeAwayFrom
-        ? _decodeAll(texts)
-        : await compute(_decodeAll, texts);
-    for (final (i, r) in rows.indexed) {
-      final c = byName[r.read<String>('collection')];
-      final data = decoded[i];
-      if (c == null || data is! Map<String, dynamic>) continue;
-      c._remember(r.read<int>('id'), data);
+    for (final r in rows) {
+      byName[r.read<String>('collection')]?[r.read<int>('id')] = r.read<String>(
+        'data',
+      );
+    }
+    for (final c in collections) {
+      c._setRaw(byName[c.name]!);
     }
   }
-
-  /// From this many rows, [_load] decodes them in a background isolate.
-  static const _decodeAwayFrom = 1000;
 
   // ---- Photos (see PhotoStore) ----
   // Kept in their own table, read one at a time, never all at startup.
@@ -390,6 +399,70 @@ class LocalCollection<T extends SyncedRow> {
 
   final _rows = <int, Map<String, dynamic>>{};
 
+  /// The rows as read from SQLite, not decoded yet (see [_ensure]); null
+  /// once they are in [_rows].
+  Map<int, String>? _raw;
+  Future<void>? _decoding;
+
+  /// Bumped each time [_raw] is replaced or dropped, so a decode of an
+  /// older copy (the database read again) leaves memory alone.
+  int _generation = 0;
+
+  /// From this much text (about 1 MB), [_ensure] decodes it in a background
+  /// isolate; below, starting one takes longer than decoding in place.
+  static const _decodeAwayFrom = 1 << 20;
+
+  /// Rows read from SQLite for this collection, decoded by [_ensure].
+  void _setRaw(Map<int, String> raw) {
+    _clearMemory();
+    _generation++;
+    _decoding = null;
+    _raw = raw.isEmpty ? null : raw;
+    for (final id in raw.keys) {
+      if (id > _lastId) _lastId = id;
+    }
+  }
+
+  /// Decodes [_raw] into [_rows] if it hasn't been yet: every read and
+  /// write awaits it first.
+  Future<void> _ensure() async {
+    // Again if the database was read anew meanwhile (a new [_raw]).
+    for (var raw = _raw; raw != null; raw = _raw) {
+      await (_decoding ??= _decodeRaw(raw, _generation));
+    }
+  }
+
+  Future<void> _decodeRaw(Map<int, String> raw, int generation) async {
+    final texts = raw.values.toList();
+    final size = texts.fold(0, (sum, t) => sum + t.length);
+    final List<Object?> decoded;
+    if (size < _decodeAwayFrom) {
+      decoded = _decodeAll(texts);
+    } else if (kIsWeb) {
+      // compute runs in place on the web: in pieces, so the page still
+      // draws meanwhile.
+      decoded = [];
+      for (var i = 0; i < texts.length; i += 500) {
+        decoded.addAll(
+          _decodeAll(texts.sublist(i, min(i + 500, texts.length))),
+        );
+        await Future<void>.delayed(Duration.zero);
+      }
+    } else {
+      // A long history takes a while: off the main thread.
+      decoded = await compute(_decodeAll, texts);
+    }
+    if (generation != _generation) return;
+    final lastId = _lastId;
+    _clearMemory();
+    _lastId = lastId;
+    for (final (i, id) in raw.keys.indexed) {
+      if (decoded[i] case final Map<String, dynamic> data) _remember(id, data);
+    }
+    _raw = null;
+    _decoding = null;
+  }
+
   /// Each row of [_rows] decoded once, the first time a test or a sync key
   /// needs it, and dropped when the row is written. Only handed out by
   /// [allReadOnly] (other reads build new objects), so nothing changes it.
@@ -417,24 +490,31 @@ class LocalCollection<T extends SyncedRow> {
       includeDeleted || data['syncDeletedAt'] == null;
 
   Future<T?> get(int id) async {
+    await _ensure();
     final data = _rows[id];
     return data == null ? null : _read(id, data);
   }
 
   /// Every row, in no particular order; tombstoned ones only with
   /// [includeDeleted].
-  Future<List<T>> all({bool includeDeleted = false}) async => [
-    for (final e in _rows.entries)
-      if (_visible(e.value, includeDeleted)) _read(e.key, e.value),
-  ];
+  Future<List<T>> all({bool includeDeleted = false}) async {
+    await _ensure();
+    return [
+      for (final e in _rows.entries)
+        if (_visible(e.value, includeDeleted)) _read(e.key, e.value),
+    ];
+  }
 
   /// Every row like [all], but the copies decoded once and shared with the
   /// next reads, so a long history isn't built anew each time: only for
   /// code that never changes them nor saves them (Estatísticas).
-  Future<List<T>> allReadOnly() async => [
-    for (final e in _rows.entries)
-      if (_visible(e.value, false)) _cached(e.key),
-  ];
+  Future<List<T>> allReadOnly() async {
+    await _ensure();
+    return [
+      for (final e in _rows.entries)
+        if (_visible(e.value, false)) _cached(e.key),
+    ];
+  }
 
   /// The rows [test] accepts, in no particular order. [test] sees each row
   /// as decoded once and must not change it; only the rows it accepts are
@@ -442,11 +522,14 @@ class LocalCollection<T extends SyncedRow> {
   Future<List<T>> where(
     bool Function(T row) test, {
     bool includeDeleted = false,
-  }) async => [
-    for (final e in _rows.entries)
-      if (_visible(e.value, includeDeleted) && test(_cached(e.key)))
-        _read(e.key, e.value),
-  ];
+  }) async {
+    await _ensure();
+    return [
+      for (final e in _rows.entries)
+        if (_visible(e.value, includeDeleted) && test(_cached(e.key)))
+          _read(e.key, e.value),
+    ];
+  }
 
   /// The first row [test] accepts (the oldest saved), or null. [test] must
   /// not change the row (see [where]).
@@ -454,6 +537,7 @@ class LocalCollection<T extends SyncedRow> {
     bool Function(T row) test, {
     bool includeDeleted = false,
   }) async {
+    await _ensure();
     int? first;
     for (final e in _rows.entries) {
       if (first != null && e.key >= first) continue;
@@ -472,6 +556,7 @@ class LocalCollection<T extends SyncedRow> {
 
   Future<void> putAll(List<T> rows) async {
     if (rows.isEmpty) return;
+    await _ensure();
     await _write(_encode(rows));
     if (rows.any((r) => !r.synced)) LocalDb._localWrites.add(name);
   }
@@ -528,11 +613,12 @@ class LocalCollection<T extends SyncedRow> {
     await _db.customStatement('DELETE FROM local_rows WHERE collection = ?', [
       name,
     ]);
-    _clearMemory();
+    _setRaw(const {});
   }
 
   /// Removes the rows [test] accepts for good, tombstones included.
   Future<void> deleteWhere(bool Function(T row) test) async {
+    await _ensure();
     final ids = [
       for (final id in _rows.keys)
         if (test(_cached(id))) id,
@@ -555,9 +641,10 @@ class LocalCollection<T extends SyncedRow> {
   /// Every row (tombstones included) as JSON, for a backup, as its model
   /// writes it: a field the model dropped (a phone number, a whole date of
   /// birth) stays out, even from rows an older version stored.
-  List<Map<String, dynamic>> exportJson() => [
-    for (final e in _rows.entries) _read(e.key, e.value).toJson(),
-  ];
+  Future<List<Map<String, dynamic>>> exportJson() async {
+    await _ensure();
+    return [for (final e in _rows.entries) _read(e.key, e.value).toJson()];
+  }
 
   /// Replaces every row with [rows] from a backup (see [exportJson]). They
   /// are pending, so the next sync pushes them (and keeps whichever copy of
@@ -577,22 +664,40 @@ class LocalCollection<T extends SyncedRow> {
     ..remove('synced');
 
   /// How many rows are kept here, not counting the deleted ones.
-  int get count => _rows.values.where((r) => _visible(r, false)).length;
+  int get count => switch (_raw) {
+    // Not decoded yet: from the text, which `_write` encoded (compact, the
+    // sync fields only at the top).
+    final raw? =>
+      raw.values
+          .where(
+            (t) =>
+                !t.contains('"syncDeletedAt":') ||
+                t.contains('"syncDeletedAt":null'),
+          )
+          .length,
+    null => _rows.values.where((r) => _visible(r, false)).length,
+  };
 
   /// How many rows (deletes included) are saved here and not yet pushed.
-  int get pendingCount =>
-      _rows.values.where((r) => r['synced'] == false).length;
+  int get pendingCount => switch (_raw) {
+    final raw? => raw.values.where((t) => t.contains('"synced":false')).length,
+    null => _rows.values.where((r) => r['synced'] == false).length,
+  };
 
   /// The rows to push, tombstones included: those pending, or with [all]
   /// every row (the first sync with a store).
-  Future<List<T>> toPush({bool all = false}) async => [
-    for (final e in _rows.entries)
-      if (all || !_cached(e.key).synced) _read(e.key, e.value),
-  ];
+  Future<List<T>> toPush({bool all = false}) async {
+    await _ensure();
+    return [
+      for (final e in _rows.entries)
+        if (all || !_cached(e.key).synced) _read(e.key, e.value),
+    ];
+  }
 
   /// Marks [pushed] as synced, unless a row was saved again since it was
   /// read for the push.
   Future<void> markSynced(Iterable<SyncedRow> pushed) async {
+    await _ensure();
     final done = <int, Map<String, dynamic>>{};
     for (final row in pushed) {
       final current = _rows[row.id];
@@ -665,6 +770,7 @@ class LocalCollection<T extends SyncedRow> {
     bool replaceSynced = false,
   }) async {
     if (rows.isEmpty) return 0;
+    await _ensure();
     final byKey = <String, int>{
       for (final id in _rows.keys) syncKeyOf(_cached(id)): id,
     };

@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.9] — 2026-11-20
+
+### Changed
+
+- Faster start: `LocalDb` reads every row as text at startup and decodes each collection the
+  first time it is read (`_ensure`), the rest after the first frame (`LocalDb.preload`). On two
+  years of rows (about 22 700), the wait before the app shows went from about 190 ms to 45 ms;
+  the long Automáticas history is decoded in the background. A collection decodes in an isolate
+  from 1 MB of text (was from 1000 rows: starting an isolate cost more than decoding a few
+  hundred KB), on the web in pieces so the page keeps drawing. `count` and `pendingCount`
+  work on the text before decoding; `exportJson` is now async, so a backup always holds every
+  row.
+
 ## [0.97.8] — 2026-11-20
 
 ### Changed

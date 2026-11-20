@@ -75,7 +75,10 @@ multi-tenant product.
   matching the versions in `pubspec.lock`: replace them when those packages are upgraded).
   There is no Drift code generation: one table, `local_rows` (collection, id, data), made
   with plain SQL, holds every row as a JSON document, like the online `records`. Each collection (`LocalDb.instance.persons`, `.dailyTasks`...) is read
-  into memory at startup (decoded in an isolate from 1000 rows) and queried in Dart with
+  into memory at startup as text and decoded the first time it is read (`_ensure`: every
+  read and write awaits it; in an isolate from 1 MB of text); `LocalDb.preload`, after the
+  first frame, decodes the rest. A synchronous read of a collection (`count`,
+  `pendingCount`) must work on the text too. Collections are queried in Dart with
   `all`, `where`, `firstWhere` and `get`; every read builds new objects, so a row changes
   nothing until it is `put`. Each row is also kept decoded once (`_decoded`, dropped on
   write): `where`/`firstWhere` tests run on those, so a test must never change the row it
@@ -417,7 +420,9 @@ multi-tenant product.
 doesn't stop the app), `AccountService.instance.init()`
 (which restores the saved session in the background, so it never waits for the network),
 then `HorarioService.instance.load()` and `TaskWindowService.instance.load()`;
-`AutoMarkService.instance.start()` runs after `runApp`.
+`AutoMarkService.instance.start()` runs after `runApp`, and `LocalDb.instance.preload()`
+after the first frame. Keep work out of this sequence when it can wait: the app shows
+nothing until it ends.
 Any exception during this sequence renders a plain error `Scaffold` instead of the app, so keep
 new startup steps inside that same try/catch if they must run before `HomeScreen` is shown.
 

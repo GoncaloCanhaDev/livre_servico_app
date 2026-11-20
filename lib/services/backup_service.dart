@@ -77,7 +77,7 @@ class BackupService {
       // First, so it is easy to find and edit by hand.
       'vasilhame': [for (final v in settings.vasilhame) v.toJson()],
       'settings': {'visualGoal': settings.visualGoal},
-      'collections': {for (final c in _backedUp) c.name: c.exportJson()},
+      'collections': {for (final c in _backedUp) c.name: await c.exportJson()},
     };
   }
 
