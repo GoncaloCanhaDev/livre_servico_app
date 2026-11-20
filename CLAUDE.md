@@ -38,7 +38,7 @@ multi-tenant product.
   `lib/screens/people_sections.dart`, `lib/models/planning.dart`, `lib/models/validades.dart` and
   `lib/models/info_contacts.dart`, `lib/models/vasilhame.dart`,
   `lib/models/today.dart`, `lib/models/historico_search.dart`, `lib/models/store_access.dart`,
-  `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/services/auto_mark_service.dart`
+  `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/models/diagnostic.dart`, `lib/services/auto_mark_service.dart`
   (`test/auto_mark_service_test.dart`),
   `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/horario.dart` and
   `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
@@ -177,6 +177,12 @@ multi-tenant product.
   `leftKey`; a custom count task's null `count`) shows "Número por preencher". A new fixed task
   goes in `fixedDailyTaskKeys` / `fixedWeeklyTaskKeys`, `fixedTaskLabels`, `defaultTaskWindow`,
   the `dailyDone`/`setDailyDone`/`dailyNames` switches and `dailyTaskFields` (below).
+- Diagnóstico (since 0.96.0, `DiagnosticScreen`, from Definições and the sync sheet): the
+  sync state, `SyncService.log` (this session's last syncs), `pendingByCollection`, `cursor`,
+  the clock offset, `AutoMarkService`'s last run (`lastRunAt`, `lastRunMarked`,
+  `lastRunError`) and why it doesn't run (`autoMarkBlockedReason`), rows per collection
+  (`LocalCollection.count`); the texts are pure helpers in `lib/models/diagnostic.dart`.
+  Something new worth checking when a phone misbehaves gets a line there.
 - Tasks merge task by task (since 0.95.1): each mark and correction has its time
   (`TaskStamp` in `lib/models/task_merge.dart`, `DailyTasks.taskStamps` / `WeeklyTasks.taskStamps`
   by task key, set by the services' `save` (a task newly marked gets `markedAt`; `save(edited:)`

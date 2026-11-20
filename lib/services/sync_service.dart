@@ -60,6 +60,37 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// The store this device syncs with, while connected.
+  String? get storeId => _engine?.storeId;
+
+  /// Where the pulls got to on the server's clock (`syncCursor:<store>`):
+  /// null before the first pull, or after the cursor was forgotten.
+  DateTime? get cursor => switch (_engine) {
+    final e? => SyncEngine.cursorOf(e.prefs, e.storeId),
+    _ => null,
+  };
+
+  /// The changes waiting to be sent, by collection (only those with any);
+  /// empty when this device doesn't send.
+  Map<String, int> get pendingByCollection => switch (_engine) {
+    final e? when e.canPush => {
+      for (final c in e.db.collections)
+        if (c.pendingCount > 0) c.name: c.pendingCount,
+    },
+    _ => const {},
+  };
+
+  /// How many syncs [log] keeps.
+  static const logSize = 20;
+
+  /// The last syncs of this session, newest first (Diagnóstico).
+  final List<SyncLogEntry> log = [];
+
+  void _record(SyncLogEntry entry) {
+    log.insert(0, entry);
+    if (log.length > logSize) log.removeRange(logSize, log.length);
+  }
+
   /// When the last sync finished without an error.
   DateTime? lastSyncedAt;
 
@@ -125,6 +156,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void stop() {
+    log.clear();
     if (_engine != null) WidgetsBinding.instance.removeObserver(this);
     _writes?.cancel();
     _remoteChanges?.cancel();
@@ -153,15 +185,31 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _run(SyncEngine engine) async {
+    final started = DateTime.now();
     try {
       await _measureClock(engine.remote);
-      await engine.run();
+      final report = await engine.run();
       if (engine.canPush) await PhotoStore.instance.uploadPending();
       lastSyncedAt = DateTime.now();
       lastError = null;
+      _record(
+        SyncLogEntry(
+          at: started,
+          took: lastSyncedAt!.difference(started),
+          pushed: report.pushed,
+          pulled: report.pulled,
+        ),
+      );
     } catch (e) {
       // Offline or a server error: the rows stay pending for the next try.
       lastError = e;
+      _record(
+        SyncLogEntry(
+          at: started,
+          took: DateTime.now().difference(started),
+          error: e,
+        ),
+      );
     } finally {
       _running = null;
       notifyListeners();
@@ -172,4 +220,22 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       await syncNow();
     }
   }
+}
+
+/// One sync of this session, for Diagnóstico: when it started, how long it
+/// took, and the rows sent and received, or why it failed.
+class SyncLogEntry {
+  SyncLogEntry({
+    required this.at,
+    required this.took,
+    this.pushed = 0,
+    this.pulled = 0,
+    this.error,
+  });
+
+  final DateTime at;
+  final Duration took;
+  final int pushed;
+  final int pulled;
+  final Object? error;
 }

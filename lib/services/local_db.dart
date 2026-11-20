@@ -569,6 +569,9 @@ class LocalCollection<T extends SyncedRow> {
     ..remove('id')
     ..remove('synced');
 
+  /// How many rows are kept here, not counting the deleted ones.
+  int get count => _rows.values.where((r) => _visible(r, false)).length;
+
   /// How many rows (deletes included) are saved here and not yet pushed.
   int get pendingCount =>
       _rows.values.where((r) => r['synced'] == false).length;

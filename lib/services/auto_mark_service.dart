@@ -72,9 +72,33 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
       (!SyncService.instance.isConnected ||
           SyncService.instance.lastSyncedAt != null);
 
+  /// When the last run finished, how many tasks it marked and, if it
+  /// failed, why (Diagnóstico).
+  DateTime? lastRunAt;
+  int lastRunMarked = 0;
+  Object? lastRunError;
+
+  /// How many tasks the runs of this session marked.
+  int markedThisSession = 0;
+
   Future<int> runNow() async {
     if (!canRun) return 0;
-    return _running ??= run(DateTime.now()).whenComplete(() => _running = null);
+    return _running ??= _tracked().whenComplete(() => _running = null);
+  }
+
+  Future<int> _tracked() async {
+    try {
+      final marked = await run(DateTime.now());
+      lastRunMarked = marked;
+      markedThisSession += marked;
+      lastRunError = null;
+      return marked;
+    } catch (e) {
+      lastRunError = e;
+      rethrow;
+    } finally {
+      lastRunAt = DateTime.now();
+    }
   }
 
   /// Marks every task whose window closed before [now], from [catchUpDays]

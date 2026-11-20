@@ -6,6 +6,7 @@ import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
 import 'admin_screen.dart';
 import 'destinations.dart';
+import 'diagnostic_screen.dart';
 import 'account_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'task_windows_screen.dart';
@@ -111,6 +112,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   MaterialPageRoute(
                     builder: (_) => const TutorialIndexScreen(),
                   ),
+                ),
+              ),
+              ListTile(
+                title: const Text(
+                  'Diagnóstico',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Como está a sincronização e a marcação automática neste '
+                  'aparelho.',
+                ),
+                trailing: const Icon(Icons.monitor_heart_outlined),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DiagnosticScreen()),
                 ),
               ),
               if (AccountService.instance.access.canEditTaskWindows)

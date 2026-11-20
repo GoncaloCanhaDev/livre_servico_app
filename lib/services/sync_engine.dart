@@ -123,11 +123,16 @@ class SyncEngine {
     }
   }
 
+  /// Where the store [storeId]'s pulls got to (the server's clock), or
+  /// null before the first pull.
+  static DateTime? cursorOf(SharedPreferences prefs, String storeId) =>
+      switch (prefs.getString('$_cursorPrefix$storeId')) {
+        final String c => DateTime.tryParse(c),
+        _ => null,
+      };
+
   Future<SyncReport> run() async {
-    final cursor = switch (prefs.getString(_cursorKey)) {
-      final String c => DateTime.tryParse(c),
-      _ => null,
-    };
+    final cursor = cursorOf(prefs, storeId);
     final changed = <String>{};
     var pushed = 0;
     if (canPush) {

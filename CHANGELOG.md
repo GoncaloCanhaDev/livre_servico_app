@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.96.0] — 2026-11-20
+
+### Added
+- **Definições → Diagnóstico** (`DiagnosticScreen`, also "Ver diagnóstico" in the app bar's
+  sync sheet): the connection, the last sync and its error, the changes waiting by collection,
+  the pull cursor, the phone's clock against the server's (`clockOffsetText`), the last 20
+  syncs of the session (`SyncService.log`: rows sent and received, time taken, or why it
+  failed), whether this phone marks tasks by itself and if not why (`autoMarkBlockedReason`),
+  its last run (`AutoMarkService.lastRunAt` / `lastRunMarked` / `lastRunError`), the marks
+  waiting confirmation and the rows kept per collection (`LocalCollection.count`).
+  "Sincronizar agora", "Verificar tarefas agora", and "Partilhar" as a text file
+  (`diagnosticText`, `lib/models/diagnostic.dart`).
+
 ## [0.95.1] — 2026-11-19
 
 ### Changed

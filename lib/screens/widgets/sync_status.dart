@@ -7,6 +7,7 @@ import '../../services/account_service.dart';
 import '../../services/local_db.dart';
 import '../../services/sync_service.dart';
 import '../../theme.dart';
+import '../diagnostic_screen.dart';
 
 /// How the last sync went, e.g. "Sincronizado às 14:02." (Conta and the
 /// sync sheet).
@@ -171,6 +172,16 @@ class _SyncSheet extends StatelessWidget {
                 onPressed: sync.isSyncing ? null : sync.syncNow,
                 icon: const Icon(Icons.sync),
                 label: const Text('Sincronizar agora'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.push(
+                    MaterialPageRoute(builder: (_) => const DiagnosticScreen()),
+                  );
+                },
+                child: const Text('Ver diagnóstico'),
               ),
             ],
           ),
