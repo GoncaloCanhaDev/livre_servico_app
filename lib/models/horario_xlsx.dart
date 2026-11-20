@@ -110,7 +110,7 @@ ParsedHorario parseHorarioXlsx(Uint8List bytes) {
     final id = s.attributes
         .firstWhere(
           (a) => a.name.local == 'id',
-          orElse: () => XmlAttribute(XmlName('id'), ''),
+          orElse: () => XmlAttribute(XmlName.qualified('id'), ''),
         )
         .value;
     var target = targets[id];

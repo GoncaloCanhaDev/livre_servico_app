@@ -7,6 +7,19 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.4] — 2026-11-20
+
+### Changed
+- Major package upgrades: drift 2.31.0 → 2.35.4, drift_flutter 0.2.8 → 0.3.1, sqlite3 2.9.4 →
+  3.9.1, pdfrx 2.13.1 → 3.0.0 (3.0.1 and up need a newer Flutter), xml 6.6.1 → 7.1.0.
+  - sqlite3 3 loads SQLite through a build hook (a prebuilt library downloaded from its GitHub
+    release when building) instead of `sqlite3_flutter_libs`; `test/flutter_test_config.dart`,
+    which pointed Linux tests at `libsqlite3.so.0`, is gone.
+  - `web/sqlite3.wasm` (sqlite3-3.9.1) and `web/drift_worker.js` (drift-2.35.4) replaced from
+    those releases; checked in a browser: the demo and the saved IndexedDB database open.
+  - drift 2.35.1 fixes writes made inside a transaction not reaching IndexedDB on the web.
+  - `XmlName('id')` → `XmlName.qualified('id')` in `parseHorarioXlsx`.
+
 ## [0.97.3] — 2026-11-20
 
 ### Fixed

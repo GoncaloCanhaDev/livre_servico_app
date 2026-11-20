@@ -1,7 +1,7 @@
 name: livre_servico_app
 description: "Livre Serviço Companion - work tracking app."
 publish_to: 'none'
-version: 0.97.3+230
+version: 0.97.4+231
 
 environment:
   sdk: ^3.11.5
@@ -11,8 +11,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  drift: ^2.26.0
-  drift_flutter: ^0.2.4
+  drift: ^2.35.4
+  drift_flutter: ^0.3.1
   path_provider: ^2.1.4
   intl: ^0.20.2
   barcode_widget: ^2.0.4
@@ -24,10 +24,10 @@ dependencies:
   uuid: ^4.5.1
   image_picker: ^1.2.3
   supabase: ^2.16.5
-  sqlite3: ^2.9.4
-  pdfrx: ^2.11.0
+  sqlite3: ^3.9.1
+  pdfrx: ^3.0.0
   archive: ^4.0.0
-  xml: ^6.5.0
+  xml: ^7.1.0
 
 dev_dependencies:
   flutter_test:

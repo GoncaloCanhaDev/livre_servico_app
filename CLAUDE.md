@@ -59,9 +59,9 @@ multi-tenant product.
   and `test/demo_mode_test.dart` the demo).
   Widget tests run against a real, empty in-memory SQLite database: `openAppDb` /
   `closeAppDb` in `test/helpers/app_db.dart` start the services like `main()` does, with
-  `NativeDatabase.memory()` (needs the host's SQLite library; on Linux
-  `test/flutter_test_config.dart` falls back to `libsqlite3.so.0` when the -dev package's
-  `libsqlite3.so` is missing). A database call only completes inside `runAsync` and the
+  `NativeDatabase.memory()` (sqlite3 3.x's build hook downloads a prebuilt SQLite from the
+  sqlite3.dart GitHub release on the first build or test run, phone included, so that needs
+  the network once; there is no `sqlite3_flutter_libs` any more). A database call only completes inside `runAsync` and the
   code awaiting it only resumes on a pump, so use the helpers in `test/helpers/pump.dart`
   (`pumpApp`, `settle`, `tapAndSettle`, `dbCall`), never `pumpAndSettle`.
 
