@@ -331,7 +331,8 @@ multi-tenant product.
   rows by the search box through `_searched` and a `*SearchText` function from
   `lib/models/historico_search.dart`, and listens to its services through `_ReloadWhenOpen`,
   passing `_changed`, so only the open tab reloads),
-  `truck_form_screen.dart` (`lib/screens/truck_form/`), `person_form_screen.dart`
+  `truck_form_screen.dart` (`lib/screens/truck_form/`), `daily_tasks_tab.dart`
+  (`lib/screens/tabs/daily_tasks/`: the row widgets and the Validades dialog), `person_form_screen.dart`
   (`lib/screens/person_form/`: the fields as small widgets taking values and callbacks, and
   the ausência dialog), `tutorial_screen.dart` (`lib/screens/tutorial/`).
 - `StartScreen` (`lib/screens/start_screen.dart`, `MaterialApp.home` in `lib/main.dart`)
@@ -485,6 +486,8 @@ files, WhatsApp links, hosting).
   stores (`create_store`, "Criar loja" via `isAppAdmin`). While syncing, only the admin may
   "Apagar Todos os Dados" (`canWipeAll`), since the tombstones reach every device. The old
   viewer role ("Só leitura") is gone: every approved member edits the everyday data. Screens: `account_screen.dart` (Conta) and `store_members_screen.dart` (Membros).
+  Its types, error texts and the feedback and admin RPCs are `part` files in
+  `lib/services/account/` (the RPCs as extensions on `AccountService`).
   `accountErrorText` turns auth and network errors into Portuguese; the database's own errors
   already are. Disposable emails can't sign up: the `refuse_blocked_email` trigger on
   `auth.users` checks `blocked_email_domains` (edited in the SQL Editor; an entry without a dot

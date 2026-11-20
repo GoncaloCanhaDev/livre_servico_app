@@ -7,6 +7,14 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.2] — 2026-11-20
+
+### Changed
+- The two largest files split into `part` files, nothing else changed: the Diárias' row widgets
+  and the Validades dialog left `daily_tasks_tab.dart` for `lib/screens/tabs/daily_tasks/`, and
+  `account_service.dart`'s types, error texts, and the feedback and admin RPCs (as the
+  `FeedbackCalls` and `AdminCalls` extensions) went to `lib/services/account/`.
+
 ## [0.97.1] — 2026-11-20
 
 ### Changed
