@@ -17,10 +17,21 @@ const _maxLength = 4000;
 /// The platform sent with a report, so the admin knows where it happened.
 String get _platform => kIsWeb ? 'web' : defaultTargetPlatform.name;
 
-/// Every error report and suggestion in [items] as one plain text file, for
-/// the admin to keep or read elsewhere: those still to deal with first, then
-/// those dealt with, each with who sent it, when, from which version.
-String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
+/// Every error report and suggestion in [items] (only those of [kind] when
+/// given) as one plain text file, for the admin to keep or read elsewhere:
+/// those still to deal with first, then those dealt with, each with who sent
+/// it, when, from which version.
+String feedbackExportText(
+  List<FeedbackItem> items, {
+  required DateTime now,
+  FeedbackKind? kind,
+}) {
+  if (kind != null) {
+    items = [
+      for (final f in items)
+        if (f.kind == kind) f,
+    ];
+  }
   final when = DateFormat('d/M/y HH:mm', 'pt_PT');
   final open = [
     for (final f in items)
@@ -31,7 +42,7 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
       if (!f.status.isOpen) f,
   ];
   final out = StringBuffer()
-    ..writeln('Livre Serviço — Erros e sugestões')
+    ..writeln('Livre Serviço — ${_kindTitle(kind)}')
     ..writeln(
       'Exportado em ${when.format(now)} · ${items.length} '
       '${items.length == 1 ? 'mensagem' : 'mensagens'} '
@@ -76,6 +87,12 @@ String feedbackExportText(List<FeedbackItem> items, {required DateTime now}) {
   section('TRATADOS', done);
   return out.toString();
 }
+
+String _kindTitle(FeedbackKind? kind) => switch (kind) {
+  null => 'Erros e sugestões',
+  FeedbackKind.erro => 'Erros',
+  FeedbackKind.sugestao => 'Sugestões',
+};
 
 /// A state badge: white on its colour.
 class FeedbackStatusBadge extends StatelessWidget {
@@ -559,14 +576,17 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
     );
   }
 
-  Future<void> _export(List<FeedbackItem> list) async {
+  Future<void> _export(List<FeedbackItem> list, FeedbackKind kind) async {
     final now = DateTime.now();
+    final file = switch (kind) {
+      FeedbackKind.erro => 'erros',
+      FeedbackKind.sugestao => 'sugestoes',
+    };
     try {
       await shareTextFile(
-        feedbackExportText(list, now: now),
-        name:
-            'erros_e_sugestoes_${DateFormat('yyyy-MM-dd_HH-mm').format(now)}.txt',
-        subject: 'Erros e sugestões - Livre Serviço',
+        feedbackExportText(list, now: now, kind: kind),
+        name: '${file}_${DateFormat('yyyy-MM-dd_HH-mm').format(now)}.txt',
+        subject: '${_kindTitle(kind)} - Livre Serviço',
       );
     } catch (e) {
       if (!mounted) return;
@@ -668,12 +688,28 @@ class _FeedbackInboxScreenState extends State<FeedbackInboxScreen>
           future: _items,
           builder: (context, snap) {
             final list = snap.data;
-            return IconButton(
-              tooltip: 'Exportar tudo (texto)',
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: list == null || list.isEmpty
-                  ? null
-                  : () => _export(list),
+            Widget export(FeedbackKind kind, IconData icon, String tooltip) =>
+                IconButton(
+                  tooltip: tooltip,
+                  icon: Icon(icon),
+                  onPressed: list == null || !list.any((f) => f.kind == kind)
+                      ? null
+                      : () => _export(list, kind),
+                );
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                export(
+                  FeedbackKind.erro,
+                  Icons.bug_report_outlined,
+                  'Exportar erros (texto)',
+                ),
+                export(
+                  FeedbackKind.sugestao,
+                  Icons.lightbulb_outline,
+                  'Exportar sugestões (texto)',
+                ),
+              ],
             );
           },
         ),

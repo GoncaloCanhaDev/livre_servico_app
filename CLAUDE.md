@@ -296,8 +296,8 @@ multi-tenant product.
   and `FeedbackInboxScreen` lists them for the admin (`feedbackList`, `setFeedbackDone`,
   `deleteFeedback`; both re-read on a timer and on resume, since the table has no Realtime, and at once after
   any change made on this device (`AccountService.feedbackChanges`);
-  Home's `AdminCard` counts those still open; the app bar's export shares
-  them all as one text file, `feedbackExportText` through `shareTextFile`). Not local rows and not
+  Home's `AdminCard` counts those still open; the app bar's two exports share
+  the errors or the suggestions as a text file, `feedbackExportText` through `shareTextFile`). Not local rows and not
   synced: the online `feedback` table (`20261101120000_feedback.sql`) has no policies, only
   admin-checked RPCs.
 - Administração (`lib/screens/admin_screen.dart`, the admin only): Home's `AdminCard` (counts

@@ -98,6 +98,16 @@ void main() {
       ),
     );
     expect(text, contains('Fecha ao abrir Pessoas.'));
+
+    final erros = feedbackExportText(
+      [done, open],
+      now: DateTime(2026, 11, 8, 12),
+      kind: FeedbackKind.erro,
+    );
+    expect(erros, startsWith('Livre Serviço — Erros\n'));
+    expect(erros, contains('1 mensagem (1 por tratar, 0 tratadas)'));
+    expect(erros, contains('Fecha ao abrir Pessoas.'));
+    expect(erros, isNot(contains('Um modo escuro.')));
   });
 
   test('the states: open until Resolvido or Não será feito', () {
