@@ -11,7 +11,9 @@ final ValueListenable<EdgeInsets> browserSafeArea = ValueNotifier(
 
 void watchBrowserSafeArea() {}
 
-Future<bool> claimSingleTab() async => true;
+bool takeSentAway() => false;
+
+Future<void> holdDatabaseTab() async {}
 
 void keepBrowserStorage() {}
 

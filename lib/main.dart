@@ -44,13 +44,13 @@ void main() async {
       await AccountService.instance.init();
       await seedDemo();
     } else {
-      if (!await claimSingleTab()) {
-        // Chrome on Android: another tab has the data open (see
-        // claimSingleTab), and two would overwrite each other's changes.
+      await SettingsService.instance.init();
+      if (takeSentAway()) {
+        // A newer tab took the data (see holdDatabaseTab).
         runApp(const _OpenElsewhere());
         return;
       }
-      await SettingsService.instance.init();
+      await holdDatabaseTab();
       await LocalDb.init();
       try {
         // Once: photo files from earlier versions into the database.
@@ -169,8 +169,8 @@ class LivreServicoApp extends StatelessWidget {
   }
 }
 
-/// Shown instead of the app in a second browser tab where only one may
-/// open the data (see `claimSingleTab`).
+/// Shown instead of the app in a browser tab whose data a newer tab took
+/// (see `holdDatabaseTab`): one tab at a time, so neither loses changes.
 class _OpenElsewhere extends StatelessWidget {
   const _OpenElsewhere();
 
@@ -179,6 +179,8 @@ class _OpenElsewhere extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(Brightness.light),
+      darkTheme: buildAppTheme(Brightness.dark),
+      themeMode: SettingsService.instance.themeMode,
       home: Scaffold(
         body: SafeArea(
           child: Center(
@@ -190,21 +192,20 @@ class _OpenElsewhere extends StatelessWidget {
                   const Icon(Icons.tab, size: 48),
                   const SizedBox(height: 16),
                   const Text(
-                    'A aplicação já está aberta noutro separador',
+                    'A aplicação foi aberta noutro separador',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Neste navegador só pode estar aberta num separador de '
-                    'cada vez, para não se perderem alterações. Feche o outro '
-                    'separador e tente de novo.',
+                    'Só pode estar aberta num separador de cada vez, para não '
+                    'se perderem alterações.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: reloadPage,
-                    child: const Text('Tentar de novo'),
+                    child: const Text('Usar aqui'),
                   ),
                 ],
               ),

@@ -7,6 +7,20 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.15] — 2026-11-21
+
+### Fixed
+
+- Website: one tab at a time uses the data, in every browser, not only Chrome on Android. Each
+  tab keeps the rows in memory and never hears of another tab's writes, so a second tab saved
+  stale copies over the first's changes even where drift shares the database. The newest tab now
+  takes over (the `livre_servico_db` Web Lock, taken with `steal`, `holdDatabaseTab`): the older
+  one reloads to "A aplicação foi aberta noutro separador" with "Usar aqui" (`takeSentAway`),
+  instead of the new tab being refused, which also blocked a confirmation link opened in a new
+  tab. A refused lock request no longer leaves the page loading forever.
+- Website on an iPhone: the safe area is also read when it arrives after the viewport change
+  without a resize (a `ResizeObserver` on the probe, and a few reads in the first seconds).
+
 ## [0.97.14] — 2026-11-21
 
 ### Fixed

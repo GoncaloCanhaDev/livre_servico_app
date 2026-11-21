@@ -59,6 +59,19 @@ void watchBrowserSafeArea() {
     read();
     web.window.addEventListener('resize', readSoon.toJS);
     web.window.addEventListener('orientationchange', readSoon.toJS);
+    // The probe's size is its padding, so this also catches the insets
+    // arriving late (once the browser applies viewport-fit) without a
+    // resize.
+    if (globalContext.has('ResizeObserver')) {
+      void observed(JSArray<web.ResizeObserverEntry> _, web.ResizeObserver _) =>
+          read();
+      web.ResizeObserver(
+        observed.toJS,
+      ).observe(probe, web.ResizeObserverOptions(box: 'border-box'));
+    }
+    for (final ms in const [100, 500, 1500]) {
+      Timer(Duration(milliseconds: ms), read);
+    }
   } catch (_) {
     // Without the insets the page looks as it did before: never worth
     // stopping the app over.
@@ -68,33 +81,68 @@ void watchBrowserSafeArea() {
 double _px(String value) =>
     double.tryParse(value.replaceAll('px', '').trim()) ?? 0;
 
-/// Whether this tab may open the database. Where the browser has no
-/// SharedWorker (Chrome on Android), drift keeps the data in IndexedDB with
-/// one copy per tab, and two tabs would overwrite each other's changes; so
-/// only one tab at a time holds the `livre_servico_db` Web Lock, until it
-/// closes. Elsewhere (and with no Web Locks) every tab may.
-Future<bool> claimSingleTab() async {
+const _sentAwayKey = 'livre_servico_sent_away';
+
+/// Whether another tab took the data from this one (see [holdDatabaseTab]),
+/// which then reloaded to say so: show that instead of opening the data.
+/// Read once: a reload, or "Usar aqui", opens the app here again.
+bool takeSentAway() {
   try {
-    if (globalContext.has('SharedWorker')) return true;
+    final storage = web.window.sessionStorage;
+    if (storage.getItem(_sentAwayKey) == null) return false;
+    storage.removeItem(_sentAwayKey);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Makes this the one tab using the data: each tab keeps the rows in memory
+/// (`LocalDb`) and never hears of another tab's writes, so two would save
+/// stale copies over each other's changes (and without SharedWorker, as in
+/// Chrome on Android, drift even keeps one copy of the database per tab).
+/// The newest tab takes the `livre_servico_db` Web Lock from the one holding
+/// it, which reloads into [takeSentAway]: so the tab in front always works,
+/// and a link opened in a new tab (an email confirmation) too.
+Future<void> holdDatabaseTab() async {
+  try {
     final navigator = web.window.navigator;
-    if (!navigator.has('locks')) return true;
-    final held = Completer<bool>();
-    // Never completes: the lock stays held until the tab closes.
+    if (!navigator.has('locks')) return;
+    final granted = Completer<void>();
+    // Never completes: the lock stays held until the tab closes, or another
+    // takes it.
     final forever = Completer<void>();
-    JSPromise<JSAny?> granted(web.Lock? lock) {
-      held.complete(lock != null);
-      return lock == null ? Future<void>.value().toJS : forever.future.toJS;
+    JSPromise<JSAny?> onGranted(web.Lock? lock) {
+      if (!granted.isCompleted) granted.complete();
+      return forever.future.toJS;
     }
 
-    navigator.locks.request(
-      'livre_servico_db',
-      web.LockOptions(ifAvailable: true),
-      granted.toJS,
+    unawaited(
+      navigator.locks
+          .request(
+            'livre_servico_db',
+            web.LockOptions(steal: true),
+            onGranted.toJS,
+          )
+          .toDart
+          .then<void>(
+            (_) {},
+            onError: (Object _) {
+              if (!granted.isCompleted) {
+                // Refused outright: carry on without it.
+                granted.complete();
+                return;
+              }
+              // Held, then taken by a newer tab.
+              try {
+                web.window.sessionStorage.setItem(_sentAwayKey, '1');
+              } catch (_) {}
+              web.window.location.reload();
+            },
+          ),
     );
-    return await held.future;
-  } catch (_) {
-    return true;
-  }
+    await granted.future.timeout(const Duration(seconds: 2), onTimeout: () {});
+  } catch (_) {}
 }
 
 /// Asks the browser to keep this site's data (`navigator.storage.persist`):

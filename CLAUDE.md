@@ -452,8 +452,10 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   web engine reports no safe area, so `watchBrowserSafeArea` adds `viewport-fit=cover` to the
   viewport tag and reads `env(safe-area-inset-*)` into `browserSafeArea`, which
   `MaterialApp.builder` adds to the `MediaQuery` (`withBrowserSafeArea`): keep using `SafeArea`
-  as on the phone. Without SharedWorker (Chrome on Android) drift keeps one copy of the
-  database per tab, so `claimSingleTab` (a Web Lock) lets only one tab open it; Home calls
+  as on the phone. Each tab keeps the rows in memory and never hears of another tab's writes
+  (and without SharedWorker, Chrome on Android, drift keeps one database copy per tab), so one
+  tab at a time uses the data: the newest takes the Web Lock (`holdDatabaseTab`) and the older
+  reloads to "aberta noutro separador" (`takeSentAway`, "Usar aqui"); Home calls
   `keepBrowserStorage` (`navigator.storage.persist`). Safari's share sheet needs a recent tap:
   build a slow file first, then share it from a button (`webSharesFiles`, the backup export).
 - `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY`; `AccountService` reads them with
