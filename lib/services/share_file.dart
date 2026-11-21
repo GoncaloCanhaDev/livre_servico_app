@@ -6,6 +6,11 @@ import 'package:share_plus/share_plus.dart';
 import 'download_file_stub.dart'
     if (dart.library.js_interop) 'download_file_web.dart';
 
+/// Whether a share here opens the browser's share sheet, which needs a tap
+/// moments before (Safari refuses it after a slow wait): build the file
+/// first, then share it from a second tap.
+bool get webSharesFiles => kIsWeb && browserCanShareFiles;
+
 /// Shares [json] as a file called [name]: the share sheet on the phone, a
 /// download in a browser that can't share files. Made in memory, so it works
 /// where there is no file system (the web).

@@ -4,6 +4,7 @@ import '../services/account_service.dart';
 import '../services/backup_service.dart';
 import '../services/demo_mode.dart';
 import '../services/settings_service.dart';
+import '../services/share_file.dart';
 import 'admin_screen.dart';
 import 'destinations.dart';
 import 'diagnostic_screen.dart';
@@ -169,29 +170,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   horizontal: 16,
                   vertical: 8,
                 ),
-                child: SegmentedButton<ThemeMode>(
-                  segments: const [
-                    ButtonSegment(
-                      value: ThemeMode.system,
-                      label: Text('Automático'),
-                      icon: Icon(Icons.brightness_auto),
-                    ),
-                    ButtonSegment(
-                      value: ThemeMode.light,
-                      label: Text('Claro'),
-                      icon: Icon(Icons.light_mode),
-                    ),
-                    ButtonSegment(
-                      value: ThemeMode.dark,
-                      label: Text('Escuro'),
-                      icon: Icon(Icons.dark_mode),
-                    ),
-                  ],
-                  selected: {SettingsService.instance.themeMode},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (s) async {
-                    await SettingsService.instance.setThemeMode(s.single);
-                    if (mounted) setState(() {});
+                // No room for the icons on a narrow phone: "Automático" would
+                // break in two.
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final icons = constraints.maxWidth >= 420;
+                    return SegmentedButton<ThemeMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: const Text('Automático'),
+                          icon: icons
+                              ? const Icon(Icons.brightness_auto)
+                              : null,
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: const Text('Claro'),
+                          icon: icons ? const Icon(Icons.light_mode) : null,
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: const Text('Escuro'),
+                          icon: icons ? const Icon(Icons.dark_mode) : null,
+                        ),
+                      ],
+                      selected: {SettingsService.instance.themeMode},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (s) async {
+                        await SettingsService.instance.setThemeMode(s.single);
+                        if (mounted) setState(() {});
+                      },
+                    );
                   },
                 ),
               ),
@@ -266,8 +276,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _onExport() async {
+    final backup = BackupService.instance;
     try {
-      await BackupService.instance.exportToFile();
+      if (!webSharesFiles) {
+        await backup.exportToFile();
+        return;
+      }
+      // The browser's share sheet needs a fresh tap: the file is ready
+      // first, then shared from the dialog's button.
+      final export = await backup.buildExport();
+      if (!mounted) return;
+      final share = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cópia de segurança pronta'),
+          content: Text(export.name),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Partilhar'),
+            ),
+          ],
+        ),
+      );
+      if (share == true) await backup.shareExport(export);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

@@ -41,8 +41,8 @@ multi-tenant product.
   `lib/models/auto_mark.dart` and `lib/models/task_window.dart`, `lib/models/diagnostic.dart`, `lib/models/stats.dart`, `lib/services/auto_mark_service.dart`
   (`test/auto_mark_service_test.dart`),
   `lib/models/teams.dart`, `lib/models/aviso.dart`, `lib/models/horario.dart` and
-  `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart` and
-  `lib/theme.dart`, plus a
+  `lib/models/horario_xlsx.dart` (on xlsx files built by `test/helpers/xlsx_fixture.dart`), `lib/models/release_notes.dart`, `lib/services/document_service.dart`,
+  `lib/screens/widgets/browser_safe_area.dart` and `lib/theme.dart`, plus a
   few widget tests: `test/home_screen_test.dart` opens every screen and tab from Home,
   `test/person_form_screen_test.dart` fills in and saves the person form,
   `test/truck_form_screen_test.dart` saves a camião, `test/pedidos_screen_test.dart` creates
@@ -448,6 +448,14 @@ new startup steps inside that same try/catch if they must run before `HomeScreen
   Photos never change (a new one gets a new name) and are never deleted online. Older
   versions saved files in the documents folder: `migrateLegacy` moves them in once. Backups
   only carry the references, not the photos.
+- In a browser (`lib/services/browser_web.dart`, `browser_stub.dart` off the web): Flutter's
+  web engine reports no safe area, so `watchBrowserSafeArea` adds `viewport-fit=cover` to the
+  viewport tag and reads `env(safe-area-inset-*)` into `browserSafeArea`, which
+  `MaterialApp.builder` adds to the `MediaQuery` (`withBrowserSafeArea`): keep using `SafeArea`
+  as on the phone. Without SharedWorker (Chrome on Android) drift keeps one copy of the
+  database per tab, so `claimSingleTab` (a Web Lock) lets only one tab open it; Home calls
+  `keepBrowserStorage` (`navigator.storage.persist`). Safari's share sheet needs a recent tap:
+  build a slow file first, then share it from a button (`webSharesFiles`, the backup export).
 - `.env.example` lists `SUPABASE_URL`/`SUPABASE_ANON_KEY`; `AccountService` reads them with
   `String.fromEnvironment`, so they are baked in at build time with
   `--dart-define-from-file=.env`. The anon key is public by design (access is the RLS rules).

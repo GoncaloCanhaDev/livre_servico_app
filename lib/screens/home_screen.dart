@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../app_version.dart';
 import '../services/account_service.dart';
+import '../services/browser_stub.dart'
+    if (dart.library.js_interop) '../services/browser_web.dart';
+import '../services/demo_mode.dart';
 import 'avisos_screen.dart';
 import 'auto_marks_screen.dart';
 import 'destinations.dart';
@@ -32,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // The website keeps the store's data in the browser: ask it not to
+    // erase it (Safari does after a week away). Not for the demo.
+    if (!DemoMode.active) keepBrowserStorage();
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => showReleaseNotesIfNew(context),
     );

@@ -5,9 +5,12 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/start_screen.dart';
 import 'screens/widgets/app_frame.dart';
+import 'screens/widgets/browser_safe_area.dart';
 import 'screens/widgets/demo_banner.dart';
 import 'services/account_service.dart';
 import 'services/auto_mark_service.dart';
+import 'services/browser_stub.dart'
+    if (dart.library.js_interop) 'services/browser_web.dart';
 import 'services/demo_data.dart';
 import 'services/demo_mode.dart';
 import 'services/horario_service.dart';
@@ -27,6 +30,8 @@ void main() async {
   // The website's loading screen (web/index.html) stays up through the
   // download and the startup below, until the app's first frame is drawn.
   WidgetsBinding.instance.addPostFrameCallback((_) => hideWebLoader());
+  // An iPhone's notch and home bar, which Flutter doesn't report on the web.
+  watchBrowserSafeArea();
 
   String? bootError;
   try {
@@ -39,6 +44,12 @@ void main() async {
       await AccountService.instance.init();
       await seedDemo();
     } else {
+      if (!await claimSingleTab()) {
+        // Chrome on Android: another tab has the data open (see
+        // claimSingleTab), and two would overwrite each other's changes.
+        runApp(const _OpenElsewhere());
+        return;
+      }
       await SettingsService.instance.init();
       await LocalDb.init();
       try {
@@ -141,12 +152,65 @@ class LivreServicoApp extends StatelessWidget {
           final page = _FramedUnlessPresentation(child: child!);
           // Hours are 24h in Portugal, whatever the phone or browser says:
           // the time pickers' keyboard mode reads only this to accept 18.
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-            child: DemoMode.active ? DemoBanner(child: page) : page,
+          return ValueListenableBuilder(
+            valueListenable: browserSafeArea,
+            builder: (context, inset, _) => MediaQuery(
+              data: withBrowserSafeArea(
+                MediaQuery.of(context),
+                inset,
+              ).copyWith(alwaysUse24HourFormat: true),
+              child: DemoMode.active ? DemoBanner(child: page) : page,
+            ),
           );
         },
         home: const StartScreen(),
+      ),
+    );
+  }
+}
+
+/// Shown instead of the app in a second browser tab where only one may
+/// open the data (see `claimSingleTab`).
+class _OpenElsewhere extends StatelessWidget {
+  const _OpenElsewhere();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(Brightness.light),
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tab, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'A aplicação já está aberta noutro separador',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Neste navegador só pode estar aberta num separador de '
+                    'cada vez, para não se perderem alterações. Feche o outro '
+                    'separador e tente de novo.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: reloadPage,
+                    child: const Text('Tentar de novo'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

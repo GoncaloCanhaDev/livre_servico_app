@@ -26,21 +26,30 @@ class BackupService {
   /// (Backups from before 0.61.0 also have "horarios", now ignored.)
   List<LocalCollection<SyncedRow>> get _backedUp => _db.collections;
 
-  Future<ShareResult> exportToFile() async {
+  Future<ShareResult> exportToFile() async => shareExport(await buildExport());
+
+  /// The backup file: its name and its indented JSON (so it can be edited
+  /// by hand, e.g. its "vasilhame").
+  Future<({String name, String json})> buildExport() async {
     final payload = await _buildPayload();
     final timestamp = DateTime.now()
         .toIso8601String()
         .replaceAll(':', '-')
         .split('.')
         .first;
-    // Indented so the file can be edited by hand (e.g. its "vasilhame").
-    final result = await shareJsonFile(
-      const JsonEncoder.withIndent('  ').convert(payload),
+    return (
       name: 'livre_servico_backup_$timestamp.json',
-      subject: 'Cópia de segurança - Livre Serviço',
+      json: const JsonEncoder.withIndent('  ').convert(payload),
     );
-    return result;
   }
+
+  /// Shares a file from [buildExport].
+  Future<ShareResult> shareExport(({String name, String json}) export) =>
+      shareJsonFile(
+        export.json,
+        name: export.name,
+        subject: 'Cópia de segurança - Livre Serviço',
+      );
 
   /// Returns true if an import was performed.
   Future<bool> pickAndImport() async {

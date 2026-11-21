@@ -7,6 +7,26 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.14] — 2026-11-21
+
+### Fixed
+
+- Website on an iPhone: the notch and home bar are now kept clear, as in the phone app. Flutter's
+  web engine reports no safe area, so every `SafeArea` did nothing and bottom buttons sat under
+  the home bar in the home-screen app; the page now covers the screen (`viewport-fit=cover`) and
+  `MaterialApp.builder` adds the browser's `env(safe-area-inset-*)` to the `MediaQuery`
+  (`browserSafeArea`, `withBrowserSafeArea`).
+- Website on Chrome for Android: two tabs could overwrite each other's changes. Without
+  SharedWorker, drift keeps one copy of the database per tab (`unsafeIndexedDb`); now only one tab
+  at a time opens it (a Web Lock, `claimSingleTab`) and another says "A aplicação já está aberta
+  noutro separador", with "Tentar de novo".
+- Website: Home asks the browser to keep the site's data (`navigator.storage.persist`), which
+  Safari otherwise erases after a week without a visit.
+- Website: the backup export, where the browser shares files, is built first and shared from
+  "Partilhar" in a dialog, since Safari refuses a share that comes long after the tap.
+- Definições → Aparência: "Automático" no longer breaks in two on a narrow phone (the icons only
+  show from 420 px).
+
 ## [0.97.13] — 2026-11-21
 
 ### Fixed
