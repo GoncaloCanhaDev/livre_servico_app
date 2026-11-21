@@ -325,8 +325,10 @@ multi-tenant product.
 - `WhatsAppService` sends prefilled messages via `url_launcher`, trying an Android intent URL,
   then an HTTPS fallback, then the `whatsapp://` scheme; on the web only the HTTPS link, in a
   new tab.
-- Exports (backup) go through `shareJsonFile` (`lib/services/share_file.dart`), an
-  in-memory file: the share sheet on the phone, a download in a browser.
+- Exports (backup, feedback, Diagnóstico) go through `shareJsonFile` / `shareTextFile`
+  (`lib/services/share_file.dart`), an in-memory file: the share sheet where the browser has
+  Web Share (Android), otherwise a download (`download_file_web.dart`, conditional import).
+  share_plus's own fallback misses the WebAssembly build's "canShare is not a function".
 
 ### UI layer
 

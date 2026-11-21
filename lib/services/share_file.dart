@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'download_file_stub.dart'
+    if (dart.library.js_interop) 'download_file_web.dart';
+
 /// Shares [json] as a file called [name]: the share sheet on the phone, a
 /// download in a browser that can't share files. Made in memory, so it works
 /// where there is no file system (the web).
@@ -29,16 +32,25 @@ Future<ShareResult> _shareFile(
   required String name,
   required String subject,
   required String mimeType,
-}) => SharePlus.instance.share(
-  ShareParams(
-    files: [
-      XFile.fromData(
-        Uint8List.fromList(utf8.encode(content)),
-        name: name,
-        mimeType: mimeType,
+}) async {
+  final bytes = Uint8List.fromList(utf8.encode(content));
+  void download() => downloadFile(bytes, name: name, mimeType: mimeType);
+  if (kIsWeb && !browserCanShareFiles) {
+    download();
+    return ShareResult.unavailable;
+  }
+  try {
+    return await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile.fromData(bytes, name: name, mimeType: mimeType)],
+        fileNameOverrides: [name],
+        subject: subject,
       ),
-    ],
-    fileNameOverrides: [name],
-    subject: subject,
-  ),
-);
+    );
+  } catch (_) {
+    // A browser whose share fails some other way still gets the file.
+    if (!kIsWeb) rethrow;
+    download();
+    return ShareResult.unavailable;
+  }
+}

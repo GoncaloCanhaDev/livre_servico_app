@@ -7,6 +7,16 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.10] — 2026-11-21
+
+### Fixed
+
+- Exports on the website (Erros e sugestões, backup, Diagnóstico) failed with "TypeError:
+  x0.canShare is not a function" in browsers without Web Share (desktop Firefox, Chrome on
+  Linux): share_plus only falls back to a download for dart2js's error, not the WebAssembly
+  build's. `share_file.dart` now downloads the file itself when the browser can't share files,
+  or when sharing fails in a browser.
+
 ## [0.97.9] — 2026-11-20
 
 ### Changed
