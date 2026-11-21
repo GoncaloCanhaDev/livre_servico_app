@@ -7,6 +7,22 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.98.0] — 2026-11-21
+
+### Added
+
+- Diárias: the Lista Visível and the Lista Automática are tasks like the others (`lista_visivel`,
+  `lista_automatica` in `fixedDailyTaskKeys`, with `DailyTasks.listaVisivel*` /
+  `listaAutomatica*`). A Listas 2.0 Visível or Automáticas send ticks that day's list
+  (`DailyTasksService.tickList`, `tickListTask`: marked by the sender, made theirs when the app had
+  marked it, its pending number filled). They're also marked by hand with ✓ / ✗ and no number, and
+  by the app once their hours end (Visível 05–14, Automática the whole day; Definições → Horas das
+  tarefas). A Lista Visível marked without a Visível has "Número por preencher": filling it saves
+  a Visível with those itens picados (`Visivel2Service.add(fillsPending:)`). The app never marks
+  them for days before 22 November 2026 (`taskAutoMarkSince`). A send saved by a phone on an
+  older version ticks the list when the app's run finds it. Estatísticas count them; a send
+  credits its people only once.
+
 ## [0.97.15] — 2026-11-21
 
 ### Fixed

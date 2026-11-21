@@ -148,6 +148,8 @@ bool dailyDone(DailyTasks t, String key) => switch (key) {
   'alteracoes_preco' => t.alteracoesPreco,
   'verificacao_temperaturas' => t.verificacaoTemperaturas,
   'preenchimento_quadro' => t.preenchimentoQuadro,
+  'lista_visivel' => t.listaVisivel,
+  'lista_automatica' => t.listaAutomatica,
   'verificacao_validades' => t.verificacaoValidades,
   'validades_noite' => t.validadesNoite,
   'kiwi_fecho' => t.kiwiFecho,
@@ -176,6 +178,12 @@ void setDailyDone(
     case 'preenchimento_quadro':
       t.preenchimentoQuadro = done;
       t.preenchimentoQuadroByNames = names;
+    case 'lista_visivel':
+      t.listaVisivel = done;
+      t.listaVisivelByNames = names;
+    case 'lista_automatica':
+      t.listaAutomatica = done;
+      t.listaAutomaticaByNames = names;
     case 'verificacao_validades':
       t.verificacaoValidades = done;
       t.verificacaoValidadesByNames = names;
@@ -207,6 +215,8 @@ List<String> dailyNames(DailyTasks t, String key) => switch (key) {
     t.verificacaoValidadesByNames,
     t.verificacaoValidadesBy,
   ),
+  'lista_visivel' => t.listaVisivelByNames,
+  'lista_automatica' => t.listaAutomaticaByNames,
   'validades_noite' => t.validadesNoiteByNames,
   'kiwi_fecho' => resolveNames(t.kiwiFechoByNames, t.kiwiFechoBy),
   _ => const [],
@@ -223,6 +233,34 @@ void autoMarkDaily(DailyTasks t, String key, List<String> who, DateTime now) {
     if (key == 'verificacao_validades' || key == 'validades_noite')
       leftKey(key),
   }.toList();
+}
+
+/// A Listas 2.0 send by [who] ticks [key] (`lista_visivel` or
+/// `lista_automatica`) of [t]: marked when it wasn't, theirs when the app
+/// had marked it (the [AutoMark] goes), and its number (a Visível's itens)
+/// fills the one pending. A Não feita stays. Returns whether [t] changed
+/// and whether that was a correction (`DailyTasksService.save(edited:)`).
+({bool changed, bool edited}) tickListTask(
+  DailyTasks t,
+  String key,
+  List<String> who,
+) {
+  if (t.notDone.containsKey(key)) return (changed: false, edited: false);
+  if (!dailyDone(t, key)) {
+    setDailyDone(t, key, who);
+    return (changed: true, edited: false);
+  }
+  var edited = false;
+  if (t.autoMarks.containsKey(key) && who.isNotEmpty) {
+    setDailyDone(t, key, who);
+    t.autoMarks = {...t.autoMarks}..remove(key);
+    edited = true;
+  }
+  if (t.pendingCounts.contains(key)) {
+    t.pendingCounts = [...t.pendingCounts]..remove(key);
+    edited = true;
+  }
+  return (changed: edited, edited: edited);
 }
 
 bool weeklyDone(WeeklyTasks t, String key) => switch (key) {

@@ -40,6 +40,10 @@ class DailyTasks with SyncFields {
       ..validadesManhaCarried = intFromJson(j['validadesManhaCarried'])
       ..validadesNoiteLeft = intFromJson(j['validadesNoiteLeft'])
       ..validadesNoiteCarried = intFromJson(j['validadesNoiteCarried'])
+      ..listaVisivel = boolFromJson(j['listaVisivel'])
+      ..listaVisivelByNames = stringsFromJson(j['listaVisivelByNames'])
+      ..listaAutomatica = boolFromJson(j['listaAutomatica'])
+      ..listaAutomaticaByNames = stringsFromJson(j['listaAutomaticaByNames'])
       ..kiwiFecho = boolFromJson(j['kiwiFecho'])
       ..kiwiFechoBy = stringOrNull(j['kiwiFechoBy'])
       ..kiwiFechoByNames = stringsFromJson(j['kiwiFechoByNames'])
@@ -100,6 +104,14 @@ class DailyTasks with SyncFields {
   int validadesManhaCarried = 0;
   int validadesNoiteCarried = 0;
 
+  /// The Lista Visível and the Lista Automática (since 0.98.0): ticked
+  /// by a Listas 2.0 Visível or Automáticas send that day, by hand without
+  /// a number, or by the app. Days before that only have the sends.
+  bool listaVisivel = false;
+  List<String> listaVisivelByNames = [];
+  bool listaAutomatica = false;
+  List<String> listaAutomaticaByNames = [];
+
   bool kiwiFecho = false;
 
   /// Legacy — kept for historical read fallback only, do not write.
@@ -153,6 +165,10 @@ class DailyTasks with SyncFields {
     'validadesManhaCarried': validadesManhaCarried,
     'validadesNoiteLeft': validadesNoiteLeft,
     'validadesNoiteCarried': validadesNoiteCarried,
+    'listaVisivel': listaVisivel,
+    'listaVisivelByNames': listaVisivelByNames,
+    'listaAutomatica': listaAutomatica,
+    'listaAutomaticaByNames': listaAutomaticaByNames,
     'kiwiFecho': kiwiFecho,
     'kiwiFechoBy': kiwiFechoBy,
     'kiwiFechoByNames': kiwiFechoByNames,

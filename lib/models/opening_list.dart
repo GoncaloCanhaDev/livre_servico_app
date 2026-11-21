@@ -163,8 +163,7 @@ Map<DateTime, List<T>> groupByServiceDay<T>(
   Iterable<T> items,
   DateTime Function(T item) timeOf,
 ) {
-  final sorted = items.toList()
-    ..sort((a, b) => timeOf(b).compareTo(timeOf(a)));
+  final sorted = items.toList()..sort((a, b) => timeOf(b).compareTo(timeOf(a)));
   final grouped = <DateTime, List<T>>{};
   List<T>? current;
   DateTime? start, end;

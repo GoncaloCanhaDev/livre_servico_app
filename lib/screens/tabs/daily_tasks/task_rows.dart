@@ -1,8 +1,7 @@
 part of '../daily_tasks_tab.dart';
 
-// The rows of the Diárias: a task marked by hand, one ticked by another
-// screen (the Lista Visível), one only counted (the Lista Automática) and
-// one with a number to fill in.
+// The rows of the Diárias: a task marked by hand and one with a number to
+// fill in.
 
 class _BackdatedNote extends StatelessWidget {
   const _BackdatedNote();
@@ -51,12 +50,16 @@ class _ManualTask extends StatelessWidget {
     this.onLongPress,
     this.byNames = const [],
     this.backdated = false,
+    this.info,
     this.notes = const [],
   });
 
   final String label;
   final bool checked;
   final NotDone? notDone;
+
+  /// A line under the label (the Listas 2.0 sends of the day).
+  final String? info;
   final VoidCallback onDone;
   final VoidCallback onNotDone;
   final VoidCallback? onLongPress;
@@ -93,108 +96,18 @@ class _ManualTask extends StatelessWidget {
                 : (checked && backdated)
                 ? const _BackdatedNote()
                 : null,
-            notes,
+            [
+              if (info case final info?)
+                Text(
+                  info,
+                  style: TextStyle(fontSize: 12, color: context.muted),
+                ),
+              ...notes,
+            ],
           ),
           trailing: names.isNotEmpty
               ? PersonInitialsRow(names: names, size: 30)
               : null,
-        ),
-      ),
-    );
-  }
-}
-
-/// A task ticked by another screen: no markers, only whether it is done.
-class _ListTask extends StatelessWidget {
-  const _ListTask({
-    required this.label,
-    required this.checked,
-    required this.note,
-    this.onLongPress,
-  });
-
-  final String label;
-  final bool checked;
-  final String note;
-  final VoidCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: onLongPress,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        child: CheckboxListTile(
-          value: checked,
-          onChanged: null,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: context.colors.primary,
-          title: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              decoration: checked ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          subtitle: Row(
-            children: [
-              Icon(Icons.lock_outline, size: 12, color: context.faintest),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  note,
-                  style: TextStyle(fontSize: 12, color: context.muted),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A task that is only counted, never ticked: the Lista Automática.
-class _CounterTask extends StatelessWidget {
-  const _CounterTask({
-    required this.label,
-    required this.count,
-    required this.note,
-  });
-
-  final String label;
-  final int count;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: count == 0 ? null : context.colors.primary,
-            border: count == 0 ? Border.all(color: context.faint) : null,
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            '$count',
-            style: TextStyle(
-              color: count == 0
-                  ? context.colors.onSurface
-                  : context.colors.onPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          note,
-          style: TextStyle(fontSize: 12, color: context.muted),
         ),
       ),
     );

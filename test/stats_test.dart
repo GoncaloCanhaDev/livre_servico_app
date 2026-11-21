@@ -62,6 +62,37 @@ void main() {
   group('computeStats', () {
     final week = StatsPeriod.containing(StatsPeriodKind.week, day(16));
 
+    test('the lists: a send ticks them and credits its people once', () {
+      final w = StatsPeriod.containing(StatsPeriodKind.week, day(23));
+      final visivel = Visivel2Entry()
+        ..createdAt = DateTime(2026, 11, 23, 9)
+        ..serviceDay = day(23)
+        ..itens = 10
+        ..byNames = ['Ana'];
+      // Ticked by the Visível (by hand, the send counts Ana).
+      final mon = DailyTasks()
+        ..serviceDay = day(23)
+        ..listaVisivel = true
+        ..listaVisivelByNames = ['Ana'];
+      // Tuesday: a Visível marked by hand with no send.
+      final tue = DailyTasks()
+        ..serviceDay = day(24)
+        ..listaVisivel = true
+        ..listaVisivelByNames = ['Rui'];
+      final s = computeStats(
+        w,
+        StatsInput(daily: [mon, tue], visivel: [visivel]),
+        now: DateTime(2026, 11, 25, 15),
+      );
+      final stat = s.tasks.firstWhere((t) => t.key == 'lista_visivel');
+      expect(stat.byHand, 2);
+      expect(stat.unmarked, 1); // Wednesday, closed at 14:00
+      final ana = s.people.firstWhere((p) => p.name == 'Ana');
+      expect(ana.tasks, 0);
+      expect(ana.visivel, 1);
+      expect(s.people.firstWhere((p) => p.name == 'Rui').tasks, 1);
+    });
+
     test('each task counts done, by the app, não feita or unmarked', () {
       final mon = DailyTasks()
         ..serviceDay = day(16)

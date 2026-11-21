@@ -105,7 +105,7 @@ Future<void> reviewDailyMark(
       t.autoMarks = {...t.autoMarks}..remove(key);
       t.notDone = {...t.notDone, key: notDone};
       // A Validades window not done still counts its artigos.
-      if (key == 'alteracoes_preco') {
+      if (key == 'alteracoes_preco' || key == 'lista_visivel') {
         t.pendingCounts = [...t.pendingCounts]..remove(key);
       }
   }

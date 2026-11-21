@@ -125,9 +125,33 @@ void main() {
         'Verificação de Temperaturas',
         'Preenchimento do Quadro',
         'Lista Visível',
+        'Lista Automática',
         'Validades · Manhã',
         'Kiwi Fecho',
       ]);
+    });
+
+    test('the lists: ticked, or done by a send that day', () {
+      final t = DailyTasks()
+        ..serviceDay = DateTime(2026, 10, 8, 5)
+        ..listaAutomatica = true;
+      final now = DateTime(2026, 10, 8, 9);
+      expect(_pending(t, now, visivel: false), contains('Lista Visível'));
+      expect(_pending(t, now), isNot(contains('Lista Visível')));
+      expect(_pending(t, now), isNot(contains('Lista Automática')));
+      expect(
+        pendingDailyTasks(null, visivelDone: true, now: now),
+        contains('Lista Automática'),
+      );
+      expect(
+        pendingDailyTasks(
+          null,
+          visivelDone: true,
+          automaticaDone: true,
+          now: now,
+        ),
+        isNot(contains('Lista Automática')),
+      );
     });
 
     test('leaves out what is done and validades windows not open yet', () {
@@ -137,6 +161,7 @@ void main() {
         ..alteracoesPreco = true
         ..verificacaoTemperaturas = true
         ..preenchimentoQuadro = true
+        ..listaAutomatica = true
         ..kiwiFecho = true;
       // Past 14h the Manhã can still be marked, so it is still to do.
       expect(_pending(t, DateTime(2026, 10, 8, 15)), ['Validades · Manhã']);

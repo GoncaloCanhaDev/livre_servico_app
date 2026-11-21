@@ -229,11 +229,11 @@ multi-tenant product.
   them, who, `createdAt`) and the fields clear. The items are
   a list; tapping one opens a bottom sheet with its fields. A count typed and not sent (each item, the Visível) is
   kept on the device by `SettingsService.draft`/`setDraft` until sent. They show in
-  Histórico's Automáticas 2.0 tab and in Tudo, and are counted in the Diárias (Lista
-  Automática).
+  Histórico's Automáticas 2.0 tab and in Tudo, and tick the Diárias' Lista Automática.
   Visível (`lib/models/visivel2_entry.dart`, `Visivel2Service`) is 1.0's Visual without
   Quebra and Benefício: each Finalizar saves one `Visivel2Entry` (itens picados, who), shown in
-  Histórico's Visível 2.0 tab; one ticks the Diárias' Lista Visível. The order is a round of Automáticas, one Visível, then
+  Histórico's Visível 2.0 tab; one ticks the Diárias' Lista Visível (an Automáticas send the
+  Lista Automática). The order is a round of Automáticas, one Visível, then
   Automáticas all day, but neither is ever locked (not feasible in practice).
 - Horários (since 0.90.0; the old JSON-edited sheet was removed in 0.61.0) are imported from
   the store's monthly Excel file as it is: `parseHorarioXlsx` (`lib/models/horario_xlsx.dart`,
@@ -392,9 +392,14 @@ multi-tenant product.
 - Home's `TodayCard` (`widgets/today_card.dart`) summarizes the service day from the pure helpers in
   `lib/models/today.dart` (`onShiftAt`, `shiftCountsOn`, `pendingDailyTasks`); a new daily task
   must be added to `pendingDailyTasks` too. The 1.0 lists (Abertura, Relatório, Visual,
-  Automáticas) no longer tick a daily task (since 0.82.0). From Listas 2.0, a Visível ticks
-  the Lista Visível (`visivelDone`), and the Lista Automática only shows how many Automáticas
-  were sent that day: never ticked, never pending (Histórico's `_Listas2ByDay`). So
+  Automáticas) no longer tick a daily task (since 0.82.0). Since 0.98.0 the Lista Visível and
+  the Lista Automática are Diárias like the others (`lista_visivel`, `lista_automatica`): a
+  Listas 2.0 Visível or Automáticas send ticks that day's (`DailyTasksService.tickList`,
+  `tickListTask`), or they're marked by hand without a number, or by `AutoMarkService` (never
+  for windows opening before `taskAutoMarkSince`; a send found that day ticks it instead).
+  Older days only have the sends, so a day with one counts as done (`visivelDone`,
+  `automaticaDone`, Histórico's `_Listas2ByDay`, `computeStats`). The Lista Visível's pending
+  number is filled by saving a Visível (`Visivel2Service.add(fillsPending:)`). So
   the Lista Visual goal is gone from Definições (`SettingsService.visualGoal` is kept only so
   backups still carry it).
 - After an update, Home shows the "Novidades" popup once (`showReleaseNotesIfNew`,

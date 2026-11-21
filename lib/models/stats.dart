@@ -279,6 +279,18 @@ StoreStats computeStats(
   final dailyByDay = {
     for (final t in input.daily) currentServiceDay(t.serviceDay): t,
   };
+  // The days with a Listas 2.0 send, which tick the lists: such a day
+  // counts as done even if the phone that sent it didn't tick it, and the
+  // send already credits its people (Visível, Automáticas 2.0).
+  final listSends = <String, Set<DateTime>>{
+    'lista_visivel': {
+      for (final v in input.visivel) currentServiceDay(v.serviceDay),
+    },
+    'lista_automatica': groupByServiceDay(
+      input.auto2,
+      (e) => e.createdAt,
+    ).keys.toSet(),
+  };
   // From the first day each task was ever marked.
   final dailySince = <String, DateTime>{};
   for (final t in input.daily) {
@@ -289,14 +301,27 @@ StoreStats computeStats(
       if (was == null || d.isBefore(was)) dailySince[key] = d;
     }
   }
+  for (final MapEntry(:key, value: sendDays) in listSends.entries) {
+    for (final d in sendDays) {
+      final was = dailySince[key];
+      if (was == null || d.isBefore(was)) dailySince[key] = d;
+    }
+  }
   for (final key in fixedDailyTaskKeys) {
     final stat = TaskStat(key, fixedTaskLabels[key] ?? key);
     final since = dailySince[key];
+    final sent = listSends[key] ?? const <DateTime>{};
+    final autoSince = taskAutoMarkSince[key];
     for (final day in days) {
       if (since == null || day.isBefore(since)) continue;
       final t = dailyByDay[day];
-      final settled = t != null && dailySettled(t, key);
+      final settled = (t != null && dailySettled(t, key)) || sent.contains(day);
       if (!settled && !closed(key, day)) continue;
+      if (!settled &&
+          autoSince != null &&
+          windowSpan(input.windowFor(key), day).start.isBefore(autoSince)) {
+        continue;
+      }
       final dayStat = dayStats[day]!..due += 1;
       if (t?.notDone[key] case final nd?) {
         stat.notDone++;
@@ -312,9 +337,14 @@ StoreStats computeStats(
         dayStat.done++;
         final isAuto = t.autoMarks.containsKey(key);
         isAuto ? stat.auto++ : stat.byHand++;
-        for (final n in dailyNames(t, key)) {
-          isAuto ? person(n).autoTasks++ : person(n).tasks++;
+        if (isAuto || !sent.contains(day)) {
+          for (final n in dailyNames(t, key)) {
+            isAuto ? person(n).autoTasks++ : person(n).tasks++;
+          }
         }
+      } else if (sent.contains(day)) {
+        dayStat.done++;
+        stat.byHand++;
       } else {
         stat.unmarked++;
       }

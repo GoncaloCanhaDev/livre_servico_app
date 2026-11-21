@@ -108,6 +108,8 @@ String dailyTasksSearchText(DailyTasks t) => _join([
   t.verificacaoTemperaturasBy,
   ...t.preenchimentoQuadroByNames,
   t.preenchimentoQuadroBy,
+  ...t.listaVisivelByNames,
+  ...t.listaAutomaticaByNames,
   ...t.verificacaoValidadesByNames,
   t.verificacaoValidadesBy,
   ...t.validadesNoiteByNames,

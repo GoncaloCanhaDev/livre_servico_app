@@ -107,15 +107,16 @@ List<OnShift> onShiftAt(
 }
 
 /// The Diárias still to do at [now], in the Tarefas order: [t] is the
-/// service day's row (null when none was saved yet) and [visivelDone] says
-/// whether a Listas 2.0 Visível was saved that day. A task marked Não feita
-/// isn't pending. A Validades part counts from when its window opens (it
-/// can still be marked after the window, until the day ends).
-/// The Lista Automática only shows a count, so it is never pending.
-/// [windowFor] gives the windows a Chefe set (`TaskWindowService`).
+/// service day's row (null when none was saved yet), [visivelDone] and
+/// [automaticaDone] say whether a Listas 2.0 Visível or Automáticas was
+/// saved that day (which tick the lists). A task marked Não feita isn't
+/// pending. A Validades part counts from when its window opens (it can
+/// still be marked after the window, until the day ends). [windowFor]
+/// gives the windows a Chefe set (`TaskWindowService`).
 List<String> pendingDailyTasks(
   DailyTasks? t, {
   required bool visivelDone,
+  bool automaticaDone = false,
   required DateTime now,
   TaskWindow Function(String key)? windowFor,
 }) {
@@ -132,7 +133,10 @@ List<String> pendingDailyTasks(
       'Verificação de Temperaturas',
     if (!settled(t?.preenchimentoQuadro, 'preenchimento_quadro'))
       'Preenchimento do Quadro',
-    if (!visivelDone) 'Lista Visível',
+    if (!visivelDone && !settled(t?.listaVisivel, 'lista_visivel'))
+      'Lista Visível',
+    if (!automaticaDone && !settled(t?.listaAutomatica, 'lista_automatica'))
+      'Lista Automática',
     if (!settled(t?.verificacaoValidades, 'verificacao_validades') &&
         open(ValidadesTurno.manha))
       ValidadesTurno.manha.label,

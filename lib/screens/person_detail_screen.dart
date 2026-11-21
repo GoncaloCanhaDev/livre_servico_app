@@ -235,6 +235,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         ).contains(name)) {
       out.add((label: 'Preenchimento do Quadro'));
     }
+    if (t.listaVisivel && t.listaVisivelByNames.contains(name)) {
+      out.add((label: 'Lista Visível'));
+    }
+    if (t.listaAutomatica && t.listaAutomaticaByNames.contains(name)) {
+      out.add((label: 'Lista Automática'));
+    }
     if (t.verificacaoValidades &&
         resolveNames(
           t.verificacaoValidadesByNames,

@@ -77,6 +77,33 @@ class DailyTasksService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// A Listas 2.0 send by [who] on [serviceDay] ticks the Diária [key]
+  /// (`lista_visivel` or `lista_automatica`, see [tickListTask]); a row is
+  /// only created when it changes.
+  Future<void> tickList(
+    DateTime serviceDay,
+    String key,
+    List<String> who, {
+    bool backdated = false,
+  }) async {
+    final t = await find(serviceDay) ?? (DailyTasks()..serviceDay = serviceDay);
+    final r = tickListTask(t, key, who);
+    if (!r.changed) return;
+    if (backdated && !t.backdatedTaskKeys.contains(key)) {
+      t.backdatedTaskKeys = [...t.backdatedTaskKeys, key];
+    }
+    await save(t, edited: r.edited ? key : null);
+  }
+
+  /// The pending number of [key] on [serviceDay] was given elsewhere (a
+  /// Visível saved for it): it is no longer pending.
+  Future<void> fillListCount(DateTime serviceDay, String key) async {
+    final t = await find(serviceDay);
+    if (t == null || !t.pendingCounts.contains(key)) return;
+    t.pendingCounts = [...t.pendingCounts]..remove(key);
+    await save(t, edited: key);
+  }
+
   /// Passes the [left] artigos of [from]'s [turno] (already saved there) to
   /// the next window's count (see [nextValidadesWindow]), unless that one
   /// was already marked. Returns whether they were added.

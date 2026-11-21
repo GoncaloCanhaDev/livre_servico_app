@@ -130,12 +130,31 @@ class _TasksTabState extends State<_TasksTab>
                 backdated: t.backdatedTaskKeys.contains('preenchimento_quadro'),
               ),
               _TaskEntry(
-                'Lista Visível',
-                r.visiveis.isNotEmpty,
-                byNames: {for (final v in r.visiveis) ...v.byNames}.toList(),
-                backdated:
-                    r.visiveis.isNotEmpty &&
-                    r.visiveis.every((v) => v.backdated),
+                r.visiveis.isEmpty
+                    ? 'Lista Visível'
+                    : 'Lista Visível '
+                          '(${r.visiveis.fold(0, (s, v) => s + v.itens)} itens)',
+                notDone: t.notDone['lista_visivel'],
+                autoMark: t.autoMarks['lista_visivel'],
+                t.listaVisivel || r.visiveis.isNotEmpty,
+                byNames: t.listaVisivel
+                    ? t.listaVisivelByNames
+                    : {for (final v in r.visiveis) ...v.byNames}.toList(),
+                backdated: t.listaVisivel
+                    ? t.backdatedTaskKeys.contains('lista_visivel')
+                    : r.visiveis.isNotEmpty &&
+                          r.visiveis.every((v) => v.backdated),
+              ),
+              _TaskEntry(
+                r.autoCount == 0
+                    ? 'Lista Automática'
+                    : 'Lista Automática (${r.autoCount} enviada'
+                          '${r.autoCount == 1 ? '' : 's'})',
+                notDone: t.notDone['lista_automatica'],
+                autoMark: t.autoMarks['lista_automatica'],
+                t.listaAutomatica || r.autoCount > 0,
+                byNames: t.listaAutomaticaByNames,
+                backdated: t.backdatedTaskKeys.contains('lista_automatica'),
               ),
               _TaskEntry(
                 '${ValidadesTurno.manha.label} (${t.verificacaoValidadesCount})'
@@ -193,7 +212,6 @@ class _TasksTabState extends State<_TasksTab>
                   final msg =
                       '📋 Tarefas (${dayFmt.format(t.serviceDay)})\n'
                       '$lines\n'
-                      '🔢 Lista Automática: ${r.autoCount}\n'
                       'Total: $doneCount/$totalTasks';
                   await WhatsAppService.sendWithConfirm(ctx, msg);
                 },
@@ -227,22 +245,6 @@ class _TasksTabState extends State<_TasksTab>
                           notDone: e.done ? null : e.notDone,
                           autoMark: e.done ? e.autoMark : null,
                         ),
-                      ListTile(
-                        dense: true,
-                        leading: Icon(
-                          Icons.bolt,
-                          size: 20,
-                          color: context.colors.primary,
-                        ),
-                        title: const Text('Lista Automática'),
-                        trailing: Text(
-                          '${r.autoCount}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/opening_list.dart';
 import '../models/visivel2_entry.dart';
+import 'daily_tasks_service.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -15,11 +16,15 @@ class Visivel2Service extends ChangeNotifier {
   LocalDb get _db => LocalDb.instance;
 
   /// Saves [itens] picked by [names]: now, or on [serviceDay] (at noon,
-  /// flagged backdated) when it was an earlier day.
+  /// flagged backdated) when it was an earlier day. It ticks that day's
+  /// Lista Visível (`DailyTasksService.tickList`); with [fillsPending], it
+  /// is the number of one already marked, which stays as it was but for
+  /// the number no longer pending.
   Future<Visivel2Entry> add({
     required int itens,
     required List<String> names,
     DateTime? serviceDay,
+    bool fillsPending = false,
   }) async {
     final now = DateTime.now();
     final entry = Visivel2Entry()
@@ -32,6 +37,19 @@ class Visivel2Service extends ChangeNotifier {
       ..backdated = serviceDay != null;
     SyncMeta.stamp(entry);
     await _db.visivel2Entries.put(entry);
+    if (fillsPending) {
+      await DailyTasksService.instance.fillListCount(
+        entry.serviceDay,
+        'lista_visivel',
+      );
+    } else {
+      await DailyTasksService.instance.tickList(
+        entry.serviceDay,
+        'lista_visivel',
+        names,
+        backdated: entry.backdated,
+      );
+    }
     notifyListeners();
     return entry;
   }

@@ -100,7 +100,7 @@ const tutorialSections = [
   TutorialSection(
     id: 'tarefas',
     title: 'Tarefas',
-    version: 5,
+    version: 6,
     steps: [
       TutorialStep(
         icon: Icons.task_alt,
@@ -129,8 +129,9 @@ const tutorialSections = [
             'artigos ficaram por fazer: somam-se à janela seguinte (da Manhã '
             'para a Noite, da Noite para a Manhã do dia seguinte). Em '
             'Personalizadas, o + cria uma tarefa nova (diária, semanal ou '
-            'pontual). A Lista Visível marca-se sozinha com um Visível de '
-            'Listas 2.0; a Lista Automática só conta as automáticas do dia.',
+            'pontual). A Lista Visível e a Lista Automática marcam-se '
+            'sozinhas com um Visível ou uma Automática de Listas 2.0, ou à '
+            'mão, sem números.',
       ),
       TutorialStep(
         icon: Icons.auto_mode,
@@ -148,7 +149,8 @@ const tutorialSections = [
               'automáticas por confirmar" mostra todas da última semana.',
           'Se a tarefa tem um número, fica "Número por preencher": qualquer '
               'pessoa o preenche depois. Também se pode marcar à mão com o '
-              'número vazio.',
+              'número vazio. Na Lista Visível, o número são os itens picados '
+              'e fica como um Visível no Histórico.',
           'Os chefes mudam as horas de cada tarefa, ou desligam a marcação '
               'automática, em Definições → Horas das tarefas.',
         ],

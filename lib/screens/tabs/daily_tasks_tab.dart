@@ -256,16 +256,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     );
   }
 
-  static bool _isDone(DailyTasks t, String taskKey) => switch (taskKey) {
-    'kiwi_abertura' => t.kiwiAbertura,
-    'alteracoes_preco' => t.alteracoesPreco,
-    'verificacao_temperaturas' => t.verificacaoTemperaturas,
-    'preenchimento_quadro' => t.preenchimentoQuadro,
-    'verificacao_validades' => t.verificacaoValidades,
-    'validades_noite' => t.validadesNoite,
-    'kiwi_fecho' => t.kiwiFecho,
-    _ => false,
-  };
+  static bool _isDone(DailyTasks t, String taskKey) => dailyDone(t, taskKey);
 
   /// The notes under a task the app marked by itself, and under one whose
   /// number (or, for a Validades window, the artigos left) is still to be
@@ -275,6 +266,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     String key,
     String label, {
     void Function(int n)? setCount,
+    Future<void> Function(int n)? fillCount,
     ValidadesTurno? turno,
   }) {
     final mark = tasks.autoMarks[key];
@@ -287,13 +279,15 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               ? () => reviewDailyMark(context, tasks, key, label)
               : null,
         ),
-      if (setCount != null && tasks.pendingCounts.contains(key))
+      if ((setCount != null || fillCount != null) &&
+          tasks.pendingCounts.contains(key))
         PendingNumberNote(
           text: 'Número por preencher',
           onFill: () async {
             final n = await askNumber(context, label);
             if (n == null) return;
-            setCount(n);
+            if (fillCount != null) return fillCount(n);
+            setCount!(n);
             tasks.pendingCounts = [...tasks.pendingCounts]..remove(key);
             await DailyTasksService.instance.save(tasks, edited: key);
           },
@@ -474,7 +468,8 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     );
   }
 
-  /// A task ticked by hand, with no count.
+  /// A task ticked by hand, with no count. [info] is a line under it (the
+  /// lists' sends); [notes] replaces the automatic-mark notes.
   Widget _manual(
     DailyTasks tasks, {
     required String label,
@@ -482,11 +477,14 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     required bool checked,
     required List<String> byNames,
     required void Function(DailyTasks t, List<String> who) apply,
+    String? info,
+    List<Widget>? notes,
   }) {
     final notDone = tasks.notDone[taskKey];
     return _ManualTask(
       label: label,
-      notes: _autoNotes(tasks, taskKey, label),
+      info: info,
+      notes: notes ?? _autoNotes(tasks, taskKey, label),
       checked: checked,
       notDone: notDone,
       byNames: byNames,
@@ -619,23 +617,51 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               t.preenchimentoQuadroByNames = who;
             },
           ),
-          _ListTask(
+          _manual(
+            tasks,
             label: 'Lista Visível',
-            checked: _visiveis.isNotEmpty,
-            note: _visiveis.isEmpty
-                ? 'Faz-se em Listas 2.0 → Visível'
-                : '${_visiveis.fold(0, (s, e) => s + e.itens)} itens picados · '
-                      'por ${joinNames({for (final v in _visiveis) ...v.byNames}.toList())}',
-            onLongPress: _visiveis.isEmpty
+            taskKey: 'lista_visivel',
+            checked: tasks.listaVisivel || _visiveis.isNotEmpty,
+            byNames: tasks.listaVisivel
+                ? tasks.listaVisivelByNames
+                : {for (final v in _visiveis) ...v.byNames}.toList(),
+            info: _visiveis.isEmpty
                 ? null
-                : () => _sendMsg('✅ Tarefa concluída: Lista Visível'),
+                : '${_visiveis.fold(0, (s, e) => s + e.itens)} itens picados',
+            notes: _autoNotes(
+              tasks,
+              'lista_visivel',
+              'Lista Visível · Itens picados',
+              fillCount: (n) => Visivel2Service.instance.add(
+                itens: n,
+                names: dailyNames(tasks, 'lista_visivel'),
+                serviceDay:
+                    tasks.serviceDay.isAtSameMomentAs(currentServiceDay())
+                    ? null
+                    : tasks.serviceDay,
+                fillsPending: true,
+              ),
+            ),
+            apply: (t, who) {
+              setDailyDone(t, 'lista_visivel', who);
+              // Its number is a Visível's itens picados, given later.
+              if (!t.pendingCounts.contains('lista_visivel')) {
+                t.pendingCounts = [...t.pendingCounts, 'lista_visivel'];
+              }
+            },
           ),
-          _CounterTask(
+          _manual(
+            tasks,
             label: 'Lista Automática',
-            count: _autoCount,
-            note: _autoCount == 1
+            taskKey: 'lista_automatica',
+            checked: tasks.listaAutomatica || _autoCount > 0,
+            byNames: tasks.listaAutomaticaByNames,
+            info: _autoCount == 0
+                ? null
+                : _autoCount == 1
                 ? '1 automática enviada hoje'
                 : '$_autoCount automáticas enviadas hoje',
+            apply: (t, who) => setDailyDone(t, 'lista_automatica', who),
           ),
           _validadesTask(tasks, ValidadesTurno.manha),
           _validadesTask(tasks, ValidadesTurno.noite),

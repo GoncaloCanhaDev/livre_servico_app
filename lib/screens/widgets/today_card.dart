@@ -12,6 +12,7 @@ import '../../models/teams.dart';
 import '../../models/today.dart';
 import '../../models/truck_reception.dart';
 import '../../services/task_window_service.dart';
+import '../../services/auto2_service.dart';
 import '../../services/daily_tasks_service.dart';
 import '../../services/horario_service.dart';
 import '../../services/pedido_service.dart';
@@ -70,6 +71,7 @@ class _DayRows {
     required this.everyone,
     required this.tasks,
     required this.visivelDone,
+    required this.automaticaDone,
     required this.pedidos,
     required this.trucks,
   });
@@ -78,6 +80,7 @@ class _DayRows {
   final List<Person> everyone;
   final DailyTasks? tasks;
   final bool visivelDone;
+  final bool automaticaDone;
   final List<Pedido> pedidos;
   final List<TruckReception> trucks;
 }
@@ -91,6 +94,7 @@ class _TodayCardState extends State<TodayCard> {
     PersonService.instance,
     DailyTasksService.instance,
     Visivel2Service.instance,
+    Auto2Service.instance,
     PedidoService.instance,
     TruckService.instance,
     HorarioService.instance,
@@ -133,6 +137,9 @@ class _TodayCardState extends State<TodayCard> {
       visivelDone: (await Visivel2Service.instance.forServiceDay(
         day,
       )).isNotEmpty,
+      automaticaDone: (await Auto2Service.instance.forServiceDay(
+        day,
+      )).isNotEmpty,
       pedidos: await PedidoService.instance.openWithDate(),
       trucks: await TruckService.instance.forServiceDay(day),
     );
@@ -164,6 +171,7 @@ class _TodayCardState extends State<TodayCard> {
         pending: pendingDailyTasks(
           rows.tasks,
           visivelDone: rows.visivelDone,
+          automaticaDone: rows.automaticaDone,
           now: now,
           windowFor: TaskWindowService.instance.windowFor,
         ),

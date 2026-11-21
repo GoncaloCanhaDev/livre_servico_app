@@ -232,6 +232,11 @@ Future<String> seedDemo({DateTime? now}) async {
       ..validadesManhaLeft = 4
       ..validadesNoiteCount = 4
       ..validadesNoiteCarried = 4
+      // Ticked by the Visível and the Automáticas sent below.
+      ..listaVisivel = true
+      ..listaVisivelByNames = ['Inês Rodrigues']
+      ..listaAutomatica = true
+      ..listaAutomaticaByNames = ['João Pereira']
       // Marked by the app from the horário, waiting to be confirmed.
       ..autoMarks = {'kiwi_abertura': AutoMark(at: day(0, 9))}
       ..lastUpdatedAt = day(0, 9, 40),
@@ -253,7 +258,14 @@ Future<String> seedDemo({DateTime? now}) async {
       ..validadesNoiteLeft = 3
       ..kiwiFecho = true
       ..kiwiFechoByNames = ['Ricardo Matos']
+      ..listaAutomatica = true
+      ..listaAutomaticaByNames = ['Sofia Almeida']
+      // Marked by the app; its itens picados are still to be filled in.
+      ..listaVisivel = true
+      ..listaVisivelByNames = ['João Pereira']
+      ..pendingCounts = ['lista_visivel']
       ..autoMarks = {
+        'lista_visivel': AutoMark(at: day(-1, 14)),
         'preenchimento_quadro': AutoMark(at: day(-1, 14)),
         'kiwi_fecho': AutoMark(
           at: day(-1, 22),

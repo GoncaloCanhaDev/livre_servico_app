@@ -7,6 +7,18 @@ typedef ReleaseNote = ({String version, List<String> items});
 /// commit that bumps [appVersion] when it does.
 const releaseNotes = <ReleaseNote>[
   (
+    version: '0.98.0',
+    items: [
+      'Diárias: a Lista Visível e a Lista Automática passam a ser tarefas '
+          'como as outras. Marcam-se sozinhas quando se envia um Visível ou '
+          'uma Automática em Listas 2.0, ou à mão com ✓ ou ✗, sem números.',
+      'Se ninguém as marcar, a app marca-as como as outras tarefas: a Lista '
+          'Visível depois das 14h, a Lista Automática no fim do dia. Os itens '
+          'picados do Visível ficam por preencher. Os chefes mudam as horas '
+          'em Definições → Horas das tarefas.',
+    ],
+  ),
+  (
     version: '0.97.11',
     items: [
       'Tarefas marcadas sozinhas: a app passa a sugerir só uma pessoa, à '

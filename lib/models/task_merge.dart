@@ -87,6 +87,8 @@ const dailyTaskFields = {
     'preenchimentoQuadroBy',
     'preenchimentoQuadroByNames',
   ],
+  'lista_visivel': ['listaVisivel', 'listaVisivelByNames'],
+  'lista_automatica': ['listaAutomatica', 'listaAutomaticaByNames'],
   'verificacao_validades': [
     'verificacaoValidades',
     'verificacaoValidadesBy',

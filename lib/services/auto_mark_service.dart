@@ -9,6 +9,7 @@ import '../models/opening_list.dart';
 import '../models/task_window.dart';
 import '../models/weekly_tasks.dart';
 import 'account_service.dart';
+import 'auto2_service.dart';
 import 'custom_task_service.dart';
 import 'daily_tasks_service.dart';
 import 'horario_service.dart';
@@ -18,6 +19,7 @@ import 'server_clock.dart';
 import 'settings_service.dart';
 import 'sync_service.dart';
 import 'task_window_service.dart';
+import 'visivel2_service.dart';
 import 'weekly_tasks_service.dart';
 
 /// Marks a task done by itself once its window (see [TaskWindow]) closed
@@ -160,7 +162,17 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
         final w = windows.windowFor(key);
         final span = windowSpan(w, day);
         if (!w.auto || !due(span)) continue;
+        if (taskAutoMarkSince[key] case final from?
+            when span.start.isBefore(from)) {
+          continue;
+        }
         if (dailySettled(daily, key)) continue;
+        // A send saved by a phone that doesn't tick the list yet.
+        final sent = await _listSenders(key, day);
+        if (sent != null) {
+          if (tickListTask(daily, key, sent).changed) dailyChanged = true;
+          continue;
+        }
         final names = who(key, span);
         if (names.isEmpty) continue;
         autoMarkDaily(daily, key, names, stampAt);
@@ -275,6 +287,24 @@ class AutoMarkService extends ChangeNotifier with WidgetsBindingObserver {
       add(e.taskUuid, e.periodKey, e.doneByNames);
     }
     return credits;
+  }
+
+  /// For the Lista Visível and the Lista Automática, who sent a Visível or
+  /// an Automáticas on [day] (null when nobody did, or for another task).
+  Future<List<String>?> _listSenders(String key, DateTime day) async {
+    final List<List<String>> sends = switch (key) {
+      'lista_visivel' => [
+        for (final v in await Visivel2Service.instance.forServiceDay(day))
+          v.byNames,
+      ],
+      'lista_automatica' => [
+        for (final e in await Auto2Service.instance.forServiceDay(day))
+          e.byNames,
+      ],
+      _ => const [],
+    };
+    if (sends.isEmpty) return null;
+    return {for (final names in sends) ...names}.toList();
   }
 
   Future<WeeklyTasks?> _weekly(DateTime week) => LocalDb.instance.weeklyTasks

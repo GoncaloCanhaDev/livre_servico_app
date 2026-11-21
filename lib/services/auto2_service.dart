@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/auto2_entry.dart';
 import '../models/opening_list.dart';
+import 'daily_tasks_service.dart';
 import 'local_db.dart';
 import 'sync_meta.dart';
 
@@ -16,7 +17,8 @@ class Auto2Service extends ChangeNotifier {
 
   /// Saves [item] as [value] artigos ([porTratar] of them left for later,
   /// [semStock] out of stock), done by [names]: now, or on [serviceDay]
-  /// (then at noon, flagged backdated) when it was an earlier day.
+  /// (then at noon, flagged backdated) when it was an earlier day. It
+  /// ticks that day's Lista Automática (`DailyTasksService.tickList`).
   Future<Auto2Entry> send({
     required Auto2Item item,
     required int value,
@@ -37,6 +39,12 @@ class Auto2Service extends ChangeNotifier {
       ..backdated = serviceDay != null;
     SyncMeta.stamp(entry);
     await _db.auto2Entries.put(entry);
+    await DailyTasksService.instance.tickList(
+      currentServiceDay(entry.createdAt),
+      'lista_automatica',
+      names,
+      backdated: entry.backdated,
+    );
     notifyListeners();
     return entry;
   }

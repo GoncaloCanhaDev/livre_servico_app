@@ -4,7 +4,9 @@ import 'package:livre_servico_app/models/daily_tasks.dart';
 import 'package:livre_servico_app/models/not_done.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/task_window.dart';
+import 'package:livre_servico_app/models/visivel2_entry.dart';
 import 'package:livre_servico_app/services/auto_mark_service.dart';
+import 'package:livre_servico_app/services/visivel2_service.dart';
 import 'package:livre_servico_app/services/custom_task_service.dart';
 import 'package:livre_servico_app/services/daily_tasks_service.dart';
 import 'package:livre_servico_app/services/local_db.dart';
@@ -206,5 +208,59 @@ void main() {
       ),
       n - 2,
     );
+  });
+
+  group('the lists', () {
+    // Wednesday 25 November 2026, after the lists became Diárias.
+    final day = DateTime(2026, 11, 25, 5);
+
+    test(
+      'the Visível after its hours, the Automática when the day ends',
+      () async {
+        await SettingsService.instance.setAutoMarkSince(
+          DateTime(2026, 11, 24, 5),
+        );
+        await _run(DateTime(2026, 11, 25, 15));
+        final t = (await DailyTasksService.instance.find(day))!;
+        expect(t.listaVisivel, isTrue); // 05–14
+        expect(t.pendingCounts, contains('lista_visivel'));
+        expect(t.listaAutomatica, isFalse); // the whole day
+        final before = (await DailyTasksService.instance.find(
+          DateTime(2026, 11, 24, 5),
+        ))!;
+        expect(before.listaAutomatica, isTrue);
+        expect(before.autoMarks, contains('lista_automatica'));
+      },
+    );
+
+    test('never for the days before the update', () async {
+      await _run(DateTime(2026, 11, 22, 15));
+      for (final r in await DailyTasksService.instance.history()) {
+        final isNew = !r.serviceDay.isBefore(DateTime(2026, 11, 22, 5));
+        expect(r.listaVisivel, isNew, reason: '${r.serviceDay}');
+        expect(r.listaAutomatica, isFalse, reason: '${r.serviceDay}');
+      }
+    });
+
+    test('a Visível already sent ticks it by hand, not by the app', () async {
+      await SettingsService.instance.setAutoMarkSince(
+        DateTime(2026, 11, 24, 5),
+      );
+      // As a phone on an older version saves it: the Diária not ticked.
+      final v = Visivel2Entry()
+        ..createdAt = DateTime(2026, 11, 25, 9)
+        ..serviceDay = day
+        ..itens = 12
+        ..byNames = ['Rita'];
+      SyncMeta.stamp(v);
+      await LocalDb.instance.visivel2Entries.put(v);
+      await _run(DateTime(2026, 11, 25, 15));
+      final t = (await DailyTasksService.instance.find(day))!;
+      expect(t.listaVisivel, isTrue);
+      expect(t.listaVisivelByNames, ['Rita']);
+      expect(t.autoMarks, isNot(contains('lista_visivel')));
+      expect(t.pendingCounts, isNot(contains('lista_visivel')));
+      expect(await Visivel2Service.instance.forServiceDay(day), hasLength(1));
+    });
   });
 }

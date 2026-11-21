@@ -59,13 +59,14 @@ class TaskWindow with SyncFields {
 
 const _dayStart = 5 * 60;
 
-/// The Diárias marked by hand (not the Listas 2.0 ones), in the Tarefas
-/// order.
+/// The Diárias, in the Tarefas order.
 const fixedDailyTaskKeys = [
   'kiwi_abertura',
   'alteracoes_preco',
   'verificacao_temperaturas',
   'preenchimento_quadro',
+  'lista_visivel',
+  'lista_automatica',
   'verificacao_validades',
   'validades_noite',
   'kiwi_fecho',
@@ -90,6 +91,8 @@ const fixedTaskLabels = {
   'alteracoes_preco': 'Alterações de Preço',
   'verificacao_temperaturas': 'Verificação de Temperaturas',
   'preenchimento_quadro': 'Preenchimento do Quadro',
+  'lista_visivel': 'Lista Visível',
+  'lista_automatica': 'Lista Automática',
   'verificacao_validades': 'Validades · Manhã',
   'validades_noite': 'Validades · Noite',
   'kiwi_fecho': 'Kiwi Fecho',
@@ -98,9 +101,11 @@ const fixedTaskLabels = {
   'limpeza_maquina_voltas': 'Limpeza da Máquina Voltas',
 };
 
-/// The tasks with a number to fill in (it can be left for later).
+/// The tasks with a number to fill in (it can be left for later; the Lista
+/// Visível's is a Visível's itens picados).
 const countTaskKeys = {
   'alteracoes_preco',
+  'lista_visivel',
   'verificacao_validades',
   'validades_noite',
   'verificar_1a',
@@ -115,6 +120,7 @@ TaskWindow defaultTaskWindow(String key) {
     'alteracoes_preco' => (5 * 60, 7 * 60 + 30),
     'verificacao_temperaturas' => (5 * 60, 12 * 60),
     'preenchimento_quadro' => (5 * 60, 14 * 60),
+    'lista_visivel' => (5 * 60, 14 * 60),
     'verificacao_validades' => (5 * 60, 14 * 60),
     'validades_noite' => (19 * 60, 5 * 60),
     'kiwi_fecho' => (19 * 60, 22 * 60),
@@ -122,6 +128,14 @@ TaskWindow defaultTaskWindow(String key) {
   };
   return TaskWindow(taskKey: key, opensAt: opens, closesAt: closes);
 }
+
+/// Tasks added after the app started marking by itself: windows opening
+/// before this moment are never marked for them (nor counted unmarked in
+/// Estatísticas), so the days before the update aren't filled in.
+final taskAutoMarkSince = {
+  'lista_visivel': DateTime(2026, 11, 22, 5),
+  'lista_automatica': DateTime(2026, 11, 22, 5),
+};
 
 /// Minutes since the service day started at 05:00 (0 to 1439); a close at
 /// 05:00 is 1440, the day's end.
