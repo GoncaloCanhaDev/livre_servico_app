@@ -154,14 +154,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       result.day.day,
       5,
     );
-    if (targetDay == tasks.serviceDay) {
-      setState(() => apply(tasks, who));
-      await _saveTasks();
-      await after?.call(tasks);
-      _sendMsg(message(who));
-      return;
-    }
+    // Read again: a sync may have reloaded the day while the picker was
+    // open, and marking the copy read before would be lost.
     final other = await DailyTasksService.instance.forDay(targetDay);
+    final sameDay = targetDay.isAtSameMomentAs(tasks.serviceDay);
     if (other.notDone.containsKey(taskKey)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -179,11 +175,16 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       return;
     }
     apply(other, who);
-    if (!other.backdatedTaskKeys.contains(taskKey)) {
+    if (!sameDay && !other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
+    if (sameDay && mounted) setState(() => _tasks = other);
     await DailyTasksService.instance.save(other);
     await after?.call(other);
+    if (sameDay) {
+      _sendMsg(message(who));
+      return;
+    }
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
     _sendMsg('${message(who)} — $dayFmt');
     if (!mounted) return;
@@ -225,17 +226,9 @@ class _DailyTasksTabState extends State<DailyTasksTab>
       result.day.day,
       5,
     );
-    if (targetDay == tasks.serviceDay) {
-      setState(() {
-        tasks.notDone = {...tasks.notDone, taskKey: notDone};
-        apply?.call(tasks);
-      });
-      await _saveTasks();
-      await after?.call(tasks);
-      _sendMsg('${notDoneMessage(taskName, notDone)}$suffix');
-      return;
-    }
+    // Read again, like [_completeTask].
     final other = await DailyTasksService.instance.forDay(targetDay);
+    final sameDay = targetDay.isAtSameMomentAs(tasks.serviceDay);
     if (_isDone(other, taskKey)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -245,11 +238,16 @@ class _DailyTasksTabState extends State<DailyTasksTab>
     }
     other.notDone = {...other.notDone, taskKey: notDone};
     apply?.call(other);
-    if (!other.backdatedTaskKeys.contains(taskKey)) {
+    if (!sameDay && !other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
+    if (sameDay && mounted) setState(() => _tasks = other);
     await DailyTasksService.instance.save(other);
     await after?.call(other);
+    if (sameDay) {
+      _sendMsg('${notDoneMessage(taskName, notDone)}$suffix');
+      return;
+    }
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(targetDay);
     _sendMsg('${notDoneMessage(taskName, notDone)}$suffix — $dayFmt');
     if (!mounted) return;
@@ -315,6 +313,10 @@ class _DailyTasksTabState extends State<DailyTasksTab>
         ),
     ];
   }
+
+  /// The number typed in [ctrl], 0 when empty.
+  static int _countOf(TextEditingController ctrl) =>
+      int.tryParse(ctrl.text.trim()) ?? 0;
 
   /// Adds [key] to `pendingCounts` when its number field was left empty.
   static void _pendingIfEmpty(
@@ -423,6 +425,8 @@ class _DailyTasksTabState extends State<DailyTasksTab>
           : () async {
               final n = await askValidadesLeft(context, turno);
               if (n == null || !mounted) return;
+              // What the field shows now (artigos carried included).
+              final count = _countOf(ctrl);
               await _completeTask(
                 taskName: turno.label,
                 taskKey: taskKey,
@@ -458,10 +462,12 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               );
             },
       onCountChanged: (n) {
+        final t = _tasks;
+        if (t == null) return;
         if (manha) {
-          tasks.verificacaoValidadesCount = n;
+          t.verificacaoValidadesCount = n;
         } else {
-          tasks.validadesNoiteCount = n;
+          t.validadesNoiteCount = n;
         }
         _saveTasks();
       },
@@ -560,7 +566,7 @@ class _DailyTasksTabState extends State<DailyTasksTab>
                   )
                 : null,
             onDone: () {
-              final count = tasks.alteracoesPrecoCount;
+              final count = _countOf(_alteracoesCtrl);
               _completeTask(
                 taskName: 'Alterações de Preço',
                 taskKey: 'alteracoes_preco',
@@ -579,7 +585,9 @@ class _DailyTasksTabState extends State<DailyTasksTab>
               taskKey: 'alteracoes_preco',
             ),
             onCountChanged: (n) {
-              tasks.alteracoesPrecoCount = n;
+              final t = _tasks;
+              if (t == null) return;
+              t.alteracoesPrecoCount = n;
               _saveTasks();
             },
           ),

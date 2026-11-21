@@ -113,13 +113,10 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     final targetWeek = currentServiceWeek(
       DateTime(result.day.year, result.day.month, result.day.day, 12),
     );
-    if (targetWeek == tasks.serviceWeek) {
-      setState(() => apply(tasks, who));
-      await _saveTasks();
-      _sendMsg(message(who));
-      return;
-    }
+    // Read again: a sync may have reloaded the week while the picker was
+    // open, and marking the copy read before would be lost.
     final other = await WeeklyTasksService.instance.forWeek(targetWeek);
+    final sameWeek = targetWeek.isAtSameMomentAs(tasks.serviceWeek);
     if (other.notDone.containsKey(taskKey)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,10 +134,15 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
       return;
     }
     apply(other, who);
-    if (!other.backdatedTaskKeys.contains(taskKey)) {
+    if (!sameWeek && !other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
+    if (sameWeek && mounted) setState(() => _tasks = other);
     await WeeklyTasksService.instance.save(other);
+    if (sameWeek) {
+      _sendMsg(message(who));
+      return;
+    }
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(result.day);
     _sendMsg('${message(who)} — $dayFmt');
     if (!mounted) return;
@@ -176,13 +178,9 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     final targetWeek = currentServiceWeek(
       DateTime(result.day.year, result.day.month, result.day.day, 12),
     );
-    if (targetWeek == tasks.serviceWeek) {
-      setState(() => tasks.notDone = {...tasks.notDone, taskKey: notDone});
-      await _saveTasks();
-      _sendMsg(notDoneMessage(taskName, notDone));
-      return;
-    }
+    // Read again, like [_completeTask].
     final other = await WeeklyTasksService.instance.forWeek(targetWeek);
+    final sameWeek = targetWeek.isAtSameMomentAs(tasks.serviceWeek);
     final alreadyDone = switch (taskKey) {
       'verificar_1a' => other.verificar1a,
       'verificar_4a' => other.verificar4a,
@@ -197,10 +195,15 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
       return;
     }
     other.notDone = {...other.notDone, taskKey: notDone};
-    if (!other.backdatedTaskKeys.contains(taskKey)) {
+    if (!sameWeek && !other.backdatedTaskKeys.contains(taskKey)) {
       other.backdatedTaskKeys = [...other.backdatedTaskKeys, taskKey];
     }
+    if (sameWeek && mounted) setState(() => _tasks = other);
     await WeeklyTasksService.instance.save(other);
+    if (sameWeek) {
+      _sendMsg(notDoneMessage(taskName, notDone));
+      return;
+    }
     final dayFmt = DateFormat("d 'de' MMMM", 'pt_PT').format(result.day);
     _sendMsg('${notDoneMessage(taskName, notDone)} — $dayFmt');
     if (!mounted) return;
@@ -257,12 +260,17 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
     required String goalNote,
     required bool tuesdayPassed,
     required void Function(WeeklyTasks t, List<String> who, int count) apply,
-    required ValueChanged<int> setCount,
+    required void Function(WeeklyTasks t, int n) setCount,
   }) {
     final notDone = tasks.notDone[taskKey];
     return _WeeklyCountTask(
       label: label,
-      notes: _autoNotes(tasks, taskKey, label, setCount: setCount),
+      notes: _autoNotes(
+        tasks,
+        taskKey,
+        label,
+        setCount: (n) => setCount(tasks, n),
+      ),
       checked: checked,
       notDone: notDone,
       byNames: byNames,
@@ -276,7 +284,8 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
           ? () => _sendMsg(notDoneMessage(label, notDone))
           : null,
       onDone: () {
-        final n = count();
+        // What the field shows now, not when the row was built.
+        final n = int.tryParse(controller.text.trim()) ?? 0;
         _completeTask(
           taskName: label,
           taskKey: taskKey,
@@ -293,7 +302,9 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
       },
       onNotDone: () => _markNotDone(taskName: label, taskKey: taskKey),
       onCountChanged: (n) {
-        setCount(n);
+        final t = _tasks;
+        if (t == null) return;
+        setCount(t, n);
         _saveTasks();
       },
     );
@@ -344,7 +355,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
               t.verificar1aByNames = who;
               t.verificar1aCount = count;
             },
-            setCount: (n) => tasks.verificar1aCount = n,
+            setCount: (t, n) => t.verificar1aCount = n,
           ),
           _verificar(
             tasks,
@@ -364,7 +375,7 @@ class _WeeklyTasksTabState extends State<WeeklyTasksTab>
               t.verificar4aByNames = who;
               t.verificar4aCount = count;
             },
-            setCount: (n) => tasks.verificar4aCount = n,
+            setCount: (t, n) => t.verificar4aCount = n,
           ),
           _WeeklyManualTask(
             label: limpeza,

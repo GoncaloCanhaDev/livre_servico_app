@@ -52,7 +52,8 @@ multi-tenant product.
   an automatic mark, fills a number later and edits the task hours, `test/horario_import_screen_test.dart`
   imports a horário and `test/horarios_screen_test.dart` shows it, `test/inventory_screen_test.dart` plans
   and marks done an inventory, `test/automaticas2_tab_test.dart` sends
-  Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível, `test/daily_lists2_test.dart` the Diárias from them, `test/claim_person_screen_test.dart`
+  Listas 2.0 items, `test/visivel2_tab_test.dart` saves a Visível,
+  `test/validades_noite_mark_test.dart` marks the Validades · Noite while a sync reloads the day, `test/daily_lists2_test.dart` the Diárias from them, `test/claim_person_screen_test.dart`
   picks a person to join a store as and `test/abertura_tab_test.dart` sends the
   Abertura sections; `test/local_db_test.dart` covers the store and the backup JSON format,
   `test/sync_engine_test.dart` the sync engine between two devices, `test/demo_data_test.dart`

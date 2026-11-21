@@ -7,6 +7,17 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.13] — 2026-11-21
+
+### Fixed
+
+- Marking a Diária or Semanal (feita or não feita) could be lost: when a sync reloaded the day
+  while "Quem concluiu?" was open (any change pulled, or a number typed three seconds before),
+  the tab marked its old copy but saved the reloaded one, so the tick never showed and nothing
+  was kept (reported for the Validades · Noite). The tab now reads the day or week again once
+  the picker closes and marks that copy. A typed number is set on the row the tab holds now and
+  read from its field when marking, not from when the row was built.
+
 ## [0.97.12] — 2026-11-21
 
 ### Changed
