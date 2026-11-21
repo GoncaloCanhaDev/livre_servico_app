@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:livre_servico_app/models/custom_task.dart';
+import 'package:livre_servico_app/models/daily_tasks.dart';
 import 'package:livre_servico_app/models/not_done.dart';
 import 'package:livre_servico_app/models/person.dart';
 import 'package:livre_servico_app/models/task_window.dart';
@@ -49,12 +50,29 @@ void main() {
     await _run(DateTime(2026, 11, 18, 10));
     final t = (await DailyTasksService.instance.find(_day))!;
     expect(t.kiwiAbertura, isTrue); // 05–09
-    expect(t.kiwiAberturaByNames, ['Bruno Noite', 'Ana Dia']);
+    expect(t.kiwiAberturaByNames, hasLength(1)); // one person, in turn
     expect(t.alteracoesPreco, isTrue); // 05–07:30
     expect(t.pendingCounts, contains('alteracoes_preco'));
     expect(t.verificacaoTemperaturas, isFalse); // until 12
     expect(t.kiwiFecho, isFalse);
     expect(t.autoMarks.keys, {'kiwi_abertura', 'alteracoes_preco'});
+  });
+
+  test('suggests one person, in turn', () async {
+    await SettingsService.instance.setAutoMarkSince(DateTime(2026, 11, 17, 5));
+    // Ana was credited by hand the day before.
+    final before = DailyTasks()
+      ..serviceDay = DateTime(2026, 11, 16, 5)
+      ..kiwiAbertura = true
+      ..kiwiAberturaByNames = ['Ana Dia'];
+    await DailyTasksService.instance.save(before);
+    await _run(DateTime(2026, 11, 18, 10));
+    final day17 = await DailyTasksService.instance.find(
+      DateTime(2026, 11, 17, 5),
+    );
+    final day18 = await DailyTasksService.instance.find(_day);
+    expect(day17!.kiwiAberturaByNames, ['Bruno Noite']);
+    expect(day18!.kiwiAberturaByNames, ['Ana Dia']); // 1 each: Ana's longer ago
   });
 
   test('leaves alone what was marked by hand', () async {

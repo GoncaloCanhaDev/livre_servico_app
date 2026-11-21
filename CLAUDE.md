@@ -176,9 +176,11 @@ multi-tenant product.
   the admin or signed out, level 4+, a level 3 of Livre Serviço; never before a sync of this
   session while a store is connected) marks every task whose window closed with no feita and no
   Não feita, up to 7 days back and never one that closed before the device's first run
-  (`autoMarkSince`, a moment): done by the Livre Serviço
+  (`autoMarkSince`, a moment): done by one of the Livre Serviço
   people whose shift overlaps the window (`autoMarkPeople` in `lib/models/auto_mark.dart`, on
-  the horário index), nobody → stays pending. Semanais on their weekday (`taskDueWeekday`),
+  the horário index), in turn (since 0.97.11, `pickAutoMarkPerson`: the fewest credits for
+  that task over `rotationDays`, by hand or by the app, then credited longest ago), nobody →
+  stays pending. Semanais on their weekday (`taskDueWeekday`),
   custom weekly tasks when their week ends, one-off never. It keeps an `AutoMark` (when, who
   confirmed) in `DailyTasks.autoMarks` / `WeeklyTasks.autoMarks` by task key and
   `CustomTaskEntry.autoMark`. Level 2+ (`canConfirmTasks`) review it (`auto_mark_review.dart`:

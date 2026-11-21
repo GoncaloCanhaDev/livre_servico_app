@@ -7,6 +7,16 @@ History was renumbered on 2026-10-07 so that every commit has its own version; t
 v0.2.0–v0.4.0 release tags no longer exist (old 0.4.0 is now 0.27.1). Entries up to 0.27.0 were
 written from the commit history.
 
+## [0.97.11] — 2026-11-21
+
+### Changed
+
+- A task the app marks by itself is now credited to one person instead of everyone on shift:
+  of the Livre Serviço people working during its window, whoever was credited with that task
+  the fewest times in the last 30 days (by hand or by the app), then the one credited longest
+  ago (`pickAutoMarkPerson`, `AutoMarkService.rotationDays`). A catch-up over several days
+  keeps rotating. Marks already made keep their names.
+
 ## [0.97.10] — 2026-11-21
 
 ### Fixed

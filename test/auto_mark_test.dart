@@ -93,6 +93,43 @@ void main() {
     });
   });
 
+  group('pickAutoMarkPerson', () {
+    TaskCredit c(int times, int day) =>
+        (times: times, last: DateTime(2026, 11, day, 5));
+
+    test('whoever was credited the fewest times', () {
+      expect(
+        pickAutoMarkPerson(
+          ['Ana', 'Bruno'],
+          {'Ana': c(3, 17), 'Bruno': c(1, 18)},
+        ),
+        'Bruno',
+      );
+    });
+
+    test('a tie goes to the longest ago, never credited first', () {
+      expect(
+        pickAutoMarkPerson(
+          ['Ana', 'Bruno'],
+          {'Ana': c(1, 17), 'Bruno': c(1, 16)},
+        ),
+        'Bruno',
+      );
+      expect(pickAutoMarkPerson(['Ana', 'Bruno'], {'Ana': c(0, 1)}), 'Bruno');
+      expect(pickAutoMarkPerson(['Ana', 'Bruno'], {}), 'Ana');
+    });
+
+    test('addCredit counts and keeps the latest day', () {
+      final one = addCredit(null, DateTime(2026, 11, 17, 5));
+      final two = addCredit(one, DateTime(2026, 11, 10, 5));
+      expect(two, c(2, 17));
+    });
+
+    test('nobody gives null', () {
+      expect(pickAutoMarkPerson([], {'Ana': c(1, 17)}), isNull);
+    });
+  });
+
   group('marking a row', () {
     test('an automatic Validades mark leaves the count and left to fill', () {
       final t = DailyTasks()..serviceDay = _day;

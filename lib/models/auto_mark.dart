@@ -96,6 +96,49 @@ List<String> autoMarkPeople(
   return [for (final f in found) f.name];
 }
 
+/// How many times someone was credited with a task lately and the last
+/// time (the period's day), for [pickAutoMarkPerson].
+typedef TaskCredit = ({int times, DateTime last});
+
+/// Adds one credit on [day] to [credit].
+TaskCredit addCredit(TaskCredit? credit, DateTime day) => (
+  times: (credit?.times ?? 0) + 1,
+  last: credit == null || day.isAfter(credit.last) ? day : credit.last,
+);
+
+/// The one person an automatic mark suggests, in turn: of [candidates]
+/// (those on shift, in [autoMarkPeople]'s order), whoever [credited] (by
+/// name, over `AutoMarkService.rotationDays`) credits the fewest times,
+/// then the longest ago (never first), then the earlier in [candidates].
+/// Null when there is nobody.
+String? pickAutoMarkPerson(
+  List<String> candidates,
+  Map<String, TaskCredit> credited,
+) {
+  String? best;
+  TaskCredit? bestCredit;
+  for (final name in candidates) {
+    final c = credited[name];
+    if (best == null) {
+      best = name;
+      bestCredit = c;
+      continue;
+    }
+    final times = c?.times ?? 0;
+    final bestTimes = bestCredit?.times ?? 0;
+    final better =
+        times < bestTimes ||
+        (times == bestTimes &&
+            bestCredit != null &&
+            (c == null || c.last.isBefore(bestCredit.last)));
+    if (better) {
+      best = name;
+      bestCredit = c;
+    }
+  }
+  return best;
+}
+
 /// Whether [key] of [t] was marked, feita or não feita.
 bool dailySettled(DailyTasks t, String key) =>
     dailyDone(t, key) || t.notDone.containsKey(key);
